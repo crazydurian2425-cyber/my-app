@@ -12,7 +12,37 @@
       "PowerShell(\"---\")",
       "PowerShell(gh --version 2>$null)",
       "PowerShell(git init -b main)",
-      "PowerShell(git add .)"
+      "PowerShell(git add .)",
+      "PowerShell(git -c user.email=\"teemo6769@gmail.com\" -c user.name=\"shinsenna2023\" commit -m \"Initial commit: Apex Talent recruitment site + Cloudflare deploy workflow\" --quiet)",
+      "PowerShell(git remote add origin https://github.com/crazydurian2425-cyber/my-app.git)",
+      "PowerShell(git push -u origin main 2>&1)",
+      "PowerShell(git add .github/workflows/deploy.yml)",
+      "PowerShell(git -c user.email=\"teemo6769@gmail.com\" -c user.name=\"shinsenna2023\" commit -m \"ci: bump Node to 22 \\(wrangler requires >=22\\)\" --quiet)",
+      "PowerShell(git push 2>&1)",
+      "PowerShell(try { $r1 = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/' -UseBasicParsing -TimeoutSec 30; \"/      STATUS: $\\($r1.StatusCode\\) LEN: $\\($r1.Content.Length\\)\"; if \\($r1.Content -match 'Apex Talent'\\) { \"/      CONTENT: ok\" } } catch { \"/      ERROR: $\\($_.Exception.Response.StatusCode.value__\\)\" }; try { $r2 = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/jobs' -UseBasicParsing -TimeoutSec 30; \"/jobs  STATUS: $\\($r2.StatusCode\\) LEN: $\\($r2.Content.Length\\)\"; if \\($r2.Content -match 'Senior Backend Engineer'\\) { \"/jobs  CONTENT: ok\" } } catch { \"/jobs  ERROR: $\\($_.Exception.Response.StatusCode.value__\\)\" })",
+      "Read(//c/Users/user/.claude/skills/ui-ux-pro-max/scripts/**)",
+      "Read(//c/Users/user/.claude/skills/ui-ux-pro-max/**)",
+      "Read(//c/Users/user/.claude/skills/**)",
+      "PowerShell(cmd /c dir \"C:\\\\Users\\\\user\\\\.claude\\\\skills\\\\ui-ux-pro-max\" /s /b)",
+      "Bash(rm -rf src public .next .open-next .wrangler node_modules next.config.ts next-env.d.ts cloudflare-env.d.ts postcss.config.mjs eslint.config.mjs tsconfig.json open-next.config.ts package.json package-lock.json wrangler.jsonc README.md && ls -la)",
+      "Bash(xxd _encoding_test.txt)",
+      "Bash(iconv -f UTF-8 -t WINDOWS-1252 _encoding_test.txt)",
+      "Bash(xxd)",
+      "Bash(iconv -f UTF-8 -t WINDOWS-1252 _mojibake_only.txt)",
+      "Bash(iconv -f UTF-8 -t UTF-8)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git -c user.name=shinsenna2023 -c user.email=teemo6769@gmail.com commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh run *)",
+      "Bash(where gh *)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/user/AppData/Local/**)",
+      "Bash(xxd .assetsignore)",
+      "Bash(grep -v ':0$')"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\user\\my-app\\src"
     ]
   }
 }

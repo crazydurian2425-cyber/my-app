@@ -20,8 +20,8 @@ const RESEND_API_KEY = 're_Coxh3Vqo_C68XoGkEf7fRXD9YQ7Zvukr3'
 
 // Supabase project — service role key kept server-side only.
 // Used by /api/create-planner to create auth users + insert planner rows.
-const SUPABASE_URL = 'https://swgppauxgcrcujadoecj.supabase.co'
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3Z3BwYXV4Z2NyY3VqYWRvZWNqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjQwMTYyMywiZXhwIjoyMDkxOTc3NjIzfQ.B9ZSn5wMnDWgRLv1S6-4dlv9GZVbZS_s1VlK7Kq5b_U'
+const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqY2h5cWFma3Bicnl6bHFocHhjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM1NDg5MSwiZXhwIjoyMDk0OTMwODkxfQ.tn2ovF385cdAtjyyKfEYE5HkLQUkUbpKKp8Hc4LFEcg'
 
 export default {
   async fetch(request, env) {
