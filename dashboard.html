@@ -35,7 +35,21 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--green:#5E7B6E;--green-light:#E8EFEB;--green-mid:#8FA896;--green-dark:#4A6759;--amber:#D4913D;--amber-light:#FAF0DE;--blue:#2563a8;--blue-light:#eaf1fb;--red:#B84A3E;--red-light:#FBEAE7;--purple:#534ab7;--purple-light:#eeedfe;--surface:#fff;--bg:#F5F1E8;--border:rgba(0,0,0,0.06);--border-med:rgba(0,0,0,0.12);--text:#1A2E25;--text-2:#5C5C52;--text-3:#8A8A7E;--sidebar-w:240px;--radius:16px;--radius-sm:10px;}
+:root{--green:#5E7B6E;--green-light:#E8EFEB;--green-mid:#8FA896;--green-dark:#4A6759;--amber:#D4913D;--amber-light:#FAF0DE;--blue:#2563a8;--blue-light:#eaf1fb;--red:#B84A3E;--red-light:#FBEAE7;--purple:#534ab7;--purple-light:#eeedfe;--surface:#fff;--bg:#F5F1E8;--border:rgba(0,0,0,0.06);--border-med:rgba(0,0,0,0.12);--text:#1A2E25;--text-2:#5C5C52;--text-3:#8A8A7E;--sidebar-w:240px;--radius:16px;--radius-sm:10px;
+/* Traveler-Brief design tokens — match the editorial light theme shared in
+   docs/briefs. Reused by renderTravelerBrief() so we don't sprinkle hex
+   literals across the renderer. */
+--color-background-primary:#ffffff;
+--color-background-secondary:#F5F1E8;
+--color-border-tertiary:rgba(0,0,0,0.10);
+--color-text-secondary:#5C5C52;
+--color-text-tertiary:#8A8A7E;
+--color-background-info:#EAF1FB;
+--color-text-info:#2563A8;
+--color-background-danger:#FBEAE7;
+--color-text-danger:#B84A3E;
+--border-radius-lg:16px;
+--border-radius-md:6px;}
 
 /* ─── App-feel on mobile — kill double-tap zoom, auto-zoom on input focus, text inflation, and bounce ─── */
 html{
@@ -11534,14 +11548,16 @@ const AIRPORT_BY_CITY = {
   'Pyrenees (Lourdes)':'LDE','Carcassonne':'CCF','Cognac':'BOD','Saint-Émilion':'BOD','Avignon':'AVN',
   'Aix-en-Provence':'MRS',
 }
-// Per-spec badges. Per-field NEW pills are dropped in the final layout —
-// only CRITICAL (dietary), NEW SECTION (Accommodation/Food until launch),
-// and YOU ARE HERE (Trip Context) remain.
+// Brief inline badges. Per the mockup these are small subtle pills — not
+// the heavy dark-mode chips we tried before.
+function newBadge() {
+  return '<span style="background:var(--color-background-info);color:var(--color-text-info);font-size:9px;padding:1px 5px;border-radius:var(--border-radius-md);margin-left:4px;font-weight:500;letter-spacing:0.04em;">NEW</span>'
+}
 function criticalBadge() {
-  return '<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:#7a1f1f;color:#ffb3b3;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">CRITICAL</span>'
+  return '<span style="background:var(--color-background-danger);color:var(--color-text-danger);font-size:9px;padding:1px 5px;border-radius:var(--border-radius-md);margin-left:4px;font-weight:600;letter-spacing:0.04em;">CRITICAL</span>'
 }
 function newSectionBadge() {
-  return '<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:#1d3a5f;color:#7BB8E8;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.1em;vertical-align:middle;">NEW SECTION</span>'
+  return '<span style="background:var(--color-background-info);color:var(--color-text-info);font-size:9px;padding:1px 5px;border-radius:var(--border-radius-md);margin-left:4px;font-weight:500;letter-spacing:0.04em;">NEW SECTION</span>'
 }
 function fmtTimeColon(s) {
   if (!s) return ''
@@ -11618,11 +11634,10 @@ function fmtBriefDateShort(s) {
     return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' })
   } catch (e) { return s }
 }
-// Pretty list of cuisine / interest tags into pill HTML.
-// Per spec: cream text (#E8B894) on warm coffee (#3d2e1f), pill shape, 13px.
+// Interest pills — peachy cream per the latest brief mockup. Light theme.
 function renderInterestPills(arr) {
   if (!Array.isArray(arr) || !arr.length) return ''
-  return arr.map(it => `<span style="display:inline-block;padding:6px 14px;background:#3d2e1f;color:#E8B894;border-radius:999px;font-size:13px;font-weight:500;margin:0 6px 6px 0;">${escapeHtml(titleCaseEnum(it))}</span>`).join('')
+  return arr.map(it => `<span style="display:inline-block;background:#F4E1D2;color:#4A1B0C;font-size:12px;padding:4px 10px;border-radius:999px;">${escapeHtml(titleCaseEnum(it))}</span>`).join('')
 }
 
 async function renderTravelerBrief(plan, t, notes) {
@@ -11739,33 +11754,31 @@ async function renderTravelerBrief(plan, t, notes) {
   const mob = meta.mobility
   const mobCritical = mob && mob !== 'none'
 
-  // ── helper: field cell (dark spec) ──
-  // Per spec: 10px label gray #8a8a8a, 14px white value, optional badge slot.
-  // Dropping the per-field [NEW] pill — only CRITICAL is honoured here now.
+  // ── helper: field cell ──
+  // Mockup tokens: label 11px tertiary text, value 14px primary text,
+  // badge inline next to label, optional `span2:true` to take the full row.
   const cell = (label, value, opts = {}) => {
     if (!value && value !== 0) return ''
     const labelExtra = opts.badge || ''
-    const labelColor = opts.criticalLabel ? '#ffb3b3' : '#8a8a8a'
-    const valueColor = opts.criticalValue ? '#ffb3b3' : '#ffffff'
+    const labelColor = opts.criticalLabel ? 'var(--color-text-danger)' : 'var(--color-text-tertiary)'
+    const spanStyle = opts.span2 ? 'grid-column:span 2;' : ''
     return `
-      <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:${labelColor};">${escapeHtml(label)}${labelExtra}</div>
-        <div style="font-size:14px;color:${valueColor};font-weight:400;word-wrap:break-word;line-height:1.4;">${value}</div>
+      <div style="${spanStyle}min-width:0;">
+        <div style="font-size:11px;color:${labelColor};margin-bottom:2px;font-weight:500;letter-spacing:0.04em;">${escapeHtml(label)}${labelExtra}</div>
+        <div style="font-size:14px;color:var(--text,#1A2E25);line-height:1.4;word-wrap:break-word;">${value}</div>
       </div>`
   }
-  const grid2 = (children) => `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px;">${children}</div>`
-  // Section header: green #3FBA73, 11px, ALL CAPS, letter-spacing 1px.
-  // Tabler icon (webfont) loaded in <head>. `iconClass` is the bare icon
-  // name (e.g. "route"); we prepend "ti ti-" so callers stay short. Pass
-  // `iconColor` to override (used for the orange "Note" header).
-  const sectionHeader = (iconClass, title, badge = '', iconColor = '#3FBA73') =>
-    `<div style="display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid #3a3a3a;">
-       <i class="ti ti-${iconClass}" style="color:${iconColor};font-size:18px;line-height:1;"></i>
-       <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${iconColor};">${escapeHtml(title)}</span>
-       ${badge}
+  const grid2 = (children) => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;">${children}</div>`
+  // Section header per mockup: small gray icon + gray label, 0.5px hairline.
+  // Icons are NOT green here — they share the secondary text colour so the
+  // whole row reads as a quiet divider. Pass iconColor to override.
+  const sectionHeader = (iconClass, title, badge = '', iconColor = 'var(--color-text-secondary)') =>
+    `<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary);">
+       <i class="ti ti-${iconClass}" style="color:${iconColor};font-size:14px;" aria-hidden="true"></i>
+       <span style="font-size:11px;font-weight:500;letter-spacing:0.5px;color:var(--color-text-secondary);">${escapeHtml(title).toUpperCase()}${badge}</span>
      </div>`
-  // Section wrapper — adds a top hairline + space between sections.
-  const wrap = (innerHtml) => `<div style="padding:18px 0;">${innerHtml}</div>`
+  // Section wrapper — keeps consistent vertical rhythm between sections.
+  const wrap = (innerHtml) => `<div style="margin-bottom:1.5rem;">${innerHtml}</div>`
 
   // ── SECTION 1: trip basics — trip-level dates, unit-level dates ──
   const arrivalTxt = tripStart
@@ -11789,12 +11802,12 @@ async function renderTravelerBrief(plan, t, notes) {
     ${sectionHeader('route', 'Trip basics')}
     ${grid2(`
       ${cell('Destination', escapeHtml(destinationTxt))}
-      ${cell('Trip duration', escapeHtml(tripDurationTxt))}
-      ${cell('Trip arrival', escapeHtml(arrivalTxt))}
-      ${cell('Trip departure', escapeHtml(departureTxt))}
-      ${cell('This unit', `<span style="font-weight:600;">${escapeHtml(t.duration || '')}</span><span style="color:#8a8a8a;"> · ${escapeHtml(unitEndsTxt || '')}</span>`)}
+      ${cell('Duration', escapeHtml(tripDurationTxt))}
+      ${cell('Arrival', escapeHtml(arrivalTxt))}
+      ${cell('Departure', escapeHtml(departureTxt))}
+      ${cell('This unit', `<span style="font-weight:500;">${escapeHtml(t.duration || '')}</span><span style="color:var(--color-text-tertiary);"> · ${escapeHtml(unitEndsTxt || '')}</span>`, { span2: true })}
       ${cell('Pace', escapeHtml(paceLabel))}
-      ${cell('Occasion', escapeHtml(occasion))}
+      ${cell('Occasion', escapeHtml(occasion), { badge: newBadge() })}
     `)}
   `)
 
@@ -11807,13 +11820,13 @@ async function renderTravelerBrief(plan, t, notes) {
     ${sectionHeader('users', 'Travelers')}
     ${grid2(`
       ${cell('Group type', escapeHtml(groupTypeTxt))}
-      ${cell('Ages', escapeHtml(ages))}
-      ${cell('Languages', escapeHtml(langs))}
+      ${cell('Ages', escapeHtml(ages), { badge: newBadge() })}
+      ${cell('Languages', escapeHtml(langs), { badge: newBadge() })}
       ${cell('Mobility', escapeHtml(titleCaseEnum(mob || 'none')), {
-        criticalLabel: mobCritical, criticalValue: mobCritical
+        badge: newBadge(), criticalLabel: mobCritical
       })}
-      ${cell('Previous visits', escapeHtml(titleCaseEnum(meta.previous_visits_to_france || '')))}
-      ${cell('From', fromTxt)}
+      ${cell('Previous visits', escapeHtml(titleCaseEnum(meta.previous_visits_to_france || '')), { badge: newBadge(), span2: true })}
+      ${cell('From', fromTxt, { span2: true })}
     `)}
   `)
 
@@ -11833,8 +11846,8 @@ async function renderTravelerBrief(plan, t, notes) {
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
       ${cell('Hotel / night / pax', hotelTxt)}
-      ${cell('Splurge willingness', escapeHtml(splurgeTxt))}
-      ${cell('Booking authority', escapeHtml(bookingTxt))}
+      ${cell('Splurge willingness', escapeHtml(splurgeTxt), { badge: newBadge() })}
+      ${cell('Booking authority', escapeHtml(bookingTxt), { badge: newBadge() })}
     `)}
   `) : ''
 
@@ -11848,12 +11861,8 @@ async function renderTravelerBrief(plan, t, notes) {
     ${grid2(`
       ${cell('Type', escapeHtml(accomTxt))}
       ${cell('Room', escapeHtml(roomTxt))}
+      ${accomMustHaves ? cell('Must-haves', escapeHtml(accomMustHaves), { span2: true }) : ''}
     `)}
-    ${accomMustHaves ? `
-      <div style="margin-top:14px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:4px;">Must-haves</div>
-        <div style="font-size:14px;color:#ffffff;font-weight:400;line-height:1.5;">${escapeHtml(accomMustHaves)}</div>
-      </div>` : ''}
   `) : ''
 
   // ── SECTION 5: food & dining [NEW SECTION] ──
@@ -11878,12 +11887,8 @@ async function renderTravelerBrief(plan, t, notes) {
         criticalLabel: dietCritical
       })}
       ${cell('Dining style', escapeHtml(diningStyle))}
+      ${cuisineHtml ? cell('Cuisine interests', cuisineHtml, { span2: true }) : ''}
     `)}
-    ${cuisineHtml ? `
-      <div style="margin-top:14px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:4px;">Cuisine interests</div>
-        <div style="font-size:14px;color:#ffffff;font-weight:400;line-height:1.5;">${cuisineHtml}</div>
-      </div>` : ''}
   `) : ''
 
   // ── SECTION 6: interests & priorities (pills + intensity + daily timing + must avoid) ──
@@ -11894,20 +11899,16 @@ async function renderTravelerBrief(plan, t, notes) {
   const mustAvoid = meta.must_avoid ? meta.must_avoid.split(/\s*,\s*/).join(' · ') : ''
   const sectionInterests = (interestsHtml || intensityTxt || dailyTimingTxt || mustAvoid) ? wrap(`
     ${sectionHeader('heart', 'Interests & priorities')}
-    ${interestsHtml ? `
-      <div style="margin-bottom:14px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:8px;">Interests</div>
-        <div style="line-height:1.8;">${interestsHtml}</div>
-      </div>` : ''}
     ${grid2(`
-      ${cell('Intensity', escapeHtml(intensityTxt))}
-      ${cell('Daily timing', escapeHtml(dailyTimingTxt))}
+      ${interestsHtml ? `
+        <div style="grid-column:span 2;">
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;letter-spacing:0.04em;">INTERESTS</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${interestsHtml}</div>
+        </div>` : ''}
+      ${cell('Intensity', escapeHtml(intensityTxt), { badge: newBadge() })}
+      ${cell('Daily timing', escapeHtml(dailyTimingTxt), { badge: newBadge() })}
+      ${mustAvoid ? cell('Must avoid', escapeHtml(mustAvoid), { span2: true }) : ''}
     `)}
-    ${mustAvoid ? `
-      <div style="margin-top:14px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:4px;">Must avoid</div>
-        <div style="font-size:14px;color:#ffffff;font-weight:400;line-height:1.5;">${escapeHtml(mustAvoid)}</div>
-      </div>` : ''}
   `) : ''
 
   // ── TRIP CONTEXT (privacy-aware): own units full, others locked ──
@@ -11985,41 +11986,33 @@ async function renderTravelerBrief(plan, t, notes) {
   const breakdownTxt = (commission === computedFee && hasContinuity)
     ? `${fmtEur(baseFee)} base + ${fmtEur(10)} continuity bonus`
     : (commission === computedFee ? `${fmtEur(baseFee)} base` : '')
+  // ── COMMISSION BOX (subdued per mockup: secondary bg, small €, no icon) ──
   const sectionCommission = commission > 0 ? `
-    <div style="margin-top:18px;padding:14px 16px;background:#2a2a2a;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-      <div style="min-width:0;display:flex;align-items:center;gap:10px;">
-        <i class="ti ti-cash" style="color:#3FBA73;font-size:20px;line-height:1;flex-shrink:0;"></i>
-        <div>
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;color:#ffffff;">Your commission</div>
-          ${breakdownTxt ? `<div style="font-size:11px;color:#8a8a8a;margin-top:3px;">${breakdownTxt}</div>` : ''}
-        </div>
+    <div style="background:var(--color-background-secondary);padding:12px 14px;border-radius:var(--border-radius-md);display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <div>
+        <span style="font-size:12px;font-weight:500;letter-spacing:0.5px;color:var(--color-text-secondary);">YOUR COMMISSION</span>
+        ${breakdownTxt ? `<div style="font-size:10.5px;color:var(--color-text-tertiary);margin-top:2px;">${breakdownTxt}</div>` : ''}
       </div>
-      <div style="font-size:28px;line-height:1;color:#3FBA73;font-weight:700;flex-shrink:0;">${fmtEur(commission)}</div>
+      <span style="font-size:16px;font-weight:500;color:var(--text,#1A2E25);">${fmtEur(commission)}</span>
     </div>` : ''
 
-  // ── NOTE FROM TRAVELER (orange header w/ notes icon, no box, light body) ──
+  // ── NOTE FROM TRAVELER (amber #BA7517 label, dashed top, plain body) ──
   const sectionNote = notes ? `
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #3a3a3a;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <i class="ti ti-notes" style="color:#E08B3A;font-size:18px;line-height:1;"></i>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#E08B3A;">Note from traveler</div>
-      </div>
-      <div style="font-size:14px;line-height:1.6;color:#cccccc;font-weight:400;">${escapeHtml(notes)}</div>
+    <div style="padding-top:12px;border-top:0.5px dashed var(--color-border-tertiary);">
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.5px;color:#BA7517;margin-bottom:4px;">NOTE FROM TRAVELER</div>
+      <div style="font-size:14px;color:var(--text,#1A2E25);line-height:1.6;">${escapeHtml(notes)}</div>
     </div>` : ''
 
-  // ── ASSEMBLE (dark theme per spec) ──
-  // Force the outer container to spec colours regardless of theme — the spec
-  // is dark-mode-only, so we overwrite the inline gradient that's on the
-  // wiz page's #itin-brief div.
-  box.style.background = '#1f1f1f'
-  box.style.border = '1px solid #2a2a2a'
-  box.style.borderRadius = '12px'
-  box.style.padding = '18px 22px'
-  box.style.color = '#ffffff'
+  // ── ASSEMBLE (light editorial theme per latest mockup) ──
+  box.style.background = 'var(--color-background-primary)'
+  box.style.border = '0.5px solid var(--color-border-tertiary)'
+  box.style.borderRadius = 'var(--border-radius-lg)'
+  box.style.padding = '1.5rem'
+  box.style.color = 'var(--text,#1A2E25)'
   box.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;padding-bottom:14px;border-bottom:1px solid #3a3a3a;">
-      <i class="ti ti-map-pin" style="color:#3FBA73;font-size:18px;line-height:1;"></i>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#3FBA73;">Traveler brief</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;">
+      <i class="ti ti-map-pin" style="font-size:18px;color:#2C5F2D;" aria-hidden="true"></i>
+      <span style="font-size:12px;font-weight:500;letter-spacing:1px;color:var(--color-text-secondary);">TRAVELER BRIEF</span>
     </div>
     ${sectionBasics}
     ${sectionTravelers}
