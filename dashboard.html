@@ -13462,23 +13462,27 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.asin(Math.sqrt(a))
 }
 // Returns { tier: 'ok'|'warn'|'danger', icon, label } or null when the two
-// stops are essentially the same spot.
+// stops are essentially the same spot. Icons reflect *severity*, not type:
+// ✓ for fine, → for getting longer, ⚠ for "too far, reconsider".
 function describeStopDistance(km) {
   if (km < 0.05) return null
   if (km < 1) {
+    // Walking pace ~12 min/km, floor at 1 min so a 50 m hop doesn't say "0 min".
     const mins = Math.max(1, Math.round(km * 12))
-    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min walk to next stop` }
+    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min walk` }
   }
   if (km < 3) {
-    const mins = Math.max(3, Math.round(km * 3))
-    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min · easy taxi or metro` }
+    // Short ride / quick transit. Keep the word "walk" since most planners
+    // still treat 1–3 km as walkable for fit travelers; downgrade if needed.
+    const mins = Math.max(4, Math.round(km * 3))
+    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min walk/taxi` }
   }
   if (km < 8) {
     const mins = Math.max(8, Math.round(km * 3))
-    return { tier: 'warn', icon: '⚠', label: `${km.toFixed(1)} km · ${mins} min by taxi to next stop` }
+    return { tier: 'warn', icon: '→', label: `${km.toFixed(1)} km · ${mins} min taxi` }
   }
   const mins = Math.max(20, Math.round(km * 3))
-  return { tier: 'danger', icon: '⚠', label: `${km.toFixed(1)} km · ${mins} min · long hop, consider regrouping` }
+  return { tier: 'danger', icon: '⚠', label: `${km.toFixed(1)} km · ${mins} min — too far` }
 }
 function getSlotLatLng(slot) {
   const d = slot?._placeData
