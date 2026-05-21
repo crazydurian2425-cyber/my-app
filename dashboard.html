@@ -11517,6 +11517,287 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 });
 
 // ── ITINERARY FORM ──
+// ─── Traveler Brief — rich rendering ──────────────────────────────────
+// Builds the 7-section brief panel inside #itin-brief from a traveler row.
+// Sections: trip basics, profile, budgets, accommodation, food, interests,
+// trip context (sibling units), commission, free-text note.
+const FLAG_BY_COUNTRY = {
+  'Japan':'🇯🇵','South Korea':'🇰🇷','Korea':'🇰🇷','China':'🇨🇳','Singapore':'🇸🇬','Malaysia':'🇲🇾',
+  'Thailand':'🇹🇭','India':'🇮🇳','Indonesia':'🇮🇩','Philippines':'🇵🇭','Vietnam':'🇻🇳','UAE':'🇦🇪',
+  'United Arab Emirates':'🇦🇪','Saudi Arabia':'🇸🇦','Hong Kong':'🇭🇰','Taiwan':'🇹🇼',
+  'USA':'🇺🇸','United States':'🇺🇸','Canada':'🇨🇦','Mexico':'🇲🇽',
+  'UK':'🇬🇧','United Kingdom':'🇬🇧','Germany':'🇩🇪','Netherlands':'🇳🇱','Italy':'🇮🇹','Spain':'🇪🇸',
+  'Sweden':'🇸🇪','Switzerland':'🇨🇭','Poland':'🇵🇱','Belgium':'🇧🇪','Ireland':'🇮🇪','Denmark':'🇩🇰',
+  'Norway':'🇳🇴','Finland':'🇫🇮','Austria':'🇦🇹','Greece':'🇬🇷','Portugal':'🇵🇹',
+  'Australia':'🇦🇺','New Zealand':'🇳🇿',
+  'Brazil':'🇧🇷','Argentina':'🇦🇷','Chile':'🇨🇱','Colombia':'🇨🇴','Peru':'🇵🇪',
+  'South Africa':'🇿🇦','Morocco':'🇲🇦','Egypt':'🇪🇬','Nigeria':'🇳🇬','Kenya':'🇰🇪',
+}
+const TIER_BADGE = {
+  budget:    { label: 'BUDGET TIER',    bg:'#fbeac6', fg:'#8a5a1c', icon:'⚡' },
+  mid_range: { label: 'MID-RANGE TIER', bg:'#dfe9f6', fg:'#1f4a82', icon:'✦' },
+  luxury:    { label: 'LUXURY TIER',    bg:'#e6dff5', fg:'#5a3f8c', icon:'✨' },
+}
+function titleCaseEnum(s) {
+  if (!s) return ''
+  return String(s).replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+function fmtEur(n) {
+  if (n == null || n === '' || isNaN(Number(n))) return ''
+  return '€' + Math.round(Number(n)).toLocaleString('en-GB')
+}
+function fmtBriefDateShort(s) {
+  if (!s) return ''
+  try {
+    const d = new Date(s + 'T00:00:00')
+    return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+  } catch (e) { return s }
+}
+// Pretty list of cuisine / interest tags into pill HTML.
+function renderInterestPills(arr) {
+  if (!Array.isArray(arr) || !arr.length) return ''
+  return arr.map(it => `<span style="display:inline-block;padding:4px 10px;background:rgba(193,125,42,0.10);color:#8a5a1c;border-radius:99px;font-size:11px;font-weight:500;margin:0 4px 4px 0;">${escapeHtml(titleCaseEnum(it))}</span>`).join('')
+}
+
+async function renderTravelerBrief(plan, t, notes) {
+  const box = document.getElementById('itin-brief')
+  if (!box) return
+  const meta = (t && typeof t.meta === 'object' && t.meta) ? t.meta : {}
+
+  // ── current-unit dates (this plan only) ──
+  let unitDeparture = null
+  if (t.arrival_date && t.duration) {
+    const m = String(t.duration).match(/(\d+)D/i)
+    const nights = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
+    const d = new Date(t.arrival_date + 'T00:00:00')
+    if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nights); unitDeparture = d.toISOString().split('T')[0] }
+  }
+
+  // ── sibling units (other plans of the same person) ──
+  // Only for seeded multi-unit trips (those carry meta.person_id + seed_batch).
+  let siblings = []
+  if (meta.person_id && meta.seed_batch) {
+    try {
+      const { data } = await sb.from('travelers')
+        .select('id, destination, arrival_date, duration, planner_payout, meta')
+        .eq('meta->>person_id', meta.person_id)
+        .eq('meta->>seed_batch', meta.seed_batch)
+      siblings = (data || []).slice().sort((a, b) =>
+        Number(a.meta?.unit_order || 0) - Number(b.meta?.unit_order || 0)
+      )
+    } catch (e) { /* RLS or network — fall back to current unit only */ }
+  }
+
+  // ── commission (planner_payout, override wins) ──
+  const commission = (plan.planner_payout_override != null ? plan.planner_payout_override : (t.planner_payout || 0))
+
+  // ── tier badge ──
+  const tierKey = String(meta.budget_tier || '').toLowerCase()
+  const tier = TIER_BADGE[tierKey]
+
+  // ── origin + flag ──
+  const flag = FLAG_BY_COUNTRY[meta.origin_country] || ''
+  const origin = [meta.origin_city, meta.origin_country].filter(Boolean).join(', ')
+
+  // ── ages ──
+  const ages = Array.isArray(meta.ages) && meta.ages.length
+    ? meta.ages.join(', ')
+    : ''
+
+  // ── languages ──
+  const langs = Array.isArray(meta.languages) ? meta.languages.join(' · ') : ''
+
+  // ── dietary highlight (red accent if not 'none') ──
+  const diet = meta.dietary_restrictions
+  const dietCritical = diet && diet !== 'none'
+
+  // ── mobility highlight ──
+  const mob = meta.mobility
+  const mobCritical = mob && mob !== 'none'
+
+  // ── helper: field cell ──
+  const cell = (label, value, opts = {}) => {
+    if (!value) return ''
+    const labelColor = opts.criticalLabel ? '#b84a3e' : 'var(--e-ink-3,#8a816f)'
+    const valueColor = opts.criticalValue ? '#b84a3e' : 'var(--e-ink,#1f1c16)'
+    const valueWeight = opts.criticalValue ? '600' : '500'
+    return `
+      <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+        <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:${labelColor};">${escapeHtml(label)}</div>
+        <div style="font-size:12.5px;color:${valueColor};font-weight:${valueWeight};word-wrap:break-word;">${value}</div>
+      </div>`
+  }
+  const grid2 = (children) => `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;">${children}</div>`
+
+  // ── section: trip basics ──
+  const arrivalTxt = t.arrival_date
+    ? `${fmtBriefDateShort(t.arrival_date)}${t.arrival_time ? ' · ' + formatTimeDisplay(t.arrival_time) : ''}`
+    : ''
+  const departureTxt = unitDeparture ? fmtBriefDateShort(unitDeparture) : ''
+  const occasion = meta.occasion ? titleCaseEnum(meta.occasion) : ''
+  const prevVisits = meta.previous_visits_to_france ? titleCaseEnum(meta.previous_visits_to_france) : ''
+  const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
+
+  const sectionBasics = `
+    <div style="margin-top:14px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#0f5240;margin-bottom:8px;">🗺  Trip basics</div>
+      ${grid2(`
+        ${cell('Arrival', escapeHtml(arrivalTxt))}
+        ${cell('Departure (this unit)', escapeHtml(departureTxt))}
+        ${cell('Duration', escapeHtml(fmtDuration(t.duration) || t.duration || ''))}
+        ${cell('Pace', escapeHtml(paceLabel))}
+        ${cell('Occasion', escapeHtml(occasion))}
+        ${cell('Prev visits', escapeHtml(prevVisits))}
+      `)}
+    </div>`
+
+  // ── section: traveler profile ──
+  const groupSizeTxt = t.group_size ? `${t.group_size} pax` : ''
+  const nameTxt = t.name ? (groupSizeTxt ? `${escapeHtml(t.name)} (${groupSizeTxt})` : escapeHtml(t.name)) : ''
+  const fromTxt = origin ? `${flag ? flag + ' ' : ''}${escapeHtml(origin)}` : ''
+  const sectionProfile = `
+    <div style="margin-top:14px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#0f5240;margin-bottom:8px;">👤  Traveler profile</div>
+      ${grid2(`
+        ${cell('Name', nameTxt)}
+        ${cell('From', fromTxt)}
+        ${cell('Age', escapeHtml(ages))}
+        ${cell('Languages', escapeHtml(langs))}
+        ${cell('Mobility', escapeHtml(titleCaseEnum(mob || '')), { criticalLabel: mobCritical, criticalValue: mobCritical })}
+      `)}
+    </div>`
+
+  // ── section: budgets (yellow box) ──
+  const dailyTxt = meta.daily_spend_per_pax_eur ? fmtEur(meta.daily_spend_per_pax_eur) : ''
+  const hotelTxt = meta.hotel_budget_per_night_pax_eur ? fmtEur(meta.hotel_budget_per_night_pax_eur) + ' max' : ''
+  const splurgeTxt = meta.splurge_willingness ? titleCaseEnum(meta.splurge_willingness) : ''
+  const bookingTxt = meta.booking_authority ? titleCaseEnum(meta.booking_authority) : ''
+  const tierBadgeHtml = tier
+    ? `<div style="position:absolute;top:-10px;right:14px;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:${tier.bg};color:${tier.fg};border-radius:99px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;box-shadow:0 1px 4px rgba(0,0,0,0.08);"><span>${tier.icon}</span>${tier.label}</div>`
+    : ''
+  const sectionBudgets = (dailyTxt || hotelTxt || splurgeTxt || bookingTxt) ? `
+    <div style="margin-top:14px;position:relative;padding:14px 14px 12px;background:rgba(255,228,140,0.18);border:1px solid rgba(193,125,42,0.32);border-radius:10px;">
+      ${tierBadgeHtml}
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#8a5a1c;margin-bottom:8px;">💰  Budgets</div>
+      ${grid2(`
+        ${dailyTxt ? `<div><div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:#8a5a1c;">Daily spend / pax</div><div style="font-family:'Fraunces','DM Serif Display',serif;font-size:22px;line-height:1.1;color:#3a2710;font-weight:600;">${dailyTxt}</div></div>` : ''}
+        ${hotelTxt ? `<div><div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:#8a5a1c;">Hotel / night / pax</div><div style="font-family:'Fraunces','DM Serif Display',serif;font-size:22px;line-height:1.1;color:#3a2710;font-weight:600;">${hotelTxt}</div></div>` : ''}
+        ${cell('Splurge willingness', escapeHtml(splurgeTxt))}
+        ${cell('Booking authority', escapeHtml(bookingTxt))}
+      `)}
+    </div>` : ''
+
+  // ── section: accommodation ──
+  const accomTxt = meta.accommodation_preference ? titleCaseEnum(meta.accommodation_preference) : ''
+  const sectionAccom = accomTxt ? `
+    <div style="margin-top:14px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#0f5240;margin-bottom:8px;">🛏  Accommodation</div>
+      ${grid2(cell('Type preference', escapeHtml(accomTxt)))}
+    </div>` : ''
+
+  // ── section: food & dining ──
+  const sectionFood = (diet) ? `
+    <div style="margin-top:14px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#0f5240;margin-bottom:8px;">🍴  Food & dining</div>
+      ${grid2(cell(
+        'Dietary',
+        `${dietCritical ? '⚠️ ' : '✓ '}${escapeHtml(titleCaseEnum(diet))}`,
+        { criticalLabel: dietCritical, criticalValue: dietCritical }
+      ))}
+    </div>` : ''
+
+  // ── section: interests + must-avoid ──
+  const interestsHtml = renderInterestPills(meta.interests)
+  const mustAvoid = meta.must_avoid
+  const sectionInterests = (interestsHtml || mustAvoid) ? `
+    <div style="margin-top:14px;">
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#0f5240;margin-bottom:8px;">❤️  Interests & priorities</div>
+      ${interestsHtml ? `<div style="margin-bottom:8px;">${interestsHtml}</div>` : ''}
+      ${mustAvoid ? `<div style="padding:8px 12px;background:rgba(184,74,62,0.08);border-left:3px solid #b84a3e;border-radius:6px;font-size:11.5px;color:#8a3329;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:10px;">Must avoid · </span>${escapeHtml(mustAvoid)}</div>` : ''}
+    </div>` : ''
+
+  // ── section: trip context (green box) — sibling units + tip ──
+  let sectionContext = ''
+  if (siblings.length > 1) {
+    const totalNights = siblings.reduce((sum, s) => {
+      const m = String(s.duration || '').match(/(\d+)D/i)
+      return sum + (m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0)
+    }, 0)
+    const rows = siblings.map(s => {
+      const isCurrent = s.id === t.id
+      const m = String(s.duration || '').match(/(\d+)D/i)
+      const nightsUnit = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
+      let endStr = ''
+      if (s.arrival_date && nightsUnit >= 0) {
+        const d = new Date(s.arrival_date + 'T00:00:00')
+        d.setDate(d.getDate() + nightsUnit)
+        endStr = d.toISOString().split('T')[0]
+      }
+      const datesTxt = s.arrival_date ? `${fmtBriefDateShort(s.arrival_date)}${endStr ? '–' + fmtBriefDateShort(endStr) : ''}` : ''
+      const payTxt = s.planner_payout ? fmtEur(s.planner_payout) : ''
+      const order = s.meta?.unit_order || '?'
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${isCurrent ? 'rgba(45,158,122,0.18)' : 'rgba(255,255,255,0.55)'};border:1px solid ${isCurrent ? 'rgba(45,158,122,0.45)' : 'rgba(45,158,122,0.18)'};margin-bottom:4px;">
+          ${isCurrent
+            ? '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;background:#1a7a5e;color:#fff;padding:2px 6px;border-radius:4px;flex-shrink:0;">You are here</span>'
+            : `<span style="font-size:11px;font-weight:600;color:#7a7a74;flex-shrink:0;">Unit ${order}</span>`}
+          <div style="flex:1;min-width:0;font-size:12px;color:#1a3a2e;">
+            <strong>${escapeHtml(s.destination || '—')}</strong>
+            <span style="color:#5a7a6e;"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
+          </div>
+          ${payTxt ? `<span style="font-size:11px;font-weight:600;color:#1a7a5e;flex-shrink:0;">${payTxt}</span>` : ''}
+        </div>`
+    }).join('')
+    const currentIdx = siblings.findIndex(s => s.id === t.id)
+    const next = currentIdx >= 0 ? siblings[currentIdx + 1] : null
+    let tipTxt = ''
+    if (next) {
+      const personName = (t.name || '').split('&')[0].split(' ')[0] || 'They'
+      tipTxt = `💡 ${personName} leaves ${t.destination} for ${next.destination} next. Plan an easy handover — check transit options near your last stop.`
+    }
+    sectionContext = `
+      <div style="margin-top:14px;padding:14px;background:rgba(45,158,122,0.08);border:1px solid rgba(45,158,122,0.25);border-radius:10px;">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#1a7a5e;margin-bottom:8px;">📍  Trip context · ${siblings.length} units · ${totalNights} nights total</div>
+        ${rows}
+        ${tipTxt ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(45,158,122,0.25);font-size:11px;color:#1a7a5e;font-style:italic;">${escapeHtml(tipTxt)}</div>` : ''}
+      </div>`
+  }
+
+  // ── commission block (€) ──
+  const sectionCommission = commission > 0 ? `
+    <div style="margin-top:14px;padding:10px 14px;background:rgba(94,123,110,0.08);border:1px solid rgba(94,123,110,0.22);border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.12em;font-weight:700;color:#4A6759;">Your commission · this unit</div>
+        ${siblings.length > 1 ? `<div style="font-size:10.5px;color:#5a7a6e;margin-top:2px;">Base only — continuity bonus applies if you claim later units of the same trip.</div>` : ''}
+      </div>
+      <div style="font-family:'Fraunces','DM Serif Display',serif;font-size:26px;line-height:1;color:#1F3A2E;font-weight:600;">${fmtEur(commission)}</div>
+    </div>` : ''
+
+  // ── note from traveler (italic, dashed, orange label) ──
+  const sectionNote = notes ? `
+    <div style="margin-top:14px;padding:12px 14px;border:1px dashed rgba(193,125,42,0.42);border-radius:10px;background:rgba(255,250,238,0.6);">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#c17d2a;margin-bottom:6px;">Note from traveler</div>
+      <div style="font-family:'Lora',serif;font-style:italic;font-size:12.5px;line-height:1.6;color:#554e3f;">"${escapeHtml(notes)}"</div>
+    </div>` : ''
+
+  // ── final assembly ──
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:#0f5240;"><path d="M9 21V9.5a2 2 0 012-2h2a2 2 0 012 2V21M4 21V8.5a2 2 0 012-2h.5M20 21V8.5a2 2 0 00-2-2h-.5M3 21h18"/></svg>
+      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#0f5240;">Traveler brief</div>
+    </div>
+    ${sectionBasics}
+    ${sectionProfile}
+    ${sectionBudgets}
+    ${sectionAccom}
+    ${sectionFood}
+    ${sectionInterests}
+    ${sectionContext}
+    ${sectionCommission}
+    ${sectionNote}
+  `
+}
+
 async function openItineraryForm(planId) {
   // Cancel any pending auto-save timer from the *previous* plan. Without this,
   // a queued save from Plan 4 would fire after currentPlanId switched to Plan 5
@@ -11588,62 +11869,10 @@ async function openItineraryForm(planId) {
     subEl.textContent = `${typeLabel} · ${duration}${groupPart}`
   }
 
-  // Populate traveler brief block (what planner needs to build the plan — no name)
-  const briefGrid = document.getElementById('itin-brief-grid')
-  if (briefGrid) {
-    const rowPairs = []
-    const pushRow = (label, val, highlight = false) => { if (val) rowPairs.push([label, val, highlight]) }
-    // Compute departure date from arrival + duration (e.g. "3D2N" → 2 more days after arrival)
-    let departureDate = null
-    if (t.arrival_date && t.duration) {
-      const daysMatch = String(t.duration).match(/(\d+)D/i)
-      const nights    = daysMatch ? Math.max(parseInt(daysMatch[1], 10) - 1, 0) : 0
-      const d = new Date(t.arrival_date)
-      if (!isNaN(d.getTime())) {
-        d.setDate(d.getDate() + nights)
-        departureDate = d.toISOString().split('T')[0]
-      }
-    }
-    // Commission for this plan — override on plan wins, else traveler default
-    const commission = (plan.planner_payout_override != null ? plan.planner_payout_override : (t.planner_payout || 0))
-    pushRow(window.t('brief.label.destination','Destination'),  t.destination)
-    pushRow(window.t('brief.label.arrival','Arrival'),     t.arrival_date ? `${fmtBriefDate(t.arrival_date)}${t.arrival_time ? ' · ' + formatTimeDisplay(t.arrival_time) : ''}` : null)
-    pushRow(window.t('brief.label.departure','Departure'), departureDate ? `${fmtBriefDate(departureDate)}${t.departure_time ? ' · ' + formatTimeDisplay(t.departure_time) : ''}` : null)
-    pushRow(window.t('brief.label.duration','Duration'),     fmtDuration(t.duration))
-    pushRow(window.t('brief.label.travelerType','Traveler type'), travType ? window.t('travelerType.'+travType.toLowerCase(), travType.charAt(0).toUpperCase() + travType.slice(1)) : null)
-    pushRow(window.t('brief.label.groupSize','Group size'),   t.group_size ? `${t.group_size} ${window.t('brief.pax','pax')}` : null)
-    pushRow(window.t('brief.label.budget','Budget / day'), t.budget_per_day ? fmtMoney(t.budget_per_day) : null)
-    // Hotel budget — stored as per-night-per-pax, label shows the unit.
-    if (t.hotel_budget) {
-      const suffix = window.t('brief.perPaxNight','/night per pax')
-      pushRow(`${window.t('brief.label.hotelBudget','Hotel budget')} ${suffix}`, fmtMoney(t.hotel_budget))
-    }
-    pushRow(window.t('brief.label.pace','Pace'),         t.pace ? tPace(t.pace) : null)
-    pushRow(window.t('brief.label.interests','Interests'),    localizeFree(travLocale(t,'interests')))
-    pushRow(window.t('brief.label.avoid','Must avoid'),   localizeFree(travLocale(t,'must_avoid')))
-    // Your commission — flat ¥, no traveler total exposed to planner
-    if (commission > 0) pushRow(window.t('brief.label.commission','Your commission'), fmtMoney(commission), true)
-    briefGrid.innerHTML = rowPairs.map(([l,v,hl]) => hl ? `
-      <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(94,123,110,0.08);border:1px solid rgba(94,123,110,0.22);border-radius:10px;margin-top:4px;">
-        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.14em;font-weight:700;color:#4A6759;">${escapeHtml(l)}</div>
-        <div style="font-family:'Fraunces','DM Serif Display',serif;font-size:22px;line-height:1;color:#1F3A2E;font-weight:600;letter-spacing:-0.01em;">${escapeHtml(v)}</div>
-      </div>
-    ` : `
-      <div style="display:flex;flex-direction:column;gap:2px;">
-        <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:var(--e-ink-3,#8a816f);">${escapeHtml(l)}</div>
-        <div style="font-size:12.5px;color:var(--e-ink,#1f1c16);font-weight:500;">${escapeHtml(v)}</div>
-      </div>
-    `).join('')
-    const notesEl = document.getElementById('itin-brief-notes')
-    if (notesEl) {
-      if (notes) {
-        notesEl.style.display = 'block'
-        notesEl.innerHTML = `<span style="font-style:normal;font-family:'DM Sans',sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--e-amber,#c17d2a);margin-right:8px;">${window.t('itin.noteFromTraveler','Note from traveler')}</span>${escapeHtml(notes)}`
-      } else {
-        notesEl.style.display = 'none'
-      }
-    }
-  }
+  // Populate traveler brief block — rich, multi-section layout reading from
+  // travelers.meta (jsonb). Falls back gracefully when meta is empty (older
+  // travelers pre-meta still render the basic fields).
+  await renderTravelerBrief(plan, t, notes)
 
   // Deposit/bond banner
   const banner = document.getElementById('deposit-banner')
