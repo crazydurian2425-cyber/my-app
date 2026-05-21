@@ -1811,7 +1811,27 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .time-dd-option:hover{background:rgba(26,122,94,0.07);color:var(--text);}
 .time-dd-option.is-selected{background:linear-gradient(90deg, rgba(26,122,94,0.12), rgba(26,122,94,0.04));color:var(--green-dark);font-weight:600;}
 .time-dd-option.is-disabled,
-.time-dd-option:disabled{display:none!important;}
+.time-dd-option:disabled{
+  color:#bdbdbd!important;
+  background:repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.04) 4px, rgba(0,0,0,0.04) 6px)!important;
+  cursor:not-allowed!important;
+  pointer-events:none;
+  opacity:0.55;
+}
+
+/* Day-form constraint banner — shows arrival floor / departure cap above day's slots */
+.day-time-banner{
+  display:flex;align-items:center;gap:10px;
+  margin:0 0 12px 0;padding:10px 12px;
+  background:linear-gradient(0deg, rgba(232,139,58,0.06), rgba(232,139,58,0.06)), #fffaf3;
+  border:1px solid rgba(232,139,58,0.25);
+  border-left:3px solid #E08B3A;
+  border-radius:8px;
+  font-size:12.5px;line-height:1.45;color:#5a3a18;
+}
+.day-time-banner .dtb-icon{flex:0 0 auto;color:#E08B3A;font-size:15px;}
+.day-time-banner .dtb-body{flex:1;min-width:0;}
+.day-time-banner strong{color:#3a2410;font-weight:600;}
 
 /* Quick-chip rows above itinerary textareas — pre-written snippets to reduce typing fatigue */
 .quick-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
@@ -11778,32 +11798,74 @@ async function renderTravelerBrief(plan, t, notes) {
   // Section wrapper — keeps consistent vertical rhythm between sections.
   const wrap = (innerHtml) => `<div style="margin-bottom:1.5rem;">${innerHtml}</div>`
 
-  // ── SECTION 1: trip basics — trip-level dates, unit-level dates ──
-  const arrivalTxt = tripStart
-    ? `${fmtBriefDateShort(tripStart)}${t.arrival_time ? ' · ' + fmtTimeColon(t.arrival_time) : ''}${arrivalAirport ? ' · ' + arrivalAirport : ''}`
+  // ── SECTION 1: trip basics — THIS UNIT ONLY ──
+  // Whole-trip context (all cities, full-trip arrival/departure) lives in the
+  // separate "Trip context" section further down. Trip Basics should show
+  // only what's relevant for building THIS unit's itinerary, so the planner
+  // sees the right city/date/time/method without scrolling.
+  //
+  // Source order (each field):
+  //   1) meta.unit_arrival_* / unit_departure_* if present (filled by the
+  //      transport backfill — explicit per-unit values)
+  //   2) Inferred fallback (prev/next unit context + traveler row defaults)
+  const isFirstUnit = !prevUnit
+  const isLastUnit  = !nextUnit
+
+  // — ARRIVAL TO THIS UNIT —
+  const arrMethod = meta.unit_arrival_method
+                  || (isFirstUnit ? 'flight' : 'train')
+  const arrLoc    = meta.unit_arrival_location
+                  || (isFirstUnit ? (arrivalAirport || '') : '')
+  const arrFrom   = meta.unit_arrival_from
+                  || (isFirstUnit ? origin : (prevUnit?.destination || ''))
+  const arrDate   = t.arrival_date
+  const arrTime   = t.arrival_time
+  // "14 Jun · 14:00 · Paris Gare Montparnasse (train from Mont-Saint-Michel)"
+  const arrivalTxt = arrDate
+    ? [
+        fmtBriefDateShort(arrDate),
+        arrTime ? fmtTimeColon(arrTime) : null,
+        arrLoc || null,
+        arrFrom ? `(${arrMethod} from ${arrFrom})` : null,
+      ].filter(Boolean).join(' · ')
     : ''
-  // Trip departure: only show when it actually IS the end of the trip (no next unit). Adds
-  // "→ Final departure" for the final unit, or just date when not the final one.
-  const departureTxt = tripEnd
-    ? `${fmtBriefDateShort(tripEnd)}${meta.departure_time ? ' · ' + fmtTimeColon(meta.departure_time) : ''}${departAirport ? ' · ' + departAirport : ''}`
+  const arrivalLabel = `Arrival to ${t.destination || 'this unit'}`
+
+  // — DEPARTURE FROM THIS UNIT —
+  const depDate   = meta.unit_departure_date || unitEnd
+  const depTime   = meta.unit_departure_time
+                  || (isLastUnit ? meta.departure_time : null)
+  const depMethod = meta.unit_departure_method
+                  || (isLastUnit ? 'flight' : guessTransport(t.destination, nextUnit?.destination || '').replace(/^by\s+/i,'') || 'train')
+  const depLoc    = meta.unit_departure_location
+                  || (isLastUnit ? (departAirport || '') : '')
+  const depTo     = meta.unit_departure_to
+                  || (isLastUnit
+                      ? (meta.origin_country ? `${meta.origin_city ? meta.origin_city + ', ' : ''}${meta.origin_country}` : 'home')
+                      : (nextUnit?.destination || ''))
+  const depTrailer = isLastUnit ? '· final departure from France' : null
+  // "16 Jun · 17:00 · CDG → flight to Buenos Aires (final departure)"
+  const departureTxt = depDate
+    ? [
+        fmtBriefDateShort(depDate),
+        depTime ? fmtTimeColon(depTime) : null,
+        depLoc || null,
+        depTo ? `→ ${depMethod} to ${depTo}` : null,
+        depTrailer,
+      ].filter(Boolean).join(' · ')
     : ''
-  // This-unit ending — if there's a next unit, show "→ to NextCity by train";
-  // if not (this is the trip's final unit), show "→ Final departure from France".
-  const unitTransport = nextUnit ? guessTransport(t.destination, nextUnit.destination) : ''
-  const unitEndsTxt = unitDatesTxt
-    ? `${unitDatesTxt}${nextUnit ? ` → to ${nextUnit.destination} ${unitTransport}` : ' → Final departure from France'}`
-    : ''
+  const departureLabel = `Departure from ${t.destination || 'this unit'}`
+
   const occasion = meta.occasion ? titleCaseEnum(meta.occasion) : ''
   const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
 
   const sectionBasics = wrap(`
     ${sectionHeader('route', 'Trip basics')}
     ${grid2(`
-      ${cell('Destination', escapeHtml(destinationTxt))}
-      ${cell('Duration', escapeHtml(tripDurationTxt))}
-      ${cell('Arrival', escapeHtml(arrivalTxt))}
-      ${cell('Departure', escapeHtml(departureTxt))}
-      ${cell('This unit', `<span style="font-weight:500;">${escapeHtml(t.duration || '')}</span><span style="color:var(--color-text-tertiary);"> · ${escapeHtml(unitEndsTxt || '')}</span>`, { span2: true })}
+      ${cell('Destination', escapeHtml(t.destination || ''))}
+      ${cell('Duration', escapeHtml(t.duration || ''))}
+      ${cell(arrivalLabel, escapeHtml(arrivalTxt), { span2: true })}
+      ${cell(departureLabel, escapeHtml(departureTxt), { span2: true })}
       ${cell('Pace', escapeHtml(paceLabel))}
       ${cell('Occasion', escapeHtml(occasion))}
     `)}
@@ -12074,8 +12136,22 @@ async function openItineraryForm(planId) {
   if (plan.arrival_date_snapshot) t = { ...t, arrival_date: plan.arrival_date_snapshot }
   // Expose arrival + departure times so addSlot can offer sensible defaults
   // and the time picker on the LAST day can cap at departure_time.
-  window._currentArrivalTime   = t.arrival_time   || null
-  window._currentDepartureTime = t.departure_time || null
+  // Per-unit values from meta win over whole-trip values on traveler row —
+  // this matters for multi-unit trips where unit 2+ has its own train arrival.
+  const _tmeta = (t && typeof t.meta === 'object' && t.meta) ? t.meta : {}
+  window._currentArrivalTime     = t.arrival_time || null
+  window._currentArrivalMethod   = _tmeta.unit_arrival_method   || null
+  window._currentArrivalLocation = _tmeta.unit_arrival_location || null
+  window._currentArrivalFrom     = _tmeta.unit_arrival_from     || null
+  window._currentDepartureTime     = _tmeta.unit_departure_time     || t.departure_time || null
+  window._currentDepartureDate     = _tmeta.unit_departure_date     || null
+  window._currentDepartureMethod   = _tmeta.unit_departure_method   || null
+  window._currentDepartureLocation = _tmeta.unit_departure_location || null
+  window._currentDepartureTo       = _tmeta.unit_departure_to       || null
+  // Airport buffer in minutes (intl flight 120 / domestic 90 / train 60).
+  // Last-day cutoff = departure_time − buffer − 30 (cushion for last stop end).
+  window._currentAirportBuffer = Number(_tmeta.airport_buffer_minutes)
+    || (_tmeta.unit_departure_method === 'flight' ? 120 : 60)
   // Expose the traveler's destination so the Places autocomplete can bias
   // search results to that city (much more relevant than unbiased global).
   window._currentDestination   = t.destination    || null
@@ -12951,6 +13027,86 @@ function getDayGuideline(dayNum, totalDays) {
   }
 }
 
+// Compute the allowed time window for a given day. Returns
+// { minTime, maxTime, reason, defaultFirst } where any field may be null.
+//   • Day 1 (arrival day, multi-day trip) → minTime = arrival, defaultFirst = arrival + 30
+//   • Last day (departure day, multi-day trip) → maxTime = departure − buffer − 30 cushion
+//   • Middle days → no constraint
+//   • Single-day trip → both ends apply (rare for batch-01 since min is 2D1N)
+function dayTimeWindow(dayNum, totalDays) {
+  const out = { minTime: null, maxTime: null, reason: '', defaultFirst: null }
+  const arr = window._currentArrivalTime || null
+  const dep = window._currentDepartureTime || null
+  const buf = Number(window._currentAirportBuffer) || 0
+  // Snap a HH:MM string to the picker's 30-min grid
+  const snap30 = (hhmm) => {
+    if (!hhmm) return null
+    const [h, m] = hhmm.split(':').map(Number)
+    let total = h * 60 + m
+    total = Math.round(total / 30) * 30
+    if (total < 0) total = 0
+    if (total > 23 * 60 + 30) total = 23 * 60 + 30
+    return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+  }
+  // Default first-stop bump = arrival + 30 min, snapped to grid
+  const bump = (hhmm, mins) => {
+    if (!hhmm) return null
+    const [h, m] = hhmm.split(':').map(Number)
+    let total = h * 60 + m + mins
+    total = Math.ceil(total / 30) * 30
+    if (total > 23 * 60 + 30) total = 23 * 60 + 30
+    return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+  }
+  if (dayNum === 1 && totalDays >= 1 && arr) {
+    out.minTime = snap30(arr)
+    out.defaultFirst = bump(arr, 30)
+    out.reason = `Traveler arrives at ${arr} — earliest stop is ${out.defaultFirst}`
+  }
+  if (dayNum === totalDays && totalDays >= 1 && dep) {
+    // Cutoff: last stop must end before transit-to-airport begins.
+    //   cutoff = departure − airport_buffer − 30 min cushion
+    const [h, m] = dep.split(':').map(Number)
+    let total = h * 60 + m - buf - 30
+    if (total < 0) total = 0
+    // Snap DOWN so cutoff aligns to the grid (planner can't pick 14:30 if cutoff is 14:30)
+    total = Math.floor(total / 30) * 30
+    out.maxTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+    const why = `${buf} min ${window._currentDepartureMethod === 'flight' ? 'airport' : 'station'} buffer + 30 min cushion`
+    out.reason = (out.reason ? out.reason + ' · ' : '') +
+                 `Departs ${dep} — last stop must end by ${out.maxTime} (${why})`
+  }
+  return out
+}
+
+// Banner HTML shown at the top of the day-section-body for Day 1 / Last Day.
+function buildDayTimeBanner(dayNum, totalDays) {
+  const w = dayTimeWindow(dayNum, totalDays)
+  if (!w.minTime && !w.maxTime) return ''
+  const arr = window._currentArrivalTime
+  const dep = window._currentDepartureTime
+  const arrLoc = window._currentArrivalLocation || ''
+  const arrFrom = window._currentArrivalFrom || ''
+  const arrMethod = window._currentArrivalMethod || ''
+  const depLoc = window._currentDepartureLocation || ''
+  const depTo = window._currentDepartureTo || ''
+  const depMethod = window._currentDepartureMethod || ''
+  const lines = []
+  if (dayNum === 1 && w.minTime) {
+    const fromBit = arrFrom ? ` from <strong>${escapeHtml(arrFrom)}</strong>${arrMethod ? ' by ' + arrMethod : ''}` : ''
+    const locBit  = arrLoc ? ` at <strong>${escapeHtml(arrLoc)}</strong>` : ''
+    lines.push(`Traveler arrives <strong>${arr}</strong>${locBit}${fromBit} — day starts at <strong>${w.defaultFirst}</strong>`)
+  }
+  if (dayNum === totalDays && w.maxTime) {
+    const toBit = depTo ? ` → ${escapeHtml(depTo)}${depMethod ? ' by ' + depMethod : ''}` : ''
+    const locBit = depLoc ? ` from <strong>${escapeHtml(depLoc)}</strong>` : ''
+    lines.push(`Traveler departs <strong>${dep}</strong>${locBit}${toBit} — last stop must end by <strong>${w.maxTime}</strong>`)
+  }
+  return `<div class="day-time-banner">
+    <i class="ti ti-clock dtb-icon" aria-hidden="true"></i>
+    <div class="dtb-body">${lines.join('<br>')}</div>
+  </div>`
+}
+
 function addDayBlock(dayNum, totalDays) {
   const section = document.createElement('div');
   const g = getDayGuideline(dayNum, totalDays || dayCount || 1)
@@ -12980,6 +13136,11 @@ function addDayBlock(dayNum, totalDays) {
         <span><strong>${t('guide.tipLabel','Tip')}</strong> · ${g.tip}</span>
       </div>
     </div>`
+  // ── Time-window banner — Day 1 (arrival floor) / Last day (departure cap) ──
+  // Reads window._currentArrivalTime/_currentDepartureTime/_currentAirportBuffer,
+  // which are populated by openItineraryForm() from the traveler row + meta.
+  // Middle days have no constraint → no banner.
+  const _bannerHtml = buildDayTimeBanner(dayNum, totalDays)
   section.innerHTML = `
     <div class="day-section-header" onclick="toggleDaySection(${dayNum})" role="button" tabindex="0" aria-expanded="false" aria-controls="day-body-${dayNum}">
       <div class="day-section-title">${t('day.headerN','Day {n}').replace('{n}', dayNum)}</div>
@@ -12987,6 +13148,7 @@ function addDayBlock(dayNum, totalDays) {
       <span class="day-section-chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
     </div>
     <div class="day-section-body" id="day-body-${dayNum}">
+      ${_bannerHtml}
       ${guidelineHtml}
       <div id="slots-day-${dayNum}">
         <!-- slots added here -->
@@ -13065,7 +13227,14 @@ function fmtDuration(d) {
   }
   return d
 }
-function buildTimeOptions(selected = '09:00') {
+function buildTimeOptions(selected = '09:00', opts = {}) {
+  // opts.minTime: disable options strictly before this HH:MM (arrival-day floor)
+  // opts.maxTime: disable options at-or-after this HH:MM (departure-day cap)
+  // Disabled options stay visible (grayed out) so planner sees WHY they can't
+  // pick them, with a clear reason on the tooltip.
+  const minTime = opts.minTime || null
+  const maxTime = opts.maxTime || null
+  const reason  = opts.reason  || ''
   let html = ''
   for (let h = 0; h <= 23; h++) {
     for (const m of [0, 30]) {
@@ -13074,7 +13243,12 @@ function buildTimeOptions(selected = '09:00') {
       const val = `${hh}:${mm}`
       const display = formatTimeDisplay(val)
       const sel = val === selected ? ' is-selected' : ''
-      html += `<button type="button" class="time-dd-option${sel}" onclick="selectTimeDD(this,'${val}')">${display}</button>`
+      const disabled = (minTime && val < minTime) || (maxTime && val >= maxTime)
+      const dis = disabled ? ' is-disabled' : ''
+      const click = disabled ? '' : ` onclick="selectTimeDD(this,'${val}')"`
+      const title = disabled ? ` title="${reason || 'Outside available time window'}"` : ''
+      const dprop = disabled ? ' disabled aria-disabled="true"' : ''
+      html += `<button type="button" class="time-dd-option${sel}${dis}"${click}${title}${dprop}>${display}</button>`
     }
   }
   return html
@@ -14100,7 +14274,28 @@ function addSlot(dayNum, seed = null) {
   } else if (latestExisting) {
     defTime = bumpAnd(latestExisting)
   } else if (dayNum === 1 && window._currentArrivalTime) {
-    defTime = bumpAnd(window._currentArrivalTime)
+    // Per spec: Day 1 first stop defaults to arrival + 30 min (not 60),
+    // snapped UP to the 30-min picker grid. dayTimeWindow() centralizes
+    // this so the banner and the picker agree.
+    const _w = (typeof dayTimeWindow === 'function')
+      ? dayTimeWindow(dayNum, dayCount || 1)
+      : null
+    defTime = (_w && _w.defaultFirst) ? _w.defaultFirst : bumpAnd(window._currentArrivalTime)
+  }
+  // ── Time-window constraints (Day 1 floor, Last day cap) ──
+  // Compute once per slot so both the dropdown and the default time honor it.
+  const _winForSlot = (typeof dayTimeWindow === 'function')
+    ? dayTimeWindow(dayNum, dayCount || 1)
+    : { minTime:null, maxTime:null, reason:'' }
+  // Clamp the default time INTO the window — otherwise the picker would open
+  // showing a time that's grayed out (confusing).
+  if (_winForSlot.minTime && defTime < _winForSlot.minTime) defTime = _winForSlot.minTime
+  if (_winForSlot.maxTime && defTime >= _winForSlot.maxTime) {
+    // Step back one 30-min slot from the cap so we land on an enabled option.
+    const [h, m] = _winForSlot.maxTime.split(':').map(Number)
+    let total = h * 60 + m - 30
+    if (total < 0) total = 0
+    defTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
   }
 
   const slot = document.createElement('div');
@@ -14118,7 +14313,7 @@ function addSlot(dayNum, seed = null) {
           <span class="time-dd-label">${formatTimeDisplay(defTime)}</span>
           <svg class="time-dd-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 6 8 9 5"/></svg>
         </button>
-        <div class="time-dd-menu">${buildTimeOptions(defTime)}</div>
+        <div class="time-dd-menu">${buildTimeOptions(defTime, { minTime:_winForSlot.minTime, maxTime:_winForSlot.maxTime, reason:_winForSlot.reason })}</div>
       </div>
       <div class="type-dd">
         <input type="hidden" class="slot-type-select" value="${seedTypeKey}">
