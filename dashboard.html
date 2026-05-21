@@ -1911,19 +1911,42 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   padding:10px 12px;font-size:12px;color:var(--text-3);font-style:italic;
 }
 .places-linked-chip{
-  display:none;align-items:center;gap:8px;flex-wrap:wrap;
-  margin-top:6px;padding:6px 10px;
-  background:var(--green-light);border:1px solid rgba(45,158,122,0.32);
-  border-radius:8px;font-size:11.5px;color:var(--green-dark);
-  font-family:'DM Sans',sans-serif;
+  display:none;align-items:flex-start;gap:12px;
+  margin-top:8px;padding:10px 12px;
+  background:var(--green-light);border:1px solid rgba(45,158,122,0.28);
+  border-radius:10px;font-size:12px;color:var(--green-dark);
+  font-family:'DM Sans',sans-serif;line-height:1.45;
 }
 .activity-slot.slot-place-linked .places-linked-chip{display:flex;}
-.places-linked-chip .pl-google{font-weight:600;letter-spacing:0.02em;}
+.places-linked-chip .pl-thumb{
+  width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;
+  background:rgba(0,0,0,0.04);
+}
+.places-linked-chip .pl-thumb-empty{
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:var(--text-3);
+}
+.places-linked-chip .pl-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.places-linked-chip .pl-row-1{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.places-linked-chip .pl-row-2,
+.places-linked-chip .pl-row-3{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px;}
+.places-linked-chip .pl-row-3{color:var(--text-2);font-size:11px;}
+.places-linked-chip .pl-google{
+  font-weight:600;letter-spacing:0.02em;font-size:11px;text-transform:uppercase;
+}
 .places-linked-chip .pl-rating{color:var(--amber);font-weight:500;}
-.places-linked-chip .pl-sep{color:rgba(0,0,0,0.15);}
+.places-linked-chip .pl-price{color:var(--text-2);font-weight:500;letter-spacing:0.02em;}
+.places-linked-chip .pl-open{color:#1a7a5e;font-weight:500;}
+.places-linked-chip .pl-closed{color:#b84a3e;font-weight:500;}
+.places-linked-chip .pl-sep{color:rgba(0,0,0,0.18);}
+.places-linked-chip .pl-link{
+  color:var(--green-dark);text-decoration:none;font-size:11px;margin-top:2px;
+}
+.places-linked-chip .pl-link:hover{text-decoration:underline;}
 .places-linked-chip .pl-change{
-  margin-left:auto;background:none;border:none;color:var(--green-dark);
-  font:inherit;text-decoration:underline;cursor:pointer;padding:0;
+  background:none;border:none;color:var(--green-dark);
+  font:inherit;font-size:11px;text-decoration:underline;cursor:pointer;
+  padding:0;white-space:nowrap;
 }
 .places-linked-chip .pl-change:hover{color:var(--green);}
 /* Locked inputs while a place is linked — visually softer + non-editable. */
@@ -12889,11 +12912,12 @@ function applyPlaceToSlot(slot, place) {
   const address = place.formattedAddress || ''
   if (titleInput) titleInput.value = name
   if (addrInput)  addrInput.value  = address
-  // photo_refs — just the resource names (e.g. "places/X/photos/Y"). We don't
-  // fetch any bytes here; the URL is constructed at view time so cost stays $0.
+  // photo_refs — Google photo resource names (e.g. "places/X/photos/Y"). We
+  // construct a URL on demand via googlePhotoUrl(); browser caches it.
   const photoRefs = Array.isArray(place.photos)
     ? place.photos.map(p => p?.name).filter(Boolean).slice(0, 6)
     : []
+  const placeTypes = Array.isArray(place.types) ? place.types : null
   slot._placeData = {
     google_place_id:   place.id,
     name,
@@ -12908,7 +12932,23 @@ function applyPlaceToSlot(slot, place) {
     google_maps_url:   place.googleMapsUri || null,
     opening_hours_json: place.regularOpeningHours || null,
     photo_refs:        photoRefs,
-    place_types:       Array.isArray(place.types) ? place.types : null,
+    place_types:       placeTypes,
+  }
+  // Auto-detect slot type from Google's place types (meal / accommodation /
+  // activity). Planner can still override via the type dropdown after.
+  const detectedType = detectSlotTypeFromTypes(placeTypes)
+  const currentTypeInput = slot.querySelector('.slot-type-select')
+  if (detectedType && currentTypeInput && currentTypeInput.value !== detectedType) {
+    applySlotTypeChange(slot, detectedType)
+  }
+  // Auto-suggest a duration when the detected type is `activity` AND duration
+  // hasn't been picked yet. Doesn't overwrite an explicit planner choice.
+  if ((detectedType === 'activity' || (!detectedType && currentTypeInput?.value === 'activity'))) {
+    const durHidden = slot.querySelector('.slot-duration-input')
+    if (durHidden && !durHidden.value) {
+      const suggested = suggestDurationMinutes(placeTypes)
+      if (suggested) applyDurationSuggestion(slot, suggested)
+    }
   }
   renderLinkedChip(slot)
   slot.classList.add('slot-place-linked')
@@ -12916,19 +12956,143 @@ function applyPlaceToSlot(slot, place) {
   autoSaveDraft()
 }
 
+// Map Google place types → our slot type enum. Order matters: the first match
+// wins. Accommodation before activity because some hotels also tag as
+// `tourist_attraction`. Returns null if no confident match.
+function detectSlotTypeFromTypes(types) {
+  if (!Array.isArray(types) || !types.length) return null
+  const set = new Set(types.map(t => String(t).toLowerCase()))
+  if (set.has('lodging') || set.has('hotel') || set.has('resort_hotel') || set.has('bed_and_breakfast')) return 'accommodation'
+  if (set.has('restaurant') || set.has('food') || set.has('cafe') || set.has('bar') || set.has('bakery')
+      || set.has('meal_takeaway') || set.has('meal_delivery') || set.has('ice_cream_shop')) return 'meal'
+  if (set.has('tourist_attraction') || set.has('museum') || set.has('park') || set.has('zoo')
+      || set.has('aquarium') || set.has('art_gallery') || set.has('landmark') || set.has('amusement_park')
+      || set.has('place_of_worship') || set.has('shopping_mall') || set.has('temple') || set.has('shrine')
+      || set.has('church') || set.has('hindu_temple') || set.has('mosque') || set.has('synagogue')
+      || set.has('night_club') || set.has('stadium') || set.has('movie_theater')) return 'activity'
+  return null
+}
+
+// Suggest a stay duration for activity slots based on the venue type. Returns
+// one of the canonical duration values (30/60/120/240/480) or null.
+function suggestDurationMinutes(types) {
+  if (!Array.isArray(types) || !types.length) return null
+  const set = new Set(types.map(t => String(t).toLowerCase()))
+  if (set.has('museum') || set.has('art_gallery') || set.has('aquarium') || set.has('zoo')) return 240
+  if (set.has('amusement_park') || set.has('theme_park')) return 480
+  if (set.has('park') || set.has('shopping_mall') || set.has('night_club') || set.has('stadium')) return 120
+  if (set.has('tourist_attraction') || set.has('landmark') || set.has('movie_theater')) return 120
+  if (set.has('place_of_worship') || set.has('temple') || set.has('shrine') || set.has('church')) return 60
+  return null
+}
+
+// Same effect as the planner clicking a type option, without going through
+// the dropdown UI. Updates the hidden input + label + icon + parent class so
+// per-type field rows show/hide correctly.
+function applySlotTypeChange(slot, key) {
+  const hidden = slot.querySelector('.slot-type-select')
+  if (!hidden) return
+  hidden.value = key
+  slot.classList.forEach(c => { if (c.startsWith('slot-type-')) slot.classList.remove(c) })
+  slot.classList.add('slot-type-' + key)
+  const label = t('slot.type.' + key, key.charAt(0).toUpperCase() + key.slice(1))
+  const ddLabel = slot.querySelector('.type-dd-label')
+  if (ddLabel) ddLabel.textContent = label
+  const ddIcon = slot.querySelector('.type-dd-toggle .type-dd-icon')
+  if (ddIcon && TYPE_ICONS[key]) ddIcon.innerHTML = TYPE_ICONS[key]
+  slot.querySelectorAll('.type-dd-option').forEach(o => o.classList.remove('is-selected'))
+  const matchingOption = Array.from(slot.querySelectorAll('.type-dd-option')).find(opt =>
+    opt.getAttribute('onclick')?.includes(`'${key}'`)
+  )
+  if (matchingOption) matchingOption.classList.add('is-selected')
+  updateSlotFieldLabels(slot, key)
+}
+
+// Same effect as the planner picking a duration via the dropdown.
+function applyDurationSuggestion(slot, mins) {
+  const hidden = slot.querySelector('.slot-duration-input')
+  const label = slot.querySelector('.duration-dd-label')
+  if (!hidden) return
+  hidden.value = String(mins)
+  if (label) {
+    label.textContent = formatDurationLabel(mins) || t('slot.duration.choose', 'Choose…')
+    label.classList.remove('is-empty')
+  }
+}
+
+// Build a Google Photos URL on demand. Browser caches the image so a
+// re-render of the chip doesn't refetch.
+function googlePhotoUrl(photoName, maxWidthPx = 120) {
+  if (!photoName) return ''
+  return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${GOOGLE_PLACES_API_KEY}`
+}
+
+// Pretty price level. Google returns 'PRICE_LEVEL_INEXPENSIVE' etc.
+function formatPriceLevel(level) {
+  switch (level) {
+    case 'PRICE_LEVEL_FREE':           return 'Free'
+    case 'PRICE_LEVEL_INEXPENSIVE':    return '¥'
+    case 'PRICE_LEVEL_MODERATE':       return '¥¥'
+    case 'PRICE_LEVEL_EXPENSIVE':      return '¥¥¥'
+    case 'PRICE_LEVEL_VERY_EXPENSIVE': return '¥¥¥¥'
+    default: return ''
+  }
+}
+
+// Returns { status: 'open'|'closed'|'unknown', label: string, todayHours: string|null }
+// `regularOpeningHours.openNow` is true/false at the moment the place was
+// fetched — fine for a freshly-picked place; staler for restored chips. The
+// per-day hours come from `weekdayDescriptions` which Google indexes
+// Monday=0…Sunday=6 (the opposite of JavaScript's Date.getDay()).
+function formatOpeningStatus(oh) {
+  if (!oh) return { status: 'unknown', label: '', todayHours: null }
+  let todayHours = null
+  if (Array.isArray(oh.weekdayDescriptions) && oh.weekdayDescriptions.length === 7) {
+    const jsDay = new Date().getDay()          // 0=Sun … 6=Sat
+    const googleIdx = (jsDay + 6) % 7          // 0=Mon … 6=Sun
+    const raw = oh.weekdayDescriptions[googleIdx] || ''
+    // Strip the leading "Monday: " day name — we already know it's today.
+    todayHours = raw.replace(/^[A-Za-z]+:\s*/, '').trim()
+  }
+  if (oh.openNow === true)  return { status: 'open',    label: 'Open now',  todayHours }
+  if (oh.openNow === false) return { status: 'closed',  label: 'Closed now', todayHours }
+  return { status: 'unknown', label: '', todayHours }
+}
+
 function renderLinkedChip(slot) {
   const chip = slot.querySelector('.places-linked-chip')
   if (!chip || !slot._placeData) return
   const d = slot._placeData
-  const ratingBit = (d.rating != null)
-    ? `<span class="pl-rating">★ ${Number(d.rating).toFixed(1)}${d.user_rating_count ? ' (' + d.user_rating_count + ')' : ''}</span><span class="pl-sep">·</span>`
+  const photoName = Array.isArray(d.photo_refs) ? d.photo_refs[0] : null
+  const photoUrl  = photoName ? googlePhotoUrl(photoName, 120) : ''
+  const thumb = photoUrl
+    ? `<img class="pl-thumb" src="${escapeHtml(photoUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+    : `<div class="pl-thumb pl-thumb-empty" aria-hidden="true">📍</div>`
+  const ratingTxt = (d.rating != null)
+    ? `★ ${Number(d.rating).toFixed(1)}${d.user_rating_count ? ' (' + d.user_rating_count + ')' : ''}`
+    : ''
+  const priceTxt = formatPriceLevel(d.price_level)
+  const open = formatOpeningStatus(d.opening_hours_json)
+  const facts = [ratingTxt, priceTxt, open.label].filter(Boolean)
+  const factsHtml = facts.length
+    ? facts.map((f, i) => {
+        const cls = f === open.label
+          ? (open.status === 'open' ? 'pl-open' : (open.status === 'closed' ? 'pl-closed' : ''))
+          : (i === 1 && priceTxt ? 'pl-price' : 'pl-rating')
+        return `<span class="${cls}">${escapeHtml(f)}</span>`
+      }).join('<span class="pl-sep">·</span>')
     : ''
   chip.innerHTML = `
-    <span class="pl-google">Google</span>
-    <span class="pl-sep">·</span>
-    ${ratingBit}
-    ${d.google_maps_url ? `<a href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">View on Maps</a>` : ''}
-    <button type="button" class="pl-change" onclick="clearLinkedPlaceById('${slot.id}')">Change</button>
+    ${thumb}
+    <div class="pl-body">
+      <div class="pl-row-1">
+        <span class="pl-google">Google verified</span>
+        <button type="button" class="pl-change" onclick="clearLinkedPlaceById('${slot.id}')">Change</button>
+      </div>
+      ${factsHtml ? `<div class="pl-row-2">${factsHtml}</div>` : ''}
+      ${open.todayHours ? `<div class="pl-row-3">Today: ${escapeHtml(open.todayHours)}</div>` : ''}
+      ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">View on Google Maps ↗</a>` : ''}
+    </div>
   `
 }
 
