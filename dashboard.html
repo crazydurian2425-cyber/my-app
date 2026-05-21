@@ -11555,6 +11555,35 @@ function fmtTimeColon(s) {
 function splurgeAmountForTier(tier) {
   return { budget: 150, mid_range: 300, luxury: 600 }[String(tier || '').toLowerCase()] || null
 }
+// Base commission per unit by duration: 3D2N = €40, 2D1N = €30.
+function baseCommissionForDuration(duration) {
+  const m = String(duration || '').match(/(\d+)D/i)
+  const days = m ? parseInt(m[1], 10) : 0
+  if (days >= 3) return 40
+  if (days >= 2) return 30
+  return 0
+}
+// Highlight "NO X" / "no X" segments in red so planners spot hard rules.
+// Operates on a comma-or-middot-separated string. Returns HTML.
+function highlightNegativePrefs(raw) {
+  if (!raw) return ''
+  const parts = String(raw).split(/\s*[,·]\s*/).filter(Boolean)
+  return parts.map(p => {
+    if (/^no\b/i.test(p)) {
+      return `<span style="color:#b84a3e;font-weight:600;">❌ ${escapeHtml(p)}</span>`
+    }
+    return escapeHtml(p)
+  }).join(' · ')
+}
+// Loose transport guess between two French cities for the "→ to X by Y" line.
+const RAIL_CITIES = new Set(['Paris','Lyon','Marseille','Bordeaux','Toulouse','Nice','Strasbourg','Reims','Avignon','Lille','Nantes','Rennes','Saint-Malo','Mont-Saint-Michel','Loire Valley','Reims (Champagne)','Épernay','Brittany (Saint-Malo)','Annecy','Lyon','Cognac','Saint-Émilion','Carcassonne','Pyrenees (Lourdes)','Chamonix','Disneyland Paris','Normandy','Colmar','Antibes','Cannes','Monaco','Saint-Tropez','Luberon (Provence)','Aix-en-Provence'])
+const ISLAND_CITIES = new Set(['Corsica (Ajaccio)','Corsica (Bonifacio)'])
+function guessTransport(fromCity, toCity) {
+  if (!fromCity || !toCity) return ''
+  if (ISLAND_CITIES.has(toCity) || ISLAND_CITIES.has(fromCity)) return 'by ferry / flight'
+  if (RAIL_CITIES.has(fromCity) && RAIL_CITIES.has(toCity)) return 'by train'
+  return 'by car / train'
+}
 const FLAG_BY_COUNTRY = {
   'Japan':'🇯🇵','South Korea':'🇰🇷','Korea':'🇰🇷','China':'🇨🇳','Singapore':'🇸🇬','Malaysia':'🇲🇾',
   'Thailand':'🇹🇭','India':'🇮🇳','Indonesia':'🇮🇩','Philippines':'🇵🇭','Vietnam':'🇻🇳','UAE':'🇦🇪',
@@ -11598,12 +11627,12 @@ async function renderTravelerBrief(plan, t, notes) {
   if (!box) return
   const meta = (t && typeof t.meta === 'object' && t.meta) ? t.meta : {}
 
-  // ── sibling units (multi-leg trips) — used for multi-destination + last-airport ──
+  // ── sibling units (multi-leg trips) ──
   let siblings = []
   if (meta.person_id && meta.seed_batch) {
     try {
       const { data } = await sb.from('travelers')
-        .select('id, destination, arrival_date, duration, planner_payout, meta')
+        .select('id, destination, arrival_date, duration, status, meta')
         .eq('meta->>person_id', meta.person_id)
         .eq('meta->>seed_batch', meta.seed_batch)
       siblings = (data || []).slice().sort((a, b) =>
@@ -11611,6 +11640,25 @@ async function renderTravelerBrief(plan, t, notes) {
       )
     } catch (e) { /* fall back to current unit only */ }
   }
+
+  // ── which sibling units does THIS planner own? ──
+  // Plan rows are RLS-gated to the planner who owns them, so this select
+  // only returns rows where planner_id = me. Used to:
+  //   1) Decide which sibling rows show full info vs locked card
+  //   2) Compute continuity bonus
+  let myTravelerIds = new Set()
+  if (siblings.length > 1 && planner?.id) {
+    const sibIds = siblings.map(s => s.id).filter(Boolean)
+    try {
+      const { data: myPlans } = await sb.from('plans')
+        .select('traveler_id')
+        .in('traveler_id', sibIds)
+        .eq('planner_id', planner.id)
+      myTravelerIds = new Set((myPlans || []).map(p => p.traveler_id))
+    } catch (e) { /* RLS will silently filter */ }
+  }
+  // Always include the current plan's traveler — we're definitely working on this one.
+  if (t.id) myTravelerIds.add(t.id)
 
   // ── destination display: full multi-city list when on a multi-unit trip ──
   const destinationList = siblings.length > 1
@@ -11625,18 +11673,49 @@ async function renderTravelerBrief(plan, t, notes) {
   const departAirport  = AIRPORT_BY_CITY[lastCity]  || ''
 
   // ── trip-level dates (start of first unit → end of last unit) ──
-  const tripStart = meta.trip_start_date || t.arrival_date
+  const tripStart = meta.trip_start_date || (siblings[0]?.arrival_date) || t.arrival_date
   let tripEnd = meta.trip_end_date
-  if (!tripEnd && t.arrival_date && t.duration) {
+  if (!tripEnd) {
+    // Derive from last unit's arrival_date + duration nights.
+    const lastUnit = siblings.length > 1 ? siblings[siblings.length - 1] : t
+    if (lastUnit?.arrival_date && lastUnit?.duration) {
+      const m = String(lastUnit.duration).match(/(\d+)D/i)
+      const nights = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
+      const d = new Date(lastUnit.arrival_date + 'T00:00:00')
+      if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nights); tripEnd = d.toISOString().split('T')[0] }
+    }
+  }
+  const tripDurationTxt = meta.trip_total_duration
+    ? `${meta.trip_total_duration}${siblings.length > 1 ? ' · ' + siblings.length + ' units' : ''}`
+    : (fmtDuration(t.duration) || t.duration || '')
+
+  // ── this-unit dates ──
+  let unitEnd = null
+  if (t.arrival_date && t.duration) {
     const m = String(t.duration).match(/(\d+)D/i)
     const nights = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
     const d = new Date(t.arrival_date + 'T00:00:00')
-    if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nights); tripEnd = d.toISOString().split('T')[0] }
+    if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nights); unitEnd = d.toISOString().split('T')[0] }
   }
-  const tripDurationTxt = meta.trip_total_duration || fmtDuration(t.duration) || t.duration || ''
+  const unitDatesTxt = t.arrival_date
+    ? `${fmtBriefDateShort(t.arrival_date)}${unitEnd ? '–' + fmtBriefDateShort(unitEnd) : ''}`
+    : ''
 
-  // ── commission ──
-  const commission = (plan.planner_payout_override != null ? plan.planner_payout_override : (t.planner_payout || 0))
+  // ── commission: rule-based base + continuity (override on plan still wins) ──
+  const thisUnitOrder = Number(meta.unit_order || 1)
+  const hasContinuity = siblings.some(s =>
+    myTravelerIds.has(s.id) && Number(s.meta?.unit_order || 0) < thisUnitOrder
+  )
+  const baseFee = baseCommissionForDuration(t.duration)
+  const computedFee = baseFee + (hasContinuity ? 10 : 0)
+  const commission = plan.planner_payout_override != null
+    ? plan.planner_payout_override
+    : computedFee
+
+  // ── adjacent units for "→ to X" arrows + helpful tip ──
+  const currentIdx = siblings.findIndex(s => s.id === t.id)
+  const prevUnit = currentIdx > 0 ? siblings[currentIdx - 1] : null
+  const nextUnit = currentIdx >= 0 && currentIdx < siblings.length - 1 ? siblings[currentIdx + 1] : null
 
   // ── tier ──
   const tierKey = String(meta.budget_tier || '').toLowerCase()
@@ -11674,12 +11753,20 @@ async function renderTravelerBrief(plan, t, notes) {
   const sectionHeader = (icon, title, badge = '') =>
     `<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--e-green-d,#0f5240);margin-bottom:8px;display:flex;align-items:center;gap:6px;"><span>${icon}</span><span>${escapeHtml(title)}</span>${badge}</div>`
 
-  // ── SECTION 1: trip basics ──
+  // ── SECTION 1: trip basics — trip-level dates, unit-level dates ──
   const arrivalTxt = tripStart
     ? `${fmtBriefDateShort(tripStart)}${t.arrival_time ? ' · ' + fmtTimeColon(t.arrival_time) : ''}${arrivalAirport ? ' · ' + arrivalAirport : ''}`
     : ''
+  // Trip departure: only show when it actually IS the end of the trip (no next unit). Adds
+  // "→ Final departure" for the final unit, or just date when not the final one.
   const departureTxt = tripEnd
     ? `${fmtBriefDateShort(tripEnd)}${meta.departure_time ? ' · ' + fmtTimeColon(meta.departure_time) : ''}${departAirport ? ' · ' + departAirport : ''}`
+    : ''
+  // This-unit ending — if there's a next unit, show "→ to NextCity by train";
+  // if not (this is the trip's final unit), show "→ Final departure from France".
+  const unitTransport = nextUnit ? guessTransport(t.destination, nextUnit.destination) : ''
+  const unitEndsTxt = unitDatesTxt
+    ? `${unitDatesTxt}${nextUnit ? ` → to ${nextUnit.destination} ${unitTransport}` : ' → Final departure from France'}`
     : ''
   const occasion = meta.occasion ? titleCaseEnum(meta.occasion) : ''
   const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
@@ -11689,9 +11776,10 @@ async function renderTravelerBrief(plan, t, notes) {
       ${sectionHeader('🗺', 'Trip basics')}
       ${grid2(`
         ${cell('Destination', escapeHtml(destinationTxt))}
-        ${cell('Duration', escapeHtml(tripDurationTxt))}
-        ${cell('Arrival', escapeHtml(arrivalTxt))}
-        ${cell('Departure', escapeHtml(departureTxt))}
+        ${cell('Trip duration', escapeHtml(tripDurationTxt))}
+        ${cell('Trip arrival', escapeHtml(arrivalTxt))}
+        ${cell('Trip departure', escapeHtml(departureTxt))}
+        ${cell('This unit', `<span style="font-weight:600;">${escapeHtml(t.duration || '')}</span><span style="color:var(--e-ink-3,#8a816f);"> · ${escapeHtml(unitEndsTxt || '')}</span>`)}
         ${cell('Pace', escapeHtml(paceLabel))}
         ${cell('Occasion', escapeHtml(occasion), { badge: newBadge() })}
       `)}
@@ -11761,27 +11849,32 @@ async function renderTravelerBrief(plan, t, notes) {
 
   // ── SECTION 5: food & dining [NEW SECTION] ──
   const diningStyle = meta.dining_style ? titleCaseEnum(meta.dining_style) : ''
-  const cuisineInterests = Array.isArray(meta.cuisine_interests)
-    ? meta.cuisine_interests.map(titleCaseEnum).join(' · ') : ''
-  const dietDisplay = diet
+  // Cuisine interests can hold negatives ("NO Michelin"). highlightNegativePrefs
+  // splits on commas / middots and styles "NO X" parts red.
+  const cuisineRaw = Array.isArray(meta.cuisine_interests)
+    ? meta.cuisine_interests.join(', ')
+    : (meta.cuisine_interests || '')
+  const cuisineHtml = highlightNegativePrefs(cuisineRaw)
+  // Diet "no shellfish" / allergies — same negative-pref treatment.
+  const dietHtml = diet
     ? (dietCritical
-        ? `${escapeHtml(titleCaseEnum(diet))}`
+        ? highlightNegativePrefs(diet) || `<span style="color:#b84a3e;font-weight:600;">${escapeHtml(titleCaseEnum(diet))}</span>`
         : `✓ ${escapeHtml(titleCaseEnum(diet))}`)
     : ''
-  const sectionFood = (diet || diningStyle || cuisineInterests) ? `
+  const sectionFood = (diet || diningStyle || cuisineRaw) ? `
     <div style="margin-top:14px;">
       ${sectionHeader('🍴', 'Food & dining', newSectionBadge())}
       ${grid2(`
-        ${cell('Dietary', dietDisplay, {
+        ${cell('Dietary', dietHtml, {
           badge: dietCritical ? criticalBadge() : '',
-          criticalLabel: dietCritical, criticalValue: dietCritical
+          criticalLabel: dietCritical
         })}
         ${cell('Dining style', escapeHtml(diningStyle))}
       `)}
-      ${cuisineInterests ? `
+      ${cuisineHtml ? `
         <div style="margin-top:8px;">
           <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:var(--e-ink-3,#8a816f);">Cuisine interests</div>
-          <div style="font-size:12.5px;color:var(--e-ink,#1f1c16);font-weight:500;margin-top:2px;">${escapeHtml(cuisineInterests)}</div>
+          <div style="font-size:12.5px;color:var(--e-ink,#1f1c16);font-weight:500;margin-top:2px;">${cuisineHtml}</div>
         </div>` : ''}
     </div>` : ''
 
@@ -11810,11 +11903,90 @@ async function renderTravelerBrief(plan, t, notes) {
         </div>` : ''}
     </div>` : ''
 
+  // ── TRIP CONTEXT (privacy-aware): own units full, others locked ──
+  let sectionContext = ''
+  if (siblings.length > 1) {
+    const totalNights = siblings.reduce((sum, s) => {
+      const m = String(s.duration || '').match(/(\d+)D/i)
+      return sum + (m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0)
+    }, 0)
+    const rows = siblings.map(s => {
+      const isCurrent = s.id === t.id
+      const isMine = myTravelerIds.has(s.id)
+      const m = String(s.duration || '').match(/(\d+)D/i)
+      const nightsUnit = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
+      let endStr = ''
+      if (s.arrival_date) {
+        const d = new Date(s.arrival_date + 'T00:00:00')
+        if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nightsUnit); endStr = d.toISOString().split('T')[0] }
+      }
+      const datesTxt = s.arrival_date ? `${fmtBriefDateShort(s.arrival_date)}${endStr ? '–' + fmtBriefDateShort(endStr) : ''}` : ''
+      const order = s.meta?.unit_order || '?'
+
+      if (isMine) {
+        // Full info — green border, "YOU ARE HERE" or "Unit N · you"
+        const myFee = baseCommissionForDuration(s.duration) + (Number(s.meta?.unit_order || 0) > 1 ? 10 : 0)
+        return `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${isCurrent ? 'rgba(45,158,122,0.20)' : 'rgba(45,158,122,0.08)'};border:1px solid ${isCurrent ? 'rgba(45,158,122,0.55)' : 'rgba(45,158,122,0.25)'};margin-bottom:4px;">
+            ${isCurrent
+              ? '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;background:#1a7a5e;color:#fff;padding:2px 6px;border-radius:4px;flex-shrink:0;">You are here</span>'
+              : `<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#1a7a5e;flex-shrink:0;">Unit ${order} · yours</span>`}
+            <div style="flex:1;min-width:0;font-size:12px;color:var(--e-ink,#1a3a2e);">
+              <strong>${escapeHtml(s.destination || '—')}</strong>
+              <span style="color:var(--e-ink-3,#5a7a6e);"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
+            </div>
+            <span style="font-size:11px;font-weight:600;color:#1a7a5e;flex-shrink:0;">${fmtEur(myFee)}</span>
+          </div>`
+      }
+      // Locked card — no commission, no planner identity. Status only.
+      const isUnclaimed = s.status === 'unassigned'
+      const isCompleted = s.status === 'completed' || s.status === 'approved'
+      const statusLabel = isCompleted ? 'Completed' : (isUnclaimed ? 'Awaiting planner' : 'Planned by another')
+      return `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.10);margin-bottom:4px;opacity:0.72;">
+          <span style="font-size:14px;flex-shrink:0;line-height:1;">🔒</span>
+          <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--e-ink-3,#7a7a74);flex-shrink:0;">Unit ${order}</span>
+          <div style="flex:1;min-width:0;font-size:12px;color:var(--e-ink-2,#554e3f);">
+            <strong>${escapeHtml(s.destination || '—')}</strong>
+            <span style="color:var(--e-ink-3,#8a816f);"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
+          </div>
+          <span style="font-size:10px;font-weight:600;color:var(--e-ink-3,#8a816f);flex-shrink:0;font-style:italic;">${statusLabel}</span>
+        </div>`
+    }).join('')
+
+    // Helpful context tip — derived from adjacent units (no other planners' details).
+    const tipParts = []
+    if (prevUnit) {
+      tipParts.push(`Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — plan check-in near transit.`)
+    }
+    if (nextUnit && unitEnd) {
+      tipParts.push(`Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — leave time on the last day.`)
+    }
+    const tipHtml = tipParts.length
+      ? `<div style="margin-top:10px;padding:10px 12px;background:rgba(193,125,42,0.08);border:1px solid rgba(193,125,42,0.22);border-radius:8px;font-size:11.5px;color:var(--e-ink-2,#554e3f);line-height:1.5;"><strong style="color:#8a5a1c;">💡 Helpful context · </strong>${tipParts.join(' ')}</div>`
+      : ''
+
+    sectionContext = `
+      <div style="margin-top:14px;">
+        ${sectionHeader('📍', `Trip context · ${siblings.length} units · ${totalNights} nights total`)}
+        ${rows}
+        ${tipHtml}
+        <div style="margin-top:6px;font-size:10px;color:var(--e-ink-3,#8a816f);font-style:italic;">🔒 Other units are locked for privacy. You can only see the cities + dates so you plan around them.</div>
+      </div>`
+  }
+
   // ── COMMISSION BAR (dark, full-width, € serif on the right) ──
+  // Show base + continuity breakdown when continuity applies.
+  const breakdownTxt = (commission === computedFee && hasContinuity)
+    ? `${fmtEur(baseFee)} base + ${fmtEur(10)} continuity bonus`
+    : (commission === computedFee ? `${fmtEur(baseFee)} base` : '')
   const sectionCommission = commission > 0 ? `
-    <div style="margin-top:16px;padding:14px 16px;background:#1f1c16;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.14em;font-weight:700;color:#e6dcc4;">Your commission</div>
-      <div style="font-family:'Fraunces','DM Serif Display',serif;font-size:24px;line-height:1;color:#fff;font-weight:600;">${fmtEur(commission)}</div>
+    <div style="margin-top:16px;padding:14px 16px;background:#1f1c16;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="min-width:0;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.14em;font-weight:700;color:#e6dcc4;">Your commission · this unit</div>
+        ${breakdownTxt ? `<div style="font-size:10.5px;color:#bdb19c;margin-top:2px;">${breakdownTxt}</div>` : ''}
+      </div>
+      <div style="font-family:'Fraunces','DM Serif Display',serif;font-size:26px;line-height:1;color:#fff;font-weight:600;flex-shrink:0;">${fmtEur(commission)}</div>
     </div>` : ''
 
   // ── NOTE FROM TRAVELER (italic, dashed) ──
@@ -11836,6 +12008,7 @@ async function renderTravelerBrief(plan, t, notes) {
     ${sectionAccom}
     ${sectionFood}
     ${sectionInterests}
+    ${sectionContext}
     ${sectionCommission}
     ${sectionNote}
   `
