@@ -1976,6 +1976,27 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
    when both apply, so the schedule wouldn't actually collapse. Force it. */
 .places-linked-chip .pl-schedule[hidden]{display:none;}
 .places-linked-chip .pl-schedule-row{font-variant-numeric:tabular-nums;}
+/* Time-vs-hours conflict banner — red so it's impossible to miss. */
+.places-linked-chip .pl-time-warning{
+  margin-top:6px;padding:9px 11px;border-radius:8px;
+  background:rgba(184,74,62,0.10);border:1px solid rgba(184,74,62,0.35);
+  color:#8a3329;font-size:11.5px;line-height:1.45;
+  display:flex;flex-direction:column;gap:4px;
+}
+.places-linked-chip .pl-time-warning-head{font-weight:600;font-size:12px;}
+.places-linked-chip .pl-time-warning-body{color:#8a3329;}
+.places-linked-chip .pl-fix-time{
+  align-self:flex-start;margin-top:4px;
+  padding:5px 10px;font:inherit;font-size:11px;font-weight:500;
+  background:#fff;color:#8a3329;
+  border:1px solid rgba(184,74,62,0.45);border-radius:6px;cursor:pointer;
+}
+.places-linked-chip .pl-fix-time:hover{background:#fbeae7;border-color:rgba(184,74,62,0.65);}
+/* Outline the time picker red when the slot is in conflict. */
+.activity-slot.slot-time-conflict .time-dd-toggle{
+  border:1px solid rgba(184,74,62,0.55)!important;
+  background:rgba(184,74,62,0.05);
+}
 /* Locked inputs while a place is linked — visually softer + non-editable. */
 .activity-slot.slot-place-linked .slot-title-input,
 .activity-slot.slot-place-linked .slot-address-input{
@@ -12669,6 +12690,9 @@ function selectTimeDD(btn, val){
     slot.classList.add('slot-just-moved')
     slot.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setTimeout(() => slot.classList.remove('slot-just-moved'), 1200)
+    // If a place is linked, the time-vs-hours warning may need to appear or
+    // disappear — re-render the chip to refresh it.
+    if (slot._placeData) renderLinkedChip(slot)
   }
 }
 
@@ -13204,6 +13228,37 @@ function renderLinkedChip(slot) {
        </div>`
     : ''
 
+  // Time-vs-hours conflict warning. Only when the place IS open that day
+  // (the closed-day banner handles the other case) AND the selected slot
+  // time falls outside the open intervals.
+  const conflict = (open.status === 'open') ? checkTimeAgainstHours(slot, d.opening_hours_json, plannedDate) : null
+  // Toggle the parent class so the time picker can outline red via CSS.
+  slot.classList.toggle('slot-time-conflict', !!conflict)
+  let conflictHtml = ''
+  if (conflict) {
+    const slotTimeFriendly = formatTimeDisplay(conflict.slotTime)
+    const dayBit = conflict.dayName ? ` ${conflict.dayName}` : ''
+    let msg = ''
+    if (conflict.kind === 'before_open' && conflict.openHoursLabel) {
+      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is before this place opens (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`
+    } else if (conflict.kind === 'after_close' && conflict.openHoursLabel) {
+      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is after this place closes (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`
+    } else if (conflict.kind === 'between_shifts') {
+      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> falls between shifts on${escapeHtml(dayBit)}`
+    } else {
+      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`
+    }
+    const fixBtn = conflict.suggestedTime
+      ? `<button type="button" class="pl-fix-time" onclick="applyTimeFix('${slot.id}','${conflict.suggestedTime}')">→ Change time to ${escapeHtml(formatTimeDisplay(conflict.suggestedTime))}</button>`
+      : ''
+    conflictHtml = `
+      <div class="pl-time-warning">
+        <div class="pl-time-warning-head">⚠️ <strong>Time conflict</strong></div>
+        <div class="pl-time-warning-body">${msg}</div>
+        ${fixBtn}
+      </div>`
+  }
+
   chip.innerHTML = `
     ${thumb}
     <div class="pl-body">
@@ -13213,6 +13268,7 @@ function renderLinkedChip(slot) {
       </div>
       ${row2Html ? `<div class="pl-row-2">${row2Html}</div>` : ''}
       ${plannedRow}
+      ${conflictHtml}
       ${scheduleHtml}
       ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">View on Google Maps ↗</a>` : ''}
     </div>
@@ -13228,6 +13284,125 @@ function togglePlaceSchedule(slotId) {
   const showing = !list.hidden
   list.hidden = showing
   btn.textContent = showing ? 'View full schedule' : 'Hide full schedule'
+}
+
+// ─── Time-vs-hours validation ─────────────────────────────────────────────
+// Google's weekdayDescriptions for an open day look like:
+//   "Saturday: 1:30 PM – 9:30 PM"
+//   "Tuesday: 11:00 AM – 2:00 PM, 5:30 PM – 9:00 PM"  (split shifts)
+//   "Friday: Open 24 hours"
+// We need to extract each open interval as { open, close } in minutes from
+// midnight, then check whether the planner's selected time falls inside any
+// of them. Late-night intervals that cross midnight (close < open) are
+// treated as wrapping.
+function parseOpeningIntervals(dayLine) {
+  if (!dayLine) return []
+  if (/open\s*24\s*hours/i.test(dayLine)) return [{ open: 0, close: 24 * 60 }]
+  const intervals = []
+  // Strip the leading day name + colon if still present.
+  const body = dayLine.replace(/^[A-Za-z]+:\s*/, '')
+  for (const seg of body.split(',').map(s => s.trim())) {
+    // Accept en-dash, em-dash, or hyphen as the range separator.
+    const m = seg.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*[–—-]\s*(\d{1,2}:\d{2}\s*[AP]M)/i)
+    if (!m) continue
+    const o = parse12h(m[1])
+    const c = parse12h(m[2])
+    if (o != null && c != null) intervals.push({ open: o, close: c })
+  }
+  return intervals
+}
+function parse12h(s) {
+  const m = s.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+  if (!m) return null
+  let h = parseInt(m[1], 10)
+  const mins = parseInt(m[2], 10)
+  if (/PM/i.test(m[3]) && h < 12) h += 12
+  if (/AM/i.test(m[3]) && h === 12) h = 0
+  return h * 60 + mins
+}
+function parseSlotTime(s) {
+  const m = String(s || '').match(/^(\d{1,2}):(\d{2})$/)
+  if (!m) return null
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10)
+}
+function minsToHHMM(mins) {
+  const h = Math.floor(mins / 60), m = mins % 60
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`
+}
+
+// Check the slot's selected time against the planned day's opening hours.
+// Returns null if no conflict (or undeterminable), otherwise:
+//   {
+//     kind: 'before_open' | 'after_close' | 'between_shifts',
+//     dayName: 'Saturday',
+//     slotTime: '10:00',         // 24h
+//     suggestedTime: '13:30',    // 24h — best next-open time, or null
+//     openHoursLabel: '1:30 PM' // friendly text for the warning line
+//   }
+function checkTimeAgainstHours(slot, oh, plannedDate) {
+  if (!oh || !plannedDate) return null
+  const weekly = Array.isArray(oh.weekdayDescriptions) && oh.weekdayDescriptions.length === 7
+    ? oh.weekdayDescriptions
+    : null
+  if (!weekly) return null
+  const jsDay = plannedDate.getDay()
+  const googleIdx = (jsDay + 6) % 7
+  const dayLine = weekly[googleIdx] || ''
+  if (/:\s*closed\s*$/i.test(dayLine)) return null   // closed-day banner handles this
+  const intervals = parseOpeningIntervals(dayLine)
+  if (!intervals.length) return null
+  const slotTimeStr = slot.querySelector('.slot-time-input')?.value || ''
+  const slotMin = parseSlotTime(slotTimeStr)
+  if (slotMin == null) return null
+
+  // Inside any interval? Handle midnight-wrap (close < open => spans midnight).
+  for (const iv of intervals) {
+    if (iv.close < iv.open) {
+      if (slotMin >= iv.open || slotMin < iv.close) return null
+    } else {
+      if (slotMin >= iv.open && slotMin < iv.close) return null
+    }
+  }
+
+  // Conflict. Decide what kind + suggest a fix.
+  const dayName = DAY_NAMES[jsDay]
+  const firstOpen  = intervals[0].open
+  const lastClose  = intervals[intervals.length - 1].close
+  // Friendly label for the first open interval — what we'd suggest fixing to.
+  const openHoursLabel = (dayLine.match(/(\d{1,2}:\d{2}\s*[AP]M)/i) || [])[1] || ''
+
+  if (slotMin < firstOpen) {
+    return { kind: 'before_open', dayName, slotTime: slotTimeStr, suggestedTime: minsToHHMM(firstOpen), openHoursLabel }
+  }
+  if (slotMin >= lastClose) {
+    return { kind: 'after_close', dayName, slotTime: slotTimeStr, suggestedTime: null, openHoursLabel: (dayLine.match(/[–—-]\s*(\d{1,2}:\d{2}\s*[AP]M)\s*$/) || [])[1] || '' }
+  }
+  // Split-shift gap — find the next open interval after slotMin.
+  for (let i = 0; i < intervals.length - 1; i++) {
+    if (slotMin >= intervals[i].close && slotMin < intervals[i + 1].open) {
+      return { kind: 'between_shifts', dayName, slotTime: slotTimeStr, suggestedTime: minsToHHMM(intervals[i + 1].open), openHoursLabel: '' }
+    }
+  }
+  return null
+}
+
+// Inline handler for the "Change time to X" quick fix in the warning banner.
+function applyTimeFix(slotId, hhmm) {
+  const slot = document.getElementById(slotId)
+  if (!slot) return
+  const hidden = slot.querySelector('.slot-time-input')
+  if (hidden) hidden.value = hhmm
+  const label = slot.querySelector('.time-dd-label')
+  if (label) label.textContent = formatTimeDisplay(hhmm)
+  // Mark the matching option as selected so the dropdown reflects the change.
+  slot.querySelectorAll('.time-dd-option').forEach(opt => {
+    opt.classList.toggle('is-selected', !!opt.getAttribute('onclick')?.includes(`'${hhmm}'`))
+  })
+  // Slots auto-sort by time within a day — keep that invariant.
+  if (typeof resortSlots === 'function') resortSlots(slot.closest('[id^="slots-day-"]'))
+  // Re-render the chip so the warning clears (or updates).
+  if (slot._placeData) renderLinkedChip(slot)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 
 // Called from the "Change" button inline handler — looks the slot up by id
