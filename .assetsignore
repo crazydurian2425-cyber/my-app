@@ -3,3 +3,14 @@ wrangler.toml
 .assetsignore
 _dev_*.sql
 jj-deploy.zip
+
+# CI / build artifacts — wrangler-action installs into ./node_modules
+node_modules
+.wrangler
+.git
+.github
+.claude
+.vscode
+.dev.vars
+.dev.vars.*
+.gitignore
