@@ -31,6 +31,8 @@
   html.jj-pre-dark body { background:#252A2E; color:#FFFFFF; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Tabler Icons webfont — used by the Traveler Brief section headers. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&family=Noto+Serif+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--green:#5E7B6E;--green-light:#E8EFEB;--green-mid:#8FA896;--green-dark:#4A6759;--amber:#D4913D;--amber-light:#FAF0DE;--blue:#2563a8;--blue-light:#eaf1fb;--red:#B84A3E;--red-light:#FBEAE7;--purple:#534ab7;--purple-light:#eeedfe;--surface:#fff;--bg:#F5F1E8;--border:rgba(0,0,0,0.06);--border-med:rgba(0,0,0,0.12);--text:#1A2E25;--text-2:#5C5C52;--text-3:#8A8A7E;--sidebar-w:240px;--radius:16px;--radius-sm:10px;}
@@ -11753,11 +11755,13 @@ async function renderTravelerBrief(plan, t, notes) {
   }
   const grid2 = (children) => `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px;">${children}</div>`
   // Section header: green #3FBA73, 11px, ALL CAPS, letter-spacing 1px.
-  // Hairline divider #3a3a3a underneath.
-  const sectionHeader = (icon, title, badge = '') =>
+  // Tabler icon (webfont) loaded in <head>. `iconClass` is the bare icon
+  // name (e.g. "route"); we prepend "ti ti-" so callers stay short. Pass
+  // `iconColor` to override (used for the orange "Note" header).
+  const sectionHeader = (iconClass, title, badge = '', iconColor = '#3FBA73') =>
     `<div style="display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid #3a3a3a;">
-       <span style="color:#3FBA73;font-size:14px;line-height:1;">${icon}</span>
-       <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3FBA73;">${escapeHtml(title)}</span>
+       <i class="ti ti-${iconClass}" style="color:${iconColor};font-size:18px;line-height:1;"></i>
+       <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${iconColor};">${escapeHtml(title)}</span>
        ${badge}
      </div>`
   // Section wrapper — adds a top hairline + space between sections.
@@ -11782,7 +11786,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
 
   const sectionBasics = wrap(`
-    ${sectionHeader('🔄', 'Trip basics')}
+    ${sectionHeader('route', 'Trip basics')}
     ${grid2(`
       ${cell('Destination', escapeHtml(destinationTxt))}
       ${cell('Trip duration', escapeHtml(tripDurationTxt))}
@@ -11800,7 +11804,7 @@ async function renderTravelerBrief(plan, t, notes) {
     : (t.group_size ? `${t.group_size} pax` : '')
   const fromTxt = origin ? `${flag ? flag + ' ' : ''}${escapeHtml(origin)}` : ''
   const sectionTravelers = wrap(`
-    ${sectionHeader('👥', 'Travelers')}
+    ${sectionHeader('users', 'Travelers')}
     ${grid2(`
       ${cell('Group type', escapeHtml(groupTypeTxt))}
       ${cell('Ages', escapeHtml(ages))}
@@ -11825,7 +11829,7 @@ async function renderTravelerBrief(plan, t, notes) {
     ? `<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:${tier.bg};color:${tier.fg};border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">${tier.icon} ${tier.label}</span>`
     : ''
   const sectionBudgets = (dailyTxt || hotelTxt || splurgeTxt || bookingTxt) ? wrap(`
-    ${sectionHeader('💰', 'Budgets', tierBadgeHtml)}
+    ${sectionHeader('wallet', 'Budgets', tierBadgeHtml)}
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
       ${cell('Hotel / night / pax', hotelTxt)}
@@ -11840,7 +11844,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const accomMustHaves = Array.isArray(meta.accommodation_must_haves)
     ? meta.accommodation_must_haves.join(' · ') : ''
   const sectionAccom = (accomTxt || roomTxt || accomMustHaves) ? wrap(`
-    ${sectionHeader('🛏', 'Accommodation', newSectionBadge())}
+    ${sectionHeader('bed', 'Accommodation', newSectionBadge())}
     ${grid2(`
       ${cell('Type', escapeHtml(accomTxt))}
       ${cell('Room', escapeHtml(roomTxt))}
@@ -11867,7 +11871,7 @@ async function renderTravelerBrief(plan, t, notes) {
         : `✓ ${escapeHtml(titleCaseEnum(diet))}`)
     : ''
   const sectionFood = (diet || diningStyle || cuisineRaw) ? wrap(`
-    ${sectionHeader('🍴', 'Food & dining', newSectionBadge())}
+    ${sectionHeader('tools-kitchen-2', 'Food & dining', newSectionBadge())}
     ${grid2(`
       ${cell('Dietary', dietHtml, {
         badge: dietCritical ? criticalBadge() : '',
@@ -11889,7 +11893,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const dailyTimingTxt = meta.daily_timing ? titleCaseEnum(meta.daily_timing) : ''
   const mustAvoid = meta.must_avoid ? meta.must_avoid.split(/\s*,\s*/).join(' · ') : ''
   const sectionInterests = (interestsHtml || intensityTxt || dailyTimingTxt || mustAvoid) ? wrap(`
-    ${sectionHeader('❤️', 'Interests & priorities')}
+    ${sectionHeader('heart', 'Interests & priorities')}
     ${interestsHtml ? `
       <div style="margin-bottom:14px;">
         <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:8px;">Interests</div>
@@ -11970,7 +11974,7 @@ async function renderTravelerBrief(plan, t, notes) {
       : ''
 
     sectionContext = wrap(`
-      ${sectionHeader('📍', `Trip context · ${siblings.length} units · ${totalNights} nights total`)}
+      ${sectionHeader('map-pin', `Trip context · ${siblings.length} units · ${totalNights} nights total`)}
       ${rows}
       ${tipHtml}
       <div style="margin-top:8px;font-size:11px;color:#8a8a8a;font-style:italic;">🔒 Other units locked for privacy — you see cities + dates only.</div>
@@ -11983,17 +11987,23 @@ async function renderTravelerBrief(plan, t, notes) {
     : (commission === computedFee ? `${fmtEur(baseFee)} base` : '')
   const sectionCommission = commission > 0 ? `
     <div style="margin-top:18px;padding:14px 16px;background:#2a2a2a;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-      <div style="min-width:0;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;color:#ffffff;">Your commission</div>
-        ${breakdownTxt ? `<div style="font-size:11px;color:#8a8a8a;margin-top:3px;">${breakdownTxt}</div>` : ''}
+      <div style="min-width:0;display:flex;align-items:center;gap:10px;">
+        <i class="ti ti-cash" style="color:#3FBA73;font-size:20px;line-height:1;flex-shrink:0;"></i>
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;color:#ffffff;">Your commission</div>
+          ${breakdownTxt ? `<div style="font-size:11px;color:#8a8a8a;margin-top:3px;">${breakdownTxt}</div>` : ''}
+        </div>
       </div>
       <div style="font-size:28px;line-height:1;color:#3FBA73;font-weight:700;flex-shrink:0;">${fmtEur(commission)}</div>
     </div>` : ''
 
-  // ── NOTE FROM TRAVELER (per spec: orange header, no box, light body) ──
+  // ── NOTE FROM TRAVELER (orange header w/ notes icon, no box, light body) ──
   const sectionNote = notes ? `
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid #3a3a3a;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#E08B3A;margin-bottom:8px;">Note from traveler</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <i class="ti ti-notes" style="color:#E08B3A;font-size:18px;line-height:1;"></i>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#E08B3A;">Note from traveler</div>
+      </div>
       <div style="font-size:14px;line-height:1.6;color:#cccccc;font-weight:400;">${escapeHtml(notes)}</div>
     </div>` : ''
 
@@ -12008,7 +12018,7 @@ async function renderTravelerBrief(plan, t, notes) {
   box.style.color = '#ffffff'
   box.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;padding-bottom:14px;border-bottom:1px solid #3a3a3a;">
-      <span style="color:#3FBA73;font-size:15px;line-height:1;">📍</span>
+      <i class="ti ti-map-pin" style="color:#3FBA73;font-size:18px;line-height:1;"></i>
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#3FBA73;">Traveler brief</div>
     </div>
     ${sectionBasics}
