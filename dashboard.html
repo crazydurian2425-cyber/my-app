@@ -11548,14 +11548,11 @@ const AIRPORT_BY_CITY = {
   'Pyrenees (Lourdes)':'LDE','Carcassonne':'CCF','Cognac':'BOD','Saint-Émilion':'BOD','Avignon':'AVN',
   'Aix-en-Provence':'MRS',
 }
-// Brief inline badges. Per-field NEW pills have been removed from the
-// final layout — only CRITICAL (dietary), NEW SECTION (section header),
-// and the tier badge (Budgets header) remain.
+// Brief inline badges. Only [CRITICAL] (on Dietary when restrictions
+// exist), the budget tier pill (Budgets header), and "YOU ARE HERE"
+// (Trip Context) remain in the final layout.
 function criticalBadge() {
   return '<span style="background:var(--color-background-danger);color:var(--color-text-danger);font-size:9px;padding:1px 5px;border-radius:var(--border-radius-md);margin-left:4px;font-weight:600;letter-spacing:0.04em;">CRITICAL</span>'
-}
-function newSectionBadge() {
-  return '<span style="background:var(--color-background-info);color:var(--color-text-info);font-size:9px;padding:1px 5px;border-radius:var(--border-radius-md);margin-left:4px;font-weight:500;letter-spacing:0.04em;">NEW SECTION</span>'
 }
 function fmtTimeColon(s) {
   if (!s) return ''
@@ -11860,7 +11857,7 @@ async function renderTravelerBrief(plan, t, notes) {
     ? meta.accommodation_must_haves.join(' · ') : ''
   // Accommodation always renders — keeps the brief structurally consistent.
   const sectionAccom = wrap(`
-    ${sectionHeader('bed', 'Accommodation', newSectionBadge())}
+    ${sectionHeader('bed', 'Accommodation')}
     ${grid2(`
       ${cell('Type', escapeHtml(accomTxt))}
       ${cell('Room', escapeHtml(roomTxt))}
@@ -11885,7 +11882,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // Food & dining always renders — even None gets shown as "✓ None" so the
   // planner sees the field has been verified rather than just missing.
   const sectionFood = wrap(`
-    ${sectionHeader('tools-kitchen-2', 'Food & dining', newSectionBadge())}
+    ${sectionHeader('tools-kitchen-2', 'Food & dining')}
     ${grid2(`
       ${cell('Dietary', dietHtml, {
         badge: dietCritical ? criticalBadge() : '',
