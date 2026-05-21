@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="jjlogo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journey Junction — Terms of Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display:ital@0;1&family=Lora:ital@0;1&family=Noto+Sans+JP:wght@400;500;600&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F5F1E8;--paper:#FFFDF8;
+  --ink:#1B1F1C;--ink-2:#4A524C;--ink-3:#8B908A;
+  --green:#5E7B6E;--green-d:#3E5448;
+  --amber:#D4913D;
+  --rule:rgba(27,31,28,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;
+  background:var(--cream);color:var(--ink);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  line-height:1.65;
+}
+html[lang="ja"] body{font-family:'Noto Sans JP','DM Sans',sans-serif;}
+html[lang="ja"] h1,html[lang="ja"] h2,html[lang="ja"] h3,html[lang="ja"] .brand{
+  font-family:'Noto Serif JP','DM Serif Display',serif;
+}
+
+/* Top bar */
+.topbar{
+  position:sticky;top:0;z-index:10;
+  background:rgba(245,241,232,0.92);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--rule);
+  padding:14px 24px;
+  display:flex;align-items:center;gap:14px;
+}
+.back{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 12px;border:1px solid var(--rule);border-radius:99px;
+  background:#fff;color:var(--ink-2);font-size:12.5px;font-weight:500;
+  text-decoration:none;transition:background 0.15s, border-color 0.15s;
+}
+.back:hover{background:#fff;border-color:var(--green);}
+.back svg{width:13px;height:13px;}
+.brand{font-family:'DM Serif Display',serif;font-size:20px;letter-spacing:-0.3px;}
+.brand em{font-style:italic;color:var(--green);}
+.top-spacer{flex:1;}
+.lang-pill{display:inline-flex;gap:2px;padding:2px;background:rgba(255,255,255,0.6);border:1px solid var(--rule);border-radius:99px;}
+.lang-pill button{padding:4px 10px;border:none;background:transparent;border-radius:99px;cursor:pointer;font-size:11.5px;font-weight:500;color:var(--ink-3);font-family:inherit;display:inline-flex;align-items:center;gap:5px;}
+.lang-pill button svg{width:18px;height:12px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.08);opacity:0.75;}
+.lang-pill button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+.lang-pill button.active svg{opacity:1;}
+
+.container{max-width:880px;margin:0 auto;padding:48px 28px 96px;}
+.banner{
+  margin-bottom:32px;padding:14px 18px;
+  background:rgba(212,145,61,0.10);border:1px solid rgba(212,145,61,0.32);
+  border-radius:10px;
+  font-size:13px;color:#7B4E1E;line-height:1.55;
+}
+.banner strong{font-weight:700;}
+.doc-head{margin-bottom:40px;}
+.doc-eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--green-d);margin-bottom:14px;
+  display:inline-flex;align-items:center;gap:10px;
+}
+.doc-eyebrow::before{content:"";width:24px;height:1px;background:var(--green-d);opacity:0.5;}
+h1{
+  font-family:'DM Serif Display',serif;font-weight:400;
+  font-size:clamp(34px,4vw,48px);line-height:1.04;letter-spacing:-0.02em;
+  margin-bottom:14px;
+}
+h1 em{font-style:italic;color:var(--green);}
+.doc-meta{
+  font-family:'Lora',serif;font-style:italic;font-size:14.5px;color:var(--ink-3);
+}
+html[lang="ja"] .doc-meta{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
+
+h2{
+  font-family:'DM Serif Display',serif;font-weight:400;
+  font-size:22px;letter-spacing:-0.01em;
+  margin:40px 0 12px;color:var(--ink);
+  padding-top:24px;border-top:1px solid var(--rule);
+}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+h2 .n{
+  font-family:'Lora',serif;font-style:italic;color:var(--green);font-size:15px;
+  display:inline-block;width:28px;vertical-align:middle;
+}
+html[lang="ja"] h2 .n{font-family:'Noto Sans JP',sans-serif;font-style:normal;}
+h3{
+  font-family:'DM Sans',sans-serif;font-weight:600;
+  font-size:14.5px;margin:20px 0 8px;color:var(--ink);
+}
+p{margin-bottom:14px;font-size:14.5px;color:var(--ink-2);}
+ul{margin:8px 0 16px 20px;}
+li{font-size:14.5px;color:var(--ink-2);margin-bottom:6px;}
+strong{color:var(--ink);font-weight:600;}
+a{color:var(--green);text-decoration:underline;text-underline-offset:3px;}
+a:hover{color:var(--green-d);}
+
+.contact-card{
+  margin-top:48px;padding:22px 26px;
+  background:var(--paper);border:1px solid var(--rule);border-radius:12px;
+}
+.contact-card h3{margin-top:0;}
+
+@media (max-width:640px){
+  .topbar{padding:10px 14px;}
+  .brand{font-size:17px;}
+  .container{padding:28px 18px 64px;}
+  h2{font-size:19px;}
+  .back span{display:none;}
+  .lang-pill button span{display:none;}
+  .lang-pill button{padding:5px 8px;}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="back" href="signup.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    <span data-i18n-html="back">Back</span>
+  </a>
+  <div class="brand"><img src="jj.jpg" alt="Journey Junction" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;display:inline-block;">Journey<em>Junction</em></div>
+  <div class="top-spacer"></div>
+  <div class="lang-pill" role="group" aria-label="Language">
+    <button type="button" class="active" data-lang="ja" onclick="setLang('ja')">
+      <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="30" fill="#fff"/><circle cx="30" cy="15" r="9" fill="#BC002D"/></svg>
+      <span>日本語</span>
+    </button>
+    <button type="button" data-lang="en" onclick="setLang('en')">
+      <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><clipPath id="uk-t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#uk-t)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
+      <span>EN</span>
+    </button>
+  </div>
+</header>
+
+<main class="container">
+  <div class="doc-head">
+    <div class="doc-eyebrow" data-i18n-html="eyebrow">Planner Agreement</div>
+    <h1 data-i18n-html="title">Terms of <em>Service</em></h1>
+    <div class="doc-meta" data-i18n-html="lastUpdated">Last updated: 16 May 2026 · Governed by the laws of Japan</div>
+  </div>
+
+  <div class="doc-body">
+    <h2><span class="n">1.</span><span data-i18n-html="s1.title">Who we are</span></h2>
+    <p data-i18n-html="s1.p1"><strong>Journey Junction</strong> ("we", "us", "Journey Junction") is a travel-planning marketplace operated out of Japan. We connect independent itinerary planners ("Planners", "you") with travelers visiting Japan. These Terms govern your use of Journey Junction's planner-facing services, dashboard, and any related tools.</p>
+    <p data-i18n-html="s1.p2">By creating a planner account, you confirm you have read, understood, and agreed to be bound by these Terms and our <a href="privacy.html">Privacy Policy</a>.</p>
+
+    <h2><span class="n">2.</span><span data-i18n-html="s2.title">Eligibility</span></h2>
+    <p data-i18n-html="s2.p1">To register as a Planner you must:</p>
+    <ul>
+      <li data-i18n-html="s2.l1">be at least <strong>18 years old</strong>;</li>
+      <li data-i18n-html="s2.l2">have the legal right to work as an independent contractor in your country of residence;</li>
+      <li data-i18n-html="s2.l3">hold a valid bank account in your own name able to receive JPY transfers;</li>
+      <li data-i18n-html="s2.l4">provide accurate, up-to-date information during signup and keep your profile current.</li>
+    </ul>
+
+    <h2><span class="n">3.</span><span data-i18n-html="s3.title">Your role as a Planner</span></h2>
+    <p data-i18n-html="s3.p1">Planners work with Journey Junction as <strong>independent contractors</strong>, not employees. You choose which sets to accept from your dashboard and are responsible for delivering itineraries that meet our published quality standards.</p>
+    <h3 data-i18n-html="s3.h1">Obligations</h3>
+    <ul>
+      <li data-i18n-html="s3.l1"><strong>Quality.</strong> Each itinerary must be original, factually accurate, and tailored to the traveler's brief.</li>
+      <li data-i18n-html="s3.l2"><strong>Deadlines.</strong> Complete sets by the deadline shown on your dashboard. If you can't, request an extension before it lapses.</li>
+      <li data-i18n-html="s3.l3"><strong>Professionalism.</strong> Communicate respectfully with travelers and support staff. Discriminatory, harassing, or misleading content is not permitted.</li>
+      <li data-i18n-html="s3.l4"><strong>Originality.</strong> You warrant that itineraries, images, and notes you upload are your own work or properly licensed for use.</li>
+    </ul>
+
+    <h2><span class="n">4.</span><span data-i18n-html="s4.title">Commission and payouts</span></h2>
+    <p data-i18n-html="s4.p1">Each set's commission is displayed on your dashboard before you claim it. Payouts are made in <strong>Japanese Yen (¥)</strong> via bank transfer or PayPay, depending on the payout method you set in your profile.</p>
+    <h3 data-i18n-html="s4.h1">Payout timing</h3>
+    <p data-i18n-html="s4.p2">Commission is released after all 15 plans in a set are reviewed and approved by admin. Standard release time is within <strong>24 hours of final approval</strong>, subject to banking-day delays.</p>
+    <h3 data-i18n-html="s4.hW">Weekly salary</h3>
+    <p data-i18n-html="s4.pW">Planners who complete at least <strong>1 set in a rolling 7-day cycle</strong> are paid a <strong>¥50,000 weekly salary</strong>, credited to their wallet after the cycle ends. The first cycle begins on the date the planner completes their first-ever set; subsequent cycles run as consecutive 7-day windows anchored to that same date. The salary is in addition to per-plan commission and bond refunds. Cycles in which no set is completed do not qualify.</p>
+    <h3 data-i18n-html="s4.h2">Wallet protection buffer</h3>
+    <p data-i18n-html="s4.p3">Journey Junction may hold a <strong>protection buffer</strong> in your wallet to cover post-approval adjustments (disputed plans, reversals, bond corrections) without clawing back from your bank. The buffer amount, if any, is set by the platform and shown in your Wallet at any time. Anything earned above the buffer is fully withdrawable. We may revise the buffer amount from time to time at our discretion.</p>
+    <h3 data-i18n-html="s4.h3">Large-payout security deposit</h3>
+    <p data-i18n-html="s4.p4">To protect the platform and travelers against <strong>fraud, chargebacks, and coordinated account manipulation</strong>, any withdrawal of <strong>¥1,000,000 or more</strong> requires a refundable <strong>Platform Usage Deposit starting at ¥600,000</strong> — scaled to the withdrawal amount and risk profile — held in Journey Junction escrow.</p>
+    <p data-i18n-html="s4.p6">The deposit is released <strong>within one business day</strong> after the withdrawal clears, provided no traveler disputes, chargebacks, or compliance reviews are open against your plans. The deposit earns no interest and is returned in full to your registered bank account on release.</p>
+    <p data-i18n-html="s4.p7">The deposit may be <strong>forfeited in whole or in part</strong> if: (a) confirmed fraud, identity misrepresentation, or account manipulation is found; (b) a chargeback or dispute is resolved against Journey Junction before the deposit is released; or (c) you withdraw funds and attempt to close the account to evade a pending investigation.</p>
+
+    <h2><span class="n">5.</span><span data-i18n-html="s5.title">Commitment bonds</span></h2>
+    <p data-i18n-html="s5.p1">Certain premium plans (corporate, VIP, or large groups) require a <strong>refundable bond</strong> before you can claim them. The bond is held in Journey Junction's escrow and returned in full together with your commission once the plan is approved.</p>
+    <p data-i18n-html="s5.p2">If you miss a deadline without an approved extension, or materially fail to deliver a bond-secured plan, the bond may be forfeited in whole or in part to protect the traveler.</p>
+
+    <h2><span class="n">6.</span><span data-i18n-html="s6.title">Intellectual property</span></h2>
+    <p data-i18n-html="s6.p1">You retain authorship of your itinerary content. By submitting it to Journey Junction, you grant us a worldwide, non-exclusive, royalty-free license to store, display, and deliver the itinerary to the traveler it was prepared for. We will not republish your work outside the platform without your separate consent.</p>
+
+    <h2><span class="n">7.</span><span data-i18n-html="s7.title">Prohibited conduct</span></h2>
+    <p data-i18n-html="s7.p1">You agree not to:</p>
+    <ul>
+      <li data-i18n-html="s7.l1">solicit travelers off the platform, or share contact details to circumvent Journey Junction;</li>
+      <li data-i18n-html="s7.l2">upload plagiarised content, stock AI output passed off as original, or content that infringes third-party rights;</li>
+      <li data-i18n-html="s7.l3">misrepresent your identity, qualifications, or residency;</li>
+      <li data-i18n-html="s7.l4">use the platform to promote illegal activity or unlicensed services;</li>
+      <li data-i18n-html="s7.l5">reverse-engineer, scrape, or abuse the Journey Junction APIs or dashboard.</li>
+    </ul>
+
+    <h2><span class="n">8.</span><span data-i18n-html="s8.title">Suspension and termination</span></h2>
+    <p data-i18n-html="s8.p1">We may suspend or terminate your planner account, with or without prior notice, for repeated missed deadlines, low-quality output, abuse of the support channel, prohibited conduct, or on regulatory grounds.</p>
+    <p data-i18n-html="s8.p2">If terminated, you forfeit access to unclaimed sets and any unreleased commission pending adjudication of outstanding issues. Commissions already approved and released remain yours.</p>
+
+    <h2><span class="n">9.</span><span data-i18n-html="s9.title">Liability and disclaimers</span></h2>
+    <p data-i18n-html="s9.p1">Journey Junction is provided <strong>"as is"</strong>. We make no guarantees about the volume of sets available, earnings you may achieve, or uninterrupted service. To the maximum extent permitted by law, our aggregate liability to you for any dispute is limited to the commission paid to you in the <strong>three months preceding the claim</strong>.</p>
+
+    <h2><span class="n">10.</span><span data-i18n-html="s10.title">Changes to these Terms</span></h2>
+    <p data-i18n-html="s10.p1">We may update these Terms from time to time. Material changes will be announced via the dashboard at least 14 days before they take effect. Continued use of the platform after that date constitutes acceptance.</p>
+
+    <h2><span class="n">11.</span><span data-i18n-html="s11.title">Governing law</span></h2>
+    <p data-i18n-html="s11.p1">These Terms are governed by the laws of <strong>Japan</strong>. Any dispute not resolved informally will be submitted to the exclusive jurisdiction of the Tokyo District Court.</p>
+
+    <div class="contact-card">
+      <h3 data-i18n-html="contact.title">Contact</h3>
+      <p data-i18n-html="contact.body">Questions about these Terms? Reach out via the <a href="support.html">in-app support chat</a>, or email <strong>support@thejourneywise.com</strong>.</p>
+    </div>
+
+    <div class="contact-card" style="margin-top:20px;font-size:12.5px;line-height:1.6;color:var(--ink-3);">
+      <h3 data-i18n-html="company.title" style="font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-2);">Company information</h3>
+      <p data-i18n-html="company.body">
+        <strong>Journey Junction Ltd</strong><br>
+        Company number 15791277 · Incorporated 20 June 2024<br>
+        Registered office: Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>
+        Director: Midhun Peter
+      </p>
+    </div>
+  </div>
+</main>
+
+<script>
+const TM_I18N = {
+  en: {
+    back:'Back',
+    banner:'<strong>Draft template.</strong> This document is a working version for Journey Junction\'s planner platform. Before going live, please have it reviewed by qualified legal counsel for compliance with Japanese consumer and contractor law.',
+    eyebrow:'Planner Agreement',
+    title:'Terms of <em>Service</em>',
+    lastUpdated:'Last updated: 16 May 2026 · Governed by the laws of Japan',
+    's1.title':'Who we are',
+    's1.p1':'<strong>Journey Junction</strong> ("we", "us", "Journey Junction") is a travel-planning marketplace operated out of Japan. We connect independent itinerary planners ("Planners", "you") with travelers visiting Japan. These Terms govern your use of Journey Junction\'s planner-facing services, dashboard, and any related tools.',
+    's1.p2':'By creating a planner account, you confirm you have read, understood, and agreed to be bound by these Terms and our <a href="privacy.html">Privacy Policy</a>.',
+    's2.title':'Eligibility',
+    's2.p1':'To register as a Planner you must:',
+    's2.l1':'be at least <strong>18 years old</strong>;',
+    's2.l2':'have the legal right to work as an independent contractor in your country of residence;',
+    's2.l3':'hold a valid bank account in your own name able to receive JPY transfers;',
+    's2.l4':'provide accurate, up-to-date information during signup and keep your profile current.',
+    's3.title':'Your role as a Planner',
+    's3.p1':'Planners work with Journey Junction as <strong>independent contractors</strong>, not employees. You choose which sets to accept from your dashboard and are responsible for delivering itineraries that meet our published quality standards.',
+    's3.h1':'Obligations',
+    's3.l1':'<strong>Quality.</strong> Each itinerary must be original, factually accurate, and tailored to the traveler\'s brief.',
+    's3.l2':'<strong>Deadlines.</strong> Complete sets by the deadline shown on your dashboard. If you can\'t, request an extension before it lapses.',
+    's3.l3':'<strong>Professionalism.</strong> Communicate respectfully with travelers and support staff. Discriminatory, harassing, or misleading content is not permitted.',
+    's3.l4':'<strong>Originality.</strong> You warrant that itineraries, images, and notes you upload are your own work or properly licensed for use.',
+    's4.title':'Commission and payouts',
+    's4.p1':'Each set\'s commission is displayed on your dashboard before you claim it. Payouts are made in <strong>Japanese Yen (¥)</strong> via bank transfer or PayPay, depending on the payout method you set in your profile.',
+    's4.h1':'Payout timing',
+    's4.p2':'Commission is released after all 15 plans in a set are reviewed and approved by admin. Standard release time is within <strong>24 hours of final approval</strong>, subject to banking-day delays.',
+    's4.hW':'Weekly salary',
+    's4.pW':'Planners who complete at least <strong>1 set in a rolling 7-day cycle</strong> are paid a <strong>¥50,000 weekly salary</strong>, credited to their wallet after the cycle ends. The first cycle begins on the date the planner completes their first-ever set; subsequent cycles run as consecutive 7-day windows anchored to that same date. The salary is in addition to per-plan commission and bond refunds. Cycles in which no set is completed do not qualify.',
+    's4.h2':'Wallet protection buffer',
+    's4.p3':'Journey Junction may hold a <strong>protection buffer</strong> in your wallet to cover post-approval adjustments (disputed plans, reversals, bond corrections) without clawing back from your bank. The buffer amount, if any, is set by the platform and shown in your Wallet at any time. Anything earned above the buffer is fully withdrawable. We may revise the buffer amount from time to time at our discretion.',
+    's4.h3':'Large-payout security deposit',
+    's4.p4':'To protect the platform and travelers against <strong>fraud, chargebacks, and coordinated account manipulation</strong>, any withdrawal of <strong>¥1,000,000 or more</strong> requires a refundable <strong>Platform Usage Deposit starting at ¥600,000</strong> — scaled to the withdrawal amount and risk profile — held in Journey Junction escrow.',
+    's4.p6':'The deposit is released <strong>within one business day</strong> after the withdrawal clears, provided no traveler disputes, chargebacks, or compliance reviews are open against your plans. The deposit earns no interest and is returned in full to your registered bank account on release.',
+    's4.p7':'The deposit may be <strong>forfeited in whole or in part</strong> if: (a) confirmed fraud, identity misrepresentation, or account manipulation is found; (b) a chargeback or dispute is resolved against Journey Junction before the deposit is released; or (c) you withdraw funds and attempt to close the account to evade a pending investigation.',
+    's5.title':'Commitment bonds',
+    's5.p1':'Certain premium plans (corporate, VIP, or large groups) require a <strong>refundable bond</strong> before you can claim them. The bond is held in Journey Junction\'s escrow and returned in full together with your commission once the plan is approved.',
+    's5.p2':'If you miss a deadline without an approved extension, or materially fail to deliver a bond-secured plan, the bond may be forfeited in whole or in part to protect the traveler.',
+    's6.title':'Intellectual property',
+    's6.p1':'You retain authorship of your itinerary content. By submitting it to Journey Junction, you grant us a worldwide, non-exclusive, royalty-free license to store, display, and deliver the itinerary to the traveler it was prepared for. We will not republish your work outside the platform without your separate consent.',
+    's7.title':'Prohibited conduct',
+    's7.p1':'You agree not to:',
+    's7.l1':'solicit travelers off the platform, or share contact details to circumvent Journey Junction;',
+    's7.l2':'upload plagiarised content, stock AI output passed off as original, or content that infringes third-party rights;',
+    's7.l3':'misrepresent your identity, qualifications, or residency;',
+    's7.l4':'use the platform to promote illegal activity or unlicensed services;',
+    's7.l5':'reverse-engineer, scrape, or abuse the Journey Junction APIs or dashboard.',
+    's8.title':'Suspension and termination',
+    's8.p1':'We may suspend or terminate your planner account, with or without prior notice, for repeated missed deadlines, low-quality output, abuse of the support channel, prohibited conduct, or on regulatory grounds.',
+    's8.p2':'If terminated, you forfeit access to unclaimed sets and any unreleased commission pending adjudication of outstanding issues. Commissions already approved and released remain yours.',
+    's9.title':'Liability and disclaimers',
+    's9.p1':'Journey Junction is provided <strong>"as is"</strong>. We make no guarantees about the volume of sets available, earnings you may achieve, or uninterrupted service. To the maximum extent permitted by law, our aggregate liability to you for any dispute is limited to the commission paid to you in the <strong>three months preceding the claim</strong>.',
+    's10.title':'Changes to these Terms',
+    's10.p1':'We may update these Terms from time to time. Material changes will be announced via the dashboard at least 14 days before they take effect. Continued use of the platform after that date constitutes acceptance.',
+    's11.title':'Governing law',
+    's11.p1':'These Terms are governed by the laws of <strong>Japan</strong>. Any dispute not resolved informally will be submitted to the exclusive jurisdiction of the Tokyo District Court.',
+    'contact.title':'Contact',
+    'contact.body':'Questions about these Terms? Reach out via the <a href="support.html">in-app support chat</a>, or email <strong>support@thejourneywise.com</strong>.',
+    'company.title':'Company information',
+    'company.body':'<strong>Journey Junction Ltd</strong><br>Company number 15791277 · Incorporated 20 June 2024<br>Registered office: Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>Director: Midhun Peter'
+  },
+  ja: {
+    back:'戻る',
+    banner:'<strong>下書き版。</strong> 本書類はJourney Junctionプランナー向けプラットフォームの作業版です。公開前に日本の消費者契約法・業務委託契約法に基づき、必ず適格な法律専門家によるレビューを受けてください。',
+    eyebrow:'プランナー規約',
+    title:'利用<em>規約</em>',
+    lastUpdated:'最終更新日：2026年5月16日 · 日本法に準拠',
+    's1.title':'Journey Junctionについて',
+    's1.p1':'<strong>Journey Junction</strong>（以下「当社」「Journey Junction」）は、日本で運営される旅行プランマーケットプレイスです。独立したプランナー（以下「プランナー」「あなた」）と、日本を訪れる旅行者を結びつけます。本規約は、Journey Junctionのプランナー向けサービス、ダッシュボード、関連ツールの利用に適用されます。',
+    's1.p2':'プランナーアカウントを作成することにより、あなたは本規約および<a href="privacy.html">プライバシーポリシー</a>を読み、理解し、これに拘束されることに同意したものとみなされます。',
+    's2.title':'利用資格',
+    's2.p1':'プランナーとして登録するには、次の条件を満たす必要があります：',
+    's2.l1':'<strong>18歳以上</strong>であること；',
+    's2.l2':'居住国において独立した業務委託契約者として働く法的権利を有すること；',
+    's2.l3':'日本円建て送金を受領可能な、あなた本人名義の有効な銀行口座を保有していること；',
+    's2.l4':'登録時に正確かつ最新の情報を提供し、プロフィールを最新に保つこと。',
+    's3.title':'プランナーとしての役割',
+    's3.p1':'プランナーはJourney Junctionと<strong>業務委託契約</strong>の関係にあり、従業員ではありません。ダッシュボードから引き受けるセットを自ら選択し、公開された品質基準を満たすプランを提供する責任を負います。',
+    's3.h1':'義務事項',
+    's3.l1':'<strong>品質：</strong>すべてのプランはオリジナルで、事実に基づき、旅行者のブリーフに合わせて作成されなければなりません。',
+    's3.l2':'<strong>締切：</strong>ダッシュボードに表示された締切までにセットを完成させてください。間に合わない場合は、締切前に延長申請をしてください。',
+    's3.l3':'<strong>プロフェッショナリズム：</strong>旅行者およびサポートスタッフと敬意をもってコミュニケーションを取ってください。差別的、嫌がらせ的、誤解を招くコンテンツは禁止されています。',
+    's3.l4':'<strong>オリジナリティ：</strong>アップロードするプラン、画像、ノートはすべてあなた自身の制作物、または正当にライセンスされたものであることを保証します。',
+    's4.title':'コミッションと出金',
+    's4.p1':'各セットのコミッションは、引き受ける前にダッシュボードに表示されます。出金は<strong>日本円（¥）</strong>で、プロフィールで設定された受取方法（銀行振込またはPayPay）にて行われます。',
+    's4.h1':'出金タイミング',
+    's4.p2':'セット内の全15プランが管理者によってレビュー・承認された後にコミッションが解放されます。通常の解放時間は<strong>最終承認から24時間以内</strong>ですが、銀行営業日の影響を受けます。',
+    's4.hW':'週給',
+    's4.pW':'ローリング7日サイクル中に<strong>1セット以上完成</strong>したプランナーには、サイクル終了後に<strong>週給¥50,000</strong>がウォレットへ支給されます。最初のサイクルは、プランナーが初めてセット案件を完成された日を起点とし、その後は同日を起点とする連続した7日サイクルとなります。週給はプランごとのコミッションおよび保証金返金に加算されるものであり、セットを完成していないサイクルは対象外となります。',
+    's4.h2':'ウォレット保護バッファ',
+    's4.p3':'Journey Junctionは、承認後の調整（プラン異議、返金、保証金修正など）を銀行口座から取り戻すことなく対応するため、ウォレット内に<strong>保護バッファ</strong>を留保することがあります。バッファ額（ある場合）はプラットフォームが定め、ウォレット画面に随時表示されます。バッファを超える金額はすべて出金可能です。バッファ額は当社の裁量で随時変更される場合があります。',
+    's4.h3':'高額出金セキュリティデポジット',
+    's4.p4':'プラットフォームおよび旅行者を<strong>不正行為、チャージバック、連携型アカウント操作</strong>から保護するため、<strong>¥1,000,000以上</strong>の出金には、Journey Junctionエスクローで保管する<strong>最低¥600,000からの返金可能なプラットフォーム利用デポジット</strong>（出金額およびリスクプロファイルに応じて算定）が必要です。',
+    's4.p6':'デポジットは、対象プランに関する旅行者異議、チャージバック、コンプライアンス調査が発生していない場合、出金確定後<strong>1営業日以内</strong>に解放されます。デポジットに利息は付かず、解放時にご登録の銀行口座へ全額返金されます。',
+    's4.p7':'以下の場合、デポジットの全部または一部が<strong>没収</strong>される場合があります：(a) 不正行為、身分偽装、アカウント操作が確認された場合；(b) デポジット解放前にチャージバックまたは紛争がJourney Junctionに不利に解決された場合；(c) 調査中に資金を引き出してアカウントを閉鎖しようとした場合。',
+    's5.title':'コミットメント履行保証金',
+    's5.p1':'一部のプレミアムプラン（法人、VIP、大型グループ）では、プランを引き受ける前に<strong>返金可能な履行保証金</strong>が必要です。履行保証金はJourney Junctionのエスクローに保管され、プランが承認されるとコミッションとともに全額返金されます。',
+    's5.p2':'承認された延長なしに締切を過ぎた場合、または履行保証金対象のプランを実質的に提供できなかった場合、旅行者保護のため、履行保証金の全部または一部が没収されることがあります。',
+    's6.title':'知的財産',
+    's6.p1':'プランのコンテンツの著作権はあなたに帰属します。Journey Junctionに提出することにより、あなたは当社に対し、当該プランを作成対象の旅行者に保管・表示・提供するための全世界・非独占的・ロイヤリティフリーのライセンスを付与します。あなたの別途の同意なく、プラットフォーム外で作品を再公開することはありません。',
+    's7.title':'禁止行為',
+    's7.p1':'以下の行為を行わないことに同意します：',
+    's7.l1':'プラットフォーム外で旅行者を勧誘すること、またはJourney Junctionを回避するために連絡先を共有すること；',
+    's7.l2':'盗用コンテンツ、AI生成物をオリジナルと偽ること、または第三者の権利を侵害するコンテンツをアップロードすること；',
+    's7.l3':'身分、資格、居住地を偽ること；',
+    's7.l4':'違法行為や無資格サービスの宣伝にプラットフォームを使用すること；',
+    's7.l5':'Journey JunctionのAPIやダッシュボードをリバースエンジニアリング、スクレイピング、悪用すること。',
+    's8.title':'アカウント停止・解約',
+    's8.p1':'締切違反の繰り返し、低品質のアウトプット、サポートチャネルの悪用、禁止行為、または規制上の理由により、当社は事前通知の有無にかかわらず、あなたのプランナーアカウントを停止または解約する場合があります。',
+    's8.p2':'解約された場合、未引き受けセットへのアクセスおよび未解決の問題の判断待ちの未解放コミッションを失います。すでに承認・解放されたコミッションはあなたのものとして残ります。',
+    's9.title':'責任および免責',
+    's9.p1':'Journey Junctionは<strong>「現状有姿」</strong>で提供されます。利用可能なセットの量、得られる収入、無中断のサービスについて何ら保証するものではありません。法律で認められる最大限の範囲で、紛争に対する当社の総責任は、<strong>請求の直前3ヶ月間にあなたへ支払われたコミッション</strong>額を上限とします。',
+    's10.title':'本規約の変更',
+    's10.p1':'本規約は随時更新される場合があります。実質的な変更は、発効の少なくとも14日前にダッシュボードで告知されます。その日以降のプラットフォーム継続利用は、変更への同意とみなされます。',
+    's11.title':'準拠法',
+    's11.p1':'本規約は<strong>日本</strong>の法律に準拠します。非公式に解決されない紛争は、東京地方裁判所の専属管轄に服するものとします。',
+    'contact.title':'お問い合わせ',
+    'contact.body':'本規約についてご質問は、<a href="support.html">アプリ内サポートチャット</a>またはメール<strong>support@thejourneywise.com</strong>までお寄せください。',
+    'company.title':'運営会社情報',
+    'company.body':'<strong>Journey Junction Ltd</strong><br>会社番号：15791277 ／ 設立日：2024年6月20日<br>登記上の住所：Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>代表者：Midhun Peter'
+  }
+}
+
+let TM_LANG = localStorage.getItem('jj_planner_lang') || 'ja'
+if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
+
+function t(k){ return TM_I18N[TM_LANG]?.[k] ?? TM_I18N.en[k] ?? k }
+function applyLang(){
+  document.documentElement.lang = TM_LANG
+  // Order matters: set innerHTML first, then textContent on elements that
+  // only have data-i18n (not data-i18n-html). :not() prevents textContent
+  // from wiping an innerHTML we just set on dual-tagged elements.
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')) })
+  document.querySelectorAll('[data-i18n]:not([data-i18n-html])').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')) })
+  document.querySelectorAll('.lang-pill button').forEach(b => b.classList.toggle('active', b.dataset.lang === TM_LANG))
+  document.title = TM_LANG === 'ja' ? 'Journey Junction — 利用規約' : 'Journey Junction — Terms of Service'
+}
+function setLang(l){ if (l === TM_LANG) return; TM_LANG = l; localStorage.setItem('jj_planner_lang', l); applyLang() }
+applyLang()
+</script>
+</body>
+</html>

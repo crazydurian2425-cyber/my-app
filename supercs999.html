@@ -1,0 +1,2813 @@
+<!-- Journey Junction — CS console v1.0 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="jjlogo.png">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journey Junction — CS Console</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Dark palette (default) — warm charcoal, bright green accents */
+  --ink:#ECE8DE;        /* primary text */
+  --ink-2:#B4B0A4;      /* secondary text */
+  --ink-3:#7D796F;      /* muted */
+  --ink-4:#4F4C46;
+  --cream:#17181A;      /* page bg */
+  --surface:#1F2124;    /* card surface */
+  --surface-2:#272A2D;  /* elevated surface */
+  --border:rgba(255,255,255,0.07);
+  --border-med:rgba(255,255,255,0.14);
+  --green:#4FB891;
+  --green-light:rgba(79,184,145,0.14);
+  --green-mid:#3FA17D;
+  --green-dark:#63C9A3;
+  --amber:#E6B168;
+  --amber-light:rgba(230,177,104,0.12);
+  --red:#E06855;
+  --red-light:rgba(224,104,85,0.14);
+  --blue:#7EAED8;
+  --accent-fg:#0E0F10;   /* text-on-accent (dark) for sage buttons */
+  --sidebar-w:260px;--info-w:320px;--info-w-min:260px;--info-w-max:540px;--radius:10px;--radius-sm:7px;
+  color-scheme:dark;
+}
+/* Light mode override — applied when body has .cs-light */
+body.cs-light{
+  --ink:#0d0d0b;--ink-2:#3a3a36;--ink-3:#7a7a74;--ink-4:#b4b4ae;
+  --cream:#faf9f6;--surface:#ffffff;--surface-2:#f3f2ee;
+  --border:rgba(0,0,0,0.07);--border-med:rgba(0,0,0,0.12);
+  --green:#1a7a5e;--green-light:#e8f5f0;--green-mid:#2d9e7a;--green-dark:#0f5240;
+  --amber:#b87333;--amber-light:#fdf3e3;
+  --red:#c0392b;--red-light:#fdecea;
+  --blue:#1a5fa8;
+  --accent-fg:#ffffff;
+  color-scheme:light;
+}
+
+/* Theme toggle button */
+.theme-toggle{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:1px solid var(--border-med);background:var(--surface-2);color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease;z-index:10;}
+.theme-toggle:hover{color:var(--green);border-color:var(--green);}
+.theme-toggle svg{width:14px;height:14px;}
+.theme-toggle .sun{display:none;}
+.theme-toggle .moon{display:block;}
+body.cs-light .theme-toggle .sun{display:block;}
+body.cs-light .theme-toggle .moon{display:none;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);height:100vh;height:100dvh;display:flex;overflow:hidden;}
+
+/* SIDEBAR — conversation inbox */
+.inbox{width:var(--sidebar-w);min-width:240px;max-width:560px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative;}
+/* Drag handle on the right edge — lets the user resize the inbox column. */
+.inbox-resize{position:absolute;top:0;right:-3px;width:6px;height:100%;cursor:col-resize;z-index:5;}
+.inbox-resize:hover,.inbox.resizing .inbox-resize{background:rgba(45,158,122,0.22);}
+.inbox.resizing{user-select:none;}
+.inbox-head{padding:10px 12px 8px;border-bottom:1px solid var(--border);position:relative;}
+/* Brand row: logo inline with name, kept on a single line. padding-right
+   reserves space for the two absolute toggle buttons (theme + sound). */
+.brand{font-family:'Syne',sans-serif;font-size:13.5px;font-weight:700;color:var(--ink);letter-spacing:-0.3px;padding-right:80px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;}
+.brand img{width:20px!important;height:20px!important;margin-right:0!important;flex-shrink:0;}
+.brand span{color:var(--green-mid);}
+.brand-tag{font-size:9px;color:var(--ink-3);margin-top:3px;letter-spacing:0.10em;text-transform:uppercase;}
+/* Compact inline stats: label and value side-by-side on one row. */
+.inbox-stats{display:flex;gap:6px;margin-top:7px;}
+.inbox-stat{flex:1;padding:4px 8px;background:var(--cream);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.inbox-stat-label{font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;}
+.inbox-stat-val{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:0;line-height:1;}
+.inbox-filter{display:flex;gap:4px;padding:8px 12px 4px;border-bottom:none;}
+/* Tag-filter row — single line, scrolls horizontally if it overflows. */
+.inbox-tag-filter{display:flex;flex-wrap:nowrap;gap:4px;padding:4px 12px 6px;overflow-x:auto;scrollbar-width:none;}
+.inbox-tag-filter::-webkit-scrollbar{display:none;}
+.tag-filter-chip{padding:2px 7px;border-radius:99px;background:transparent;border:1px solid var(--border-med);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink-3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .12s,border-color .12s,color .12s;white-space:nowrap;flex-shrink:0;}
+.tag-filter-chip:hover{border-color:var(--ink-3);color:var(--ink);}
+.tag-filter-chip.on{border-color:var(--green-mid);background:rgba(45,158,122,0.12);color:var(--green-dark,#0f5240);}
+.filter-chip{flex:1;text-align:center;padding:4px 6px;font-size:10.5px;border-radius:99px;border:1px solid var(--border-med);background:none;cursor:pointer;color:var(--ink-2);font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.filter-chip.active{background:var(--green-mid);color:var(--accent-fg);border-color:var(--green-mid);font-weight:600;}
+.conv-list{flex:1;overflow-y:auto;}
+.conv-row{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:10px;align-items:flex-start;}
+.conv-row:hover{background:var(--cream);}
+.conv-row.active{background:var(--green-light);border-left:2px solid var(--green-mid);padding-left:14px;}
+.conv-row.unread{background:rgba(230,177,104,0.08);}
+.conv-row.active.unread{background:var(--green-light);}
+.conv-row.pinned{background:linear-gradient(90deg, rgba(193,125,42,0.06), transparent 60%);}
+.conv-row.pinned.active{background:linear-gradient(90deg, rgba(193,125,42,0.10), var(--green-light) 60%);}
+/* Conversation chips: tags + pin badge + assignee initials in the row */
+.conv-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.conv-tag{font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:rgba(45,158,122,0.10);color:var(--green-dark,#0f5240);border:1px solid rgba(45,158,122,0.22);letter-spacing:0.03em;text-transform:uppercase;}
+.conv-tag.tag-bond     {background:rgba(193,125,42,0.10);color:var(--amber,#b87333);border-color:rgba(193,125,42,0.30);}
+.conv-tag.tag-payout   {background:rgba(45,158,122,0.10);color:var(--green-dark,#0f5240);border-color:rgba(45,158,122,0.22);}
+.conv-tag.tag-dispute  {background:rgba(224,104,85,0.10);color:var(--red,#c0392b);border-color:rgba(224,104,85,0.32);}
+.conv-tag.tag-training {background:rgba(126,174,216,0.10);color:#3b7fb8;border-color:rgba(126,174,216,0.32);}
+.conv-pin-mark{font-size:11px;line-height:1;color:var(--amber,#b87333);}
+.conv-assignee{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--ink-3);font-weight:600;letter-spacing:0.02em;padding:1px 6px;background:var(--surface-2);border-radius:99px;border:1px solid var(--border);}
+/* Conversation-controls block inside the info panel */
+.cc-section{border-top:1px solid var(--border);padding-top:12px;margin-top:12px;}
+.cc-actions{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.cc-btn{padding:6px 10px;background:var(--surface-2);border:1px solid var(--border-med);color:var(--ink);border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .12s,border-color .12s;}
+.cc-btn:hover{background:var(--cream);border-color:var(--ink-3);}
+.cc-btn.active{background:var(--green-mid);color:var(--accent-fg);border-color:var(--green-mid);}
+.cc-tags-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.cc-tag-chip{padding:3px 9px;border-radius:99px;border:1px dashed var(--border-med);background:transparent;color:var(--ink-3);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.02em;text-transform:uppercase;}
+.cc-tag-chip:hover{border-color:var(--ink-3);color:var(--ink);}
+.cc-tag-chip.on{border-style:solid;border-color:var(--green-mid);background:rgba(45,158,122,0.10);color:var(--green-dark,#0f5240);}
+.conv-av{width:34px;height:34px;border-radius:50%;background:var(--green-light);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.conv-body{flex:1;min-width:0;}
+.conv-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
+.conv-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.conv-time{font-size:10.5px;color:var(--ink-3);flex-shrink:0;}
+.conv-preview{font-size:11.5px;color:var(--ink-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35;}
+.conv-preview .sender-tag{color:var(--ink-2);font-weight:500;}
+.unread-pill{background:var(--red);color:white;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;}
+
+/* CHAT PANEL */
+.chat-panel{flex:1;display:flex;flex-direction:column;height:100vh;height:100dvh;background:var(--cream);}
+.chat-head{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 22px;display:flex;align-items:center;gap:14px;}
+.chat-head-av{width:40px;height:40px;border-radius:50%;background:var(--green-light);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;}
+.chat-head-name{font-size:15px;font-weight:600;color:var(--ink);}
+.chat-head-meta{font-size:11.5px;color:var(--ink-3);margin-top:2px;}
+.chat-head-actions{margin-left:auto;display:flex;gap:8px;}
+.btn-ghost-sm{padding:7px 13px;border-radius:7px;border:1px solid var(--border-med);background:var(--surface);color:var(--ink-2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-ghost-sm:hover{background:var(--cream);}
+.btn-red-sm{padding:7px 13px;border-radius:7px;border:1px solid var(--red);background:var(--red);color:white;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+.chat-scroll{flex:1;overflow-y:auto;padding:24px 22px;display:flex;flex-direction:column;gap:10px;}
+.msg{max-width:620px;display:flex;flex-direction:column;gap:3px;}
+.msg.planner{align-self:flex-start;}
+.msg.cs{align-self:flex-end;}
+.msg.system{align-self:center;max-width:90%;}
+.msg-bubble{padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;}
+.msg.planner .msg-bubble{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);border-bottom-left-radius:4px;}
+.msg.cs .msg-bubble{background:var(--green-mid);color:var(--accent-fg);border-bottom-right-radius:4px;font-weight:500;}
+.msg.system .msg-bubble{background:rgba(0,0,0,0.04);color:var(--ink-3);font-size:11.5px;text-align:center;font-style:italic;}
+/* Translate button + translated text — only appears on planner JA messages */
+.msg-translate-btn{margin-top:4px;align-self:flex-start;padding:3px 9px;font-size:11px;background:transparent;border:1px solid var(--border-med);border-radius:99px;color:var(--ink-3);font-family:'DM Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .12s,border-color .12s,color .12s;}
+.msg-translate-btn:hover{background:rgba(45,158,122,0.08);border-color:var(--green-mid);color:var(--green);}
+.msg-translate-btn:disabled{opacity:0.6;cursor:wait;}
+.msg-translation{margin-top:4px;padding:8px 12px;background:rgba(45,158,122,0.06);border-left:2px solid var(--green-mid);border-radius:6px;font-size:12.5px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap;word-wrap:break-word;}
+.msg-translation.error{background:var(--red-light);border-left-color:var(--red);color:var(--red);font-size:11.5px;}
+body.theme-dark .msg-translation{background:rgba(79,184,145,0.10);color:var(--ink);}
+.msg-meta{font-size:10.5px;color:var(--ink-3);padding:0 6px;display:flex;align-items:center;gap:6px;}
+.msg.cs .msg-meta{text-align:right;justify-content:flex-end;}
+.msg-edited{font-size:10px;color:var(--ink-4);font-style:italic;}
+/* Hover actions (edit / delete) — only on CS's own bubbles */
+.msg-actions{opacity:0;transition:opacity 0.15s ease;display:inline-flex;gap:4px;margin-left:4px;}
+.msg.cs:hover .msg-actions{opacity:1;}
+.msg-action-btn{background:transparent;border:none;cursor:pointer;padding:3px;border-radius:5px;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;transition:background 0.12s, color 0.12s;}
+.msg-action-btn:hover{background:rgba(0,0,0,0.06);color:var(--ink-2);}
+.msg-action-btn.danger:hover{background:var(--red-light);color:var(--red);}
+.msg-action-btn svg{width:12px;height:12px;}
+/* Inline editor */
+.msg-editor{display:flex;flex-direction:column;gap:6px;min-width:280px;max-width:540px;}
+.msg-editor textarea{width:100%;min-height:60px;max-height:240px;resize:vertical;border:1px solid var(--border-med);border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface-2);outline:none;line-height:1.5;}
+.msg-editor textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,122,94,0.12);}
+.msg-editor-actions{display:flex;gap:6px;justify-content:flex-end;}
+.msg-editor-btn{padding:5px 12px;border-radius:7px;font-size:12px;font-weight:500;border:1px solid var(--border-med);background:var(--surface-2);color:var(--ink-2);cursor:pointer;font-family:'DM Sans',sans-serif;transition:background 0.12s;}
+.msg-editor-btn:hover{background:var(--cream);}
+.msg-editor-btn.primary{background:var(--green);color:#fff;border-color:var(--green);}
+.msg-editor-btn.primary:hover{background:var(--green-dark);}
+
+.chat-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--ink-3);gap:10px;}
+.chat-empty-icon{width:56px;height:56px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;}
+
+.compose{background:var(--surface);border-top:1px solid var(--border);padding:14px 22px;display:flex;gap:10px;align-items:flex-end;}
+.compose textarea{flex:1;min-height:44px;max-height:320px;resize:none;border:1px solid var(--border-med);border-radius:8px;padding:11px 14px;font-size:13px;line-height:1.5;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface-2);outline:none;overflow-y:auto;transition:border-color .15s ease, box-shadow .15s ease;}
+.compose textarea:focus{border-color:var(--green-mid);box-shadow:0 0 0 3px rgba(79,184,145,0.14);}
+.compose-send{padding:11px 20px;background:var(--green-mid);color:var(--accent-fg);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.compose-send:disabled{opacity:0.4;cursor:not-allowed;}
+
+.panel-info{position:relative;width:var(--info-w);min-width:var(--info-w-min);max-width:var(--info-w-max);flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);padding:18px;overflow-y:auto;}
+.panel-info.resizing{user-select:none;}
+.info-resizer{position:absolute;left:-4px;top:0;bottom:0;width:8px;cursor:ew-resize;z-index:5;background:transparent;transition:background .15s ease;}
+.info-resizer::before{content:"";position:absolute;left:3px;top:50%;transform:translateY(-50%);width:2px;height:36px;border-radius:2px;background:var(--border-med);transition:background .15s ease, height .15s ease;}
+.info-resizer:hover::before,.panel-info.resizing .info-resizer::before{background:var(--green-mid);height:54px;}
+.info-resizer:hover{background:rgba(26,122,94,0.04);}
+body.cs-resizing{cursor:ew-resize!important;}
+body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
+.info-label{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;}
+.info-val{font-size:13px;color:var(--ink);margin-bottom:14px;}
+.info-badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:600;margin-bottom:10px;}
+.info-badge.ok{background:var(--green-light);color:var(--green);}
+.info-badge.amber{background:var(--amber-light);color:var(--amber);}
+
+/* Contact rows with icon + copy */
+.contact-list{display:flex;flex-direction:column;gap:2px;margin-bottom:4px;}
+.contact-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;transition:background .12s ease;min-width:0;}
+.contact-row:hover{background:var(--surface-2);}
+.contact-row .ci{width:28px;height:28px;border-radius:7px;background:var(--green-light);color:var(--green-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.contact-row .ci svg{width:14px;height:14px;}
+.contact-row .cmain{flex:1;min-width:0;}
+.contact-row .clabel{font-size:9.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:1px;}
+.contact-row .cval{font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.contact-row .ccopy{opacity:0;background:transparent;border:none;padding:5px;border-radius:6px;color:var(--ink-3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .12s, background .12s, color .12s;flex-shrink:0;}
+.contact-row:hover .ccopy{opacity:1;}
+.contact-row .ccopy:hover{background:rgba(0,0,0,0.06);color:var(--green);}
+.contact-row .ccopy svg{width:13px;height:13px;}
+.contact-row.empty .cval{color:var(--ink-4);font-style:italic;}
+.contact-row.empty .ccopy{display:none;}
+
+/* Mini progress meter for bond / sets */
+.mini-bar{height:4px;border-radius:99px;background:rgba(0,0,0,0.06);overflow:hidden;margin-top:5px;}
+.mini-bar>span{display:block;height:100%;border-radius:99px;transition:width .45s cubic-bezier(.2,.8,.2,1);}
+.mini-bar.amber>span{background:linear-gradient(90deg,#d89244,var(--amber));}
+.mini-bar.green>span{background:linear-gradient(90deg,var(--green-mid),var(--green));}
+
+/* Section header shared */
+.cs-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cs-sec-head .info-label{margin:0;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--green-mid);color:var(--accent-fg);padding:10px 18px;border-radius:7px;font-size:13px;font-weight:600;z-index:999;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+@keyframes typDot{0%,80%,100%{opacity:0.3;transform:scale(0.9);}40%{opacity:1;transform:scale(1.15);}}
+.toast.show{display:block;animation:pop 0.22s ease-out;}
+@keyframes pop{from{opacity:0;transform:translate(-50%,8px);}to{opacity:1;transform:translate(-50%,0);}}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE (≤900px) — app-style layout:
+   - inbox slides in from left as a drawer
+   - chat panel is the primary surface
+   - info panel slides in from right as a sheet
+   - burger button opens inbox, "i" button opens info sheet
+   ═══════════════════════════════════════════════════════════ */
+/* Desktop default: mobile FABs hidden. Must be declared BEFORE the
+   mobile media query so source order doesn't override the mobile rule. */
+.cs-mobile-fab{display:none;}
+
+@media (max-width:900px){
+  body{overflow:hidden;}
+  /* Inbox — hidden by default, slides in */
+  .inbox{
+    position:fixed;top:0;left:0;bottom:0;
+    width:300px;max-width:85vw;z-index:120;
+    transform:translateX(-100%);
+    transition:transform .28s cubic-bezier(.2,.7,.2,1);
+    box-shadow:8px 0 32px rgba(0,0,0,0.35);
+  }
+  body.cs-inbox-open .inbox{transform:translateX(0);}
+  body.cs-inbox-open::before{
+    content:"";position:fixed;inset:0;z-index:110;
+    background:rgba(0,0,0,0.5);
+  }
+  /* Chat panel — full width */
+  .chat-panel{width:100%;max-width:100vw;}
+  /* Info panel — off-canvas from right */
+  .panel-info{
+    position:fixed;top:0;right:0;bottom:0;
+    width:320px;max-width:85vw;z-index:125;
+    border-left:1px solid var(--border);
+    transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.2,.7,.2,1);
+    box-shadow:-8px 0 32px rgba(0,0,0,0.35);
+    display:block!important;          /* override earlier display:none */
+  }
+  body.cs-info-open .panel-info{transform:translateX(0);}
+  body.cs-info-open::before{
+    content:"";position:fixed;inset:0;z-index:115;
+    background:rgba(0,0,0,0.5);
+  }
+  /* Resizer has no meaning on mobile */
+  .info-resizer{display:none;}
+
+  /* Floating action buttons — top-left burger, top-right info */
+  .cs-mobile-fab{
+    position:fixed;top:10px;width:38px;height:38px;border-radius:10px;
+    background:var(--surface);border:1px solid var(--border-med);
+    color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 3px 10px rgba(0,0,0,0.18);z-index:130;
+  }
+  .cs-mobile-fab svg{width:18px;height:18px;}
+  #cs-mobile-burger{left:10px;}
+  #cs-mobile-info-btn{right:10px;}
+
+  /* Chat header — pad left so burger doesn't overlap */
+  .chat-head{padding-left:58px;padding-right:58px;}
+
+  /* Messages + bubbles — take more width on narrow */
+  .msg{max-width:88%;}
+  .msg-bubble{font-size:14px;}
+  /* Compose — keep textarea tappable */
+  .compose{padding:10px 12px;}
+  .compose textarea{font-size:14px;min-height:42px;}
+  .compose-send{padding:10px 16px;}
+
+  /* Quick-replies bar wraps nicely on narrow */
+  #quick-replies{padding:6px 12px;}
+}
+@media (max-width:480px){
+  /* Hide the conv stats (Open/Unread counters) on tiny phones to save room */
+  .inbox-stats{gap:8px;}
+  .inbox-stat{padding:6px 8px;}
+  .inbox-stat-val{font-size:14px;}
+}
+/* (mobile FABs default-hidden rule is declared above the @media block) */
+</style>
+</head>
+<body>
+
+<!-- Mobile FABs — burger (inbox) + info (planner details) -->
+<button class="cs-mobile-fab" id="cs-mobile-burger" onclick="toggleCsInbox()" aria-label="Open conversations">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+</button>
+<button class="cs-mobile-fab" id="cs-mobile-info-btn" onclick="toggleCsInfo()" aria-label="Open planner info">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+</button>
+
+<!-- CONVERSATION INBOX -->
+<aside class="inbox">
+  <div class="inbox-head">
+    <button class="theme-toggle" onclick="toggleCsTheme()" title="Toggle light / dark theme" aria-label="Toggle theme">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <!-- Sound toggle for incoming-message ringtone -->
+    <button class="theme-toggle" id="cs-sound-toggle" onclick="toggleCsSound()" title="Sound on — click to mute" aria-label="Toggle sound" style="right:50px;">
+      <span id="cs-sound-icon" style="font-size:14px;line-height:1;">🔔</span>
+    </button>
+    <div class="brand"><img src="jj.jpg" alt="Journey Junction" style="width:24px;height:24px;border-radius:50%;vertical-align:middle;margin-right:8px;display:inline-block;">Journey<span>Junction</span> <span id="rt-status-dot" title="Live updates active" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green-mid,#2d9e7a);vertical-align:middle;margin-left:6px;"></span></div>
+    <div class="brand-tag">CS Console</div>
+    <div class="inbox-stats">
+      <div class="inbox-stat"><div class="inbox-stat-label">Open</div><div class="inbox-stat-val" id="stat-open">0</div></div>
+      <div class="inbox-stat"><div class="inbox-stat-label">Unread</div><div class="inbox-stat-val" id="stat-unread" style="color:var(--red);">0</div></div>
+    </div>
+  </div>
+  <div class="inbox-filter">
+    <button class="filter-chip active" data-filter="open" onclick="setFilter('open')">Open</button>
+    <button class="filter-chip" data-filter="unread" onclick="setFilter('unread')">Unread</button>
+    <button class="filter-chip" data-filter="mine" onclick="setFilter('mine')">Mine</button>
+    <button class="filter-chip" data-filter="closed" onclick="setFilter('closed')">Closed</button>
+  </div>
+  <!-- Tag filter row — click a chip to narrow inbox to that tag. Click again to clear. -->
+  <div class="inbox-tag-filter">
+    <button class="tag-filter-chip" data-tag="bond"     onclick="toggleTagFilter('bond')">bond</button>
+    <button class="tag-filter-chip" data-tag="payout"   onclick="toggleTagFilter('payout')">payout</button>
+    <button class="tag-filter-chip" data-tag="dispute"  onclick="toggleTagFilter('dispute')">dispute</button>
+    <button class="tag-filter-chip" data-tag="training" onclick="toggleTagFilter('training')">training</button>
+  </div>
+  <div style="padding:0 12px 8px;">
+    <input type="search" id="inbox-search" placeholder="Search by name, email, or message…" oninput="onInboxSearchInput()"
+           style="width:100%;padding:8px 12px;border:1px solid var(--border-med);border-radius:8px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);outline:none;">
+    <button type="button" onclick="openNewChatPicker()" title="Start a new conversation with any planner — even ones with no chat history yet"
+            style="margin-top:6px;width:100%;padding:8px 12px;border:1px dashed var(--border-med);border-radius:8px;background:transparent;color:var(--ink-2);font-size:12.5px;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .12s, border-color .12s, color .12s;"
+            onmouseover="this.style.background='rgba(45,158,122,0.08)';this.style.borderColor='var(--green-mid)';this.style.color='var(--green-dark)';"
+            onmouseout="this.style.background='transparent';this.style.borderColor='var(--border-med)';this.style.color='var(--ink-2)';">
+      <span style="font-size:14px;line-height:1;">＋</span><span>New chat with planner</span>
+    </button>
+  </div>
+  <div class="conv-list" id="conv-list">
+    <div style="padding:30px;text-align:center;color:var(--ink-3);font-size:12.5px;">Loading…</div>
+  </div>
+  <!-- Drag handle: pull right to widen inbox, double-click to reset -->
+  <div class="inbox-resize" id="inbox-resizer" title="Drag to resize · double-click to reset"></div>
+</aside>
+
+<!-- CHAT PANEL -->
+<section class="chat-panel">
+  <div class="chat-head" id="chat-head" style="display:none;">
+    <div class="chat-head-av" id="chat-head-av">—</div>
+    <div>
+      <div class="chat-head-name" id="chat-head-name">—</div>
+      <div class="chat-head-meta" id="chat-head-meta">—</div>
+    </div>
+    <div class="chat-head-actions">
+      <button class="btn-ghost-sm" onclick="reloadActive()">Refresh</button>
+      <button class="btn-ghost-sm" id="close-btn" onclick="toggleStatus()">Close</button>
+    </div>
+  </div>
+
+  <div class="chat-scroll" id="chat-scroll">
+    <div class="chat-empty">
+      <div class="chat-empty-icon">💬</div>
+      <div style="font-size:13.5px;font-weight:500;">No conversation selected</div>
+      <div style="font-size:11.5px;">Pick a thread on the left to start chatting</div>
+    </div>
+  </div>
+
+  <!-- Quick replies strip -->
+  <!-- Live-typing coordination bar (other CS agents typing on this conv) -->
+  <div id="typing-bar" style="display:none;padding:6px 22px;background:var(--surface);border-top:1px solid var(--border);font-size:12px;color:var(--ink-3);font-family:'DM Sans',sans-serif;align-items:center;gap:8px;">
+    <span class="typing-dots" aria-hidden="true" style="display:inline-flex;gap:3px;">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--green-mid);animation:typDot 1.2s infinite both;"></span>
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--green-mid);animation:typDot 1.2s 0.15s infinite both;"></span>
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--green-mid);animation:typDot 1.2s 0.3s infinite both;"></span>
+    </span>
+    <span><strong id="typing-agent" style="color:var(--ink-2);font-weight:600;">—</strong> is typing<span id="typing-preview" style="color:var(--ink-2);"></span></span>
+  </div>
+  <div id="quick-replies" style="display:none;padding:8px 22px;background:var(--surface);border-top:1px solid var(--border);gap:6px;flex-wrap:wrap;align-items:center;"></div>
+
+  <form class="compose" id="compose-form" style="display:none;" onsubmit="sendMessage(event)">
+    <input type="file" id="compose-file" accept="image/*" style="display:none;" onchange="handleImagePick(event)">
+    <button type="button" onclick="document.getElementById('compose-file').click()" title="Attach image" style="padding:10px;background:var(--surface);border:1px solid var(--border-med);border-radius:8px;cursor:pointer;color:var(--ink-3);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+    </button>
+    <button type="button" id="qr-toggle" onclick="toggleQuickReplies()" title="Quick replies" style="padding:10px 12px;background:var(--surface);border:1px solid var(--border-med);border-radius:8px;cursor:pointer;color:var(--ink-3);display:flex;align-items:center;gap:6px;font-size:12px;font-family:'DM Sans',sans-serif;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <span>Quick</span>
+    </button>
+    <textarea id="compose-input" placeholder="Type your reply… (Enter to send, Shift+Enter for new line)" rows="1"></textarea>
+    <button type="submit" class="compose-send" id="compose-send">Send</button>
+  </form>
+</section>
+
+<!-- INFO PANEL (planner details) -->
+<aside class="panel-info" id="panel-info" style="display:none;">
+  <div class="info-resizer" id="info-resizer" title="Drag to resize · double-click to reset"></div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div id="info-avatar" style="width:44px;height:44px;border-radius:50%;background:var(--green-light);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0;">?</div>
+    <div style="min-width:0;">
+      <div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="info-name">—</div>
+      <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <span class="info-badge ok" id="info-status" style="margin-bottom:0;">active</span>
+        <span id="info-bond-chip" style="display:none;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:linear-gradient(135deg, rgba(193,125,42,0.18), rgba(193,125,42,0.06));border:1px solid rgba(193,125,42,0.45);color:#a16029;box-shadow:0 0 0 3px rgba(193,125,42,0.06);">
+          <span style="width:6px;height:6px;border-radius:50%;background:#c17d2a;box-shadow:0 0 6px rgba(193,125,42,0.8);animation:bondPulse 1.6s ease-in-out infinite;"></span>
+          <span id="info-bond-chip-text">Bond pending</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context block: active set / completed state -->
+  <div id="info-state-card" style="padding:10px 12px;background:var(--cream);border:1px solid var(--border);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--ink-2);display:none;"></div>
+
+  <!-- Action buttons: bond confirm / extend / payout link -->
+  <div id="info-actions" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+
+  <!-- ─── Conversation controls: pin / snooze / assign / tags ─── -->
+  <div class="cc-section" style="border-top:none;margin-top:0;padding-top:0;">
+    <div class="info-label">Conversation</div>
+    <div class="cc-actions">
+      <button class="cc-btn" id="cc-pin-btn"     onclick="toggleConvPin()">📌 Pin</button>
+      <button class="cc-btn" id="cc-snooze-btn"  onclick="openSnoozeMenu()">😴 Snooze</button>
+      <button class="cc-btn" id="cc-assign-btn"  onclick="toggleConvAssigned()">🙋 Take</button>
+    </div>
+    <div id="cc-assigned-meta" style="font-size:11px;color:var(--ink-3);margin-bottom:8px;display:none;"></div>
+    <div id="cc-snoozed-meta"  style="font-size:11px;color:var(--amber,#b87333);margin-bottom:8px;display:none;"></div>
+    <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.10em;font-weight:600;margin-bottom:6px;">Tags</div>
+    <div class="cc-tags-chips" id="cc-tags-chips">
+      <button class="cc-tag-chip" data-tag="bond"     onclick="toggleConvTag('bond')">bond</button>
+      <button class="cc-tag-chip" data-tag="payout"   onclick="toggleConvTag('payout')">payout</button>
+      <button class="cc-tag-chip" data-tag="dispute"  onclick="toggleConvTag('dispute')">dispute</button>
+      <button class="cc-tag-chip" data-tag="training" onclick="toggleConvTag('training')">training</button>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div class="contact-list" id="contact-list">
+    <div class="contact-row" id="row-email" data-copy="">
+      <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
+      <div class="cmain"><div class="clabel">Email</div><div class="cval" id="info-email">—</div></div>
+      <button class="ccopy" onclick="copyContact('info-email', this)" title="Copy email" aria-label="Copy email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+    </div>
+    <div class="contact-row" id="row-phone" data-copy="">
+      <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92Z"/></svg></div>
+      <div class="cmain"><div class="clabel">Phone</div><div class="cval" id="info-phone">—</div></div>
+      <button class="ccopy" onclick="copyContact('info-phone', this)" title="Copy phone" aria-label="Copy phone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+    </div>
+    <div class="contact-row" id="row-city">
+      <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
+      <div class="cmain"><div class="clabel">City</div><div class="cval" id="info-city">—</div></div>
+    </div>
+    <div class="contact-row" id="row-joined">
+      <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+      <div class="cmain"><div class="clabel">Joined</div><div class="cval" id="info-joined">—</div></div>
+    </div>
+  </div>
+
+  <!-- Financial snapshot -->
+  <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:6px;">
+    <div class="info-label">Earnings snapshot</div>
+    <div style="display:grid;gap:10px;">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Total paid out</span><span style="font-weight:600;color:var(--green);" id="info-earned">¥0</span></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Pending payout</span><span style="font-weight:600;color:var(--amber);" id="info-pending">¥0</span></div>
+        <div class="mini-bar amber" id="bar-pending"><span style="width:0%;"></span></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Bond on hold</span><span style="font-weight:600;color:var(--amber);" id="info-bond-hold">¥0</span></div>
+        <div class="mini-bar amber" id="bar-bond"><span style="width:0%;"></span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Sets completed</span><span style="font-weight:600;color:var(--ink);" id="info-sets-done">0</span></div>
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
+    <div class="info-label">Recent activity</div>
+    <div id="info-activity" style="display:grid;gap:6px;font-size:11.5px;color:var(--ink-2);line-height:1.4;">—</div>
+  </div>
+
+  <!-- CS internal notes -->
+  <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div class="info-label" style="margin:0;">CS notes <span style="color:var(--ink-3);font-weight:400;text-transform:none;letter-spacing:0;">· internal</span></div>
+      <span id="cs-notes-meta" style="font-size:10px;color:var(--ink-3);"></span>
+    </div>
+    <textarea id="cs-notes-input" placeholder="Internal remarks about this planner (e.g. preferred language, past incidents, escalations)…" style="width:100%;min-height:80px;padding:9px 11px;font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.5;color:var(--ink);background:var(--surface-2);border:1px solid var(--border-med);border-radius:8px;resize:vertical;outline:none;transition:border-color .15s ease, box-shadow .15s ease;"></textarea>
+    <div style="display:flex;gap:6px;margin-top:6px;">
+      <button id="cs-notes-save" onclick="saveCsNotes()" style="flex:1;padding:7px 12px;background:var(--green-mid);color:var(--accent-fg);border:none;border-radius:7px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s ease, transform .15s ease;">Save notes</button>
+      <button id="cs-notes-cancel" onclick="resetCsNotes()" style="padding:7px 12px;background:transparent;border:1px solid var(--border);color:var(--ink-2);border-radius:7px;font-size:11.5px;cursor:pointer;font-family:'DM Sans',sans-serif;">Reset</button>
+    </div>
+  </div>
+</aside>
+
+<style>
+  #cs-notes-input:focus{ border-color:var(--green)!important; box-shadow:0 0 0 3px rgba(26,122,94,0.12); }
+  #cs-notes-save:hover{ background:var(--green-dark,#0f5240); }
+  #cs-notes-save:disabled{ opacity:0.55; cursor:not-allowed; }
+  @keyframes bondPulse { 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(1.4);opacity:0.6;} }
+</style>
+
+<!-- ─── MANAGE QUICK REPLIES MODAL ─────────────────────────────────────── -->
+<div id="qr-mgr-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border-radius:12px;width:100%;max-width:760px;max-height:88vh;display:flex;flex-direction:column;border:1px solid var(--border-med);box-shadow:0 20px 60px -10px rgba(0,0,0,0.5);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:var(--ink);">Manage quick replies</div>
+        <div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;">Add, edit, or remove chips. Saves to all CS agents instantly.</div>
+      </div>
+      <button onclick="closeQuickReplyEditor()" style="background:transparent;border:1px solid var(--border-med);color:var(--ink-2);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;font-family:'DM Sans',sans-serif;">✕</button>
+    </div>
+    <div style="padding:14px 22px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+      <span style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;">Language</span>
+      <div style="display:inline-flex;gap:0;padding:2px;background:var(--cream);border:1px solid var(--border-med);border-radius:99px;">
+        <button id="qr-mgr-en" onclick="setQrEditLang('en')" style="padding:4px 14px;border:none;background:var(--ink);color:#fff;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">EN</button>
+        <button id="qr-mgr-ja" onclick="setQrEditLang('ja')" style="padding:4px 14px;border:none;background:transparent;color:var(--ink-3);border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">日本語</button>
+      </div>
+      <span id="qr-mgr-count" style="font-size:11px;color:var(--ink-3);margin-left:auto;">—</span>
+    </div>
+    <div id="qr-mgr-list" style="flex:1;overflow-y:auto;padding:14px 22px;display:flex;flex-direction:column;gap:10px;background:var(--cream);"></div>
+    <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <button onclick="qrAddNew()" style="padding:8px 14px;background:var(--green-mid,#2d9e7a);color:#fff;border:none;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add new chip</button>
+      <button onclick="closeQuickReplyEditor()" style="padding:8px 18px;background:transparent;border:1px solid var(--border-med);color:var(--ink-2);border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Image lightbox — click any chat image to view full-size in-page -->
+<div id="img-lightbox" onclick="closeImageLightbox(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:30px;cursor:zoom-out;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
+  <img id="img-lightbox-img" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+  <button onclick="closeImageLightbox(event)" style="position:absolute;top:18px;right:18px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;" title="Close (Esc)">✕</button>
+  <a id="img-lightbox-open" href="#" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="position:absolute;bottom:18px;right:18px;padding:8px 14px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:12.5px;border-radius:8px;text-decoration:none;font-family:'DM Sans',sans-serif;">Open in new tab ↗</a>
+</div>
+
+<script>
+function openImageLightbox(url) {
+  const box = document.getElementById('img-lightbox')
+  if (!box) return
+  document.getElementById('img-lightbox-img').src = url
+  document.getElementById('img-lightbox-open').href = url
+  box.style.display = 'flex'
+  document.body.style.overflow = 'hidden'  // prevent background scroll
+}
+function closeImageLightbox(e) {
+  // Only close if the click is on the backdrop or the close button — not on
+  // the image itself (which is inside the backdrop and would bubble).
+  if (e && e.target.tagName === 'IMG') return
+  const box = document.getElementById('img-lightbox')
+  if (!box) return
+  box.style.display = 'none'
+  document.body.style.overflow = ''
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeImageLightbox()
+})
+</script>
+
+<script>
+// ── AUTH (simple password, same pattern as admin) ────────────
+// Service-role key removed from client. All Supabase REST/auth/storage calls
+// route through `/api/sb/*` which is gated by Basic Auth in _worker.js — the
+// worker swaps in the real service-role key server-side. Realtime needs a
+// separate WebSocket client with the public anon key.
+const SUPABASE_URL = 'https://swgppauxgcrcujadoecj.supabase.co'
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3Z3BwYXV4Z2NyY3VqYWRvZWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MDE2MjMsImV4cCI6MjA5MTk3NzYyM30.S5tzlD1RqfHa7zmIMNNf_vhsNzGRXCBw4PamhNyRqOg'
+const PROXY_BASE = window.location.origin + '/api/sb'
+const CS_PASS = '168168'
+const _cachedCs = localStorage.getItem('jj_cs')
+const pass = (_cachedCs === CS_PASS) ? _cachedCs : (()=>{const p=prompt('CS password:');if(p===CS_PASS){localStorage.setItem('jj_cs',p);return p}localStorage.removeItem('jj_cs');alert('Wrong password');location.reload();return null})()
+const csAgentName = localStorage.getItem('jj_cs_name') || (()=>{const n=prompt('Your name (CS agent):','Support')||'Support';localStorage.setItem('jj_cs_name',n);return n})()
+
+// Primary client — all REST/auth/storage ops go through the worker proxy.
+const sb = supabase.createClient(PROXY_BASE, SUPABASE_ANON, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+})
+
+// Realtime-only client — WebSocket subscriptions hit Supabase directly with
+// the anon key (RLS-protected reads).
+const sbRT = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+})
+
+// Per-tab session id so two tabs of the same agent still see each other's typing
+const csSessionId = 'cs_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now()
+
+// ── STATE ────────────────────────────────────────────────────
+let allConvs = []
+let activeConv = null
+let activeMessages = []
+let currentFilter = 'open'
+let msgChannel = null
+let typingChannel = null
+let convChannel = null
+
+// ── INCOMING-MESSAGE NOTIFICATIONS ───────────────────────────
+// Three signals when a planner sends a message:
+//   • Web Audio beep (always, unless muted) — audible cue
+//   • Title bar counter (only when tab unfocused) — visible in tab strip
+//   • Desktop notification (only when tab unfocused + permission granted)
+// Last-N message-id de-dupe avoids double-firing if both the active-conv
+// and inbox channels deliver the same message.
+const _csOriginalTitle = document.title
+let _csUnreadCount = 0
+let _csSoundMuted = (localStorage.getItem('jj_cs_sound') === 'muted')
+let _csAudioCtx = null
+const _csRecentMsgIds = new Set()  // simple LRU; we trim when it grows
+
+async function _csPlayBeep() {
+  if (_csSoundMuted) { console.log('[cs-sound] muted, skip'); return }
+  try {
+    if (!_csAudioCtx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext
+      if (!Ctx) { console.warn('[cs-sound] no AudioContext support'); return }
+      _csAudioCtx = new Ctx()
+    }
+    // Must await — resume() is async; calling start() while still suspended
+    // produces silence. This is the most common "no sound" cause.
+    if (_csAudioCtx.state === 'suspended') {
+      try { await _csAudioCtx.resume() } catch(_) {}
+    }
+    if (_csAudioCtx.state !== 'running') {
+      console.warn('[cs-sound] audio context not running:', _csAudioCtx.state, '— click anywhere on the page to unlock audio')
+      return
+    }
+    const t   = _csAudioCtx.currentTime
+    const osc = _csAudioCtx.createOscillator()
+    const gain= _csAudioCtx.createGain()
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(880, t)        // A5 — soft, not piercing
+    gain.gain.setValueAtTime(0, t)
+    gain.gain.linearRampToValueAtTime(0.18, t + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.30)
+    osc.connect(gain).connect(_csAudioCtx.destination)
+    osc.start(t)
+    osc.stop(t + 0.32)
+  } catch (e) {
+    console.warn('[cs-sound] beep failed:', e)
+  }
+}
+
+function _csShowDesktopNotification(senderName) {
+  if (!('Notification' in window)) return
+  if (document.hasFocus()) return
+  if (Notification.permission !== 'granted') return
+  try {
+    const n = new Notification('Journey Junction CS', {
+      body: 'New message from ' + (senderName || 'a planner'),
+      icon: '/jjlogo.png',
+      tag:  'cs-msg',          // collapses repeated notifs into one
+      silent: true             // we do our own beep — avoid double-sound
+    })
+    n.onclick = () => { window.focus(); n.close() }
+    setTimeout(() => { try { n.close() } catch(_){} }, 8000)
+  } catch (e) { /* notification API rejected — silently skip */ }
+}
+
+function _csBumpUnread() {
+  if (document.hasFocus()) return
+  _csUnreadCount++
+  document.title = `(${_csUnreadCount}) ${_csOriginalTitle}`
+}
+
+function _csResetUnread() {
+  if (_csUnreadCount === 0) return
+  _csUnreadCount = 0
+  document.title = _csOriginalTitle
+}
+
+// Reset counter the moment CS focuses the tab.
+window.addEventListener('focus', _csResetUnread)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) _csResetUnread()
+})
+
+// Trigger on every NEW planner-sent message. De-duped by message id so the
+// active-conv channel and inbox channel don't double-beep for the same row.
+function _csOnIncomingMessage(msg) {
+  if (!msg) { console.log('[cs-notify] no msg payload'); return }
+  if (msg.sender_type !== 'planner') { console.log('[cs-notify] skip — sender_type:', msg.sender_type); return }
+  if (msg.id && _csRecentMsgIds.has(msg.id)) { console.log('[cs-notify] dedupe — already handled', msg.id); return }
+  console.log('[cs-notify] incoming planner msg', { id: msg.id, conv: msg.conversation_id, muted: _csSoundMuted, focused: document.hasFocus() })
+  if (msg.id) {
+    _csRecentMsgIds.add(msg.id)
+    if (_csRecentMsgIds.size > 200) {
+      // Trim oldest ~half (Set preserves insertion order)
+      let i = 0
+      for (const k of _csRecentMsgIds) { _csRecentMsgIds.delete(k); if (++i >= 100) break }
+    }
+  }
+  _csPlayBeep()
+  _csBumpUnread()
+  // Resolve a friendly sender name for the desktop notification.
+  let name = 'a planner'
+  if (msg.conversation_id) {
+    const c = allConvs.find(c => c.id === msg.conversation_id)
+    if (c?.planners?.name) name = c.planners.name
+  }
+  _csShowDesktopNotification(name)
+}
+
+// First user click unlocks Web Audio (autoplay policy) and prompts for
+// Notification permission. Once-only, fire-and-forget. We eagerly create +
+// resume the AudioContext during the user gesture so subsequent automatic
+// beeps from the realtime channel don't hit a suspended state.
+let _csPermAsked = false
+document.addEventListener('click', () => {
+  if (_csPermAsked) return
+  _csPermAsked = true
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext
+    if (Ctx && !_csAudioCtx) _csAudioCtx = new Ctx()
+    if (_csAudioCtx?.state === 'suspended') _csAudioCtx.resume().catch(()=>{})
+    console.log('[cs-sound] audio unlocked, state:', _csAudioCtx?.state)
+  } catch (e) { console.warn('[cs-sound] unlock failed', e) }
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().then(p => console.log('[cs-notify] permission:', p)).catch(() => {})
+  }
+}, { once: true })
+
+// ── Polling fallback for new-message detection ───────────────
+// Realtime postgres_changes on `messages` is RLS-denied for anon-role
+// subscriptions (we removed the service-role key from the client). The
+// channels keep closing, so notifications never fire via realtime. This
+// poller goes through the worker proxy (which uses service role server-
+// side and bypasses RLS) and finds new planner messages every 6 seconds.
+// Dedupe set in _csOnIncomingMessage prevents double-firing if realtime
+// happens to recover and deliver the same row.
+let _csLastSeenMsgAt = new Date().toISOString()  // start = "now"; first run only catches messages after page load
+let _csNewMsgPollT = null
+async function _csPollNewMessages() {
+  try {
+    const since = _csLastSeenMsgAt
+    // Query through the proxy — uses service-role server-side. Get only
+    // planner-sent messages newer than our last sweep; cap at 20.
+    const { data, error } = await sb.from('messages')
+      .select('id, conversation_id, sender_type, created_at')
+      .eq('sender_type', 'planner')
+      .gt('created_at', since)
+      .order('created_at', { ascending: true })
+      .limit(20)
+    if (error) { console.warn('[cs-notify] poll error', error); return }
+    if (!data || !data.length) return
+    for (const msg of data) {
+      _csOnIncomingMessage(msg)
+      if (msg.created_at > _csLastSeenMsgAt) _csLastSeenMsgAt = msg.created_at
+    }
+  } catch (e) { console.warn('[cs-notify] poll failed', e) }
+}
+function _csStartNewMsgPoller() {
+  if (_csNewMsgPollT) return
+  _csNewMsgPollT = setInterval(_csPollNewMessages, 6000)
+  console.log('[cs-notify] poller started (6s interval)')
+}
+// Kick off the poller on first user interaction so we don't pre-fire while
+// the page is still spinning up.
+document.addEventListener('click', _csStartNewMsgPoller, { once: true })
+
+// Sound toggle button — wired from the inbox header.
+function toggleCsSound() {
+  _csSoundMuted = !_csSoundMuted
+  localStorage.setItem('jj_cs_sound', _csSoundMuted ? 'muted' : 'on')
+  _csUpdateSoundIcon()
+  if (!_csSoundMuted) _csPlayBeep()  // small confirmation chirp
+}
+function _csUpdateSoundIcon() {
+  const btn  = document.getElementById('cs-sound-toggle')
+  const icon = document.getElementById('cs-sound-icon')
+  if (btn) btn.title = _csSoundMuted ? 'Sound muted — click to enable' : 'Sound on — click to mute'
+  if (icon) icon.textContent = _csSoundMuted ? '🔇' : '🔔'
+}
+// Reflect persisted mute state on load.
+_csUpdateSoundIcon()
+
+// ── UTILS ────────────────────────────────────────────────────
+// ── MOBILE PANELS (inbox drawer + info sheet) ──
+function toggleCsInbox(){
+  document.body.classList.toggle('cs-inbox-open')
+  document.body.classList.remove('cs-info-open')  // can't have both
+}
+function toggleCsInfo(){
+  // Only useful if a conversation is loaded
+  if (!activeConv) { showToast?.('Open a conversation first'); return }
+  document.body.classList.toggle('cs-info-open')
+  document.body.classList.remove('cs-inbox-open')
+}
+function closeCsPanels(){
+  document.body.classList.remove('cs-inbox-open')
+  document.body.classList.remove('cs-info-open')
+}
+// Tap backdrop (outside the panel) closes it
+document.addEventListener('click', (e) => {
+  const b = document.body
+  if (!b.classList.contains('cs-inbox-open') && !b.classList.contains('cs-info-open')) return
+  const inbox = document.querySelector('.inbox')
+  const info  = document.getElementById('panel-info')
+  const burger = document.getElementById('cs-mobile-burger')
+  const infoBtn = document.getElementById('cs-mobile-info-btn')
+  const inside = [inbox, info, burger, infoBtn].some(el => el && el.contains(e.target))
+  if (!inside) closeCsPanels()
+})
+
+// ── THEME TOGGLE (dark default, persisted via localStorage) ──
+function toggleCsTheme(){
+  const isLight = document.body.classList.toggle('cs-light')
+  try { localStorage.setItem('jj_cs_theme', isLight ? 'light' : 'dark') } catch {}
+}
+// Apply saved theme ASAP so we don't flash the default
+(function initCsTheme(){
+  try {
+    if (localStorage.getItem('jj_cs_theme') === 'light') document.body.classList.add('cs-light')
+  } catch {}
+})()
+
+function showToast(msg) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), 2200)
+}
+
+// ── COPY CONTACT ────────────────────────────────────────────
+async function copyContact(elId, btn){
+  const row = btn?.closest('.contact-row')
+  const raw = row?.getAttribute('data-copy') || document.getElementById(elId)?.textContent || ''
+  const val = raw.trim()
+  if (!val || val === '—') return
+  try {
+    await navigator.clipboard.writeText(val)
+    showToast('Copied · ' + val)
+    if (btn) {
+      const prev = btn.innerHTML
+      btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#1a7a5e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+      setTimeout(() => { btn.innerHTML = prev }, 1200)
+    }
+  } catch { showToast('Copy failed') }
+}
+
+// ── INFO PANEL RESIZER ──────────────────────────────────────
+(function initInfoResizer(){
+  const LS_KEY = 'jj_cs_info_w'
+  const MIN = 260, MAX = 540, DEFAULT = 320
+  const saved = parseInt(localStorage.getItem(LS_KEY) || '', 10)
+  if (!isNaN(saved) && saved >= MIN && saved <= MAX) {
+    document.documentElement.style.setProperty('--info-w', saved + 'px')
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const handle = document.getElementById('info-resizer')
+    const panel = document.getElementById('panel-info')
+    if (!handle || !panel) return
+    let startX = 0, startW = 0, dragging = false
+    const onMove = e => {
+      if (!dragging) return
+      const x = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? startX
+      const dx = startX - x
+      let w = Math.round(startW + dx)
+      w = Math.max(MIN, Math.min(MAX, w))
+      document.documentElement.style.setProperty('--info-w', w + 'px')
+    }
+    const onUp = () => {
+      if (!dragging) return
+      dragging = false
+      panel.classList.remove('resizing')
+      document.body.classList.remove('cs-resizing')
+      const cur = getComputedStyle(document.documentElement).getPropertyValue('--info-w').trim()
+      const w = parseInt(cur, 10)
+      if (!isNaN(w)) localStorage.setItem(LS_KEY, String(w))
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onUp)
+    }
+    const onDown = e => {
+      dragging = true
+      startX = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? 0
+      startW = panel.getBoundingClientRect().width
+      panel.classList.add('resizing')
+      document.body.classList.add('cs-resizing')
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+      window.addEventListener('touchmove', onMove, {passive:true})
+      window.addEventListener('touchend', onUp)
+      e.preventDefault()
+    }
+    handle.addEventListener('mousedown', onDown)
+    handle.addEventListener('touchstart', onDown, {passive:false})
+    handle.addEventListener('dblclick', () => {
+      document.documentElement.style.setProperty('--info-w', DEFAULT + 'px')
+      localStorage.setItem(LS_KEY, String(DEFAULT))
+      showToast('Panel width reset')
+    })
+  })
+})();
+
+// ── INBOX SIDEBAR RESIZER ───────────────────────────────────
+// Drag the right edge of the inbox to resize it. Persists to localStorage
+// so the chosen width survives reloads. Mirrors initInfoResizer for the
+// right-side panel — same pattern, just dragging the opposite direction.
+(function initInboxResizer(){
+  const LS_KEY = 'jj_cs_sidebar_w'
+  const MIN = 240, MAX = 560, DEFAULT = 260
+  const saved = parseInt(localStorage.getItem(LS_KEY) || '', 10)
+  if (!isNaN(saved) && saved >= MIN && saved <= MAX) {
+    document.documentElement.style.setProperty('--sidebar-w', saved + 'px')
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const handle = document.getElementById('inbox-resizer')
+    const panel  = document.querySelector('.inbox')
+    if (!handle || !panel) return
+    let startX = 0, startW = 0, dragging = false
+    const onMove = e => {
+      if (!dragging) return
+      const x = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? startX
+      const dx = x - startX
+      let w = Math.round(startW + dx)
+      w = Math.max(MIN, Math.min(MAX, w))
+      document.documentElement.style.setProperty('--sidebar-w', w + 'px')
+    }
+    const onUp = () => {
+      if (!dragging) return
+      dragging = false
+      panel.classList.remove('resizing')
+      document.body.classList.remove('cs-resizing')
+      const cur = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w').trim()
+      const w = parseInt(cur, 10)
+      if (!isNaN(w)) localStorage.setItem(LS_KEY, String(w))
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onUp)
+    }
+    const onDown = e => {
+      dragging = true
+      startX = e.clientX ?? (e.touches && e.touches[0]?.clientX) ?? 0
+      startW = panel.getBoundingClientRect().width
+      panel.classList.add('resizing')
+      document.body.classList.add('cs-resizing')
+      window.addEventListener('mousemove', onMove)
+      window.addEventListener('mouseup', onUp)
+      window.addEventListener('touchmove', onMove, {passive:true})
+      window.addEventListener('touchend', onUp)
+      e.preventDefault()
+    }
+    handle.addEventListener('mousedown', onDown)
+    handle.addEventListener('touchstart', onDown, {passive:false})
+    handle.addEventListener('dblclick', () => {
+      document.documentElement.style.setProperty('--sidebar-w', DEFAULT + 'px')
+      localStorage.setItem(LS_KEY, String(DEFAULT))
+      showToast('Inbox width reset')
+    })
+  })
+})();
+function initials(name) {
+  if (!name) return '?'
+  return name.split(/\s+/).map(w => w[0]).filter(Boolean).join('').slice(0,2).toUpperCase()
+}
+function timeAgo(ts) {
+  if (!ts) return '—'
+  const diff = Math.floor((Date.now() - new Date(ts).getTime()) / 1000)
+  if (diff < 60) return 'just now'
+  if (diff < 3600) return `${Math.floor(diff/60)}m`
+  if (diff < 86400) return `${Math.floor(diff/3600)}h`
+  return `${Math.floor(diff/86400)}d`
+}
+function fullTime(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+}
+function escapeHtml(s) {
+  return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+}
+function jsEsc(s){ return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/</g,'\\x3c').replace(/>/g,'\\x3e').replace(/&/g,'\\x26').replace(/\r?\n/g,'\\n') }
+
+// ── INBOX LOAD ──────────────────────────────────────────────
+// Pagination state — keeps the inbox responsive at 1000+ conversations.
+// We only ever hold up to PAGE_SIZE rows in memory at once. Filter chips
+// trigger a fresh server query (so "Closed" doesn't have to load all open
+// rows just to filter them in JS).
+const PAGE_SIZE = 50
+let _convsOffset = 0
+let _convsHasMore = false
+
+// Active tag-filter chip (null = no tag filter). Composes on top of the
+// status filter (Open/Unread/Mine/Closed) and the search box.
+let _activeTagFilter = null
+
+function toggleTagFilter(tag) {
+  _activeTagFilter = (_activeTagFilter === tag) ? null : tag
+  // Reflect chip state in the UI
+  document.querySelectorAll('#conv-list, .inbox-tag-filter .tag-filter-chip').forEach(el => {})
+  document.querySelectorAll('.inbox-tag-filter .tag-filter-chip').forEach(chip => {
+    chip.classList.toggle('on', chip.getAttribute('data-tag') === _activeTagFilter)
+  })
+  loadConversations()
+}
+
+// Apply filter chip → query predicate. Mirrors the chip the user clicked.
+// Snoozed rows hide from Open/Mine until the snooze window passes.
+function _applyFilter(q) {
+  const nowIso = new Date().toISOString()
+  if (currentFilter === 'open') {
+    q = q.neq('status', 'closed')
+    // Hide snoozed unless snooze window already passed
+    q = q.or(`snoozed_until.is.null,snoozed_until.lte.${nowIso}`)
+  } else if (currentFilter === 'unread') {
+    q = q.gt('unread_for_cs', 0)
+  } else if (currentFilter === 'mine') {
+    q = q.eq('assigned_to', csAgentName).neq('status', 'closed')
+  } else if (currentFilter === 'closed') {
+    q = q.eq('status', 'closed')
+  }
+  // Tag filter narrows further (composes with the status filter above).
+  if (_activeTagFilter) {
+    q = q.contains('tags', [_activeTagFilter])
+  }
+  return q
+}
+
+async function loadConversations(opts = {}) {
+  const { append = false } = opts
+  if (!append) _convsOffset = 0
+
+  // SEARCH MODE — server-side now, so it matches across ALL conversations,
+  // not just the most recent 200. Two-step:
+  //   1. Find matching planner IDs (name/email/phone/city ilike the term)
+  //   2. Query conversations where planner_id is in that list OR the
+  //      last_message_preview matches.
+  // Filter + tag composes naturally via _applyFilter.
+  if (_inboxSearchTerm) {
+    const raw = _inboxSearchTerm.trim()
+    // Escape PostgREST PostgREST special chars in pattern (% and , especially).
+    const safe = raw.replace(/[,()]/g, '').replace(/[%_]/g, '')
+    const pattern = `*${safe}*`   // PostgREST ilike uses * not %
+    // Step 1: matching planners (cap at 500 IDs to keep the IN-clause sane)
+    let plannerIds = []
+    try {
+      const { data: pmatch } = await sb.from('planners')
+        .select('id')
+        .or(`name.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern},city.ilike.${pattern}`)
+        .limit(500)
+      plannerIds = (pmatch || []).map(p => p.id)
+    } catch (e) { /* planner search failed — fall through to preview-only */ }
+
+    // Step 2: conversations matching by preview OR planner_id
+    let q = sb.from('conversations')
+      .select('*, planners:planner_id(id,name,email,phone,city,status)')
+      .not('last_message_at', 'is', null)   // hide conversations that never had a real message
+      .order('pinned', { ascending: false })
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+      .limit(200)   // cap result size; still searches across all rows
+    q = _applyFilter(q)
+    const orClauses = [`last_message_preview.ilike.${pattern}`]
+    if (plannerIds.length) {
+      orClauses.push(`planner_id.in.(${plannerIds.join(',')})`)
+    }
+    q = q.or(orClauses.join(','))
+
+    const { data, error } = await q
+    if (error) { console.error(error); showToast('Failed to load inbox'); return }
+    allConvs = data || []
+    _convsHasMore = false  // search bypasses pagination
+    renderInbox()
+    updateStats()
+    return
+  }
+
+  let q = sb.from('conversations')
+    .select('*, planners:planner_id(id,name,email,phone,city,status)', { count: 'exact' })
+    .not('last_message_at', 'is', null)
+    .order('pinned', { ascending: false })  // pinned to top
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+
+  q = _applyFilter(q)
+
+  q = q.range(_convsOffset, _convsOffset + PAGE_SIZE - 1)
+
+  const { data, count, error } = await q
+  if (error) { console.error(error); showToast('Failed to load inbox'); return }
+
+  _convsHasMore = (count || 0) > _convsOffset + (data?.length || 0)
+  allConvs = append ? [...allConvs, ...(data || [])] : (data || [])
+  renderInbox()
+  updateStats()
+}
+
+async function loadMoreConversations() {
+  _convsOffset += PAGE_SIZE
+  await loadConversations({ append: true })
+}
+
+// Search-box state. Persisted across renders so the input reflects the
+// active query, but the actual filter pass is done server-side via the
+// loadConversations query (see runInboxSearch below).
+let _inboxSearchTerm = ''
+let _inboxSearchT = null
+function onInboxSearchInput() {
+  if (_inboxSearchT) clearTimeout(_inboxSearchT)
+  // Debounce so we don't fire a query on every keystroke
+  _inboxSearchT = setTimeout(runInboxSearch, 200)
+}
+async function runInboxSearch() {
+  const inp = document.getElementById('inbox-search')
+  _inboxSearchTerm = (inp?.value || '').trim()
+  await loadConversations()  // re-runs with the search filter applied
+}
+
+function renderInbox() {
+  const list = document.getElementById('conv-list')
+  // Server already filtered (loadConversations applies the filter chip in
+  // the query). We just render allConvs as-is, plus a "Load more" button if
+  // there are additional pages. No client-side filter pass needed.
+  if (!allConvs.length) {
+    const emptyMsg = _inboxSearchTerm
+      ? `<div style="padding:30px;text-align:center;color:var(--ink-3);font-size:12.5px;">No matches for "${escapeHtml(_inboxSearchTerm)}"</div>`
+      : `<div style="padding:30px;text-align:center;color:var(--ink-3);font-size:12.5px;">No conversations</div>`
+    list.innerHTML = emptyMsg
+    return
+  }
+  const rowsHtml = allConvs.map(c => {
+    const p = c.planners || {}
+    const name = p.name || 'Unknown planner'
+    const preview = c.last_message_preview || 'No messages yet'
+    const senderTag = c.last_sender_type === 'planner' ? '' : c.last_sender_type === 'cs' ? '<span class="sender-tag">You: </span>' : '<span class="sender-tag">System: </span>'
+    const unread = c.unread_for_cs > 0
+    const isActive = activeConv?.id === c.id
+    const pinned = !!c.pinned
+
+    // Tag chips, max 3 shown to avoid wrapping. Plus pin mark + assignee badge.
+    const tags = Array.isArray(c.tags) ? c.tags.filter(Boolean) : []
+    const shownTags = tags.slice(0, 3)
+    // Slug the tag for the CSS class — escapeHtml does NOT make a value safe
+    // inside a class attribute (spaces / quotes break the parse). Only the
+    // visible label gets the raw escaped tag.
+    const tagChipsHtml = shownTags.map(t => {
+      const slug = String(t).toLowerCase().replace(/[^a-z0-9_-]/g, '')
+      return `<span class="conv-tag tag-${slug}">${escapeHtml(t)}</span>`
+    }).join('')
+    const tagOverflow = tags.length > shownTags.length
+      ? `<span class="conv-tag" style="background:var(--surface-2);color:var(--ink-3);border-style:dashed;">+${tags.length - shownTags.length}</span>` : ''
+    const assigneeChip = c.assigned_to
+      ? `<span class="conv-assignee" title="Assigned to ${escapeHtml(c.assigned_to)}">${escapeHtml(initials(c.assigned_to))}</span>` : ''
+    const pinMark = pinned ? '<span class="conv-pin-mark" title="Pinned">📌</span>' : ''
+    const chipsRow = (shownTags.length || tagOverflow || assigneeChip)
+      ? `<div class="conv-chips">${tagChipsHtml}${tagOverflow}${assigneeChip}</div>` : ''
+
+    return `
+      <div class="conv-row ${unread?'unread':''} ${isActive?'active':''} ${pinned?'pinned':''}" onclick="openConversation('${escapeHtml(c.id)}')">
+        <div class="conv-av">${escapeHtml(initials(name))}</div>
+        <div class="conv-body">
+          <div class="conv-top">
+            <div class="conv-name">${pinMark}${escapeHtml(name)}${unread?`<span class="unread-pill">${c.unread_for_cs}</span>`:''}</div>
+            <div class="conv-time">${timeAgo(c.last_message_at)}</div>
+          </div>
+          <div class="conv-preview">${senderTag}${escapeHtml(preview)}</div>
+          ${chipsRow}
+        </div>
+      </div>`
+  }).join('')
+  const moreBtn = _convsHasMore
+    ? `<button onclick="loadMoreConversations()" style="display:block;width:calc(100% - 24px);margin:8px 12px 16px;padding:10px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--ink-2);font-size:12px;cursor:pointer;font-family:inherit;">Load more</button>`
+    : ''
+  list.innerHTML = rowsHtml + moreBtn
+}
+
+// Stats now query the server — they reflect TOTAL counts across all pages,
+// not just what's loaded in allConvs. Run in parallel and tolerate failure.
+async function updateStats() {
+  try {
+    const [opn, unr] = await Promise.all([
+      sb.from('conversations').select('id', { count: 'exact', head: true }).neq('status', 'closed').not('last_message_at', 'is', null),
+      sb.from('conversations').select('id', { count: 'exact', head: true }).gt('unread_for_cs', 0).not('last_message_at', 'is', null),
+    ])
+    const elOpen = document.getElementById('stat-open')
+    const elUnr  = document.getElementById('stat-unread')
+    if (elOpen) elOpen.textContent = opn.count ?? '—'
+    if (elUnr)  elUnr.textContent  = unr.count ?? '—'
+  } catch (e) { /* leave previous numbers, don't blank the UI */ }
+}
+
+async function setFilter(f) {
+  if (currentFilter === f) return
+  currentFilter = f
+  document.querySelectorAll('.filter-chip').forEach(b => b.classList.toggle('active', b.dataset.filter === f))
+  await loadConversations()  // resets offset + applies filter server-side
+}
+
+// ── OPEN CONVERSATION ───────────────────────────────────────
+async function openConversation(id) {
+  let conv = allConvs.find(c => c.id === id)
+  if (!conv) {
+    // Conversation isn't on the current page (filtered out, or paginated
+    // beyond what's loaded). Fetch directly so deep links + cross-filter
+    // links keep working.
+    const { data } = await sb.from('conversations')
+      .select('*, planners:planner_id(id,name,email,phone,city,status)')
+      .eq('id', id).maybeSingle()
+    conv = data
+  }
+  if (!conv) return
+  activeConv = conv
+
+  // On mobile, close the inbox drawer once a conversation is selected
+  document.body.classList.remove('cs-inbox-open')
+
+  // Update UI
+  renderInbox()
+  document.getElementById('chat-head').style.display = 'flex'
+  document.getElementById('compose-form').style.display = 'flex'
+  document.getElementById('quick-replies').style.display = 'flex'
+  document.getElementById('panel-info').style.display = 'block'
+  const p = conv.planners || {}
+  const avEl = document.getElementById('info-avatar'); if (avEl) avEl.textContent = initials(p.name)
+  document.getElementById('chat-head-av').textContent = initials(p.name)
+  document.getElementById('chat-head-name').textContent = p.name || 'Unknown planner'
+  document.getElementById('chat-head-meta').textContent = `${p.email || '—'}${p.phone ? ' · ' + p.phone : ''}`
+  document.getElementById('info-name').textContent  = p.name || '—'
+  document.getElementById('info-email').textContent = p.email || '—'
+  document.getElementById('info-phone').textContent = p.phone || '—'
+  document.getElementById('info-city').textContent  = p.city || '—'
+  const rowEmail = document.getElementById('row-email'); if (rowEmail){ rowEmail.setAttribute('data-copy', p.email || ''); rowEmail.classList.toggle('empty', !p.email) }
+  const rowPhone = document.getElementById('row-phone'); if (rowPhone){ rowPhone.setAttribute('data-copy', p.phone || ''); rowPhone.classList.toggle('empty', !p.phone) }
+  const rowCity  = document.getElementById('row-city');  if (rowCity)  rowCity.classList.toggle('empty', !p.city)
+  const badge = document.getElementById('info-status')
+  badge.textContent = p.status || 'active'
+  badge.className = 'info-badge ' + (p.status === 'active' ? 'ok' : 'amber')
+  document.getElementById('close-btn').textContent = conv.status === 'closed' ? 'Reopen' : 'Close'
+
+  // Fetch messages
+  await loadMessages(id)
+  // Mark read
+  await sb.from('conversations').update({ unread_for_cs: 0 }).eq('id', id)
+  conv.unread_for_cs = 0
+  renderInbox()
+  updateStats()
+
+  // Re-subscribe for this conversation's realtime messages
+  attachMessageChannel(id)
+
+  // Load planner active-set info in background
+  loadPlannerContext(conv.planner_id)
+
+  // Reflect pin/snooze/assigned/tags state in the info panel controls
+  renderConvControls()
+}
+
+// ── CONVERSATION CONTROLS (pin / snooze / take / tags) ─────────
+// All write through to the conversations row. Optimistic update + revert
+// on failure so the UI stays responsive while keeping data correct.
+function renderConvControls() {
+  const c = activeConv
+  if (!c) return
+  // Pin button state
+  const pinBtn = document.getElementById('cc-pin-btn')
+  if (pinBtn) {
+    pinBtn.classList.toggle('active', !!c.pinned)
+    pinBtn.textContent = c.pinned ? '📌 Pinned' : '📌 Pin'
+  }
+  // Assigned state — "Take" if unassigned, "Mine — Release" if me, "Assigned to X — Take" otherwise
+  const assignBtn = document.getElementById('cc-assign-btn')
+  const meta = document.getElementById('cc-assigned-meta')
+  if (assignBtn && meta) {
+    if (!c.assigned_to) {
+      assignBtn.classList.remove('active')
+      assignBtn.textContent = '🙋 Take'
+      meta.style.display = 'none'
+    } else if (c.assigned_to === csAgentName) {
+      assignBtn.classList.add('active')
+      assignBtn.textContent = '🙋 Release'
+      meta.style.display = 'block'
+      meta.textContent = `Assigned to you`
+      meta.style.color = 'var(--green-dark,#0f5240)'
+    } else {
+      assignBtn.classList.remove('active')
+      assignBtn.textContent = '🙋 Take over'
+      meta.style.display = 'block'
+      meta.textContent = `Assigned to ${c.assigned_to}`
+      meta.style.color = 'var(--ink-3)'
+    }
+  }
+  // Snooze meta
+  const snoozeMeta = document.getElementById('cc-snoozed-meta')
+  const snoozeBtn  = document.getElementById('cc-snooze-btn')
+  if (snoozeMeta && snoozeBtn) {
+    const until = c.snoozed_until ? new Date(c.snoozed_until) : null
+    if (until && until > new Date()) {
+      snoozeMeta.style.display = 'block'
+      snoozeMeta.textContent = `Snoozed until ${until.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · click again to unsnooze`
+      snoozeBtn.classList.add('active')
+      snoozeBtn.textContent = '😴 Snoozed'
+    } else {
+      snoozeMeta.style.display = 'none'
+      snoozeBtn.classList.remove('active')
+      snoozeBtn.textContent = '😴 Snooze'
+    }
+  }
+  // Tag chips state
+  const tags = Array.isArray(c.tags) ? c.tags : []
+  document.querySelectorAll('#cc-tags-chips .cc-tag-chip').forEach(chip => {
+    const t = chip.getAttribute('data-tag')
+    chip.classList.toggle('on', tags.includes(t))
+  })
+}
+
+async function _ccPatchConv(patch) {
+  if (!activeConv) return
+  const id = activeConv.id
+  const snapshot = { ...activeConv }
+  Object.assign(activeConv, patch)
+  renderConvControls()
+  // Sync the row in allConvs so the inbox reflects it without a refetch.
+  const idx = allConvs.findIndex(c => c.id === id)
+  if (idx >= 0) allConvs[idx] = { ...allConvs[idx], ...patch }
+  renderInbox()
+  const { error } = await sb.from('conversations').update(patch).eq('id', id)
+  if (error) {
+    showToast('Save failed: ' + error.message)
+    Object.assign(activeConv, snapshot)
+    if (idx >= 0) allConvs[idx] = snapshot
+    renderConvControls()
+    renderInbox()
+  }
+}
+
+function toggleConvPin() {
+  if (!activeConv) return
+  _ccPatchConv({ pinned: !activeConv.pinned })
+}
+
+function toggleConvAssigned() {
+  if (!activeConv) return
+  // If I'm the assignee → release. Else → take.
+  const next = (activeConv.assigned_to === csAgentName) ? null : csAgentName
+  _ccPatchConv({ assigned_to: next })
+}
+
+function openSnoozeMenu() {
+  if (!activeConv) return
+  // If currently snoozed → unsnooze
+  if (activeConv.snoozed_until && new Date(activeConv.snoozed_until) > new Date()) {
+    _ccPatchConv({ snoozed_until: null })
+    return
+  }
+  const choice = prompt(
+    'Snooze this conversation for:\n' +
+    '  1 — 1 hour\n' +
+    '  2 — 3 hours\n' +
+    '  3 — Until tomorrow 9am\n' +
+    '  4 — Until Monday 9am\n' +
+    '\nEnter 1–4 (or cancel):'
+  )
+  if (!choice) return
+  const now = new Date()
+  let until
+  if (choice === '1') {
+    until = new Date(now.getTime() + 60 * 60 * 1000)
+  } else if (choice === '2') {
+    until = new Date(now.getTime() + 3 * 60 * 60 * 1000)
+  } else if (choice === '3') {
+    until = new Date(now)
+    until.setDate(until.getDate() + 1)
+    until.setHours(9, 0, 0, 0)
+  } else if (choice === '4') {
+    until = new Date(now)
+    // 1 = Mon … 7 = Sun. Set to next Monday morning.
+    const d = until.getDay()
+    const daysToMon = (1 - d + 7) % 7 || 7  // never "today" — always next Mon
+    until.setDate(until.getDate() + daysToMon)
+    until.setHours(9, 0, 0, 0)
+  } else {
+    showToast('Invalid choice')
+    return
+  }
+  _ccPatchConv({ snoozed_until: until.toISOString() })
+}
+
+function toggleConvTag(tag) {
+  if (!activeConv) return
+  const current = Array.isArray(activeConv.tags) ? activeConv.tags : []
+  const next = current.includes(tag)
+    ? current.filter(t => t !== tag)
+    : [...current, tag]
+  _ccPatchConv({ tags: next })
+}
+
+// Cache current planner context for quick-reply templating + inline actions
+let currentPlannerCtx = null
+
+async function loadPlannerContext(plannerId) {
+  if (!plannerId) return
+  const el = id => document.getElementById(id)
+
+  // Planner profile (includes CS internal notes)
+  const { data: p } = await sb.from('planners').select('name, email, phone, city, status, created_at, cs_notes, cs_notes_updated_at, cs_notes_updated_by').eq('id', plannerId).maybeSingle()
+  if (p) {
+    el('info-joined').textContent = p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—'
+    loadCsNotesIntoPanel(p)
+  }
+
+  // All assignments for this planner. Pull set admin_remark too so CS sees
+  // the same internal note admin attached to the set (e.g. "TRAINING",
+  // "PLAN C SET 4", etc.) — keeps CS in the loop without context-switching.
+  const { data: assigns } = await sb.from('set_assignments')
+    .select('id, set_id, status, deadline, claimed_at, completed_at, paid_at, sets:set_id(set_number, city, admin_remark)')
+    .eq('planner_id', plannerId).order('claimed_at',{ascending:false})
+
+  const active    = (assigns||[]).find(a => a.status === 'active')
+  const completed = (assigns||[]).filter(a => a.status === 'completed')
+  const paid      = (assigns||[]).filter(a => a.status === 'paid')
+
+  // State card — show current lifecycle
+  const stateEl = el('info-state-card')
+  if (active) {
+    const deadline = active.deadline ? new Date(active.deadline) : null
+    const daysLeft = deadline ? Math.ceil((deadline - new Date())/86400000) : null
+    const dlTone = daysLeft == null ? '' : daysLeft < 0 ? 'var(--red)' : daysLeft <= 1 ? 'var(--red)' : daysLeft <= 3 ? 'var(--amber)' : 'var(--ink-3)'
+    const dlLabel = daysLeft == null ? '' : daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : daysLeft === 0 ? 'due today' : `${daysLeft}d left`
+    stateEl.style.display = 'block'
+    const remark = (active.sets?.admin_remark || '').trim()
+    const remarkHtml = remark
+      ? `<div style="margin-top:6px;padding:5px 9px;background:rgba(193,125,42,0.10);border:1px solid rgba(193,125,42,0.28);border-radius:6px;font-size:10.5px;color:var(--amber,#b87333);font-weight:600;letter-spacing:0.03em;"><span style="opacity:0.7;font-size:9px;text-transform:uppercase;letter-spacing:0.10em;margin-right:5px;">Remark</span>${escapeHtml(remark)}</div>` : ''
+    stateEl.innerHTML = `
+      <div style="font-size:10.5px;color:var(--ink-3);letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Working on</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;">Set #${String(active.sets?.set_number||'?').padStart(3,'0')} · ${escapeHtml(active.sets?.city||'')}</div>
+      ${deadline ? `<div style="font-size:11px;color:${dlTone};">Deadline ${deadline.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${dlLabel}</div>` : ''}
+      ${remarkHtml}`
+  } else if (completed.length) {
+    const c = completed[0]
+    stateEl.style.display = 'block'
+    const remark = (c.sets?.admin_remark || '').trim()
+    const remarkHtml = remark
+      ? `<div style="margin-top:6px;padding:5px 9px;background:rgba(193,125,42,0.10);border:1px solid rgba(193,125,42,0.28);border-radius:6px;font-size:10.5px;color:var(--amber,#b87333);font-weight:600;letter-spacing:0.03em;"><span style="opacity:0.7;font-size:9px;text-transform:uppercase;letter-spacing:0.10em;margin-right:5px;">Remark</span>${escapeHtml(remark)}</div>` : ''
+    stateEl.innerHTML = `
+      <div style="font-size:10.5px;color:var(--amber);letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Awaiting payout</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">Set #${String(c.sets?.set_number||'?').padStart(3,'0')} approved</div>
+      <div style="font-size:11px;color:var(--ink-3);">Ready for release</div>
+      ${remarkHtml}`
+  } else {
+    stateEl.style.display = 'block'
+    stateEl.innerHTML = `<div style="color:var(--ink-3);font-size:12px;">No active set — idle planner</div>`
+  }
+
+  // Earnings snapshot (across all sets)
+  const allSetIds = [...new Set((assigns||[]).map(a => a.set_id))]
+  let paidAmt = 0, pendingAmt = 0, bondHeld = 0
+  if (allSetIds.length) {
+    const { data: myPlans } = await sb.from('plans')
+      .select('set_id, status, planner_payout_override, bond_amount_override, travelers(planner_payout, bond_amount, requires_bond)')
+      .in('set_id', allSetIds).eq('planner_id', plannerId)
+    const po = p => p.planner_payout_override != null ? p.planner_payout_override : (p.travelers?.planner_payout || 0)
+    const bo = p => p.bond_amount_override != null ? p.bond_amount_override : (p.travelers?.bond_amount || 0)
+    const paidSetIds = new Set(paid.map(a => a.set_id))
+    const completedSetIds = new Set(completed.map(a => a.set_id))
+    for (const pl of (myPlans||[])) {
+      if (pl.status !== 'approved') continue
+      if (paidSetIds.has(pl.set_id))      paidAmt    += po(pl)
+      if (completedSetIds.has(pl.set_id)) pendingAmt += po(pl)
+      // Bond on hold: currently-active bond plans past the bond gate
+      if (pl.travelers?.requires_bond && ['submitted','approved'].includes(pl.status) && !paidSetIds.has(pl.set_id)) bondHeld += bo(pl)
+    }
+  }
+  el('info-earned').textContent = `¥${Math.round(paidAmt).toLocaleString("ja-JP")}`
+  el('info-pending').textContent = `¥${Math.round(pendingAmt).toLocaleString("ja-JP")}`
+  el('info-bond-hold').textContent = `¥${Math.round(bondHeld).toLocaleString("ja-JP")}`
+  el('info-sets-done').textContent = paid.length
+
+  // Mini progress bars — scaled against max(paidAmt, pendingAmt, bondHeld, 1)
+  const scale = Math.max(paidAmt, pendingAmt, bondHeld, 1)
+  const pendingFill = Math.round((pendingAmt / scale) * 100)
+  const bondFill = Math.round((bondHeld / scale) * 100)
+  const barPending = document.querySelector('#bar-pending>span'); if (barPending) barPending.style.width = pendingFill + '%'
+  const barBond = document.querySelector('#bar-bond>span'); if (barBond) barBond.style.width = bondFill + '%'
+
+  // Recent activity — last 3 events across plans
+  let recentHtml = ''
+  if (active) {
+    const { data: recent } = await sb.from('plans')
+      .select('plan_number, status, submitted_at, approved_at, travelers(name, requires_bond)')
+      .eq('set_id', active.set_id).eq('planner_id', plannerId)
+      .order('plan_number')
+    const events = []
+    for (const pl of (recent||[])) {
+      if (pl.status === 'bond_pending') events.push({ t:null, label:`Plan ${pl.plan_number} bond awaiting (${escapeHtml(pl.travelers?.name||'—')})`, color:'var(--amber)' })
+      else if (pl.status === 'revision') events.push({ t:null, label:`Plan ${pl.plan_number} sent for revision`, color:'var(--red)' })
+      else if (pl.status === 'submitted' && pl.submitted_at) events.push({ t:new Date(pl.submitted_at), label:`Plan ${pl.plan_number} submitted`, color:'var(--blue)' })
+      else if (pl.status === 'approved' && pl.approved_at) events.push({ t:new Date(pl.approved_at), label:`Plan ${pl.plan_number} approved`, color:'var(--green)' })
+    }
+    events.sort((a,b) => (b.t?.getTime()||Infinity) - (a.t?.getTime()||Infinity))
+    recentHtml = events.slice(0,4).map(e => {
+      const when = e.t ? e.t.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'now'
+      return `<div style="display:flex;gap:6px;align-items:flex-start;"><span style="color:${e.color};flex-shrink:0;">●</span><span>${e.label}<span style="color:var(--ink-3);"> · ${when}</span></span></div>`
+    }).join('') || '<div style="color:var(--ink-3);">No activity yet</div>'
+  } else {
+    recentHtml = '<div style="color:var(--ink-3);">No active set</div>'
+  }
+  el('info-activity').innerHTML = recentHtml
+
+  // Stash context for quick replies + inline actions
+  currentPlannerCtx = { planner: p, active, completed: completed[0], bondHeld, pendingAmt }
+
+  // Inline admin actions + quick replies depend on context
+  renderInlineActions()
+  renderQuickReplies()
+}
+
+// ── INLINE ADMIN ACTIONS ────────────────────────────────────
+async function renderInlineActions() {
+  const box = document.getElementById('info-actions')
+  if (!box) return
+  const ctx = currentPlannerCtx
+  if (!ctx?.active && !ctx?.completed) { box.innerHTML = ''; return }
+
+  const setId = ctx.active?.set_id || ctx.completed?.set_id
+  const plannerId = activeConv?.planner_id
+  if (!plannerId) { box.innerHTML = ''; return }
+
+  // Look up if the planner has any bond_pending plan needing confirmation
+  const { data: bondPending } = await sb.from('plans')
+    .select('id, plan_number, admin_notes, bond_amount_override, travelers(name, bond_amount)')
+    .eq('planner_id', plannerId).eq('status', 'bond_pending').order('plan_number')
+
+  // Revert-safe window: recently-confirmed bond plans that the planner hasn't
+  // started working on yet (no submitted_at, no itinerary title). Safe to flip back.
+  const { data: recentlyConfirmed } = await sb.from('plans')
+    .select('id, plan_number, itin_title, submitted_at, travelers!inner(name, requires_bond, bond_amount)')
+    .eq('planner_id', plannerId).eq('status', 'in_progress')
+    .is('submitted_at', null).is('itin_title', null)
+    .eq('travelers.requires_bond', true)
+    .order('plan_number')
+
+  // Toggle the prominent bond chip next to the name
+  const bondChip = document.getElementById('info-bond-chip')
+  const bondChipText = document.getElementById('info-bond-chip-text')
+  if (bondChip) {
+    if (bondPending && bondPending.length) {
+      const bp = bondPending[0]
+      const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
+      bondChipText.textContent = `Bond pending · Plan ${bp.plan_number} · ¥${escapeHtml(amt)}`
+      bondChip.style.display = 'inline-flex'
+    } else {
+      bondChip.style.display = 'none'
+    }
+  }
+
+  const actionBtn = (label, icon, color, bg, onclick) => `
+    <button onclick="${onclick}" style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:${bg};border:1px solid ${color};color:${color};border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+      <span style="font-size:13px;">${icon}</span><span>${label}</span>
+    </button>`
+
+  let html = ''
+  for (const bp of (bondPending || [])) {
+    const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
+    const notified = bp.admin_notes === 'BOND_NOTIFIED' ? ' · sent' : ''
+    html += actionBtn(`Confirm bond · Plan ${bp.plan_number} (¥${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
+  }
+  // Revert button for recently-confirmed bond plans (safe window: no work started)
+  for (const rc of (recentlyConfirmed || [])) {
+    html += actionBtn(`Revert bond · Plan ${rc.plan_number}`, '↩', 'var(--red,#c0392b)', 'var(--red-light,#fdecea)', `csRevertBond('${jsEsc(rc.id)}','${escapeHtml(rc.plan_number)}')`)
+  }
+  if (ctx.active?.deadline) {
+    html += actionBtn('Extend deadline…', '⏰', 'var(--amber,#b87333)', 'var(--amber-light,#fdf3e3)', `csExtendDeadline('${jsEsc(ctx.active.id)}')`)
+  }
+  // Always offer a quick jump to the admin bond-approvals page so CS can see
+  // the full history (recently confirmed, filter by planner, revert window).
+  html += actionBtn('Bond approvals page →', '📋', 'var(--ink-2,#5a554c)', 'rgba(0,0,0,0.04)', `window.open('superadmin999.html#bonds','_blank','noopener,noreferrer')`)
+  if (ctx.completed) {
+    html += actionBtn('Open in Payments', '→', 'var(--blue,#1a5fa8)', '#eaf1fb', `window.open('superadmin999.html', '_blank', 'noopener,noreferrer')`)
+  }
+  box.innerHTML = html
+}
+
+// ── CS NOTES (internal remarks on planner) ─────────────────
+let _csNotesSnapshot = { planner_id: null, body: '' }
+
+function loadCsNotesIntoPanel(p) {
+  const ta = document.getElementById('cs-notes-input')
+  const meta = document.getElementById('cs-notes-meta')
+  if (!ta) return
+  const body = p?.cs_notes || ''
+  ta.value = body
+  ta.disabled = false
+  _csNotesSnapshot = { planner_id: activeConv?.planner_id || null, body }
+  if (meta) {
+    if (p?.cs_notes_updated_at) {
+      const when = new Date(p.cs_notes_updated_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+      meta.textContent = `Last edited ${when}${p.cs_notes_updated_by ? ' · ' + p.cs_notes_updated_by : ''}`
+    } else {
+      meta.textContent = 'Never edited'
+    }
+  }
+}
+
+window.resetCsNotes = function() {
+  const ta = document.getElementById('cs-notes-input')
+  if (!ta) return
+  ta.value = _csNotesSnapshot.body || ''
+  showToast('Notes reverted')
+}
+
+window.saveCsNotes = async function() {
+  const ta = document.getElementById('cs-notes-input')
+  const saveBtn = document.getElementById('cs-notes-save')
+  const meta = document.getElementById('cs-notes-meta')
+  const plannerId = activeConv?.planner_id
+  if (!ta || !plannerId) return
+  const body = ta.value.trim()
+  if (body === (_csNotesSnapshot.body || '').trim()) { showToast('No changes to save'); return }
+
+  saveBtn.disabled = true
+  saveBtn.textContent = 'Saving…'
+  const now = new Date().toISOString()
+  const { error } = await sb.from('planners').update({
+    cs_notes: body || null,
+    cs_notes_updated_at: now,
+    cs_notes_updated_by: csAgentName || 'CS'
+  }).eq('id', plannerId)
+  saveBtn.disabled = false
+  saveBtn.textContent = 'Save notes'
+  if (error) { showToast('Failed: ' + error.message); return }
+  _csNotesSnapshot = { planner_id: plannerId, body }
+  if (meta) meta.textContent = `Last edited just now · ${csAgentName || 'CS'}`
+  showToast('Notes saved')
+  // Best-effort audit entry (audit_log is admin-scoped but CS can still write)
+  try {
+    await sb.from('audit_log').insert({
+      actor_type: 'cs',
+      actor_id: csAgentName || null,
+      action: 'planner.cs_notes_updated',
+      target_type: 'planner',
+      target_id: String(plannerId),
+      metadata: { length: body.length },
+      user_agent: (navigator.userAgent || '').slice(0, 500)
+    })
+  } catch (_) {}
+}
+
+window.csConfirmBond = async function(planId) {
+  if (!confirm('Confirm bond payment? Plan will unlock for the planner.\n\nYou can revert this if clicked by mistake — as long as the planner hasn\'t started working.')) return
+  // Snapshot current state for audit trail
+  const { data: before } = await sb.from('plans').select('status, admin_notes, plan_number, set_id').eq('id', planId).maybeSingle()
+  const { error } = await sb.from('plans').update({ status: 'in_progress', admin_notes: null }).eq('id', planId)
+  if (error) { showToast('Failed: ' + error.message); return }
+  // Audit trail
+  try {
+    await sb.from('audit_log').insert({
+      actor_type: 'cs',
+      actor_id: csAgentName || null,
+      action: 'plan.bond_confirm',
+      target_type: 'plan',
+      target_id: String(planId),
+      metadata: { plan_number: before?.plan_number || null, set_id: before?.set_id || null, from_status: before?.status || null },
+      user_agent: (navigator.userAgent || '').slice(0, 500)
+    })
+  } catch (_) {}
+  showToast('Bond confirmed — plan unlocked (revert still available for a bit)')
+  loadPlannerContext(activeConv.planner_id)
+}
+
+window.csRevertBond = async function(planId, planNumber) {
+  // Final safety check: re-fetch and confirm plan hasn't been worked on yet
+  const { data: cur } = await sb.from('plans').select('status, submitted_at, itin_title, plan_number, set_id').eq('id', planId).maybeSingle()
+  if (!cur) { showToast('Plan not found'); return }
+  if (cur.status !== 'in_progress' || cur.submitted_at || cur.itin_title) {
+    showToast('Too late to revert — planner has started this plan')
+    loadPlannerContext(activeConv.planner_id)
+    return
+  }
+  if (!confirm(`Revert Plan ${planNumber} back to bond-pending?\n\nThe planner will lose access until the bond is re-confirmed.`)) return
+  const { error } = await sb.from('plans').update({ status: 'bond_pending' }).eq('id', planId).eq('status','in_progress')
+  if (error) { showToast('Failed: ' + error.message); return }
+  try {
+    await sb.from('audit_log').insert({
+      actor_type: 'cs',
+      actor_id: csAgentName || null,
+      action: 'plan.bond_revert',
+      target_type: 'plan',
+      target_id: String(planId),
+      metadata: { plan_number: cur.plan_number || null, set_id: cur.set_id || null },
+      user_agent: (navigator.userAgent || '').slice(0, 500)
+    })
+  } catch (_) {}
+  showToast(`Plan ${planNumber} reverted — bond-pending again`)
+  loadPlannerContext(activeConv.planner_id)
+}
+
+window.csExtendDeadline = async function(assignmentId, days) {
+  // Fetch current deadline first so we can show it in the prompt
+  const { data: a } = await sb.from('set_assignments').select('deadline').eq('id', assignmentId).maybeSingle()
+  const currentDl = a?.deadline ? new Date(a.deadline) : new Date()
+  const currentLabel = a?.deadline ? currentDl.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : 'today'
+
+  // Ask for the number of days if not passed in
+  if (days == null) {
+    const raw = prompt(`Extend deadline by how many days?\nCurrent deadline: ${currentLabel}\n(Enter a positive or negative number; negative = pull in.)`, '2')
+    if (raw == null) return // cancelled
+    days = parseInt(raw, 10)
+    if (!Number.isFinite(days) || days === 0) { showToast('Enter a non-zero number of days'); return }
+    if (Math.abs(days) > 90) { showToast('Maximum ±90 days per adjustment'); return }
+  }
+
+  const base = new Date(currentDl)
+  base.setDate(base.getDate() + days)
+  const newDl = base.toISOString().split('T')[0]
+  const newLabel = base.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
+
+  if (!confirm(`Change deadline from ${currentLabel} to ${newLabel} (${days > 0 ? '+' : ''}${days} days)?`)) return
+
+  const { error } = await sb.from('set_assignments').update({ deadline: newDl }).eq('id', assignmentId)
+  if (error) { showToast('Failed: ' + error.message); return }
+  showToast(`Deadline → ${base.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`)
+  // Best-effort audit trail
+  try {
+    await sb.from('audit_log').insert({
+      actor_type: 'cs',
+      actor_id: csAgentName || null,
+      action: 'assignment.deadline_extend',
+      target_type: 'set_assignment',
+      target_id: String(assignmentId),
+      metadata: { days, from: a?.deadline || null, to: newDl },
+      user_agent: (navigator.userAgent || '').slice(0, 500)
+    })
+  } catch (_) {}
+  loadPlannerContext(activeConv.planner_id)
+}
+
+// ── QUICK REPLIES (bilingual) ───────────────────────────────
+// Default chips kept inline as a fallback. The actual list is loaded from
+// the cs_quick_replies table on script init — only used if the DB load
+// fails or returns empty (e.g. running locally before the migration ran).
+const QUICK_REPLIES_DEFAULTS = {
+  en: [
+    { label: '👋 Greeting', text: 'Hi {first_name}, how can we help you today?' },
+    { label: '🏦 Bond bank details', text: 'Hi {first_name}, here are the bond payment details:\n\nBank: [bank name]\nAccount: [account number]\nName: Journey Junction\nReference: BOND-{set_num}-{planner_short}\n\nOnce transferred, please share the screenshot here and we\'ll confirm shortly.' },
+    { label: '💳 Verifying bond', text: 'Got it {first_name} — we\'ll verify your transfer shortly and confirm as soon as it clears (usually under 30 min during business hours).' },
+    { label: '✅ Bond received', text: 'Bond payment confirmed — your plan is now unlocked. Happy planning!' },
+    { label: '💰 Payout update', text: 'Hi {first_name}, your payout of ¥{pending_amt} is queued for release. You\'ll receive it in your registered bank account within 24 hours.' },
+    { label: '💰 Payout processed', text: 'Payout has been released to your bank account. Please allow 1-2 business days for it to reflect.' },
+    { label: '📋 Checking sets', text: 'Hi {first_name}, let me check what\'s available in your city and I\'ll assign you a set shortly.' },
+    { label: '⏰ How many days?', text: 'No problem {first_name} — how many extra days do you need, and could you share the reason briefly so we can log it?' },
+    { label: '⏰ Extension granted', text: 'Done — we\'ve extended your deadline. The updated date is on your dashboard.' },
+    { label: '🔍 Need more info', text: 'Could you share a bit more detail? If it\'s about a specific plan, the plan number and traveler name would help a lot.' },
+    { label: '📸 Please send screenshot', text: 'Could you share a screenshot? Just click the 📎 icon in your chat to attach an image.' },
+    { label: '🙏 Thank you', text: 'Thanks for reaching out — let us know if there\'s anything else!' },
+    // Counter-replies for the rest of the planner quick-send scenarios.
+    { label: '📨 Queued for review', text: 'Got it {first_name} — Set #{set_num} is now in the admin review queue. You\'ll be notified as each plan gets approved (typically within 24–48 hours). Thanks for the great work!' },
+    { label: '✨ New set assigned', text: 'Good news {first_name} — a new set has been assigned to you. Check your dashboard for the briefs. Let us know if any traveler details look off before you start planning.' },
+    { label: '📝 Revision noted', text: 'Got it {first_name} — admin has flagged some plans for revision with notes. Open the plan from your dashboard to see the revision request, update it, and resubmit. Ping us if anything is unclear.' },
+    { label: '🎉 Plan approved', text: 'Plan approved! Nicely done {first_name}. The commission is logged and will be released to your wallet once the whole set is approved.' },
+  ],
+  ja: [
+    { label: '👋 ご挨拶', text: '{first_name}さん、こんにちは。本日はどのようなご用件でしょうか？' },
+    { label: '🏦 保証金の振込先', text: '{first_name}さん、保証金のお振込先は以下の通りです：\n\n銀行：[銀行名]\n口座番号：[口座番号]\n口座名義：Journey Junction\n振込照会：BOND-{set_num}-{planner_short}\n\nお振込後、こちらに明細のスクリーンショットをお送りください。確認後すぐにご連絡いたします。' },
+    { label: '💳 保証金の確認中', text: '{first_name}さん、承知いたしました。お振込の確認を進めております。営業時間内であれば通常30分以内に確認が完了し、ご連絡いたします。' },
+    { label: '✅ 保証金受領済み', text: '保証金のお振込を確認いたしました。プランのロックを解除しました。引き続きよろしくお願いいたします。' },
+    { label: '💰 出金のご案内', text: '{first_name}さん、¥{pending_amt}の出金手続きを進めております。24時間以内にご登録の銀行口座に着金する予定です。' },
+    { label: '💰 出金処理完了', text: '出金処理が完了しました。ご登録の銀行口座への反映には1〜2営業日ほどかかります。' },
+    { label: '📋 セットの確認', text: '{first_name}さん、お住まいの都市で対応可能なセットを確認し、追ってアサインいたします。' },
+    { label: '⏰ 延長日数の確認', text: '{first_name}さん、承知いたしました。何日間の延長をご希望でしょうか？理由も簡単に共有いただけるとログに記録できます。' },
+    { label: '⏰ 延長を承認', text: '締切を延長いたしました。更新後の日付はダッシュボードでご確認いただけます。' },
+    { label: '🔍 詳細をお願いします', text: '恐れ入りますが、もう少し詳しく教えていただけますか？特定のプランについてであれば、プラン番号と旅行者名を教えていただけると助かります。' },
+    { label: '📸 スクリーンショットをお願いします', text: 'スクリーンショットを共有いただけますか？チャット画面の📎アイコンから画像を添付できます。' },
+    { label: '🙏 ありがとうございました', text: 'ご連絡ありがとうございました。他にご質問があればいつでもどうぞ。' },
+    { label: '📨 確認待ちに登録', text: '{first_name}さん、ありがとうございます。セット#{set_num}を管理者の確認待ちリストに登録しました。各プランの承認通知は通常24〜48時間以内にお送りします。引き続きよろしくお願いいたします。' },
+    { label: '✨ 新しいセット割り当て', text: '{first_name}さん、新しいセットを割り当てました。ダッシュボードで旅行者ブリーフをご確認ください。旅行者情報に不明点があればプラン作成前にお知らせください。' },
+    { label: '📝 修正のご案内', text: '{first_name}さん、管理者から一部プランの修正リクエストが入っております。ダッシュボードからプランを開き、コメントをご確認のうえ修正・再提出をお願いいたします。ご不明点があればいつでもご連絡ください。' },
+    { label: '🎉 プラン承認', text: 'プランが承認されました。お見事です、{first_name}さん。コミッションは記録され、セット全体が承認された時点でウォレットに反映されます。' },
+  ]
+}
+// Current language for quick replies — persisted per agent session
+let CS_QR_LANG = localStorage.getItem('jj_cs_qr_lang') || 'en'
+if (CS_QR_LANG !== 'en' && CS_QR_LANG !== 'ja') CS_QR_LANG = 'en'
+function setQuickReplyLang(lang){
+  if (lang !== 'en' && lang !== 'ja') return
+  CS_QR_LANG = lang
+  localStorage.setItem('jj_cs_qr_lang', lang)
+  renderQuickReplies()
+}
+
+// ── DB-backed quick reply cache ─────────────────────────────
+// Populated by loadQuickReplies() on init. If the cs_quick_replies table is
+// missing / empty / errors, the getter falls back to QUICK_REPLIES_DEFAULTS
+// so the console keeps working even before the migration is run.
+let _qrCache = { en: null, ja: null }
+
+async function loadQuickReplies() {
+  try {
+    const { data, error } = await sb.from('cs_quick_replies')
+      .select('id, key, lang, label, body, sort_order, is_system')
+      .order('sort_order', { ascending: true })
+    if (error) { console.warn('cs_quick_replies load failed', error); return }
+    _qrCache.en = (data || []).filter(r => r.lang === 'en').map(r => ({ id: r.id, key: r.key, label: r.label, text: r.body, sort_order: r.sort_order, is_system: r.is_system }))
+    _qrCache.ja = (data || []).filter(r => r.lang === 'ja').map(r => ({ id: r.id, key: r.key, label: r.label, text: r.body, sort_order: r.sort_order, is_system: r.is_system }))
+    if (typeof renderQuickReplies === 'function') renderQuickReplies()
+  } catch (e) { console.warn('cs_quick_replies load threw', e) }
+}
+
+// QUICK_REPLIES getter — DB cache first, hardcoded defaults as fallback.
+// Existing `QUICK_REPLIES[index].label/text` usage continues to work.
+Object.defineProperty(window, 'QUICK_REPLIES', {
+  get() {
+    const dbList = _qrCache[CS_QR_LANG]
+    if (dbList && dbList.length) return dbList
+    return QUICK_REPLIES_DEFAULTS[CS_QR_LANG] || QUICK_REPLIES_DEFAULTS.en
+  }
+})
+
+// ── MANAGE QUICK REPLIES MODAL ──────────────────────────────
+let _qrEditLang = 'en'
+
+function openQuickReplyEditor() {
+  const ov = document.getElementById('qr-mgr-overlay')
+  if (!ov) return
+  _qrEditLang = CS_QR_LANG
+  ov.style.display = 'flex'
+  setQrEditLang(_qrEditLang)
+}
+function closeQuickReplyEditor() {
+  const ov = document.getElementById('qr-mgr-overlay')
+  if (ov) ov.style.display = 'none'
+}
+function setQrEditLang(lang) {
+  if (lang !== 'en' && lang !== 'ja') return
+  _qrEditLang = lang
+  // Tab visual state
+  const enBtn = document.getElementById('qr-mgr-en')
+  const jaBtn = document.getElementById('qr-mgr-ja')
+  if (enBtn && jaBtn) {
+    enBtn.style.background = (lang === 'en') ? 'var(--ink)' : 'transparent'
+    enBtn.style.color      = (lang === 'en') ? '#fff' : 'var(--ink-3)'
+    jaBtn.style.background = (lang === 'ja') ? 'var(--ink)' : 'transparent'
+    jaBtn.style.color      = (lang === 'ja') ? '#fff' : 'var(--ink-3)'
+  }
+  renderQrEditList()
+}
+
+function renderQrEditList() {
+  const listEl = document.getElementById('qr-mgr-list')
+  const countEl = document.getElementById('qr-mgr-count')
+  if (!listEl) return
+  const list = _qrCache[_qrEditLang] || []
+  if (countEl) countEl.textContent = `${list.length} chip${list.length === 1 ? '' : 's'}`
+  if (!list.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-3);font-size:12.5px;">No chips yet — click "+ Add new chip" to create one. Or run <code>phase_a_cs_quick_replies.sql</code> to seed the defaults.</div>'
+    return
+  }
+  listEl.innerHTML = list.map(r => `
+    <div data-qr-id="${escapeHtml(r.id)}" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;display:grid;gap:8px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input class="qr-row-label" type="text" value="${escapeHtml(r.label)}" placeholder="👋 Label with emoji" style="flex:1;padding:7px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);outline:none;">
+        ${r.is_system ? `<span title="System chip — key: ${escapeHtml(r.key||'')}" style="font-size:9.5px;color:var(--ink-3);background:var(--cream);padding:2px 7px;border-radius:99px;border:1px solid var(--border);">SYSTEM</span>` : ''}
+      </div>
+      <textarea class="qr-row-body" rows="3" placeholder="Reply text. Supports {first_name}, {set_num}, {planner_short}, {pending_amt}." style="width:100%;padding:8px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);outline:none;resize:vertical;line-height:1.5;">${escapeHtml(r.text)}</textarea>
+      <div style="display:flex;gap:6px;justify-content:flex-end;">
+        <button onclick="qrSaveRow('${escapeHtml(r.id)}', this)" style="padding:6px 14px;background:var(--green-mid);color:#fff;border:none;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+        <button onclick="qrDeleteRow('${escapeHtml(r.id)}', this)" style="padding:6px 14px;background:transparent;color:var(--red,#c0392b);border:1px solid rgba(192,57,43,0.4);border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Delete</button>
+      </div>
+    </div>
+  `).join('')
+}
+
+async function qrSaveRow(id, btn) {
+  const row = btn.closest('[data-qr-id]')
+  if (!row) return
+  const label = row.querySelector('.qr-row-label')?.value?.trim() || ''
+  const body  = row.querySelector('.qr-row-body')?.value || ''
+  if (!label) { showToast('Label required'); return }
+  if (!body)  { showToast('Reply text required'); return }
+  btn.disabled = true; btn.textContent = 'Saving…'
+  const { error } = await sb.from('cs_quick_replies')
+    .update({ label, body, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  btn.disabled = false; btn.textContent = 'Save'
+  if (error) { showToast('Save failed: ' + error.message); return }
+  await loadQuickReplies()
+  renderQrEditList()
+  showToast('Chip updated')
+}
+
+async function qrDeleteRow(id, btn) {
+  const row = btn.closest('[data-qr-id]')
+  if (!row) return
+  // Confirm — system chips deletable too, but warn that the intent matcher
+  // will lose its target until the SQL seed re-creates it.
+  if (!confirm('Delete this chip? It can only be restored by re-running the SQL seed.')) return
+  btn.disabled = true; btn.textContent = 'Deleting…'
+  const { error } = await sb.from('cs_quick_replies').delete().eq('id', id)
+  btn.disabled = false; btn.textContent = 'Delete'
+  if (error) { showToast('Delete failed: ' + error.message); return }
+  await loadQuickReplies()
+  renderQrEditList()
+  showToast('Chip deleted')
+}
+
+async function qrAddNew() {
+  const list = _qrCache[_qrEditLang] || []
+  const nextOrder = list.length ? Math.max(...list.map(r => r.sort_order || 0)) + 1 : 0
+  // Custom chips have no `key` (intent matcher only fires for system chips)
+  const { error } = await sb.from('cs_quick_replies').insert({
+    lang: _qrEditLang,
+    label: '✨ New chip',
+    body: 'Type the reply text here. Use {first_name}, {set_num}, etc. for variables.',
+    sort_order: nextOrder,
+    is_system: false
+  })
+  if (error) { showToast('Add failed: ' + error.message); return }
+  await loadQuickReplies()
+  renderQrEditList()
+  // Scroll the new row into view
+  setTimeout(() => {
+    const listEl = document.getElementById('qr-mgr-list')
+    if (listEl) listEl.scrollTop = listEl.scrollHeight
+  }, 50)
+}
+
+// Kick off DB load now — falls back to defaults if the table is missing.
+loadQuickReplies()
+
+// Map the planner's canned-message phrases → KEY of the matching CS reply.
+// Using the stable `key` column (not array index) keeps matchers correct even
+// after a CS agent reorders / inserts / deletes chips via the Manage modal.
+const PLANNER_INTENT_MATCHERS = [
+  { key: 'bond_bank_details', keywords: [
+    'help paying the bond','help with the bond payment','need help paying','bond details','保証金支払い','保証金の支払い','保証金についてサポート'
+  ] },
+  { key: 'verifying_bond', keywords: [
+    'paid the bond','please confirm my payment','confirm my payment','sent the payment','transfer done','保証金を支払いました','振込完了','支払いを確認','確認をお願い'
+  ] },
+  { key: 'payout_update', keywords: [
+    'update on the payout','payout status','when is my payout','check payout','支払いの状況','出金状況','支払いはいつ','バッチが承認されました'
+  ] },
+  { key: 'checking_sets', keywords: [
+    'assign me a new set','take on a new set','assign me one','ready to take','request a new set','request a set','新しいセット','次のセット','セットをアサイン','セットを引き受ける'
+  ] },
+  { key: 'how_many_days', keywords: [
+    'request a deadline extension','deadline extension','need more time','extend my deadline','締切の延長','期限の延長','延長をお願い'
+  ] },
+  { key: 'please_screenshot', keywords: [
+    'screenshot','picture','image','proof','スクリーンショット','画像','証拠'
+  ] },
+  { key: 'queued_for_review', keywords: [
+    'submitted all 15 plans','queue this for admin review','ready for review','queue for review','15プランを提出','管理者の確認をお願い','レビューをお願い'
+  ] },
+  { key: 'revision_noted', keywords: [
+    'revision','revise','revisions','please fix','what does the admin want','修正リクエスト','修正をお願い','どう修正'
+  ] },
+]
+
+function detectIncomingIntent() {
+  if (!activeMessages?.length) return -1
+  // Find most recent planner message
+  const last = [...activeMessages].reverse().find(m => m.sender_type === 'planner')
+  if (!last?.body) return -1
+  const body = last.body.toLowerCase()
+  // Match by stable key, then look up the chip's CURRENT index in the active
+  // language list. This stays correct even if a CS agent reorders chips.
+  for (const m of PLANNER_INTENT_MATCHERS) {
+    if (m.keywords.some(k => body.includes(k))) {
+      const list = window.QUICK_REPLIES
+      const idx = list.findIndex(q => q.key === m.key)
+      if (idx >= 0) return idx
+    }
+  }
+  return -1
+}
+
+function renderQuickReplies() {
+  const box = document.getElementById('quick-replies')
+  if (!box) return
+  const suggestedIdx = detectIncomingIntent()
+
+  // Language toggle pill (EN / 日本語) — lives at the front of the bar
+  const langPill = `<div style="display:inline-flex;gap:0;padding:2px;background:var(--cream);border:1px solid var(--border-med);border-radius:99px;margin-right:6px;flex-shrink:0;">
+    <button onclick="setQuickReplyLang('en')" title="English quick replies" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='en'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='en'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.04em;">EN</button>
+    <button onclick="setQuickReplyLang('ja')" title="日本語のクイック返信" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='ja'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='ja'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">日本語</button>
+  </div>
+  <button onclick="openQuickReplyEditor()" title="Add or edit quick replies" style="padding:3px 10px;background:transparent;border:1px solid var(--border-med);border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;color:var(--ink-3);font-family:'DM Sans',sans-serif;margin-right:6px;flex-shrink:0;">⚙ Manage</button>`
+
+  const list = window.QUICK_REPLIES
+  const chips = list.map((q, i) => {
+    const isSuggested = i === suggestedIdx
+    const bg     = isSuggested ? 'linear-gradient(135deg, rgba(26,122,94,0.14), rgba(26,122,94,0.04))' : 'var(--cream)'
+    const border = isSuggested ? 'var(--green-mid,#2d9e7a)' : 'var(--border-med)'
+    const color  = isSuggested ? 'var(--green-dark,#0f5240)' : 'var(--ink-2)'
+    const weight = isSuggested ? '600' : '400'
+    const ring   = isSuggested ? 'box-shadow:0 0 0 3px rgba(26,122,94,0.08);' : ''
+    const hint   = isSuggested ? `<span style="font-size:9px;opacity:0.85;margin-left:4px;font-weight:700;letter-spacing:0.05em;">${CS_QR_LANG==='ja'?'· おすすめ':'· SUGGESTED'}</span>` : ''
+    return `<button onclick="applyQuickReply(${i})" style="padding:5px 10px;background:${bg};border:1px solid ${border};border-radius:99px;font-size:11px;cursor:pointer;color:${color};font-weight:${weight};font-family:'DM Sans',sans-serif;white-space:nowrap;${ring}" onmouseover="this.style.background='var(--green-light)';this.style.borderColor='var(--green-mid)'" onmouseout="this.style.background='${bg}';this.style.borderColor='${border}'">${escapeHtml(q.label)}${hint}</button>`
+  }).join('')
+
+  box.innerHTML = langPill + chips
+}
+
+function toggleQuickReplies() {
+  const box = document.getElementById('quick-replies')
+  if (!box) return
+  box.style.display = box.style.display === 'flex' ? 'none' : 'flex'
+}
+
+function applyQuickReply(index) {
+  const q = QUICK_REPLIES[index]
+  if (!q) return
+  const ctx = currentPlannerCtx
+  const firstName = ctx?.planner?.name?.split(' ')[0] || 'there'
+  const setNum = ctx?.active?.sets?.set_number ? String(ctx.active.sets.set_number).padStart(3,'0') : '—'
+  const plannerShort = activeConv?.planner_id ? activeConv.planner_id.slice(0,6).toUpperCase() : ''
+  const pendingAmt = Math.round(ctx?.pendingAmt || 0).toLocaleString('ja-JP')
+  const filled = q.text
+    .replace(/{first_name}/g, firstName)
+    .replace(/{set_num}/g, setNum)
+    .replace(/{planner_short}/g, plannerShort)
+    .replace(/{pending_amt}/g, pendingAmt)
+  const input = document.getElementById('compose-input')
+  if (input) {
+    input.value = filled
+    input.focus()
+    input.setSelectionRange(filled.length, filled.length)
+    autoGrowTextarea(input)
+    // Fire a synthetic 'input' event so the typing-broadcast + heartbeat pick it up
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+}
+
+async function loadMessages(convId) {
+  const { data, error } = await sb.from('messages').select('*').eq('conversation_id', convId).order('created_at')
+  if (error) { console.error(error); return }
+  activeMessages = data || []
+  renderMessages()
+  // Re-run suggestion detection now that the latest planner message is loaded
+  renderQuickReplies()
+}
+
+// Track which message is currently being edited (null when none)
+let editingMsgId = null
+
+// ── TRANSLATION (JA → EN) — Cloudflare Workers AI via /api/translate.
+// Cached per-message so re-renders from the 3s poller don't lose translations.
+const _msgTranslations = new Map()  // msg_id -> { translated, state, error }
+const _hasJapanese = (s) => /[぀-ゟ゠-ヿ一-鿿]/.test(s || '')
+
+async function csTranslateMessage(msgId){
+  const m = activeMessages.find(x => x.id === msgId)
+  if (!m || !m.body) return
+  const cur = _msgTranslations.get(msgId)
+  // Toggle off if currently shown
+  if (cur?.state === 'shown') {
+    _msgTranslations.set(msgId, { ...cur, state: 'hidden' })
+    renderMessages()
+    return
+  }
+  // Already fetched — just re-show
+  if (cur?.translated) {
+    _msgTranslations.set(msgId, { ...cur, state: 'shown' })
+    renderMessages()
+    return
+  }
+  // Fetch
+  _msgTranslations.set(msgId, { state: 'loading' })
+  renderMessages()
+  try {
+    const r = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: m.body, source_lang: 'japanese', target_lang: 'english' })
+    })
+    const data = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(data?.error || 'translate failed')
+    _msgTranslations.set(msgId, { translated: data.translated || '', state: 'shown' })
+  } catch (e) {
+    _msgTranslations.set(msgId, { translated: 'Translation failed: ' + (e?.message || 'unknown'), state: 'shown', error: true })
+  }
+  renderMessages()
+}
+
+function renderMessages() {
+  const box = document.getElementById('chat-scroll')
+  if (!activeMessages.length) {
+    box.innerHTML = `<div class="chat-empty"><div class="chat-empty-icon">💬</div><div style="font-size:13px;">No messages yet — say hello</div></div>`
+    return
+  }
+  box.innerHTML = activeMessages.map(m => {
+    const isCs = m.sender_type === 'cs'
+    // Edit only applies to text — media-only messages have nothing to edit.
+    // Delete applies to any persisted CS message (text OR image).
+    const isPersisted = !m._pending && m.id && !String(m.id).startsWith('tmp-')
+    const canEdit   = isCs && isPersisted && !!m.body
+    const canDelete = isCs && isPersisted
+
+    // In-place edit mode — replace the bubble with a textarea
+    if (canEdit && editingMsgId === m.id) {
+      const safeBody = escapeHtml(m.body || '').replace(/&lt;br&gt;/g, '\n')
+      return `
+        <div class="msg ${m.sender_type}">
+          <div class="msg-editor">
+            <textarea id="msg-edit-input-${escapeHtml(m.id)}" rows="3">${safeBody}</textarea>
+            <div class="msg-editor-actions">
+              <button class="msg-editor-btn" onclick="cancelEditMessage()">Cancel</button>
+              <button class="msg-editor-btn primary" onclick="saveEditMessage('${jsEsc(m.id)}')">Save</button>
+            </div>
+          </div>
+        </div>`
+    }
+
+    const img  = m.media_url ? `<img src="${escapeHtml(m.media_url)}" onclick="openImageLightbox('${jsEsc(m.media_url)}')" style="max-width:320px;max-height:360px;border-radius:10px;display:block;cursor:zoom-in;">` : ''
+    const text = m.body ? `<div style="white-space:pre-wrap;word-wrap:break-word;">${escapeHtml(m.body)}</div>` : ''
+    const bubblePad = m.media_url && !m.body ? 'padding:6px;' : ''
+    const pending = m._pending ? '<div style="font-size:10.5px;opacity:0.75;margin-top:4px;">sending…</div>' : ''
+    const edited = m.edited_at ? '<span class="msg-edited" title="Edited">· edited</span>' : ''
+
+    // Build the edit + delete affordances independently so image-only
+    // messages (no body) still get a delete button.
+    const editBtn = canEdit ? `
+        <button class="msg-action-btn" title="Edit message" onclick="startEditMessage('${jsEsc(m.id)}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+        </button>` : ''
+    const deleteBtn = canDelete ? `
+        <button class="msg-action-btn danger" title="Delete message" onclick="deleteMessage('${jsEsc(m.id)}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>` : ''
+    const actions = (editBtn || deleteBtn) ? `<span class="msg-actions">${editBtn}${deleteBtn}</span>` : ''
+
+    // Translate UI: only for planner-sent messages that contain Japanese.
+    // CS's own messages don't need translation. System messages skipped.
+    let translateBlock = ''
+    if (m.sender_type === 'planner' && m.body && _hasJapanese(m.body)) {
+      const tr = _msgTranslations.get(m.id)
+      const state = tr?.state
+      if (state === 'loading') {
+        translateBlock = `<button type="button" class="msg-translate-btn" disabled>Translating…</button>`
+      } else if (state === 'shown' && tr?.translated) {
+        translateBlock = `
+          <button type="button" class="msg-translate-btn" onclick="csTranslateMessage('${jsEsc(m.id)}')">🌐 Hide translation</button>
+          <div class="msg-translation${tr.error ? ' error' : ''}">${escapeHtml(tr.translated)}</div>`
+      } else {
+        translateBlock = `<button type="button" class="msg-translate-btn" onclick="csTranslateMessage('${jsEsc(m.id)}')">🌐 Translate to English</button>`
+      }
+    }
+
+    return `
+      <div class="msg ${m.sender_type}" data-msg-id="${escapeHtml(m.id)}">
+        <div class="msg-bubble" style="${bubblePad}">${img}${text}${pending}</div>
+        ${translateBlock}
+        <div class="msg-meta">${m.sender_type === 'system' ? '' : (escapeHtml(m.sender_name || m.sender_type) + ' · ')}${fullTime(m.created_at)}${edited}${actions}</div>
+      </div>`
+  }).join('')
+  box.scrollTop = box.scrollHeight
+
+  // Focus the textarea if we're in edit mode
+  if (editingMsgId) {
+    const ta = document.getElementById('msg-edit-input-' + editingMsgId)
+    if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length) }
+  }
+}
+
+// ── MESSAGE EDIT / DELETE ───────────────────────────────────
+function startEditMessage(id) {
+  editingMsgId = id
+  renderMessages()
+  // Escape cancels, Ctrl/Cmd+Enter saves — attach a once-handler for this edit session
+  const onKey = (e) => {
+    if (e.key === 'Escape') { cancelEditMessage(); document.removeEventListener('keydown', onKey, true) }
+    else if ((e.key === 'Enter') && (e.ctrlKey || e.metaKey)) { saveEditMessage(id); document.removeEventListener('keydown', onKey, true) }
+  }
+  document.addEventListener('keydown', onKey, true)
+}
+function cancelEditMessage() {
+  editingMsgId = null
+  renderMessages()
+}
+async function saveEditMessage(id) {
+  const ta = document.getElementById('msg-edit-input-' + id)
+  if (!ta) return
+  const newBody = ta.value.trim()
+  if (!newBody) { showToast('Message cannot be empty'); return }
+  const idx = activeMessages.findIndex(m => String(m.id) === String(id))
+  if (idx < 0) return
+  const oldBody = activeMessages[idx].body
+  if (newBody === oldBody) { editingMsgId = null; renderMessages(); return }
+
+  // Optimistic UI
+  const nowIso = new Date().toISOString()
+  activeMessages[idx] = { ...activeMessages[idx], body: newBody, edited_at: nowIso }
+  editingMsgId = null
+  renderMessages()
+
+  // Persist — try with edited_at column, fall back to body-only if the column
+  // doesn't exist in the schema yet.
+  let { error } = await sb.from('messages')
+    .update({ body: newBody, edited_at: nowIso })
+    .eq('id', id)
+  if (error && /edited_at/.test(error.message || '')) {
+    const retry = await sb.from('messages').update({ body: newBody }).eq('id', id)
+    error = retry.error
+  }
+  if (error) {
+    // Revert on failure
+    activeMessages[idx].body = oldBody
+    activeMessages[idx].edited_at = null
+    renderMessages()
+    showToast('Edit failed: ' + error.message)
+  }
+}
+
+async function deleteMessage(id) {
+  const idx = activeMessages.findIndex(m => String(m.id) === String(id))
+  if (idx < 0) return
+  const snapshot = activeMessages[idx]
+  const isImage = !!snapshot.media_url
+  if (!confirm(`Delete this ${isImage ? 'image' : 'message'} for everyone?\n\nThis cannot be undone.`)) return
+
+  // Optimistic remove
+  activeMessages.splice(idx, 1)
+  renderMessages()
+
+  const { error } = await sb.from('messages').delete().eq('id', id)
+  if (error) {
+    // Restore on failure — the storage file (if any) is untouched
+    activeMessages.splice(idx, 0, snapshot)
+    renderMessages()
+    showToast('Delete failed: ' + error.message)
+    return
+  }
+
+  // Best-effort: also remove the file from chat-media storage so we don't
+  // accumulate orphans. Failure here is non-blocking — the message is gone.
+  if (snapshot.media_url) {
+    try {
+      // Public URL pattern: <project>.supabase.co/storage/v1/object/public/chat-media/<path>
+      const m = String(snapshot.media_url).match(/\/chat-media\/(.+?)(?:\?|$)/)
+      const path = m && m[1] ? decodeURIComponent(m[1]) : null
+      if (path) {
+        const { error: rmErr } = await sb.storage.from('chat-media').remove([path])
+        if (rmErr) console.warn('[chat] storage cleanup failed (non-blocking):', rmErr.message)
+      }
+    } catch (e) { console.warn('[chat] storage cleanup parse error:', e) }
+  }
+}
+
+// ── IMAGE UPLOAD ────────────────────────────────────────────
+async function handleImagePick(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file || !activeConv) return
+  if (file.size > 8 * 1024 * 1024) { showToast('Image too large — max 8MB'); return }
+
+  const tempId = 'tmp-' + Date.now()
+  const localUrl = URL.createObjectURL(file)
+  activeMessages.push({
+    id: tempId,
+    conversation_id: activeConv.id,
+    sender_type: 'cs',
+    sender_name: csAgentName,
+    body: null,
+    media_url: localUrl,
+    media_type: file.type,
+    created_at: new Date().toISOString(),
+    _pending: true
+  })
+  renderMessages()
+
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const path = `${activeConv.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`
+    const { error: upErr } = await sb.storage.from('chat-media').upload(path, file, { contentType: file.type, upsert: false })
+    if (upErr) throw upErr
+    // Build the DIRECT Supabase storage URL — not via our worker proxy.
+    // sb.storage.getPublicUrl() returns a URL based on the client's base, which
+    // points at /api/sb (the proxy). That URL is gated by Referer and would
+    // 403 anyone outside the admin/CS pages — including the planner viewing
+    // the image in their dashboard. Hardcoding the direct supabase.co URL
+    // makes the image publicly loadable as intended.
+    const mediaUrl = `${SUPABASE_URL}/storage/v1/object/public/chat-media/${path}`
+
+    const { data: inserted, error } = await sb.from('messages').insert({
+      conversation_id: activeConv.id,
+      sender_type: 'cs',
+      sender_name: csAgentName,
+      body: null,
+      media_url: mediaUrl,
+      media_type: file.type
+    }).select().single()
+    if (error) throw error
+    const idx = activeMessages.findIndex(m => m.id === tempId)
+    if (idx >= 0) activeMessages[idx] = inserted
+    renderMessages()
+  } catch (err) {
+    activeMessages = activeMessages.filter(m => m.id !== tempId)
+    renderMessages()
+    showToast('Upload failed: ' + (err.message || err))
+  }
+}
+
+// ── SEND ────────────────────────────────────────────────────
+async function sendMessage(e) {
+  if (e) e.preventDefault()
+  if (!activeConv) return
+  const input = document.getElementById('compose-input')
+  const body = input.value.trim()
+  if (!body) return
+  const btn = document.getElementById('compose-send')
+  input.value = ''
+  input.style.height = ''  // reset auto-grown height
+  input.focus()
+  // Clear my typing broadcast so other agents' typing-bar closes immediately
+  _lastTypingSent = 0
+  stopTypingHeartbeat()
+  if (typingChannel) typingChannel.send({ type:'broadcast', event:'typing', payload:{ session: csSessionId, agent: csAgentName, text: '', stop: true } })
+
+  // Optimistic render
+  const tempId = 'tmp-' + Date.now()
+  activeMessages.push({
+    id: tempId,
+    conversation_id: activeConv.id,
+    sender_type: 'cs',
+    sender_name: csAgentName,
+    body,
+    created_at: new Date().toISOString(),
+    _pending: true
+  })
+  renderMessages()
+
+  btn.disabled = true
+  const { data: inserted, error } = await sb.from('messages').insert({
+    conversation_id: activeConv.id,
+    sender_type: 'cs',
+    sender_name: csAgentName,
+    body
+  }).select().single()
+  btn.disabled = false
+  if (error) {
+    activeMessages = activeMessages.filter(m => m.id !== tempId)
+    renderMessages()
+    showToast('Send failed: ' + error.message)
+    input.value = body
+    return
+  }
+  // Replace temp with real row
+  const idx = activeMessages.findIndex(m => m.id === tempId)
+  if (idx >= 0) activeMessages[idx] = inserted
+  renderMessages()
+}
+
+// ── STATUS TOGGLE (close / reopen) ──────────────────────────
+async function toggleStatus() {
+  if (!activeConv) return
+  const next = activeConv.status === 'open' ? 'closed' : 'open'
+  const { error } = await sb.from('conversations').update({ status: next }).eq('id', activeConv.id)
+  if (error) { showToast('Failed: ' + error.message); return }
+  activeConv.status = next
+  document.getElementById('close-btn').textContent = next === 'open' ? 'Close' : 'Reopen'
+  // System message
+  await sb.from('messages').insert({
+    conversation_id: activeConv.id,
+    sender_type: 'system',
+    body: next === 'closed' ? 'Conversation closed by support' : 'Conversation reopened'
+  })
+  showToast(next === 'closed' ? 'Conversation closed' : 'Conversation reopened')
+  loadConversations()
+}
+
+function reloadActive() {
+  if (activeConv) { loadMessages(activeConv.id); loadConversations() }
+}
+
+// ── REALTIME SUBSCRIPTIONS ──────────────────────────────────
+// Note: the message-insert (postgres_changes) and typing (broadcast) are on
+// SEPARATE channels. If the messages-table replication isn't enabled on the
+// Supabase project, the postgres_changes channel errors — but the typing
+// broadcast channel keeps working on its own.
+function attachMessageChannel(convId) {
+  if (msgChannel)    sbRT.removeChannel(msgChannel)
+  if (typingChannel) sbRT.removeChannel(typingChannel)
+  stopTypingHeartbeat()
+  hideTypingBar()
+
+  // Channel 1: postgres_changes for new message inserts
+  msgChannel = sbRT.channel(`msg-${convId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convId}` }, payload => {
+      if (activeMessages.find(m => m.id === payload.new.id)) return
+      activeMessages.push(payload.new)
+      renderMessages()
+      if (payload.new.sender_type === 'planner') {
+        sb.from('conversations').update({ unread_for_cs: 0 }).eq('id', convId)
+        renderQuickReplies()
+        _csOnIncomingMessage(payload.new)  // beep + notify (de-duped by msg id)
+      }
+    })
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn('[msg] channel', status, convId)
+      }
+    })
+
+  // Channel 2: broadcast-only channel for CS→CS typing preview.
+  // Kept separate so a messages-table replication issue can't take it down.
+  typingChannel = sbRT.channel(`typing-${convId}`, { config: { broadcast: { self: false } } })
+    .on('broadcast', { event: 'typing' }, ({ payload }) => {
+      if (!payload) return
+      console.log('[typing] recv', { convId, fromSession: payload.session, mySession: csSessionId, agent: payload.agent, textLen: (payload.text||'').length, stop: !!payload.stop })
+      if (payload.session === csSessionId) return
+      if (payload.stop || !payload.text) { hideTypingBar(); return }
+      showTypingBar(payload.agent || 'Support', payload.text)
+    })
+    .subscribe((status, err) => {
+      if (status === 'SUBSCRIBED') console.log('[typing] subscribed', convId)
+      else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') console.warn('[typing] channel', status, convId, err || '')
+    })
+}
+
+// ── LIVE TYPING COORDINATION ──────────────────────────────────
+let _typingHideTimer = null
+function showTypingBar(agent, text){
+  const bar = document.getElementById('typing-bar')
+  const ag  = document.getElementById('typing-agent')
+  const pv  = document.getElementById('typing-preview')
+  if (!bar || !ag || !pv) return
+  ag.textContent = agent
+  // Trim long drafts so the bar doesn't grow tall; keep last ~120 chars
+  const trimmed = text ? text.slice(-120) : ''
+  pv.textContent = trimmed ? ` — "${trimmed}"` : '…'
+  bar.style.display = 'flex'
+  // Keep the preview up for 12s after the last broadcast as a failsafe
+  // (if the sender disconnects mid-draft). The sender also sends a heartbeat
+  // every ~4s while their input has text, so the bar effectively stays live
+  // as long as they're parked on the draft.
+  if (_typingHideTimer) clearTimeout(_typingHideTimer)
+  _typingHideTimer = setTimeout(() => hideTypingBar(), 12000)
+}
+function hideTypingBar(){
+  const bar = document.getElementById('typing-bar')
+  if (bar) bar.style.display = 'none'
+  if (_typingHideTimer){ clearTimeout(_typingHideTimer); _typingHideTimer = null }
+}
+
+// Throttled send of my keystrokes to other CS agents on this conv
+let _lastTypingSent = 0
+let _typingHeartbeatTimer = null
+
+function broadcastMyTyping(text, { force = false } = {}){
+  if (!typingChannel || !activeConv?.id) return
+  const now = Date.now()
+  if (!force && now - _lastTypingSent < 220) return   // throttle to ~4/sec max
+  _lastTypingSent = now
+  const payload = { session: csSessionId, agent: csAgentName, text: text || '' }
+  console.log('[typing] send', { convId: activeConv.id, textLen: payload.text.length, heartbeat: force })
+  typingChannel.send({ type:'broadcast', event:'typing', payload })
+    .then(r => { if (r !== 'ok') console.warn('[typing] send not-ok', r) })
+    .catch(e => console.warn('[typing] send error', e))
+}
+
+function startTypingHeartbeat(){
+  if (_typingHeartbeatTimer) return
+  _typingHeartbeatTimer = setInterval(() => {
+    const text = _composeInput?.value || ''
+    if (!text) { stopTypingHeartbeat(); return }
+    // Force a broadcast even if no new keystrokes, so the receiver's bar stays live
+    broadcastMyTyping(text, { force: true })
+  }, 4000)
+}
+function stopTypingHeartbeat(){
+  if (_typingHeartbeatTimer){ clearInterval(_typingHeartbeatTimer); _typingHeartbeatTimer = null }
+}
+
+function attachInboxChannel() {
+  if (convChannel) sbRT.removeChannel(convChannel)
+  convChannel = sbRT.channel('conv-inbox')
+    // Patch a single row instead of refetching the whole inbox. Without this,
+    // every incoming message anywhere triggered a 1000-row reload — kills the
+    // UI under load.
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, p => upsertConvFromRealtime(p.new?.id))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, p => upsertConvFromRealtime(p.new?.id))
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'conversations' }, p => removeConvFromRealtime(p.old?.id))
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
+      upsertConvFromRealtime(p.new?.conversation_id)
+      _csOnIncomingMessage(p.new)  // beep + notify for any planner msg, even outside active conv
+    })
+    .subscribe(status => updateRealtimeStatus(status))
+  // Polling fallback: if realtime is down, refetch the inbox every 30s. Cheap
+  // safety net for the case where the publication isn't configured or the
+  // websocket drops. When realtime is healthy this is essentially free
+  // because nothing changes between polls.
+  if (!_inboxPollT) _inboxPollT = setInterval(() => {
+    if (document.hidden) return  // skip when tab not visible
+    if (_realtimeOk) return       // realtime is doing its job
+    loadConversations()
+  }, 30000)
+}
+
+// Realtime connection state — surfaced as a small dot in the inbox header so
+// CS can tell at a glance whether they're live or need a manual refresh.
+let _realtimeOk = true
+let _inboxPollT = null
+function updateRealtimeStatus(status) {
+  // Supabase channel statuses: 'SUBSCRIBED', 'CLOSED', 'CHANNEL_ERROR', 'TIMED_OUT'
+  _realtimeOk = (status === 'SUBSCRIBED')
+  const dot = document.getElementById('rt-status-dot')
+  if (!dot) return
+  if (_realtimeOk) {
+    dot.style.background = 'var(--green-mid,#2d9e7a)'
+    dot.title = 'Live updates active'
+  } else {
+    dot.style.background = 'var(--red,#c0392b)'
+    dot.title = 'Live updates dropped — using polling fallback. If this persists, run the realtime publication SQL.'
+    console.warn('[realtime] dropped:', status)
+  }
+}
+
+// Fetch a single conversation row (with planner join) and merge it into
+// allConvs. Replaces the old full-inbox reload — O(1) instead of O(n).
+async function upsertConvFromRealtime(convId) {
+  if (!convId) return
+  const { data: row } = await sb
+    .from('conversations')
+    .select('*, planners:planner_id(id,name,email,phone,city,status)')
+    .eq('id', convId)
+    .maybeSingle()
+  if (!row) return removeConvFromRealtime(convId)
+
+  // Decide if the row should be in the current view based on which filter
+  // chip is active. If it doesn't match, drop it (server query would have
+  // excluded it on a fresh load).
+  const nowMs = Date.now()
+  const isSnoozed = row.snoozed_until && new Date(row.snoozed_until).getTime() > nowMs
+  const statusMatches =
+       currentFilter === 'open'   ? (row.status !== 'closed' && !isSnoozed)
+     : currentFilter === 'unread' ? (row.unread_for_cs || 0) > 0
+     : currentFilter === 'mine'   ? (row.assigned_to === csAgentName && row.status !== 'closed')
+     : currentFilter === 'closed' ? row.status === 'closed'
+     : true
+  // Tag filter also must match (if any)
+  const tagMatches = !_activeTagFilter
+    || (Array.isArray(row.tags) && row.tags.includes(_activeTagFilter))
+  const matches = statusMatches && tagMatches
+
+  // If this row is the currently-open conversation, also refresh activeConv +
+  // its controls so other agents' pin/snooze/assign/tag edits flow in live.
+  if (activeConv?.id === convId) {
+    activeConv = row
+    renderConvControls()
+  }
+
+  const idx = allConvs.findIndex(c => c.id === convId)
+  if (matches) {
+    if (idx >= 0) allConvs[idx] = row
+    else          allConvs.unshift(row)
+    // Keep pinned at top, then last_message_at desc (newest first).
+    allConvs.sort((a, b) => {
+      if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)
+      const aT = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+      const bT = b.last_message_at ? new Date(b.last_message_at).getTime() : 0
+      return bT - aT
+    })
+  } else if (idx >= 0) {
+    allConvs.splice(idx, 1)
+  }
+  renderInbox()
+  updateStats()
+}
+
+function removeConvFromRealtime(convId) {
+  if (!convId) return
+  const idx = allConvs.findIndex(c => c.id === convId)
+  if (idx < 0) return
+  allConvs.splice(idx, 1)
+  renderInbox()
+  updateStats()
+}
+
+// ── Enter to send (Shift+Enter for newline) + auto-grow ─────
+function autoGrowTextarea(el){
+  if (!el) return
+  el.style.height = 'auto'
+  // Cap is controlled by CSS max-height; overflow stays auto so scroll kicks in beyond cap
+  el.style.height = el.scrollHeight + 'px'
+}
+const _composeInput = document.getElementById('compose-input')
+_composeInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    sendMessage(e)
+  }
+})
+_composeInput.addEventListener('input', () => {
+  autoGrowTextarea(_composeInput)
+  const val = _composeInput.value
+  broadcastMyTyping(val)
+  if (val.length > 0) startTypingHeartbeat()
+  else { stopTypingHeartbeat(); broadcastMyTyping('', { force:true }) }  // tell others to hide the bar
+})
+// Paste image — drop screenshots straight in without using the paperclip.
+_composeInput.addEventListener('paste', e => {
+  const items = e.clipboardData?.items || []
+  for (const item of items) {
+    if (item.kind === 'file' && (item.type || '').startsWith('image/')) {
+      const file = item.getAsFile()
+      if (!file) continue
+      e.preventDefault()
+      handleImagePick({ target: { files: [file], value: '' } })
+      return
+    }
+  }
+})
+
+// ── DEEP LINK: ?conv=<id> or ?planner=<id> ──────────────────
+async function handleDeepLink() {
+  const params = new URLSearchParams(location.search)
+  const convParam = params.get('conv')
+  const plannerParam = params.get('planner')
+  if (convParam) {
+    openConversation(convParam)
+  } else if (plannerParam) {
+    // Find or create conversation for this planner
+    let { data: existing } = await sb.from('conversations').select('*').eq('planner_id', plannerParam).maybeSingle()
+    if (!existing) {
+      const { data: created } = await sb.from('conversations').insert({ planner_id: plannerParam }).select().single()
+      existing = created
+    }
+    if (existing) {
+      await loadConversations()
+      openConversation(existing.id)
+    }
+  }
+}
+
+// ── START ───────────────────────────────────────────────────
+loadConversations().then(() => {
+  attachInboxChannel()
+  handleDeepLink()
+})
+
+// Refresh "time ago" labels every 60s
+setInterval(() => renderInbox(), 60000)
+
+// Polling fallback — keep the active conversation fresh every 3s
+setInterval(async () => {
+  if (!activeConv) return
+  if (document.hidden) return
+  const { data } = await sb.from('messages').select('*').eq('conversation_id', activeConv.id).order('created_at')
+  if (!data) return
+  const pending = activeMessages.filter(m => m._pending)
+  const ids = new Set(data.map(m => m.id))
+  const merged = [...data, ...pending.filter(p => !ids.has(p.id))]
+  // Detect changes including edits + soft-deletes: length, ids, edited_at
+  // timestamp, and body length. Prior version compared only length + id and
+  // missed edits made by other CS agents on the same conv.
+  const changed = merged.length !== activeMessages.length || merged.some((m,i) => {
+    const prev = activeMessages[i]
+    if (!prev || m.id !== prev.id) return true
+    if ((m.edited_at || '') !== (prev.edited_at || '')) return true
+    if ((m.body || '').length !== (prev.body || '').length) return true
+    return false
+  })
+  if (changed) {
+    activeMessages = merged
+    renderMessages()
+  }
+  // Clear server-side unread for CS while viewing
+  sb.from('conversations').update({ unread_for_cs: 0 }).eq('id', activeConv.id)
+}, 3000)
+
+// Poll inbox every 5s to catch new conversations / unread changes
+setInterval(() => {
+  if (document.hidden) return
+  loadConversations()
+}, 5000)
+
+// ─── NEW CHAT PICKER ────────────────────────────────────────────
+// Lets CS start a conversation with any planner, including ones who've
+// never messaged in. Uses the existing find-or-create conversation flow
+// that previously only ran from the ?planner=<id> deep link.
+let _ncPlanners = []      // cached planner list (loaded on first open)
+let _ncSearchT  = null
+function openNewChatPicker(){
+  const overlay = document.getElementById('newchat-modal')
+  if (!overlay) return
+  overlay.classList.add('open')
+  document.body.style.overflow = 'hidden'
+  const inp = document.getElementById('newchat-search')
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 50) }
+  loadNewChatPlanners()
+}
+function closeNewChatPicker(){
+  document.getElementById('newchat-modal')?.classList.remove('open')
+  document.body.style.overflow = ''
+}
+async function loadNewChatPlanners(){
+  // Cache after first fetch — list rarely changes mid-session and the
+  // search runs client-side for instant feedback.
+  if (_ncPlanners.length) { renderNewChatResults(''); return }
+  const wrap = document.getElementById('newchat-results')
+  if (wrap) wrap.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-3);font-size:12.5px;">Loading planners…</div>'
+  const { data, error } = await sb.from('planners')
+    .select('id, name, email, phone, city, status')
+    .order('name')
+    .limit(1000)
+  if (error) {
+    if (wrap) wrap.innerHTML = `<div style="padding:18px;text-align:center;color:var(--red);font-size:12.5px;">Failed to load planners: ${escapeHtml(error.message)}</div>`
+    return
+  }
+  _ncPlanners = data || []
+  renderNewChatResults('')
+}
+function onNewChatSearchInput(){
+  if (_ncSearchT) clearTimeout(_ncSearchT)
+  _ncSearchT = setTimeout(() => {
+    const term = (document.getElementById('newchat-search')?.value || '').trim().toLowerCase()
+    renderNewChatResults(term)
+  }, 80)
+}
+function renderNewChatResults(term){
+  const wrap = document.getElementById('newchat-results')
+  if (!wrap) return
+  const filtered = !term ? _ncPlanners : _ncPlanners.filter(p =>
+    (p.name  || '').toLowerCase().includes(term) ||
+    (p.email || '').toLowerCase().includes(term) ||
+    (p.phone || '').toLowerCase().includes(term) ||
+    (p.city  || '').toLowerCase().includes(term)
+  )
+  if (!filtered.length) {
+    wrap.innerHTML = `<div style="padding:24px;text-align:center;color:var(--ink-3);font-size:12.5px;">No planners match "${escapeHtml(term)}"</div>`
+    return
+  }
+  // Cap render at 200 rows so a runaway dataset doesn't lock the modal.
+  const shown = filtered.slice(0, 200)
+  wrap.innerHTML = shown.map(p => {
+    const status = p.status === 'suspended' ? '<span style="font-size:10px;padding:2px 6px;border-radius:99px;background:rgba(192,57,43,0.12);color:#a23b30;letter-spacing:0.04em;font-weight:600;text-transform:uppercase;">suspended</span>' : ''
+    return `
+      <button type="button" onclick="startChatWithPlanner('${escapeHtml(p.id)}')" style="width:100%;padding:10px 14px;background:transparent;border:0;border-bottom:1px solid var(--border-light,rgba(0,0,0,0.05));text-align:left;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s;font-family:'DM Sans',sans-serif;"
+              onmouseover="this.style.background='var(--cream,#f5f1e8)'" onmouseout="this.style.background='transparent'">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green-light,#e8efeb);color:var(--green-dark,#0f5240);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;">${escapeHtml(initials(p.name || '—'))}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.name || '—')}</div>
+            ${status}
+          </div>
+          <div style="font-size:11.5px;color:var(--ink-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.email || '—')}${p.city ? ' · ' + escapeHtml(p.city) : ''}</div>
+        </div>
+      </button>`
+  }).join('') + (filtered.length > shown.length
+    ? `<div style="padding:10px 14px;font-size:11px;color:var(--ink-3);text-align:center;font-style:italic;">${filtered.length - shown.length} more — refine your search</div>`
+    : '')
+}
+async function startChatWithPlanner(plannerId){
+  if (!plannerId) return
+  // Find or create the conversation row (same flow handleDeepLink uses).
+  let { data: existing } = await sb.from('conversations').select('*').eq('planner_id', plannerId).maybeSingle()
+  if (!existing) {
+    const { data: created, error } = await sb.from('conversations').insert({ planner_id: plannerId }).select().single()
+    if (error || !created) { showToast('Failed to start chat: ' + (error?.message || 'unknown')); return }
+    existing = created
+  }
+  closeNewChatPicker()
+  await loadConversations()  // ensures inbox refreshes if it just appeared
+  openConversation(existing.id)
+}
+</script>
+
+<!-- NEW-CHAT MODAL — planner picker for starting a conversation -->
+<style>
+#newchat-modal{position:fixed;inset:0;z-index:300;background:rgba(31,28,22,0.45);display:none;align-items:flex-start;justify-content:center;padding:80px 16px;}
+#newchat-modal.open{display:flex;}
+#newchat-modal .nc-box{width:100%;max-width:520px;background:var(--surface,#fff);border-radius:14px;box-shadow:0 18px 50px -10px rgba(0,0,0,0.30);overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 160px);}
+#newchat-modal .nc-head{padding:14px 16px;border-bottom:1px solid var(--border-light,rgba(0,0,0,0.06));display:flex;align-items:center;justify-content:space-between;gap:10px;}
+#newchat-modal .nc-title{font-size:14px;font-weight:600;color:var(--ink);}
+#newchat-modal .nc-sub{font-size:11.5px;color:var(--ink-3);margin-top:2px;}
+#newchat-modal .nc-close{background:transparent;border:0;color:var(--ink-3);font-size:16px;cursor:pointer;padding:4px 8px;border-radius:6px;}
+#newchat-modal .nc-close:hover{background:var(--cream,#f5f1e8);color:var(--ink);}
+#newchat-modal .nc-search-wrap{padding:10px 16px;border-bottom:1px solid var(--border-light,rgba(0,0,0,0.06));}
+#newchat-modal #newchat-search{width:100%;padding:9px 12px;border:1px solid var(--border-med);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);outline:none;}
+#newchat-modal #newchat-search:focus{border-color:var(--green-mid,#8FA896);}
+#newchat-modal .nc-results{flex:1;overflow-y:auto;min-height:0;}
+body.theme-dark #newchat-modal .nc-box{background:#1F2426;}
+</style>
+<div id="newchat-modal" role="dialog" aria-label="Start new chat" onclick="if(event.target===this)closeNewChatPicker()">
+  <div class="nc-box">
+    <div class="nc-head">
+      <div>
+        <div class="nc-title">Start a new conversation</div>
+        <div class="nc-sub">Pick any planner — we'll find or create the chat for you.</div>
+      </div>
+      <button class="nc-close" onclick="closeNewChatPicker()" aria-label="Close">✕</button>
+    </div>
+    <div class="nc-search-wrap">
+      <input type="search" id="newchat-search" placeholder="Search by name, email, phone, or city…" oninput="onNewChatSearchInput()" autocomplete="off">
+    </div>
+    <div class="nc-results" id="newchat-results">
+      <div style="padding:18px;text-align:center;color:var(--ink-3);font-size:12.5px;">Loading planners…</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

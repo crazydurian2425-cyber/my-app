@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>業務委託契約書 — Journey Junction</title>
+<link href="https://fonts.googleapis.com/css2?family=Georgia&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#faf9f6; --paper:#ffffff; --ink:#1a1a18; --ink-2:#3a3a36; --ink-3:#7a7a74;
+  --green:#1a7a5e; --green-d:#0f5240; --amber:#b87333; --border:rgba(0,0,0,0.08); --border-med:rgba(0,0,0,0.18);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;padding:40px 20px;line-height:1.7;}
+.wrap{max-width:720px;margin:0 auto;}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:36px 40px;box-shadow:0 4px 20px -8px rgba(0,0,0,0.10);}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
+.brand img{width:36px;height:36px;border-radius:50%;}
+.brand-name{font-family:Georgia,'Noto Serif JP',serif;font-size:22px;color:var(--ink);}
+.brand-name em{color:var(--green);font-style:italic;}
+.title{font-family:Georgia,'Noto Serif JP',serif;font-size:24px;color:var(--ink);margin-bottom:6px;}
+.subtitle{font-size:13px;color:var(--ink-3);margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:18px;}
+h3{font-family:'Noto Serif JP',Georgia,serif;font-size:17px;color:var(--ink);margin:22px 0 10px;font-weight:600;}
+p{color:var(--ink-2);font-size:14px;margin-bottom:10px;}
+ul{padding-left:20px;margin-bottom:10px;}
+li{color:var(--ink-2);font-size:14px;margin-bottom:6px;}
+.letter-block{padding:22px 26px;background:var(--cream);border:1px solid var(--border);border-radius:10px;margin-bottom:18px;}
+.field-row{display:grid;grid-template-columns:140px 1fr;gap:14px;padding:10px 0;border-bottom:1px dashed var(--border);font-size:14px;}
+.field-row:last-child{border-bottom:none;}
+.field-label{color:var(--ink-3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.05em;}
+.field-val{color:var(--ink);font-weight:600;}
+.sig-section{margin-top:30px;border-top:2px solid var(--ink);padding-top:24px;}
+.sig-canvas-wrap{position:relative;background:#fff;border:1px solid var(--border-med);border-radius:8px;overflow:hidden;}
+canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:none;}
+.sig-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.btn{padding:10px 20px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-med);background:#fff;color:var(--ink);transition:background .15s;}
+.btn:hover{background:var(--cream);}
+.btn-primary{background:var(--green);color:#fff;border-color:var(--green);}
+.btn-primary:hover{background:var(--green-d);}
+.btn-primary:disabled{background:var(--ink-3);border-color:var(--ink-3);cursor:not-allowed;opacity:0.6;}
+.status-msg{padding:14px 18px;border-radius:8px;font-size:13.5px;margin:18px 0;display:none;}
+.status-ok{background:rgba(26,122,94,0.10);color:var(--green-d);border:1px solid rgba(26,122,94,0.30);}
+.status-err{background:rgba(192,57,43,0.08);color:#a83b2d;border:1px solid rgba(192,57,43,0.32);}
+.confirm-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;padding:14px;background:var(--cream);border:1px solid var(--border);border-radius:8px;}
+.confirm-row input{margin-top:3px;flex-shrink:0;}
+.confirm-row label{font-size:13px;color:var(--ink-2);line-height:1.5;cursor:pointer;}
+.foot{text-align:center;color:var(--ink-3);font-size:11px;margin-top:20px;}
+.signed-state{text-align:center;padding:40px 20px;}
+.signed-state .check{width:60px;height:60px;border-radius:50%;background:rgba(26,122,94,0.12);color:var(--green);display:inline-flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:14px;}
+/* Signed-mode view: replaces the canvas + submit with the captured signature
+   image + a print button. Identical letter body above for full-doc viewing. */
+.signed-sig-frame{background:#fff;border:1px solid var(--border-med);border-radius:8px;padding:18px;text-align:center;}
+.signed-sig-frame img{max-width:320px;width:100%;height:auto;display:inline-block;}
+.signed-meta{margin-top:14px;padding:12px 16px;background:rgba(26,122,94,0.06);border:1px solid rgba(26,122,94,0.22);border-radius:8px;font-size:13px;color:var(--green-d);text-align:center;}
+.signed-meta strong{font-weight:700;}
+@media print {
+  body{background:#fff;padding:0;}
+  .card{box-shadow:none;border:none;}
+  .no-print{display:none !important;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="letter-card" style="display:none;">
+    <div class="brand">
+      <img src="/jj.jpg?v=2" alt="Journey Junction">
+      <div class="brand-name">Journey<em>Junction</em></div>
+    </div>
+
+    <div class="title">業務委託契約書</div>
+    <div class="subtitle">下記の内容をご確認のうえ、ご署名・送信をお願いいたします。</div>
+
+    <!-- Letter details (snapshot from DB) -->
+    <div style="background:rgba(26,122,94,0.04);border:1px solid rgba(26,122,94,0.20);border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <div class="field-row">
+        <div class="field-label">担当者</div>
+        <div class="field-val" id="f-name">—</div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">契約開始日</div>
+        <div class="field-val" id="f-start">—</div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">本日の日付</div>
+        <div class="field-val" id="f-today">—</div>
+      </div>
+    </div>
+
+    <!-- Japanese-only letter body -->
+    <div class="letter-block">
+      <p>本書は、<strong>Journey Junction</strong>のトラベルプランナーとして、上記の契約開始日より業務委託契約を締結することを確認するものです。</p>
+
+      <h3>業務内容と報酬について</h3>
+      <ul>
+        <li>Journey Junctionからご依頼する旅行者向けのカスタム旅行プランを作成いただきます。</li>
+        <li>報酬は<strong>プラン単位の歩合制</strong>とし、案件ごとに設定された手数料に基づきお支払いいたします。固定給はございません。</li>
+        <li>プレミアム（保証金）案件については、案件ごとに別途返金可能な保証金の対象となる場合がありますが、その分の報酬も高く設定されます。</li>
+        <li>上記の歩合に加え、ローリング7日サイクル中に<strong>1セット以上完成</strong>された場合、<strong>週給¥50,000</strong>をサイクル終了後にウォレットへ支給いたします。最初のサイクルは、初めてセット案件を完成された日を起点とし、以降は同日を起点とする連続した7日サイクルとなります。セットを完成していないサイクルは対象外となります。</li>
+        <li>報酬はプラン承認後、ご登録の銀行口座またはPayPayアカウントへお振込いたします。</li>
+      </ul>
+
+      <h3>契約条件</h3>
+      <ul>
+        <li>本契約は業務委託（フリーランス）契約であり、雇用契約ではございません。</li>
+        <li>セット案件の受託・辞退はご自由にご判断いただけます。</li>
+        <li>所得税・社会保険・許認可等は、日本国内法に基づきご自身でご対応ください。</li>
+        <li>双方とも、合理的な予告期間をもって本契約をいつでも終了することができます。進行中の案件については、合意済みの報酬に基づきお支払いいたします。</li>
+        <li>旅行者情報は機密として取り扱い、プラン作成の目的以外には使用しないことに同意いただきます。</li>
+      </ul>
+
+      <p style="margin-top:14px;">下記にご署名いただくことで、上記内容をご確認・ご理解のうえ、本契約条件にご同意いただいたものといたします。</p>
+    </div>
+
+    <!-- Signature section — two modes:
+         (A) status='pending' → canvas + submit (default)
+         (B) status='signed' → embedded signature image + print button -->
+    <div class="sig-section">
+      <!-- Mode A: pending — draw + submit -->
+      <div id="mode-pending" class="no-print">
+        <h3 style="margin-top:0;">ご署名</h3>
+        <p style="font-size:13px;color:var(--ink-3);margin-bottom:10px;">マウスまたは指で下のボックスにご署名ください。</p>
+        <div class="sig-canvas-wrap">
+          <canvas id="sig"></canvas>
+        </div>
+        <div class="sig-actions">
+          <button class="btn" type="button" onclick="clearSig()">消去してやり直す</button>
+        </div>
+
+        <div class="confirm-row">
+          <input type="checkbox" id="confirm-box">
+          <label for="confirm-box">上記の契約内容を確認のうえ、同意いたします。</label>
+        </div>
+
+        <div id="status-msg" class="status-msg"></div>
+
+        <button class="btn btn-primary" id="submit-btn" type="button" onclick="submitSignature()" disabled style="width:100%;padding:14px;font-size:15px;">
+          署名済み契約書を送信する
+        </button>
+      </div>
+
+      <!-- Mode B: signed — show captured signature + print -->
+      <div id="mode-signed" style="display:none;">
+        <h3 style="margin-top:0;">ご署名</h3>
+        <div class="signed-sig-frame">
+          <img id="signed-sig-img" alt="署名">
+        </div>
+        <div class="signed-meta">
+          ✓ <strong id="signed-when">—</strong> に署名済み
+        </div>
+        <button class="btn btn-primary no-print" type="button" onclick="window.print()" style="width:100%;padding:14px;font-size:15px;margin-top:16px;">
+          🖨️ 印刷 / PDFとして保存
+        </button>
+      </div>
+    </div>
+
+    <div class="foot">Journey Junction · support@thejourneywise.com</div>
+  </div>
+
+  <!-- Already-signed state -->
+  <div class="card" id="signed-card" style="display:none;">
+    <div class="signed-state">
+      <div class="check">✓</div>
+      <h2 style="font-family:'Noto Serif JP',Georgia,serif;font-size:22px;margin-bottom:10px;">署名済みです</h2>
+      <p style="color:var(--ink-2);font-size:14px;">この契約書は既にご署名いただいております。ありがとうございました。</p>
+      <p style="color:var(--ink-3);font-size:12px;margin-top:14px;">控えが必要な場合は <a href="mailto:support@thejourneywise.com" style="color:var(--green);">support@thejourneywise.com</a> までご連絡ください。</p>
+    </div>
+  </div>
+
+  <!-- Loading / error state -->
+  <div class="card" id="error-card" style="display:none;">
+    <div class="signed-state">
+      <div class="check" style="background:rgba(192,57,43,0.10);color:#a83b2d;">!</div>
+      <h2 style="font-family:'Noto Serif JP',Georgia,serif;font-size:22px;margin-bottom:10px;" id="err-title">契約書が見つかりません</h2>
+      <p style="color:var(--ink-2);font-size:14px;" id="err-detail">署名リンクが無効か、有効期限が切れています。サポートまでお問い合わせください。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Public sign page — talks only to our /api/letter endpoints. Service-role
+// stays server-side. No Supabase client needed here.
+const params = new URLSearchParams(location.search)
+const token  = params.get('token')
+
+const $ = id => document.getElementById(id)
+function showError(title, detail) {
+  $('letter-card').style.display = 'none'
+  $('signed-card').style.display = 'none'
+  $('error-card').style.display = 'block'
+  if (title)  $('err-title').textContent  = title
+  if (detail) $('err-detail').textContent = detail
+}
+
+// Letter row + signature pad state
+let letter = null
+const canvas = $('sig')
+const ctx    = canvas.getContext('2d')
+let drawing = false, hasInk = false
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1
+  const rect = canvas.getBoundingClientRect()
+  canvas.width  = rect.width * dpr
+  canvas.height = 160 * dpr
+  ctx.scale(dpr, dpr)
+  // Paint a solid white background so the exported PNG isn't transparent.
+  // Without this, black ink on a transparent canvas renders invisible when
+  // viewed on dark-theme tools (Supabase storage preview, email clients
+  // with dark mode, etc.).
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, rect.width, 160)
+  ctx.lineWidth = 2.5
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = '#1a1a18'
+}
+function pointerPos(e) {
+  const r = canvas.getBoundingClientRect()
+  const x = (e.clientX ?? e.touches?.[0]?.clientX) - r.left
+  const y = (e.clientY ?? e.touches?.[0]?.clientY) - r.top
+  return { x, y }
+}
+function startDraw(e) {
+  drawing = true
+  const { x, y } = pointerPos(e)
+  ctx.beginPath()
+  ctx.moveTo(x, y)
+  e.preventDefault()
+}
+function moveDraw(e) {
+  if (!drawing) return
+  const { x, y } = pointerPos(e)
+  ctx.lineTo(x, y)
+  ctx.stroke()
+  hasInk = true
+  e.preventDefault()
+}
+function endDraw() { drawing = false; updateSubmitState() }
+function clearSig() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  // Re-paint white so subsequent strokes go on white, not transparent
+  const rect = canvas.getBoundingClientRect()
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, rect.width, 160)
+  ctx.strokeStyle = '#1a1a18'
+  hasInk = false
+  updateSubmitState()
+}
+function updateSubmitState() {
+  const confirmed = $('confirm-box').checked
+  $('submit-btn').disabled = !(hasInk && confirmed)
+}
+$('confirm-box').addEventListener('change', updateSubmitState)
+canvas.addEventListener('mousedown', startDraw)
+canvas.addEventListener('mousemove', moveDraw)
+canvas.addEventListener('mouseup', endDraw)
+canvas.addEventListener('mouseleave', endDraw)
+canvas.addEventListener('touchstart', startDraw, { passive: false })
+canvas.addEventListener('touchmove',  moveDraw,  { passive: false })
+canvas.addEventListener('touchend',   endDraw)
+
+async function submitSignature() {
+  if (!letter) return
+  const btn = $('submit-btn')
+  btn.disabled = true
+  btn.textContent = '送信中…'
+
+  // 1. Canvas → PNG data URL (small enough; signatures are < 30KB typically)
+  const dataUrl = canvas.toDataURL('image/png')
+
+  // 2. Single round-trip to the worker: it uploads, updates DB, emails support
+  let resp
+  try {
+    resp = await fetch('/api/letter/sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        signature_data_url: dataUrl,
+        user_agent: navigator.userAgent
+      })
+    })
+  } catch (e) {
+    showStatus(false, '通信エラーが発生しました。ネットワーク接続を確認のうえ、再度お試しください。')
+    btn.disabled = false; btn.textContent = '署名済み契約書を送信する'
+    return
+  }
+
+  const result = await resp.json().catch(() => ({}))
+  if (!resp.ok) {
+    showStatus(false, '送信に失敗しました：' + (result.error || resp.status))
+    btn.disabled = false; btn.textContent = '署名済み契約書を送信する'
+    return
+  }
+
+  // 3. Show success state
+  $('letter-card').style.display = 'none'
+  $('signed-card').style.display = 'block'
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function showStatus(ok, msg) {
+  const el = $('status-msg')
+  el.style.display = 'block'
+  el.className = 'status-msg ' + (ok ? 'status-ok' : 'status-err')
+  el.textContent = msg
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────
+async function boot() {
+  if (!token) { showError('無効なリンク', 'URLに署名トークンが含まれていません。メール内のリンクをご利用ください。'); return }
+  let resp
+  try {
+    resp = await fetch(`/api/letter?token=${encodeURIComponent(token)}`)
+  } catch (e) {
+    showError('通信エラー', 'サーバーに接続できませんでした。ネットワーク接続をご確認ください。')
+    return
+  }
+  if (resp.status === 404)  { showError('契約書が見つかりません', '署名リンクが無効か、有効期限が切れています。サポートまでお問い合わせください。'); return }
+  if (!resp.ok)             { showError('サーバーエラー', '契約書を読み込めませんでした。しばらく経ってから再度お試しください。'); return }
+  letter = await resp.json()
+  if (letter.status === 'cancelled') { showError('契約書はキャンセル済み', 'この契約書はキャンセルされています。サポートまでお問い合わせください。'); return }
+
+  // Fill the editable header fields — Japanese date format
+  $('f-name').textContent  = letter.planner_name
+  $('f-start').textContent = new Date(letter.start_date + 'T00:00:00').toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' })
+  $('f-today').textContent = new Date().toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' })
+
+  $('letter-card').style.display = 'block'
+
+  if (letter.status === 'signed') {
+    // Signed mode: full letter body above + the captured signature image
+    // (no canvas / submit). Print button gives admin a PDF-ready copy.
+    $('mode-pending').style.display = 'none'
+    $('mode-signed').style.display  = 'block'
+    if (letter.signature_image_url) {
+      $('signed-sig-img').src = letter.signature_image_url
+    }
+    if (letter.signed_at) {
+      $('signed-when').textContent = new Date(letter.signed_at).toLocaleString('ja-JP', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })
+    }
+    // Admin convenience: ?autoprint=1 auto-fires the print dialog after the
+    // signature image has loaded, so they can save-as-PDF in one click.
+    if (params.get('autoprint') === '1') {
+      const img = $('signed-sig-img')
+      const fire = () => setTimeout(() => window.print(), 350)
+      if (img.complete && img.naturalWidth) fire()
+      else img.addEventListener('load', fire, { once: true })
+    }
+    return
+  }
+
+  // Pending — initialise the signature canvas
+  requestAnimationFrame(resizeCanvas)
+}
+window.addEventListener('resize', () => { if ($('letter-card').style.display !== 'none') resizeCanvas() })
+boot()
+</script>
+</body>
+</html>

@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="jjlogo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Journey Junction — Live support</title>
+<!-- Apply saved theme BEFORE first paint to prevent flash of light theme
+     when navigating between dashboard ↔ support. Background flips dark
+     immediately on load if the user has dark mode set. -->
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('jj_planner_theme') || 'light';
+      if (t === 'dark') document.documentElement.classList.add('jj-pre-dark');
+    } catch(e){}
+  })();
+</script>
+<style>
+  html.jj-pre-dark { background:#17181A; color-scheme: dark; }
+  html.jj-pre-dark body { background:#17181A; color:#FFFFFF; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display:ital@0;1&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --ink:#1B1F1C;--ink-2:#3a3a36;--ink-3:#7a7a74;--ink-4:#b4b4ae;
+  --cream:#F5F1E8;--paper:#FAF7EF;--surface:#ffffff;
+  --border:rgba(27,31,28,0.08);--border-med:rgba(27,31,28,0.13);
+  --green:#5E7B6E;--green-light:#E8EFEB;--green-mid:#8FA896;--green-dark:#4A6759;
+  --amber:#D4913D;--amber-light:#FAF0DE;
+  --gold:#C6A564;--gold-d:#9E7E3C;--gold-soft:rgba(198,165,100,0.28);
+  --red:#B84A3E;--red-light:#FBEAE7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;display:flex;}
+
+/* SIDEBAR — matches dashboard: warm white, 240px wide, gold active-item rule */
+.sidebar{width:240px;background:linear-gradient(180deg,#ffffff 0%,#fcfbf7 100%);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.logo-mark{font-family:'DM Serif Display',serif;font-size:22px;color:var(--ink);letter-spacing:-0.5px;}
+.logo-mark span{color:var(--green);}
+.logo-sub{font-size:11px;color:var(--gold-d);margin-top:2px;letter-spacing:0.12em;text-transform:uppercase;font-weight:500;}
+.nav{padding:16px 12px;flex:1;}
+.nav-item{position:relative;display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;font-size:13.5px;color:var(--ink-2);cursor:pointer;text-decoration:none;transition:background .18s ease,color .18s ease,padding-left .18s ease;margin-bottom:2px;border-left:2px solid transparent;line-height:1.3;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;opacity:0.6;transition:opacity .18s ease;}
+.nav-item:hover svg,.nav-item.active svg{opacity:1;}
+.nav-item:hover{background:rgba(94,123,110,0.05);color:var(--ink);padding-left:14px;}
+.nav-item.active{background:linear-gradient(90deg,rgba(198,165,100,0.10),transparent);border-left-color:var(--gold);color:var(--green-dark);font-weight:600;padding-left:16px;}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);background:var(--paper);position:relative;}
+.sidebar-footer::before{content:"";position:absolute;left:16px;right:16px;top:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-soft),transparent);}
+.planner-chip{display:flex;align-items:center;gap:10px;}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;box-shadow:0 2px 6px rgba(74,103,89,0.28),inset 0 1px 0 rgba(255,255,255,0.2);}
+.planner-name{font-size:13px;font-weight:600;color:var(--ink);}
+.planner-city{font-size:11px;color:var(--ink-3);font-family:'Lora',serif;font-style:italic;}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;padding:28px 36px;max-width:calc(100vw - 220px);display:flex;flex-direction:column;height:100vh;}
+.support-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;flex:1;min-height:0;}
+.side-col{display:flex;flex-direction:column;gap:14px;overflow-y:auto;padding-right:2px;}
+.side-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:0 2px 8px -4px rgba(27,31,28,0.06);}
+.side-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:var(--gold-d);margin-bottom:12px;}
+.quick-btn{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:#FFFFFF;border:1px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--ink);font-family:'DM Sans',sans-serif;text-align:left;cursor:pointer;transition:all 0.15s ease;}
+.quick-btn:hover{background:rgba(94,123,110,0.05);border-color:var(--green-mid);color:var(--green-dark);transform:translateY(-1px);box-shadow:0 3px 10px -4px rgba(74,103,89,0.15);}
+.quick-btn-icon{width:28px;height:28px;border-radius:8px;background:rgba(94,123,110,0.12);color:var(--green);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.faq-item{border-bottom:1px solid var(--border);}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer;user-select:none;}
+.faq-q:hover{color:var(--green-dark);}
+.faq-q .plus{color:var(--ink-3);font-size:16px;transition:transform 0.2s;flex-shrink:0;}
+.faq-item.open .faq-q .plus{transform:rotate(45deg);color:var(--green-mid);}
+.faq-a{display:none;padding:0 0 12px 0;font-size:12px;color:var(--ink-2);line-height:1.55;}
+.faq-item.open .faq-a{display:block;}
+/* Grid (not flex) so wrapped lines line up exactly under the first text
+   character — flex+gap can drift on mobile, especially with CJK glyphs. */
+.tip-row{display:grid;grid-template-columns:16px 1fr;gap:8px;align-items:start;font-size:11.5px;color:var(--ink-2);line-height:1.5;padding:6px 0;}
+.tip-row svg{color:var(--green-mid);width:14px;height:14px;margin-top:3px;}
+.page-title{font-family:'DM Serif Display',serif;font-size:30px;margin-bottom:4px;letter-spacing:-0.5px;line-height:1.05;}
+.page-title em{font-style:italic;color:var(--gold-d);}
+.page-sub{font-size:13.5px;color:var(--ink-3);margin-bottom:22px;font-family:'Lora','DM Sans',serif;font-style:italic;}
+
+/* CHAT CARD — warm white, subtle shadow matching dashboard tier-1 cards */
+.chat-card{background:#FFFFFF;border:1px solid var(--border);border-radius:14px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 8px 24px -16px rgba(27,31,28,0.14),0 1px 3px rgba(27,31,28,0.04);position:relative;}
+/* Gold hairline across the very top of the chat card — matches dashboard hero cards */
+.chat-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--gold-soft) 50%,transparent 100%);z-index:2;}
+.chat-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--paper);}
+.chat-av{width:38px;height:38px;border-radius:50%;background:var(--green-light);color:var(--green);display:flex;align-items:center;justify-content:center;}
+.chat-title{font-size:14px;font-weight:600;color:var(--ink);}
+.chat-meta{font-size:11.5px;color:var(--ink-3);margin-top:2px;}
+.chat-status{margin-left:auto;font-size:11px;color:var(--green);font-weight:500;display:flex;align-items:center;gap:6px;}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green-mid);box-shadow:0 0 0 3px rgba(45,158,122,0.18);}
+
+.chat-scroll{flex:1;overflow-y:auto;padding:12px 24px 18px;display:flex;flex-direction:column;gap:10px;background:var(--cream);}
+.msg{display:flex;flex-direction:column;max-width:78%;}
+.msg.planner{align-self:flex-end;}
+.msg.cs{align-self:flex-start;}
+.msg.system{align-self:center;max-width:90%;}
+.msg-bubble{padding:10px 14px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;}
+.msg.planner .msg-bubble{background:var(--green);color:white;border-bottom-right-radius:4px;box-shadow:0 2px 6px -2px rgba(74,103,89,0.28);}
+.msg.cs .msg-bubble{background:white;color:var(--ink);border:1px solid var(--border);border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(27,31,28,0.04);}
+.msg.system .msg-bubble{background:rgba(0,0,0,0.05);color:var(--ink-3);font-size:11.5px;text-align:center;font-style:italic;border-radius:99px;padding:6px 14px;}
+.msg-meta{font-size:10.5px;color:var(--ink-3);padding:3px 6px 0;}
+.msg.planner .msg-meta{text-align:right;}
+
+.chat-empty{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;color:var(--ink-3);gap:10px;text-align:center;padding:40px;}
+.chat-empty-icon{width:56px;height:56px;border-radius:50%;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--green-mid);}
+
+.compose{background:var(--surface);border-top:1px solid var(--border);padding:14px 20px;display:flex;gap:10px;align-items:flex-end;}
+.compose textarea{flex:1;min-height:44px;max-height:160px;resize:none;border:1px solid var(--border-med);border-radius:10px;padding:11px 14px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;line-height:1.45;}
+.compose textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(94,123,110,0.12);}
+.compose-send{padding:11px 22px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.01em;transition:background .15s ease;}
+.compose-send:hover{background:var(--green-dark);}
+.compose-send:disabled{opacity:0.5;cursor:not-allowed;}
+
+.toast{position:fixed;bottom:28px;right:28px;background:var(--ink);color:white;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* Narrow desktop — sidebar still visible but window is too tight for the
+   side panel (FAQ + tips). Drop it to one column so the chat doesn't get
+   squeezed into character-wide text. */
+@media (max-width: 1000px) and (min-width: 721px) {
+  .support-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .side-col { display: none; }
+}
+
+@media (max-width: 720px) {
+  /* Phone layout: full-screen chat, no scroll on body — only the message
+     list scrolls. 100dvh tracks the visible viewport (shrinks when the
+     soft keyboard opens), so the compose input stays just above it. */
+  html, body { height: 100%; height: 100dvh; }
+  body { overflow: hidden; }
+  .sidebar { display: none !important; }
+  .main {
+    margin-left: 0; max-width: 100vw; width: 100%;
+    height: 100vh; height: 100dvh;
+    padding: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  /* Top back-strip only — kills the "Live support / Chat directly with..."
+     wall that ate ~30% of the vertical viewport on phone. The chat card
+     already shows the same info ("Journey Junction Support · usually one
+     hour") so the page-level title is redundant. */
+  .mobile-topbar {
+    display: flex !important;
+    flex-shrink: 0; margin: 0;
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+  }
+  /* Hide the page title block + any other non-chat divs on phone. */
+  .main > div:not(.support-grid):not(.mobile-topbar) { display: none !important; }
+  /* Support area fills remaining vertical space, single column. No outer
+     padding so the chat card can reach the screen edges. */
+  .support-grid {
+    display: flex !important; flex-direction: column;
+    grid-template-columns: 1fr;
+    flex: 1 1 auto; min-height: 0;
+    padding: 0; gap: 0;
+  }
+  .side-col { display: none; }
+  /* Chat card fills; no border-radius on phone so it looks app-native. */
+  .chat-card {
+    flex: 1 1 auto; min-height: 0;
+    margin: 0; max-height: 100%;
+    border-radius: 0; border-left: none; border-right: none;
+    box-shadow: none;
+  }
+  .chat-card::before { display: none; }   /* drop the gold hairline on phone */
+  .chat-scroll { min-height: 0; flex: 1 1 auto; }
+  /* Compose stays pinned at the bottom of the visible viewport.
+     iOS Safari shrinks the visual viewport when the keyboard opens, so
+     the compose floats up just above the keyboard automatically. */
+  .compose { flex-shrink: 0; padding: 10px 12px; }
+  .qs-trigger { display: flex !important; }
+}
+
+/* Quick-sheet trigger — hidden on desktop (side panel is visible there) */
+.qs-trigger{
+  display:none;
+  padding:10px;background:transparent;border:1px solid var(--border-med);
+  border-radius:10px;cursor:pointer;color:var(--green);
+  align-items:center;justify-content:center;
+  transition:background 0.15s, color 0.15s;
+}
+.qs-trigger:hover,.qs-trigger:active{background:var(--green-light);color:var(--green-dark);}
+
+/* Quick-actions / FAQ bottom sheet ─────────────────────────── */
+.qs-backdrop{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(13,13,11,0.45);
+  opacity:0;pointer-events:none;
+  transition:opacity 0.22s ease;
+}
+.qs-backdrop.open{opacity:1;pointer-events:auto;}
+.qs-sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:510;
+  background:var(--surface);
+  border-radius:18px 18px 0 0;
+  max-height:82vh;display:flex;flex-direction:column;
+  box-shadow:0 -12px 40px -8px rgba(0,0,0,0.28);
+  transform:translateY(100%);
+  transition:transform 0.28s cubic-bezier(0.2,0.8,0.3,1);
+}
+.qs-sheet.open{transform:translateY(0);}
+.qs-sheet-handle{
+  flex-shrink:0;display:flex;justify-content:center;padding:10px 0 6px;
+  cursor:pointer;
+}
+.qs-sheet-handle::before{
+  content:"";width:42px;height:4px;border-radius:99px;
+  background:var(--border-med);
+}
+.qs-sheet-head{
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:4px 20px 12px;
+  border-bottom:1px solid var(--border);
+}
+.qs-sheet-title{
+  font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);letter-spacing:-0.3px;
+}
+.qs-sheet-close{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--border-med);
+  background:var(--surface);cursor:pointer;color:var(--ink-3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;line-height:1;
+}
+.qs-sheet-close:hover{background:var(--cream);color:var(--ink);}
+.qs-sheet-body{
+  flex:1 1 auto;overflow-y:auto;
+  padding:14px 18px 24px;
+  -webkit-overflow-scrolling:touch;
+}
+/* The side-col content rendered inside sheet stays styled the same but
+   gets full width and snug spacing */
+.qs-sheet-body .side-card{
+  display:block!important;
+  background:transparent;border:none;padding:0;margin-bottom:18px;
+}
+.qs-sheet-body .side-title{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;
+  color:var(--ink-3);margin-bottom:10px;padding-top:8px;
+}
+.qs-sheet-body .quick-btn{width:100%;}
+/* Mobile top band — back-to-dashboard + brand, hidden on desktop */
+.mobile-topbar{
+  display:none;
+  align-items:center;gap:12px;
+  padding:10px 4px 14px;margin-bottom:8px;
+  border-bottom:1px solid var(--border);
+}
+.mobile-topbar .back-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 12px;border:1px solid var(--border-med);border-radius:99px;
+  background:#fff;color:var(--ink-2);font-size:12.5px;font-weight:500;
+  font-family:'DM Sans',sans-serif;text-decoration:none;
+  transition:background 0.15s, border-color 0.15s;
+}
+.mobile-topbar .back-btn:hover{background:var(--cream);border-color:var(--green-mid);}
+.mobile-topbar .back-btn svg{width:14px;height:14px;}
+.mobile-topbar .mt-brand{font-family:'DM Serif Display',serif;font-size:18px;color:var(--ink);letter-spacing:-0.5px;}
+.mobile-topbar .mt-brand em{font-style:italic;color:var(--green);}
+
+/* ═══════════════════════════════════════════════════════════════
+   DARK MODE — mirrors dashboard.html. Reads jj_planner_theme from
+   localStorage on script load + applies body.theme-dark class.
+   ═══════════════════════════════════════════════════════════════ */
+body.theme-dark{
+  /* Cool-charcoal palette mirroring supercs999 + dashboard.html dark mode. */
+  --cream:#17181A; --paper:#252A2E;
+  --ink:#FFFFFF; --ink-2:#D4D0C4; --ink-3:#9B968A;
+  --rule:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.07); --border-med:rgba(255,255,255,0.14);
+  --surface:#252A2E;
+  --green:#4FB891; --green-mid:#3FA17D; --green-dark:#63C9A3;
+  --green-light:rgba(79,184,145,0.14);
+  color-scheme:dark;
+  background:#17181A!important;color:#FFFFFF;
+}
+body.theme-dark .sidebar,
+body.theme-dark .chat-card,
+body.theme-dark .side-card,
+body.theme-dark .mobile-topbar,
+body.theme-dark .qs-sheet{background:#252A2E!important;border-color:rgba(255,255,255,0.08)!important;color:var(--ink);}
+body.theme-dark .mobile-topbar .back-btn{
+  background:#2D3236!important;color:var(--ink-2)!important;
+  border-color:rgba(255,255,255,0.14)!important;
+}
+body.theme-dark .mobile-topbar .back-btn:hover{
+  background:#353A3E!important;border-color:rgba(155,188,171,0.4)!important;
+}
+body.theme-dark .chat-scroll{background:#17181A!important;}
+body.theme-dark .compose{background:#252A2E!important;border-top-color:rgba(255,255,255,0.08)!important;}
+body.theme-dark .compose textarea{background:#2D3236!important;color:var(--ink)!important;border-color:rgba(255,255,255,0.14)!important;}
+body.theme-dark .compose textarea::placeholder{color:#7D796F!important;}
+body.theme-dark .chat-head{background:#252A2E!important;border-bottom-color:rgba(255,255,255,0.08)!important;}
+/* Support's incoming bubbles — typically white in light mode */
+body.theme-dark .chat-msg.cs,
+body.theme-dark .chat-msg-cs,
+body.theme-dark .msg.cs,
+body.theme-dark .bubble.cs,
+body.theme-dark .chat-scroll > div:not(.you):not(.user) > div:first-child{
+  background:#2D3236!important;color:var(--ink)!important;border-color:rgba(255,255,255,0.08)!important;
+}
+/* FAQ accordion */
+body.theme-dark .faq-q{color:var(--ink)!important;}
+body.theme-dark .faq-a{color:var(--ink-2)!important;}
+body.theme-dark .faq-item{border-color:rgba(255,255,255,0.08)!important;}
+/* Quick-action buttons in side panel */
+body.theme-dark .quick-btn,
+body.theme-dark .qa-chip,
+body.theme-dark .quick-chip,
+body.theme-dark .sup-qa{
+  background:#2D3236!important;
+  color:var(--ink)!important;
+  border-color:rgba(255,255,255,0.10)!important;
+}
+body.theme-dark .quick-btn:hover{background:#2D3236!important;border-color:rgba(255,255,255,0.18)!important;}
+body.theme-dark .quick-btn-icon{background:rgba(155,188,171,0.18)!important;color:#4FB891!important;}
+body.theme-dark .quick-btn div[style*="color:var(--ink-3)"]{color:var(--ink-3)!important;}
+/* Native select dropdowns inside support page */
+body.theme-dark select{
+  color-scheme:dark;
+  background-color:#2D3236!important;
+  color:var(--ink)!important;
+  border-color:rgba(255,255,255,0.14)!important;
+}
+body.theme-dark select option{background-color:#2D3236;color:var(--ink);}
+/* Side card sub-titles + meta text */
+body.theme-dark .side-title,
+body.theme-dark .sup-title{color:var(--ink-3)!important;}
+body.theme-dark .nav-item{color:rgba(255,255,255,0.7)!important;}
+body.theme-dark .nav-item:hover{background:rgba(255,255,255,0.04)!important;color:var(--ink)!important;}
+body.theme-dark .nav-item.active{background:rgba(94,123,110,0.20)!important;color:#4FB891!important;}
+body.theme-dark .planner-chip,
+body.theme-dark .sidebar-chip{background:rgba(255,255,255,0.04)!important;color:var(--ink)!important;}
+/* Bright-sage accent buttons + outgoing chat bubbles keep white text. */
+body.theme-dark .msg.planner .msg-bubble{
+  background:#4FB891!important;color:#fff!important;
+  box-shadow:0 2px 6px -2px rgba(79,184,145,0.32)!important;
+}
+body.theme-dark .compose-send{
+  background:#4FB891!important;color:#fff!important;
+}
+body.theme-dark .compose-send:hover{background:#3FA17D!important;}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark"><img src="jj.jpg" alt="JJ" style="width:22px;height:22px;border-radius:50%;vertical-align:middle;margin-right:6px;display:inline-block;">Journey<span>Junction</span></div>
+    <div class="logo-sub" data-i18n="sup.portal">Planner portal</div>
+  </div>
+  <nav class="nav">
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1"/><rect x="9" y="9" width="5.5" height="5.5" rx="1"/></svg>
+      <span data-i18n="sup.dashboard">Dashboard</span>
+    </a>
+    <a class="nav-item active" href="support.html">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 10a2 2 0 0 1-2 2H5l-3 3V3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v7z"/></svg>
+      <span data-i18n="sup.liveSupport">Live support</span>
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="planner-chip">
+      <div class="avatar" id="sidebar-avatar">?</div>
+      <div>
+        <div class="planner-name" id="sidebar-name">—</div>
+        <div class="planner-city" id="sidebar-city">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <!-- Mobile-only back strip — shows only at ≤720px so users aren't stuck -->
+  <div class="mobile-topbar">
+    <a class="back-btn" href="dashboard.html" data-i18n="sup.back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <div class="mt-brand"><img src="jj.jpg" alt="JJ" style="width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:6px;display:inline-block;">Journey<em>Junction</em></div>
+  </div>
+
+  <div>
+    <div class="page-title"><span data-i18n="sup.title.live">Live</span> <em data-i18n="sup.title.support">support</em></div>
+    <div class="page-sub" data-i18n="sup.sub">Chat directly with Journey Junction support — replies usually within an hour.</div>
+  </div>
+
+  <div class="support-grid">
+    <div class="chat-card">
+      <div class="chat-header">
+        <div class="chat-av">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div>
+          <div class="chat-title" data-i18n="sup.chat.title">Journey Junction Support</div>
+          <div class="chat-meta" data-i18n="sup.chat.meta">Usually replies within an hour</div>
+        </div>
+        <div class="chat-status"><span class="status-dot"></span><span data-i18n="sup.online">Online</span></div>
+      </div>
+
+      <div class="chat-scroll" id="chat-scroll">
+        <div class="chat-empty">
+          <div class="chat-empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div style="font-size:14px;font-weight:500;color:var(--ink-2);" data-i18n="sup.loading">Loading your conversation…</div>
+        </div>
+      </div>
+
+      <form class="compose" id="compose-form" onsubmit="sendMessage(event)">
+        <input type="file" id="compose-file" accept="image/*" style="display:none;" onchange="handleImagePick(event)">
+        <button type="button" onclick="document.getElementById('compose-file').click()" data-i18n-title="sup.attach" title="Attach image" style="padding:10px;background:transparent;border:1px solid var(--border-med);border-radius:10px;cursor:pointer;color:var(--ink-3);display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <!-- Mobile-only: open Quick actions + FAQ bottom sheet -->
+        <button type="button" class="qs-trigger" onclick="openQuickSheet()" data-i18n-title="sup.qa.title" title="Quick actions & FAQ" aria-label="Quick actions">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </button>
+        <textarea id="compose-input" placeholder="Type your message…" data-i18n-ph="sup.placeholder" rows="1"></textarea>
+        <button type="submit" class="compose-send" id="compose-send" data-i18n="sup.send">Send</button>
+      </form>
+    </div>
+
+    <!-- SIDEBAR: Quick actions + FAQ + Tips -->
+    <aside class="side-col">
+      <div class="side-card">
+        <div class="side-title" data-i18n="sup.qa.title">Quick actions</div>
+        <div style="display:grid;gap:8px;">
+          <button class="quick-btn" onclick="prefillMessage(SUP_I18N_PREFILL('qa.newSet'))">
+            <div class="quick-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></div>
+            <div><div style="font-weight:600;" data-i18n="sup.qa.newSet">Request a new set</div><div style="font-size:10.5px;color:var(--ink-3);margin-top:1px;" data-i18n="sup.qa.newSet.sub">Get assigned another batch</div></div>
+          </button>
+          <button class="quick-btn" onclick="prefillMessage(SUP_I18N_PREFILL('qa.payout'))">
+            <div class="quick-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg></div>
+            <div><div style="font-weight:600;" data-i18n="sup.qa.payout">Check payout status</div><div style="font-size:10.5px;color:var(--ink-3);margin-top:1px;" data-i18n="sup.qa.payout.sub">Chase a pending payout</div></div>
+          </button>
+          <button class="quick-btn" onclick="prefillMessage(SUP_I18N_PREFILL('qa.bond'))">
+            <div class="quick-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+            <div><div style="font-weight:600;" data-i18n="sup.qa.bond">Bond payment help</div><div style="font-size:10.5px;color:var(--ink-3);margin-top:1px;" data-i18n="sup.qa.bond.sub">Get bank details or confirm</div></div>
+          </button>
+          <button class="quick-btn" onclick="prefillMessage(SUP_I18N_PREFILL('qa.ext'))">
+            <div class="quick-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/><path d="M12 2v3"/></svg></div>
+            <div><div style="font-weight:600;" data-i18n="sup.qa.ext">Request extension</div><div style="font-size:10.5px;color:var(--ink-3);margin-top:1px;" data-i18n="sup.qa.ext.sub">Running out of time</div></div>
+          </button>
+          <button class="quick-btn" onclick="prefillMessage(SUP_I18N_PREFILL('qa.bug'))">
+            <div class="quick-btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2l1 2"/><path d="M15 2l-1 2"/><rect x="7" y="6" width="10" height="12" rx="5"/><path d="M12 14v4"/><path d="M3 10l3 1"/><path d="M21 10l-3 1"/><path d="M3 20l3-2"/><path d="M21 20l-3-2"/></svg></div>
+            <div><div style="font-weight:600;" data-i18n="sup.qa.bug">Report a bug</div><div style="font-size:10.5px;color:var(--ink-3);margin-top:1px;" data-i18n="sup.qa.bug.sub">Something broken on your end</div></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title" data-i18n="sup.faq.title">Frequently asked</div>
+        <div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q1">How do payouts work?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.a1">You get paid when your full set (15 plans) is reviewed and approved by admin. Your commission plus any bond deposits you paid are released together to your registered bank account, usually within 1hr of approval.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.qW">Is there a weekly salary?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.aW">Yes — ¥50,000 each rolling 7-day cycle, as long as you complete at least 1 set in that cycle. Your first cycle starts the day you complete your first-ever set; the next cycle starts 7 days later, and so on. The salary is credited to your wallet after each cycle ends, on top of per-plan commission. Cycles with zero completed sets don't qualify.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q2">What's a bond plan?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.a2">Premium bookings (corporate, VIP, or large groups) require a refundable bond to secure the plan. The bond is returned in full together with your commission once all 15 plans are approved.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q3">Admin requested a revision — now what?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.a3">Open Dashboard — the "Revisions requested" card at the top shows the admin's notes. Click "Fix now" to reopen the itinerary form, apply the changes, and submit again.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q4">Can I skip a plan I'm stuck on?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.a4">Plans go in order — you can't skip. If a plan's brief doesn't have enough info, chat us here with the plan number and we'll help you unblock.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q5">How long does admin review take?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.a5">Usually within 1hr of your last plan being submitted. If it's been longer, chat us and we'll nudge the reviewer.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q6">Can I work on multiple sets at once?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.a6">Not right now — one active set at a time. Once your current set is paid out, a new set can be assigned to you.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q7">I missed my deadline. What happens?</span><span class="plus">+</span></div>
+            <div class="faq-a" data-i18n="sup.faq.a7">Message us before the deadline — we can often extend it. If you've ghosted the set, admin may reassign it and any bond on that set may be forfeited.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-card" style="background:var(--green-light);border-color:rgba(45,158,122,0.25);">
+        <div class="side-title" style="color:var(--green-dark);" data-i18n="sup.tips.title">Tips for faster help</div>
+        <div class="tip-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="sup.tips.1">Include your plan number and traveler name when asking about a specific itinerary.</span></div>
+        <div class="tip-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="sup.tips.2">Attach screenshots (clip icon) for payment proofs or bugs — much faster than describing.</span></div>
+        <div class="tip-row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span data-i18n="sup.tips.3">One topic per message — splits are easier for us to track.</span></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- ───────── Mobile bottom-sheet for Quick actions + FAQ + Tips ───────── -->
+<div class="qs-backdrop" id="qs-backdrop" onclick="closeQuickSheet()" aria-hidden="true"></div>
+<aside class="qs-sheet" id="qs-sheet" role="dialog" aria-modal="true" aria-labelledby="qs-sheet-title">
+  <div class="qs-sheet-handle" onclick="closeQuickSheet()" aria-label="Close"></div>
+  <div class="qs-sheet-head">
+    <div class="qs-sheet-title" id="qs-sheet-title" data-i18n="sup.qa.title">Quick actions</div>
+    <button type="button" class="qs-sheet-close" onclick="closeQuickSheet()" aria-label="Close">×</button>
+  </div>
+  <div class="qs-sheet-body" id="qs-sheet-body">
+    <!-- populated when sheet opens from the .side-col content -->
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<!-- Image lightbox — click any chat image to view full-size in-page -->
+<div id="img-lightbox" onclick="closeImageLightbox(event)" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;padding:30px;cursor:zoom-out;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
+  <img id="img-lightbox-img" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+  <button onclick="closeImageLightbox(event)" style="position:absolute;top:18px;right:18px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;" title="Close (Esc)">✕</button>
+</div>
+<script>
+function openImageLightbox(url) {
+  const box = document.getElementById('img-lightbox')
+  if (!box) return
+  document.getElementById('img-lightbox-img').src = url
+  box.style.display = 'flex'
+  document.body.style.overflow = 'hidden'
+}
+function closeImageLightbox(e) {
+  if (e && e.target.tagName === 'IMG') return
+  const box = document.getElementById('img-lightbox')
+  if (!box) return
+  box.style.display = 'none'
+  document.body.style.overflow = ''
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeImageLightbox() })
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// ── i18n (EN ⇄ JA) — reads jj_planner_lang from localStorage
+//    so the support page matches whatever language the planner
+//    picked on the dashboard.
+// ═══════════════════════════════════════════════════════════
+const SUP_I18N = {
+  en: {
+    'sup.portal':'Planner portal',
+    'sup.dashboard':'Dashboard',
+    'sup.back':'Dashboard',
+    'sup.liveSupport':'Live support',
+    'sup.title.live':'Live',
+    'sup.title.support':'support',
+    'sup.sub':'Chat directly with Journey Junction support — replies usually within an hour.',
+    'sup.chat.title':'Journey Junction Support',
+    'sup.chat.meta':'Usually replies within an hour',
+    'sup.online':'Online',
+    'sup.loading':'Loading your conversation…',
+    'sup.attach':'Attach image',
+    'sup.placeholder':'Type a message…',
+    'sup.send':'Send',
+    'sup.qa.title':'Quick actions',
+    'sup.qa.newSet':'Request a new set',
+    'sup.qa.newSet.sub':'Get assigned another batch',
+    'sup.qa.payout':'Check payout status',
+    'sup.qa.payout.sub':'Chase a pending payout',
+    'sup.qa.bond':'Bond payment help',
+    'sup.qa.bond.sub':'Get bank details or confirm',
+    'sup.qa.ext':'Request extension',
+    'sup.qa.ext.sub':'Running out of time',
+    'sup.qa.bug':'Report a bug',
+    'sup.qa.bug.sub':'Something broken on your end',
+    'prefill.newSet':'Hi support, I have wrapped up my current set and would love to take on another one. Can you assign me a new set? Thanks!',
+    'prefill.payout':'Hi support, any update on my payout? Thanks!',
+    'prefill.bond':'Hi support, I need help with a bond payment. ',
+    'prefill.ext':'Hi, I need a deadline extension on my current set. Reason: ',
+    'prefill.bug':'Hi support, I found a bug / something looks wrong: ',
+    'sup.faq.title':'Frequently asked',
+    'sup.faq.q1':'How do payouts work?',
+    'sup.faq.a1':'You get paid when your full set (15 plans) is reviewed and approved by admin. Your commission plus any bond deposits you paid are released together to your registered bank account, usually within 1hr of approval.',
+    'sup.faq.qW':'Is there a weekly salary?',
+    'sup.faq.aW':'Yes — ¥50,000 each rolling 7-day cycle, as long as you complete at least 1 set in that cycle. Your first cycle starts the day you complete your first-ever set; the next cycle starts 7 days later, and so on. The salary is credited to your wallet after each cycle ends, on top of per-plan commission. Cycles with zero completed sets don\'t qualify.',
+    'sup.faq.q2':"What's a bond plan?",
+    'sup.faq.a2':'Premium bookings (corporate, VIP, or large groups) require a refundable bond to secure the plan. The bond is returned in full together with your commission once all 15 plans are approved.',
+    'sup.faq.q3':'Admin requested a revision — now what?',
+    'sup.faq.a3':'Open Dashboard — the "Revisions requested" card at the top shows the admin\'s notes. Click "Fix now" to reopen the itinerary form, apply the changes, and submit again.',
+    'sup.faq.q4':"Can I skip a plan I'm stuck on?",
+    'sup.faq.a4':"Plans go in order — you can't skip. If a plan's brief doesn't have enough info, chat us here with the plan number and we'll help you unblock.",
+    'sup.faq.q5':'How long does admin review take?',
+    'sup.faq.a5':"Usually within 1hr of your last plan being submitted. If it's been longer, chat us and we'll nudge the reviewer.",
+    'sup.faq.q6':'Can I work on multiple sets at once?',
+    'sup.faq.a6':'Not right now — one active set at a time. Once your current set is paid out, a new set can be assigned to you.',
+    'sup.faq.q7':'I missed my deadline. What happens?',
+    'sup.faq.a7':"Message us before the deadline — we can often extend it. If you've ghosted the set, admin may reassign it and any bond on that set may be forfeited.",
+    'sup.tips.title':'Tips for faster help',
+    'sup.tips.1':'Include your plan number and traveler name when asking about a specific itinerary.',
+    'sup.tips.2':'Attach screenshots (clip icon) for payment proofs or bugs — much faster than describing.',
+    'sup.tips.3':'One topic per message — splits are easier for us to track.',
+  },
+  ja: {
+    'sup.portal':'プランナーポータル',
+    'sup.dashboard':'ダッシュボード',
+    'sup.back':'ダッシュボードへ戻る',
+    'sup.liveSupport':'ライブサポート',
+    'sup.title.live':'ライブ',
+    'sup.title.support':'サポート',
+    'sup.sub':'Journey Junctionサポートに直接チャット — 通常1時間以内に返信します。',
+    'sup.chat.title':'Journey Junctionサポート',
+    'sup.chat.meta':'通常1時間以内に返信します',
+    'sup.online':'オンライン',
+    'sup.loading':'会話を読み込み中…',
+    'sup.attach':'画像を添付',
+    'sup.placeholder':'メッセージを入力…',
+    'sup.send':'送信',
+    'sup.qa.title':'クイックアクション',
+    'sup.qa.newSet':'新しいセットを依頼',
+    'sup.qa.newSet.sub':'次のバッチをアサイン',
+    'sup.qa.payout':'支払状況を確認',
+    'sup.qa.payout.sub':'保留中の支払いを追跡',
+    'sup.qa.bond':'保証金の支払いサポート',
+    'sup.qa.bond.sub':'振込先の確認',
+    'sup.qa.ext':'延長を申請',
+    'sup.qa.ext.sub':'期限が迫っている',
+    'sup.qa.bug':'バグを報告',
+    'sup.qa.bug.sub':'不具合を報告',
+    'prefill.newSet':'サポートのみなさま、現在のセットを完了しました。次のセットをアサインしていただけますか？',
+    'prefill.payout':'サポートのみなさま、支払いの状況を教えていただけますか？',
+    'prefill.bond':'サポートのみなさま、保証金の支払いについてサポートをお願いします。',
+    'prefill.ext':'サポートのみなさま、現在のセットの期限延長をお願いします。理由：',
+    'prefill.bug':'サポートのみなさま、バグ／不具合を見つけました：',
+    'sup.faq.title':'よくある質問',
+    'sup.faq.q1':'支払いはどのように行われますか？',
+    'sup.faq.a1':'フルセット（15プラン）が管理者により確認・承認されると支払われます。手数料と保証金は登録銀行口座に一緒に返金されます。通常、承認から1時間以内です。',
+    'sup.faq.qW':'週給はありますか？',
+    'sup.faq.aW':'はい — ローリング7日サイクル中に1セット以上完成された場合、¥50,000の週給が支給されます。最初のサイクルは初めてセット案件を完成された日を起点とし、その後は7日ごとに連続したサイクルとなります。週給はサイクル終了後にウォレットへ支給され、プランごとのコミッションに加算されます。セットを完成していないサイクルは対象外です。',
+    'sup.faq.q2':'ボンドプランとは？',
+    'sup.faq.a2':'プレミアム予約（法人、VIP、大型グループ）では返金可能な保証金が必要です。全15プランが承認されると、保証金は手数料と一緒に全額返金されます。',
+    'sup.faq.q3':'管理者から修正依頼が来ました。どうすればいい？',
+    'sup.faq.a3':'ダッシュボードを開いてください — 上部の「修正リクエスト」カードに管理者のメモが表示されます。「今すぐ修正」をクリックして旅程フォームを再度開き、変更を加えて再提出してください。',
+    'sup.faq.q4':'行き詰まったプランをスキップできますか？',
+    'sup.faq.a4':'プランは順番通りに進みます — スキップはできません。ブリーフの情報が不足している場合は、プラン番号を添えてこちらにチャットでご連絡ください。',
+    'sup.faq.q5':'管理者の確認にどれくらいかかりますか？',
+    'sup.faq.a5':'通常、最後のプラン提出から1時間以内です。それ以上経過している場合は、チャットでご連絡ください。確認をお願いします。',
+    'sup.faq.q6':'複数のセットを同時に作業できますか？',
+    'sup.faq.a6':'現在は不可 — 同時に1つのセットのみです。現在のセットが支払い済みになると、新しいセットがアサインされます。',
+    'sup.faq.q7':'期限に間に合いませんでした。どうなりますか？',
+    'sup.faq.a7':'期限前にご連絡ください — 延長可能な場合が多いです。連絡なしでセットを放置した場合、管理者が再アサインし、そのセットの保証金は没収される可能性があります。',
+    'sup.tips.title':'素早いサポートのためのコツ',
+    'sup.tips.1':'特定の旅程について質問するときは、プラン番号と旅行者名を含めてください。',
+    'sup.tips.2':'支払いの証拠やバグについては、スクリーンショット（クリップアイコン）を添付してください — 文章で説明するより早いです。',
+    'sup.tips.3':'1メッセージにつき1トピック — 分けていただくと追跡しやすいです。',
+  }
+}
+let SUP_LANG = (localStorage.getItem('jj_planner_lang') || 'ja')
+if (SUP_LANG !== 'en' && SUP_LANG !== 'ja') SUP_LANG = 'ja'
+
+// Mirror the dashboard's theme — apply early so there's no flash
+;(function applyPlannerTheme(){
+  const t = localStorage.getItem('jj_planner_theme') || 'light'
+  document.body.classList.toggle('theme-dark', t === 'dark')
+})()
+function supT(key, fb){
+  const d = SUP_I18N[SUP_LANG] || SUP_I18N.en
+  if (Object.prototype.hasOwnProperty.call(d, key)) return d[key]
+  if (SUP_I18N.en && Object.prototype.hasOwnProperty.call(SUP_I18N.en, key)) return SUP_I18N.en[key]
+  return fb !== undefined ? fb : key
+}
+function SUP_I18N_PREFILL(k){ return supT('prefill.' + k.replace(/^qa\./,'')) }
+function supApplyLang(){
+  document.documentElement.lang = (SUP_LANG === 'ja') ? 'ja' : 'en'
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n')
+    el.textContent = supT(k, el.textContent)
+  })
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const k = el.getAttribute('data-i18n-ph')
+    el.setAttribute('placeholder', supT(k, el.getAttribute('placeholder') || ''))
+  })
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const k = el.getAttribute('data-i18n-title')
+    el.setAttribute('title', supT(k, el.getAttribute('title') || ''))
+  })
+}
+// Apply immediately on DOM ready
+document.addEventListener('DOMContentLoaded', supApplyLang)
+
+// ── AUTH ────────────────────────────────────────────────────
+const token = localStorage.getItem('jj_token')
+const planner = JSON.parse(localStorage.getItem('jj_planner') || 'null')
+if (!token || !planner) { window.location.href = 'login.html' }
+
+const SUPABASE_URL = 'https://swgppauxgcrcujadoecj.supabase.co'
+// Planner-facing page — MUST use the anon key, never service_role.
+// service_role bypasses all RLS and would let any planner who views the
+// page source take admin-level actions against the database.
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3Z3BwYXV4Z2NyY3VqYWRvZWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MDE2MjMsImV4cCI6MjA5MTk3NzYyM30.S5tzlD1RqfHa7zmIMNNf_vhsNzGRXCBw4PamhNyRqOg'
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+// Validate the auth session matches the localStorage planner. Without this
+// check, editing `jj_planner` in DevTools would let someone load this page
+// as a different user. If the auth session disagrees, sign out and bounce.
+;(async () => {
+  try {
+    const { data: { user }, error } = await sb.auth.getUser()
+    if (error || !user || user.id !== planner?.id) {
+      try { await sb.auth.signOut() } catch (_) {}
+      localStorage.clear()
+      window.location.replace('login.html')
+    }
+  } catch (e) {
+    console.warn('auth verify skipped', e)
+  }
+})();
+
+// ── SIDEBAR ─────────────────────────────────────────────────
+document.getElementById('sidebar-avatar').textContent = (planner.name||'?').split(/\s+/).map(w=>w[0]).filter(Boolean).join('').slice(0,2).toUpperCase()
+document.getElementById('sidebar-name').textContent = planner.name || '—'
+document.getElementById('sidebar-city').textContent = planner.city || ''
+
+// ── STATE ───────────────────────────────────────────────────
+let conversation = null
+let messages = []
+
+// ── UTILS ───────────────────────────────────────────────────
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fullTime(ts){return new Date(ts).toLocaleString((SUP_LANG === 'ja') ? 'ja-JP' : 'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+
+// ── LOAD / CREATE CONVERSATION ──────────────────────────────
+async function ensureConversation() {
+  let { data } = await sb.from('conversations').select('*').eq('planner_id', planner.id).maybeSingle()
+  if (!data) {
+    const { data: created, error } = await sb.from('conversations').insert({ planner_id: planner.id }).select().single()
+    if (error) { showToast('Failed to open chat: ' + error.message); return null }
+    data = created
+  }
+  conversation = data
+  return data
+}
+
+async function loadMessages() {
+  if (!conversation) return
+  const { data } = await sb.from('messages').select('*').eq('conversation_id', conversation.id).order('created_at')
+  const pending = messages.filter(m => m._pending)
+  const ids = new Set((data||[]).map(m => m.id))
+  messages = [...(data||[]), ...pending.filter(p => !ids.has(p.id))]
+  renderMessages()
+}
+
+// Signature of the currently-rendered message set. If nothing has changed
+// since the last poll, we skip the innerHTML rewrite entirely — which kills
+// the 3-second visual blink. We also preserve the user's scroll position:
+// only auto-scroll to the bottom if they were already at the bottom (within
+// ~80px). If they're reading older messages, we leave them alone.
+let _lastMsgSig = ''
+
+function renderMessages() {
+  const box = document.getElementById('chat-scroll')
+  if (!messages.length) {
+    const emptySig = 'empty'
+    if (_lastMsgSig === emptySig) return
+    _lastMsgSig = emptySig
+    box.innerHTML = `
+      <div class="chat-empty">
+        <div class="chat-empty-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div style="font-size:14px;font-weight:500;color:var(--ink-2);">Say hi to the Journey Junction team</div>
+        <div style="font-size:12px;">We'll get back to you shortly — typical reply time under an hour.</div>
+      </div>`
+    return
+  }
+
+  // Signature changes when: any id changes, body length changes, or pending flag flips.
+  const sig = messages.map(m =>
+    (m.id || m._tempKey || '') + ':' + (m._pending ? '1' : '0') + ':' + ((m.body || '').length + ((m.media_url||'').length))
+  ).join('|')
+  if (sig === _lastMsgSig) return  // nothing changed — skip the repaint
+
+  // Decide whether to auto-scroll AFTER the re-render: only if user was already
+  // near the bottom. Otherwise they're reading older messages — don't yank them.
+  const wasNearBottom = (box.scrollTop + box.clientHeight) >= (box.scrollHeight - 80)
+
+  box.innerHTML = messages.map(m => {
+    const time = fullTime(m.created_at)
+    if (m.sender_type === 'system') {
+      return `<div class="msg system"><div class="msg-bubble">${escapeHtml(m.body)}</div></div>`
+    }
+    const meta = m.sender_type === 'planner' ? `You · ${time}` : `${escapeHtml(m.sender_name || 'Support')} · ${time}`
+    const img = m.media_url ? `<img src="${escapeHtml(m.media_url)}" onclick="openImageLightbox('${(m.media_url||'').replace(/'/g,"\\'")}')" style="max-width:300px;max-height:320px;border-radius:10px;display:block;cursor:zoom-in;">` : ''
+    const text = m.body ? `<div style="white-space:pre-wrap;word-wrap:break-word;">${escapeHtml(m.body)}</div>` : ''
+    const bubblePad = m.media_url && !m.body ? 'padding:6px;' : ''
+    return `
+      <div class="msg ${m.sender_type}">
+        <div class="msg-bubble" style="${bubblePad}">${img}${text}${m._pending ? '<div style="font-size:10.5px;opacity:0.75;margin-top:4px;">sending…</div>' : ''}</div>
+        <div class="msg-meta">${meta}</div>
+      </div>`
+  }).join('')
+  _lastMsgSig = sig
+
+  if (wasNearBottom) box.scrollTop = box.scrollHeight
+}
+
+// ── IMAGE UPLOAD ────────────────────────────────────────────
+async function handleImagePick(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  if (!conversation) return
+  if (file.size > 8 * 1024 * 1024) { showToast('Image too large — max 8MB'); return }
+
+  const tempId = 'tmp-' + Date.now()
+  const localUrl = URL.createObjectURL(file)
+  messages.push({
+    id: tempId,
+    conversation_id: conversation.id,
+    sender_type: 'planner',
+    sender_name: planner.name,
+    body: null,
+    media_url: localUrl,
+    media_type: file.type,
+    created_at: new Date().toISOString(),
+    _pending: true
+  })
+  renderMessages()
+
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const path = `${conversation.id}/${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`
+    const { error: upErr } = await sb.storage.from('chat-media').upload(path, file, { contentType: file.type, upsert: false })
+    if (upErr) throw upErr
+    const { data: pub } = sb.storage.from('chat-media').getPublicUrl(path)
+    const mediaUrl = pub?.publicUrl
+    if (!mediaUrl) throw new Error('No public URL')
+
+    const { data: inserted, error } = await sb.from('messages').insert({
+      conversation_id: conversation.id,
+      sender_type: 'planner',
+      sender_name: planner.name,
+      sender_id: planner.id,
+      body: null,
+      media_url: mediaUrl,
+      media_type: file.type
+    }).select().single()
+    if (error) throw error
+    const idx = messages.findIndex(m => m.id === tempId)
+    if (idx >= 0) messages[idx] = inserted
+    renderMessages()
+  } catch (err) {
+    messages = messages.filter(m => m.id !== tempId)
+    renderMessages()
+    showToast('Upload failed: ' + (err.message || err))
+  }
+}
+
+// ── SEND ────────────────────────────────────────────────────
+async function sendMessage(e) {
+  if (e) e.preventDefault()
+  if (!conversation) return
+  const input = document.getElementById('compose-input')
+  const body = input.value.trim()
+  if (!body) return
+  input.value = ''
+  input.focus()
+
+  // Optimistic render
+  const tempId = 'tmp-' + Date.now()
+  messages.push({
+    id: tempId,
+    conversation_id: conversation.id,
+    sender_type: 'planner',
+    sender_name: planner.name,
+    body,
+    created_at: new Date().toISOString(),
+    _pending: true
+  })
+  renderMessages()
+
+  const { data: inserted, error } = await sb.from('messages').insert({
+    conversation_id: conversation.id,
+    sender_type: 'planner',
+    sender_name: planner.name,
+    sender_id: planner.id,
+    body
+  }).select().single()
+
+  if (error) {
+    messages = messages.filter(m => m.id !== tempId)
+    renderMessages()
+    showToast('Send failed: ' + error.message)
+    input.value = body
+    return
+  }
+  const idx = messages.findIndex(m => m.id === tempId)
+  if (idx >= 0) messages[idx] = inserted
+  renderMessages()
+}
+
+// Enter to send, Shift+Enter for newline
+// Prefill the composer from a Quick action button
+function prefillMessage(msg) {
+  const input = document.getElementById('compose-input')
+  if (!input) return
+  input.value = msg
+  input.focus()
+  input.setSelectionRange(msg.length, msg.length)
+  input.style.height = 'auto'
+  input.style.height = Math.min(160, input.scrollHeight) + 'px'
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  // If the sheet is open (mobile), close it so the user sees the prefilled draft
+  closeQuickSheet()
+}
+
+// ── Mobile bottom-sheet for Quick actions + FAQ + Tips ──────
+function openQuickSheet() {
+  const backdrop = document.getElementById('qs-backdrop')
+  const sheet    = document.getElementById('qs-sheet')
+  const body     = document.getElementById('qs-sheet-body')
+  const src      = document.querySelector('.side-col')
+  if (!backdrop || !sheet || !body || !src) return
+  // Clone the side-col content on first open (event handlers still work on clones
+  // because they're inline onclick="..." attributes, not JS-bound listeners)
+  if (!body.dataset.filled) {
+    body.innerHTML = src.innerHTML
+    body.dataset.filled = '1'
+    // Also run applyLang on the new nodes so data-i18n fields translate
+    if (typeof supApplyLang === 'function') supApplyLang()
+  }
+  backdrop.classList.add('open')
+  sheet.classList.add('open')
+  // Lock scroll on body so the chat behind doesn't scroll when sheet is open
+  document.body.style.overflow = 'hidden'
+}
+function closeQuickSheet() {
+  const backdrop = document.getElementById('qs-backdrop')
+  const sheet    = document.getElementById('qs-sheet')
+  if (!backdrop || !sheet) return
+  backdrop.classList.remove('open')
+  sheet.classList.remove('open')
+  // Only restore scroll if it was locked by this sheet — don't override mobile page's own lock
+  if (window.matchMedia('(max-width:720px)').matches) {
+    // mobile page already uses body overflow:hidden, so leave it
+  } else {
+    document.body.style.overflow = ''
+  }
+}
+// Escape key closes the sheet
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('qs-sheet')?.classList.contains('open')) {
+    closeQuickSheet()
+  }
+})
+// Clicking any FAQ item inside the sheet toggles its open state (inline
+// onclick="this.classList.toggle('open')" already handles this on the cloned
+// nodes; no extra wiring needed).
+
+document.getElementById('compose-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(e) }
+})
+
+// Paste image (Ctrl+V / Cmd+V) — upload directly without going through the
+// file picker. Reuses handleImagePick by faking a minimal `target.files` shape.
+document.getElementById('compose-input').addEventListener('paste', e => {
+  const items = e.clipboardData?.items || []
+  for (const item of items) {
+    if (item.kind === 'file' && (item.type || '').startsWith('image/')) {
+      const file = item.getAsFile()
+      if (!file) continue
+      e.preventDefault()
+      handleImagePick({ target: { files: [file], value: '' } })
+      return
+    }
+  }
+})
+
+// ── POLLING (every 3s while tab visible) ────────────────────
+async function init() {
+  await ensureConversation()
+  if (!conversation) return
+  await loadMessages()
+  // Clear unread while viewing
+  sb.from('conversations').update({ unread_for_planner: 0 }).eq('id', conversation.id)
+}
+
+init()
+
+setInterval(() => {
+  if (document.hidden) return
+  if (conversation) {
+    loadMessages()
+    sb.from('conversations').update({ unread_for_planner: 0 }).eq('id', conversation.id)
+  }
+}, 3000)
+</script>
+</body>
+</html>

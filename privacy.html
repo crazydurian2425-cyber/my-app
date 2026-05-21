@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="jjlogo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journey Junction — Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display:ital@0;1&family=Lora:ital@0;1&family=Noto+Sans+JP:wght@400;500;600&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F5F1E8;--paper:#FFFDF8;
+  --ink:#1B1F1C;--ink-2:#4A524C;--ink-3:#8B908A;
+  --green:#5E7B6E;--green-d:#3E5448;
+  --amber:#D4913D;
+  --rule:rgba(27,31,28,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;line-height:1.65;}
+html[lang="ja"] body{font-family:'Noto Sans JP','DM Sans',sans-serif;}
+html[lang="ja"] h1,html[lang="ja"] h2,html[lang="ja"] h3,html[lang="ja"] .brand{font-family:'Noto Serif JP','DM Serif Display',serif;}
+
+.topbar{position:sticky;top:0;z-index:10;background:rgba(245,241,232,0.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--rule);padding:14px 24px;display:flex;align-items:center;gap:14px;}
+.back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--rule);border-radius:99px;background:#fff;color:var(--ink-2);font-size:12.5px;font-weight:500;text-decoration:none;transition:background 0.15s, border-color 0.15s;}
+.back:hover{background:#fff;border-color:var(--green);}
+.back svg{width:13px;height:13px;}
+.brand{font-family:'DM Serif Display',serif;font-size:20px;letter-spacing:-0.3px;}
+.brand em{font-style:italic;color:var(--green);}
+.top-spacer{flex:1;}
+.lang-pill{display:inline-flex;gap:2px;padding:2px;background:rgba(255,255,255,0.6);border:1px solid var(--rule);border-radius:99px;}
+.lang-pill button{padding:4px 10px;border:none;background:transparent;border-radius:99px;cursor:pointer;font-size:11.5px;font-weight:500;color:var(--ink-3);font-family:inherit;display:inline-flex;align-items:center;gap:5px;}
+.lang-pill button svg{width:18px;height:12px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.08);opacity:0.75;}
+.lang-pill button.active{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+.lang-pill button.active svg{opacity:1;}
+
+.container{max-width:880px;margin:0 auto;padding:48px 28px 96px;}
+.banner{margin-bottom:32px;padding:14px 18px;background:rgba(212,145,61,0.10);border:1px solid rgba(212,145,61,0.32);border-radius:10px;font-size:13px;color:#7B4E1E;line-height:1.55;}
+.banner strong{font-weight:700;}
+.doc-head{margin-bottom:40px;}
+.doc-eyebrow{font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--green-d);margin-bottom:14px;display:inline-flex;align-items:center;gap:10px;}
+.doc-eyebrow::before{content:"";width:24px;height:1px;background:var(--green-d);opacity:0.5;}
+h1{font-family:'DM Serif Display',serif;font-weight:400;font-size:clamp(34px,4vw,48px);line-height:1.04;letter-spacing:-0.02em;margin-bottom:14px;}
+h1 em{font-style:italic;color:var(--green);}
+.doc-meta{font-family:'Lora',serif;font-style:italic;font-size:14.5px;color:var(--ink-3);}
+html[lang="ja"] .doc-meta{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
+
+h2{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;letter-spacing:-0.01em;margin:40px 0 12px;color:var(--ink);padding-top:24px;border-top:1px solid var(--rule);}
+h2:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+h2 .n{font-family:'Lora',serif;font-style:italic;color:var(--green);font-size:15px;display:inline-block;width:28px;vertical-align:middle;}
+html[lang="ja"] h2 .n{font-family:'Noto Sans JP',sans-serif;font-style:normal;}
+h3{font-family:'DM Sans',sans-serif;font-weight:600;font-size:14.5px;margin:20px 0 8px;color:var(--ink);}
+p{margin-bottom:14px;font-size:14.5px;color:var(--ink-2);}
+ul{margin:8px 0 16px 20px;}
+li{font-size:14.5px;color:var(--ink-2);margin-bottom:6px;}
+strong{color:var(--ink);font-weight:600;}
+a{color:var(--green);text-decoration:underline;text-underline-offset:3px;}
+a:hover{color:var(--green-d);}
+.contact-card{margin-top:48px;padding:22px 26px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;}
+.contact-card h3{margin-top:0;}
+
+.data-table{width:100%;border-collapse:collapse;margin:10px 0 20px;font-size:13.5px;}
+.data-table th,.data-table td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--rule);color:var(--ink-2);}
+.data-table th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-3);background:rgba(27,31,28,0.02);}
+
+@media (max-width:640px){
+  .topbar{padding:10px 14px;}
+  .brand{font-size:17px;}
+  .container{padding:28px 18px 64px;}
+  h2{font-size:19px;}
+  .back span{display:none;}
+  .lang-pill button span{display:none;}
+  .lang-pill button{padding:5px 8px;}
+  .data-table{font-size:12.5px;}
+  .data-table th,.data-table td{padding:8px 10px;}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="back" href="signup.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    <span data-i18n-html="back">Back</span>
+  </a>
+  <div class="brand"><img src="jj.jpg" alt="Journey Junction" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px;display:inline-block;">Journey<em>Junction</em></div>
+  <div class="top-spacer"></div>
+  <div class="lang-pill" role="group" aria-label="Language">
+    <button type="button" class="active" data-lang="ja" onclick="setLang('ja')">
+      <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="30" fill="#fff"/><circle cx="30" cy="15" r="9" fill="#BC002D"/></svg>
+      <span>日本語</span>
+    </button>
+    <button type="button" data-lang="en" onclick="setLang('en')">
+      <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><clipPath id="uk-p"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#uk-p)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
+      <span>EN</span>
+    </button>
+  </div>
+</header>
+
+<main class="container">
+  <div class="doc-head">
+    <div class="doc-eyebrow" data-i18n-html="eyebrow">How we handle your data</div>
+    <h1 data-i18n-html="title">Privacy <em>Policy</em></h1>
+    <div class="doc-meta" data-i18n-html="lastUpdated">Last updated: 23 April 2026 · Operated from Japan (APPI applies)</div>
+  </div>
+
+  <div class="doc-body">
+    <h2><span class="n">1.</span><span data-i18n-html="s1.title">Summary</span></h2>
+    <p data-i18n-html="s1.p1">Journey Junction ("we") operates a planner marketplace connecting itinerary writers with travelers visiting Japan. This policy explains what personal data we collect when you register as a <strong>Planner</strong>, why we need it, and how you can control it. It applies to your use of the planner dashboard, support chat, and related services.</p>
+
+    <h2><span class="n">2.</span><span data-i18n-html="s2.title">Data we collect</span></h2>
+    <table class="data-table">
+      <thead><tr><th data-i18n-html="table.what">What</th><th data-i18n-html="table.why">Why</th></tr></thead>
+      <tbody>
+        <tr><td data-i18n-html="r1.what"><strong>Name, email, phone</strong></td><td data-i18n-html="r1.why">Account creation, login, support contact, payout confirmations.</td></tr>
+        <tr><td data-i18n-html="r2.what"><strong>City, languages, specialties</strong></td><td data-i18n-html="r2.why">Matching you to suitable traveler briefs.</td></tr>
+        <tr><td data-i18n-html="r3.what"><strong>Bank name, account number, account holder name</strong></td><td data-i18n-html="r3.why">Paying commissions and refundable bonds into your account.</td></tr>
+        <tr><td data-i18n-html="r4.what"><strong>Itinerary content (text, photos you upload)</strong></td><td data-i18n-html="r4.why">Delivering the plan to the traveler you created it for.</td></tr>
+        <tr><td data-i18n-html="r5.what"><strong>Support-chat messages &amp; attachments</strong></td><td data-i18n-html="r5.why">Answering your questions and keeping a record for audit.</td></tr>
+        <tr><td data-i18n-html="r6.what"><strong>Dashboard activity logs</strong></td><td data-i18n-html="r6.why">Fraud prevention, performance metrics, debugging.</td></tr>
+      </tbody>
+    </table>
+
+    <h2><span class="n">3.</span><span data-i18n-html="s3.title">How we use it</span></h2>
+    <ul>
+      <li data-i18n-html="s3.l1"><strong>To run your account</strong> — authenticating you, displaying sets assigned to you, processing payouts.</li>
+      <li data-i18n-html="s3.l2"><strong>To match you with work</strong> — admin reviews your languages and specialties when assigning sets.</li>
+      <li data-i18n-html="s3.l3"><strong>To deliver itineraries</strong> — travelers who commissioned a set see the approved plan with your first name attached as the author.</li>
+      <li data-i18n-html="s3.l4"><strong>To support and protect the platform</strong> — we review chat logs only when a dispute, bug, or abuse report arises.</li>
+    </ul>
+    <p data-i18n-html="s3.p1">We do <strong>not</strong> sell your data to third parties and we do not use it for advertising profiling.</p>
+
+    <h2><span class="n">4.</span><span data-i18n-html="s4.title">Who we share with</span></h2>
+    <ul>
+      <li data-i18n-html="s4.l1"><strong>Travelers</strong> — see your first name, avatar, and the itinerary content you submit for their trip. They do not see your email, phone, or bank details.</li>
+      <li data-i18n-html="s4.l2"><strong>Supabase (database + auth hosting)</strong> — our processor for storing profile data and itineraries. Data is hosted on their infrastructure under their DPA.</li>
+      <li data-i18n-html="s4.l3"><strong>Our bank / payment processor</strong> — receives only the minimum needed to transfer commission (account name, number, bank name, amount).</li>
+      <li data-i18n-html="s4.l4"><strong>Tax authorities and law enforcement</strong> — if required by Japanese law.</li>
+    </ul>
+    <p data-i18n-html="s4.p1">No data is transferred outside Japan except to the extent our processors (e.g. Supabase) operate cross-border under standard contractual clauses.</p>
+
+    <h2><span class="n">5.</span><span data-i18n-html="s5.title">How long we keep it</span></h2>
+    <p data-i18n-html="s5.p1"><strong>Account data:</strong> kept while your account is active. If you delete your account, we remove personal identifiers within 30 days, but may keep audit logs and payout records for <strong>7 years</strong> to meet Japanese tax and accounting law.</p>
+    <p data-i18n-html="s5.p2"><strong>Itinerary content:</strong> kept for as long as the traveler has access to the plan (typically the duration of their trip plus 180 days), then archived.</p>
+    <p data-i18n-html="s5.p3"><strong>Support messages:</strong> kept for 2 years for audit, then deleted.</p>
+
+    <h2><span class="n">6.</span><span data-i18n-html="s6.title">Your rights</span></h2>
+    <p data-i18n-html="s6.p1">Under Japan's APPI and equivalent international frameworks, you have the right to:</p>
+    <ul>
+      <li data-i18n-html="s6.l1"><strong>Access</strong> the personal data we hold about you — request a copy via support chat.</li>
+      <li data-i18n-html="s6.l2"><strong>Correct</strong> inaccurate data — most fields are editable directly from your Profile.</li>
+      <li data-i18n-html="s6.l3"><strong>Delete</strong> your account and associated data — contact support; subject to the retention periods in §5.</li>
+      <li data-i18n-html="s6.l4"><strong>Withdraw consent</strong> for non-essential processing at any time.</li>
+      <li data-i18n-html="s6.l5"><strong>Lodge a complaint</strong> with Japan's Personal Information Protection Commission (PPC) if you believe we've mishandled your data.</li>
+    </ul>
+
+    <h2><span class="n">7.</span><span data-i18n-html="s7.title">Cookies &amp; local storage</span></h2>
+    <p data-i18n-html="s7.p1">We use browser <strong>localStorage</strong> to keep you signed in and remember preferences (language, notification toggles). We do not use third-party tracking or advertising cookies. Clearing your browser storage will sign you out.</p>
+
+    <h2><span class="n">8.</span><span data-i18n-html="s8.title">Security</span></h2>
+    <p data-i18n-html="s8.p1">We use industry-standard security measures: encrypted transport (HTTPS), encrypted-at-rest database storage via Supabase, role-based access so only authorised staff see bank details, and regular review of access logs. No system is 100% secure; if we become aware of a breach affecting your data we will notify you within 72 hours as required by APPI.</p>
+
+    <h2><span class="n">9.</span><span data-i18n-html="s9.title">Children</span></h2>
+    <p data-i18n-html="s9.p1">Journey Junction is not intended for use by anyone under 18. We do not knowingly collect data from minors. If we learn that an under-18 user has created an account we will delete it promptly.</p>
+
+    <h2><span class="n">10.</span><span data-i18n-html="s10.title">Changes to this policy</span></h2>
+    <p data-i18n-html="s10.p1">We may update this policy from time to time. Material changes will be posted on your dashboard at least 14 days before they take effect. The "Last updated" date at the top of this page always reflects the current version.</p>
+
+    <div class="contact-card">
+      <h3 data-i18n-html="contact.title">Privacy contact</h3>
+      <p data-i18n-html="contact.body">For data requests, deletion, or any privacy question, reach us via <a href="support.html">in-app support chat</a> or email <strong>privacy@journeyjunction.com</strong>.</p>
+      <p data-i18n-html="contact.body2" style="margin-top:10px;font-size:13px;color:var(--ink-3);">Regulatory authority: <strong>Personal Information Protection Commission (個人情報保護委員会)</strong> · <a href="https://www.ppc.go.jp/en/" target="_blank" rel="noopener">ppc.go.jp</a></p>
+    </div>
+
+    <div class="contact-card" style="margin-top:20px;font-size:12.5px;line-height:1.6;color:var(--ink-3);">
+      <h3 data-i18n-html="company.title" style="font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-2);">Data controller</h3>
+      <p data-i18n-html="company.body">
+        <strong>Journey Junction Ltd</strong><br>
+        Company number 15791277 · Incorporated 20 June 2024<br>
+        Registered office: Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>
+        Director: Midhun Peter
+      </p>
+    </div>
+  </div>
+</main>
+
+<script>
+const TM_I18N = {
+  en: {
+    back:'Back',
+    banner:'<strong>Draft template.</strong> This policy is a working version for Journey Junction. Before going live please have it reviewed by qualified counsel for compliance with Japan\'s Act on the Protection of Personal Information (APPI) and any applicable cross-border data rules.',
+    eyebrow:'How we handle your data',
+    title:'Privacy <em>Policy</em>',
+    lastUpdated:'Last updated: 23 April 2026 · Operated from Japan (APPI applies)',
+    's1.title':'Summary',
+    's1.p1':'Journey Junction ("we") operates a planner marketplace connecting itinerary writers with travelers visiting Japan. This policy explains what personal data we collect when you register as a <strong>Planner</strong>, why we need it, and how you can control it. It applies to your use of the planner dashboard, support chat, and related services.',
+    's2.title':'Data we collect',
+    'table.what':'What','table.why':'Why',
+    'r1.what':'<strong>Name, email, phone</strong>','r1.why':'Account creation, login, support contact, payout confirmations.',
+    'r2.what':'<strong>City, languages, specialties</strong>','r2.why':'Matching you to suitable traveler briefs.',
+    'r3.what':'<strong>Bank name, account number, account holder name</strong>','r3.why':'Paying commissions and refundable bonds into your account.',
+    'r4.what':'<strong>Itinerary content (text, photos you upload)</strong>','r4.why':'Delivering the plan to the traveler you created it for.',
+    'r5.what':'<strong>Support-chat messages &amp; attachments</strong>','r5.why':'Answering your questions and keeping a record for audit.',
+    'r6.what':'<strong>Dashboard activity logs</strong>','r6.why':'Fraud prevention, performance metrics, debugging.',
+    's3.title':'How we use it',
+    's3.l1':'<strong>To run your account</strong> — authenticating you, displaying sets assigned to you, processing payouts.',
+    's3.l2':'<strong>To match you with work</strong> — admin reviews your languages and specialties when assigning sets.',
+    's3.l3':'<strong>To deliver itineraries</strong> — travelers who commissioned a set see the approved plan with your first name attached as the author.',
+    's3.l4':'<strong>To support and protect the platform</strong> — we review chat logs only when a dispute, bug, or abuse report arises.',
+    's3.p1':'We do <strong>not</strong> sell your data to third parties and we do not use it for advertising profiling.',
+    's4.title':'Who we share with',
+    's4.l1':'<strong>Travelers</strong> — see your first name, avatar, and the itinerary content you submit for their trip. They do not see your email, phone, or bank details.',
+    's4.l2':'<strong>Supabase (database + auth hosting)</strong> — our processor for storing profile data and itineraries. Data is hosted on their infrastructure under their DPA.',
+    's4.l3':'<strong>Our bank / payment processor</strong> — receives only the minimum needed to transfer commission (account name, number, bank name, amount).',
+    's4.l4':'<strong>Tax authorities and law enforcement</strong> — if required by Japanese law.',
+    's4.p1':'No data is transferred outside Japan except to the extent our processors (e.g. Supabase) operate cross-border under standard contractual clauses.',
+    's5.title':'How long we keep it',
+    's5.p1':'<strong>Account data:</strong> kept while your account is active. If you delete your account, we remove personal identifiers within 30 days, but may keep audit logs and payout records for <strong>7 years</strong> to meet Japanese tax and accounting law.',
+    's5.p2':'<strong>Itinerary content:</strong> kept for as long as the traveler has access to the plan (typically the duration of their trip plus 180 days), then archived.',
+    's5.p3':'<strong>Support messages:</strong> kept for 2 years for audit, then deleted.',
+    's6.title':'Your rights',
+    's6.p1':'Under Japan\'s APPI and equivalent international frameworks, you have the right to:',
+    's6.l1':'<strong>Access</strong> the personal data we hold about you — request a copy via support chat.',
+    's6.l2':'<strong>Correct</strong> inaccurate data — most fields are editable directly from your Profile.',
+    's6.l3':'<strong>Delete</strong> your account and associated data — contact support; subject to the retention periods in §5.',
+    's6.l4':'<strong>Withdraw consent</strong> for non-essential processing at any time.',
+    's6.l5':'<strong>Lodge a complaint</strong> with Japan\'s Personal Information Protection Commission (PPC) if you believe we\'ve mishandled your data.',
+    's7.title':'Cookies &amp; local storage',
+    's7.p1':'We use browser <strong>localStorage</strong> to keep you signed in and remember preferences (language, notification toggles). We do not use third-party tracking or advertising cookies. Clearing your browser storage will sign you out.',
+    's8.title':'Security',
+    's8.p1':'We use industry-standard security measures: encrypted transport (HTTPS), encrypted-at-rest database storage via Supabase, role-based access so only authorised staff see bank details, and regular review of access logs. No system is 100% secure; if we become aware of a breach affecting your data we will notify you within 72 hours as required by APPI.',
+    's9.title':'Children',
+    's9.p1':'Journey Junction is not intended for use by anyone under 18. We do not knowingly collect data from minors. If we learn that an under-18 user has created an account we will delete it promptly.',
+    's10.title':'Changes to this policy',
+    's10.p1':'We may update this policy from time to time. Material changes will be posted on your dashboard at least 14 days before they take effect. The "Last updated" date at the top of this page always reflects the current version.',
+    'contact.title':'Privacy contact',
+    'contact.body':'For data requests, deletion, or any privacy question, reach us via <a href="support.html">in-app support chat</a> or email <strong>privacy@journeyjunction.com</strong>.',
+    'contact.body2':'Regulatory authority: <strong>Personal Information Protection Commission (個人情報保護委員会)</strong> · <a href="https://www.ppc.go.jp/en/" target="_blank" rel="noopener">ppc.go.jp</a>',
+    'company.title':'Data controller',
+    'company.body':'<strong>Journey Junction Ltd</strong><br>Company number 15791277 · Incorporated 20 June 2024<br>Registered office: Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>Director: Midhun Peter'
+  },
+  ja: {
+    back:'戻る',
+    banner:'<strong>下書き版。</strong> 本ポリシーはJourney Junctionの作業版です。公開前に、個人情報保護法（APPI）および国境を越えるデータ規制への準拠について、必ず適格な法律専門家によるレビューを受けてください。',
+    eyebrow:'個人情報の取り扱いについて',
+    title:'プライバシー<em>ポリシー</em>',
+    lastUpdated:'最終更新日：2026年4月23日 · 日本国内運営（APPI適用）',
+    's1.title':'概要',
+    's1.p1':'Journey Junction（以下「当社」）は、日本を訪れる旅行者と旅程プランナーを結ぶマーケットプレイスを運営しています。本ポリシーは、<strong>プランナー</strong>として登録される際に収集する個人情報、その利用目的、お客様の管理方法について説明します。プランナーダッシュボード、サポートチャット、関連サービスの利用に適用されます。',
+    's2.title':'収集する情報',
+    'table.what':'項目','table.why':'目的',
+    'r1.what':'<strong>氏名、メール、電話番号</strong>','r1.why':'アカウント作成、ログイン、サポート連絡、出金確認。',
+    'r2.what':'<strong>都市、言語、得意分野</strong>','r2.why':'適切な旅行者ブリーフとのマッチング。',
+    'r3.what':'<strong>銀行名、口座番号、口座名義</strong>','r3.why':'コミッションおよび返金可能保証金のお支払い。',
+    'r4.what':'<strong>プランのコンテンツ（テキスト、アップロード画像）</strong>','r4.why':'作成対象の旅行者への提供。',
+    'r5.what':'<strong>サポートチャットのメッセージ・添付ファイル</strong>','r5.why':'ご質問への対応および監査記録の保持。',
+    'r6.what':'<strong>ダッシュボードの活動ログ</strong>','r6.why':'不正防止、パフォーマンス測定、デバッグ。',
+    's3.title':'利用目的',
+    's3.l1':'<strong>アカウント運営</strong> — 認証、アサイン済みセットの表示、出金処理。',
+    's3.l2':'<strong>業務マッチング</strong> — 管理者がセット配分時に言語・得意分野を参照。',
+    's3.l3':'<strong>プランの提供</strong> — セットを依頼した旅行者は、承認済みプランを作成者のファーストネームとともに閲覧します。',
+    's3.l4':'<strong>プラットフォームのサポートと保護</strong> — 紛争、不具合、不正報告があった場合のみチャットログを確認します。',
+    's3.p1':'当社はお客様のデータを第三者に販売せず、広告プロファイリングにも使用しません。',
+    's4.title':'共有先',
+    's4.l1':'<strong>旅行者</strong> — あなたのファーストネーム、アバター、当該旅行のために提出したプラン内容を閲覧できます。メール、電話、銀行情報は閲覧されません。',
+    's4.l2':'<strong>Supabase（データベース・認証ホスティング）</strong> — プロフィールデータおよびプランの保管を行う委託先。Supabaseのインフラ上でDPAに基づき保管されます。',
+    's4.l3':'<strong>当社の銀行・決済代行</strong> — コミッション送金に必要な最小限の情報（口座名義、番号、銀行名、金額）のみ受領します。',
+    's4.l4':'<strong>税務当局および法執行機関</strong> — 日本法で要求される場合。',
+    's4.p1':'委託先（例：Supabase）が標準契約条項に基づき国境を越えて運営する範囲を除き、日本国外にデータは移転されません。',
+    's5.title':'保持期間',
+    's5.p1':'<strong>アカウント情報：</strong>アカウントが有効な期間、保持します。退会の場合、個人識別情報は30日以内に削除しますが、監査ログおよび支払記録は日本の税法・会計法の要請により<strong>7年間</strong>保持することがあります。',
+    's5.p2':'<strong>プランのコンテンツ：</strong>旅行者がプランを閲覧できる期間（通常、旅行期間＋180日）保持し、その後アーカイブします。',
+    's5.p3':'<strong>サポートメッセージ：</strong>監査のため2年間保持し、その後削除します。',
+    's6.title':'お客様の権利',
+    's6.p1':'日本の個人情報保護法（APPI）および同等の国際的枠組みに基づき、以下の権利を有します：',
+    's6.l1':'<strong>アクセス権</strong> — 保有する個人情報のコピーをサポートチャット経由で請求できます。',
+    's6.l2':'<strong>訂正権</strong> — ほとんどの項目はプロフィールから直接編集できます。',
+    's6.l3':'<strong>削除権</strong> — サポート連絡にてアカウントおよび関連データの削除を請求できます（§5の保持期間の制約あり）。',
+    's6.l4':'<strong>同意撤回</strong> — 非必須処理への同意をいつでも撤回できます。',
+    's6.l5':'<strong>苦情申立</strong> — 取り扱いに問題があると判断された場合、日本の個人情報保護委員会（PPC）へ苦情を申し立てられます。',
+    's7.title':'クッキーとローカルストレージ',
+    's7.p1':'ログイン状態と設定（言語、通知トグル）の保持のため、ブラウザの<strong>localStorage</strong>を使用します。第三者トラッキングや広告クッキーは使用しません。ブラウザのストレージをクリアするとログアウトされます。',
+    's8.title':'セキュリティ',
+    's8.p1':'業界標準のセキュリティ対策を採用しています：暗号化通信（HTTPS）、Supabaseによる暗号化データベース保管、銀行情報へのアクセスを認可スタッフのみに制限するロールベース制御、アクセスログの定期レビュー。完全に安全なシステムは存在しないため、データに影響する情報漏洩を認知した場合、APPIの要件に従い72時間以内に通知します。',
+    's9.title':'18歳未満の方について',
+    's9.p1':'Journey Junctionは18歳未満の方の利用を想定していません。未成年者から意図的にデータを収集することはありません。18歳未満のユーザーがアカウントを作成していたことを確認した場合、速やかに削除します。',
+    's10.title':'本ポリシーの変更',
+    's10.p1':'本ポリシーは随時更新される場合があります。実質的な変更は、発効の少なくとも14日前にダッシュボードにて告知します。ページ上部の「最終更新日」が常に現行版を示します。',
+    'contact.title':'プライバシーに関するお問い合わせ',
+    'contact.body':'データに関する請求、削除、その他プライバシーに関するご質問は、<a href="support.html">アプリ内サポートチャット</a>またはメール<strong>privacy@journeyjunction.com</strong>までお寄せください。',
+    'contact.body2':'規制当局：<strong>個人情報保護委員会</strong> · <a href="https://www.ppc.go.jp/" target="_blank" rel="noopener">ppc.go.jp</a>',
+    'company.title':'データ管理者',
+    'company.body':'<strong>Journey Junction Ltd</strong><br>会社番号：15791277 ／ 設立日：2024年6月20日<br>登記上の住所：Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>代表者：Midhun Peter'
+  }
+}
+
+let TM_LANG = localStorage.getItem('jj_planner_lang') || 'ja'
+if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
+
+function t(k){ return TM_I18N[TM_LANG]?.[k] ?? TM_I18N.en[k] ?? k }
+function applyLang(){
+  document.documentElement.lang = TM_LANG
+  // Order matters: set innerHTML first, then textContent on elements that
+  // only have data-i18n (not data-i18n-html). :not() prevents textContent
+  // from wiping an innerHTML we just set on dual-tagged elements.
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')) })
+  document.querySelectorAll('[data-i18n]:not([data-i18n-html])').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')) })
+  document.querySelectorAll('.lang-pill button').forEach(b => b.classList.toggle('active', b.dataset.lang === TM_LANG))
+  document.title = TM_LANG === 'ja' ? 'Journey Junction — プライバシーポリシー' : 'Journey Junction — Privacy Policy'
+}
+function setLang(l){ if (l === TM_LANG) return; TM_LANG = l; localStorage.setItem('jj_planner_lang', l); applyLang() }
+applyLang()
+</script>
+</body>
+</html>
