@@ -5,12 +5,26 @@ _dev_*.sql
 jj-deploy.zip
 
 # CI / build artifacts — wrangler-action installs into ./node_modules
+# Belt-and-braces patterns to cover gitignore-style implementations
 node_modules
+node_modules/
+/node_modules
+/node_modules/
+**/node_modules
+**/node_modules/**
 .wrangler
+.wrangler/
+/.wrangler
+/.wrangler/
 .git
+.git/
 .github
+.github/
 .claude
+.claude/
 .vscode
+.vscode/
 .dev.vars
 .dev.vars.*
 .gitignore
+.gitattributes

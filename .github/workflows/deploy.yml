@@ -21,6 +21,9 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Pin v4 — v3.90 didn't honour .assetsignore patterns correctly,
+          # so the 122 MiB workerd binary in node_modules got uploaded.
+          wranglerVersion: "4"
           # `wrangler deploy` reads wrangler.toml, uploads _worker.js +
           # everything in `directory = "."` as static assets, and ships
           # to the worker named in wrangler.toml ("my-app").
