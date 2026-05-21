@@ -12171,6 +12171,7 @@ function fillItineraryItems(items) {
           rating:             it.rating              ?? null,
           user_rating_count:  it.user_rating_count   ?? null,
           price_level:        it.price_level         || null,
+          price_range_json:   it.price_range_json    || null,
           phone:              it.phone               || null,
           website:            it.website             || null,
           google_maps_url:    it.google_maps_url     || null,
@@ -12931,7 +12932,7 @@ async function selectPlaceForSlot(slot, placeId) {
   if (dropdown) dropdown.innerHTML = '<div class="places-dropdown-status">Loading place…</div>'
   const fields = [
     'id','displayName','formattedAddress','location',
-    'rating','userRatingCount','priceLevel',
+    'rating','userRatingCount','priceLevel','priceRange',
     'regularOpeningHours','internationalPhoneNumber',
     'websiteUri','googleMapsUri','types','photos'
   ].join(',')
@@ -12982,6 +12983,7 @@ function applyPlaceToSlot(slot, place) {
     rating:            (typeof place.rating === 'number') ? place.rating : null,
     user_rating_count: (typeof place.userRatingCount === 'number') ? place.userRatingCount : null,
     price_level:       place.priceLevel || null,
+    price_range_json:  place.priceRange || null,
     phone:             place.internationalPhoneNumber || null,
     website:           place.websiteUri || null,
     google_maps_url:   place.googleMapsUri || null,
@@ -13109,6 +13111,31 @@ function parseCountryFromAddress(addr) {
 function currencyForAddress(addr) {
   return CURRENCY_BY_COUNTRY[parseCountryFromAddress(addr)] || '$'
 }
+// ISO currency code → display symbol. Used for priceRange where Google
+// returns the actual currency (e.g. "MYR"), not just the place address.
+const CURRENCY_BY_CODE = {
+  MYR:'RM', JPY:'¥', SGD:'S$', THB:'฿', IDR:'Rp', PHP:'₱', VND:'₫',
+  KRW:'₩', CNY:'¥', HKD:'HK$', TWD:'NT$', INR:'₹',
+  EUR:'€', GBP:'£', USD:'$', CAD:'CA$', AUD:'A$', NZD:'NZ$',
+  CHF:'CHF', NOK:'kr', SEK:'kr', DKK:'kr',
+  PLN:'zł', CZK:'Kč', HUF:'Ft', TRY:'₺',
+  AED:'AED', SAR:'SAR', ZAR:'R', EGP:'E£', BRL:'R$', MXN:'MX$', ARS:'AR$',
+}
+// Format Google's priceRange object into "RM 1–20" / "From RM 1" / "Up to RM 20".
+// Returns '' when no usable bounds exist.
+function formatPriceRange(pr) {
+  if (!pr) return ''
+  const start = pr.startPrice
+  const end   = pr.endPrice
+  const code = start?.currencyCode || end?.currencyCode
+  const sym  = CURRENCY_BY_CODE[code] || code || ''
+  const s = start?.units != null ? Number(start.units) : null
+  const e = end?.units   != null ? Number(end.units)   : null
+  if (s != null && e != null) return `${sym} ${s}–${e}`.trim()
+  if (s != null) return `From ${sym} ${s}`.trim()
+  if (e != null) return `Up to ${sym} ${e}`.trim()
+  return ''
+}
 // Pretty price level. Google returns 'PRICE_LEVEL_INEXPENSIVE' etc.; we
 // localise the symbol from the place's country (¥¥¥, RM RM RM, $$$, etc.).
 // Multi-char currencies get space-separated repeats so "RM RM RM" doesn't
@@ -13194,7 +13221,10 @@ function renderLinkedChip(slot) {
     ? `★ ${Number(d.rating).toFixed(1)}${d.user_rating_count ? ' (' + d.user_rating_count + ')' : ''}`
     : ''
   const currency = currencyForAddress(d.address)
-  const priceTxt = formatPriceLevel(d.price_level, currency)
+  // Prefer Google's explicit price range ("RM 1–20") when present, fall back
+  // to the symbol tier (RM RM RM) — fall back further to nothing if neither
+  // field came back from Google.
+  const priceTxt = formatPriceRange(d.price_range_json) || formatPriceLevel(d.price_level, currency)
   const plannedDate = getSlotPlannedDate(slot)
   const open = formatOpeningStatus(d.opening_hours_json, plannedDate)
 
@@ -13443,6 +13473,7 @@ function getPlaceFieldsForSlot(slot) {
     rating:             d.rating             ?? null,
     user_rating_count:  d.user_rating_count  ?? null,
     price_level:        d.price_level        || null,
+    price_range_json:   d.price_range_json   || null,
     phone:              d.phone              || null,
     website:            d.website            || null,
     google_maps_url:    d.google_maps_url    || null,
