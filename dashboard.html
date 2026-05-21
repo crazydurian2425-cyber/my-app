@@ -1972,6 +1972,9 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border-radius:6px;font-size:11.5px;color:var(--text-2);
   display:flex;flex-direction:column;gap:2px;
 }
+/* `display:flex` above wins over the browser's default `[hidden]{display:none}`
+   when both apply, so the schedule wouldn't actually collapse. Force it. */
+.places-linked-chip .pl-schedule[hidden]{display:none;}
 .places-linked-chip .pl-schedule-row{font-variant-numeric:tabular-nums;}
 /* Locked inputs while a place is linked — visually softer + non-editable. */
 .activity-slot.slot-place-linked .slot-title-input,
