@@ -6,7 +6,5 @@ compatibility_date = "2024-09-01"
 directory = "."
 binding = "ASSETS"
 
-# Cloudflare Workers AI — used by /api/translate to translate planner
-# messages in the CS console (JA -> EN). Free tier ~10K neurons/day.
-[ai]
-binding = "AI"
+# Workers AI binding removed — requires account-level Workers AI access.
+# Re-add `[ai]\nbinding = "AI"` after enabling it in Cloudflare dashboard.
