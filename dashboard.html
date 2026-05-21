@@ -1997,6 +1997,28 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border:1px solid rgba(184,74,62,0.55)!important;
   background:rgba(184,74,62,0.05);
 }
+
+/* ─── Between-stop distance indicators ─────────────────────────────────
+   A small line that sits between two activity slots showing how far apart
+   the two places are. Dashed left border doubles as a vertical connector
+   so the day reads as a continuous timeline. */
+.slot-distance{
+  display:flex;align-items:center;gap:8px;
+  margin:-2px 0 6px 24px;padding:3px 0 3px 14px;
+  border-left:1.5px dashed rgba(0,0,0,0.20);
+  font-size:11px;color:var(--text-3);
+  font-family:'DM Sans',sans-serif;line-height:1.4;
+}
+.slot-distance .sd-icon{font-size:11px;flex-shrink:0;}
+.slot-distance-ok{
+  color:#1a7a5e;border-left-color:rgba(45,158,122,0.45);
+}
+.slot-distance-warn{
+  color:#8c6510;border-left-color:rgba(193,125,42,0.55);
+}
+.slot-distance-danger{
+  color:#8a3329;border-left-color:rgba(184,74,62,0.6);font-weight:500;
+}
 /* Locked inputs while a place is linked — visually softer + non-editable. */
 .activity-slot.slot-place-linked .slot-title-input,
 .activity-slot.slot-place-linked .slot-address-input{
@@ -12218,6 +12240,9 @@ function fillItineraryItems(items) {
       }
     })
   })
+  // After every slot is populated we have lat/lng on each linked slot —
+  // compute the between-stop distance indicators for every day at once.
+  refreshAllDistances()
 }
 
 // Icons for guideline items + day types
@@ -12705,6 +12730,9 @@ function resortSlots(container) {
     .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00' }))
     .sort((a, b) => a.t.localeCompare(b.t))
     .forEach(({ el }) => container.appendChild(el))
+  // Reordering moves slot DOM nodes to the end — any distance indicators
+  // that were between them now sit in the wrong positions. Wipe + rebuild.
+  refreshDayDistances(container)
 }
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.type-dd') && !e.target.closest('.time-dd')) {
@@ -13010,6 +13038,9 @@ function applyPlaceToSlot(slot, place) {
   renderLinkedChip(slot)
   slot.classList.add('slot-place-linked')
   hidePlacesDropdown(slot)
+  // Linking a place gives this slot coordinates — distances to its neighbours
+  // can now be computed (or updated if it had a different place before).
+  refreshDayDistances(slot.closest('[id^="slots-day-"]'))
   autoSaveDraft()
 }
 
@@ -13416,6 +13447,71 @@ function checkTimeAgainstHours(slot, oh, plannedDate) {
   return null
 }
 
+// ─── Distance warnings between consecutive stops ─────────────────────────
+// Uses the lat/lng we already persisted on itinerary_items via the Places
+// pick — no extra API call. Haversine gives straight-line km; rough time
+// estimates (walking 12 min/km, taxi 3 min/km) catch the most common
+// "stops scheduled too far apart" planner mistake.
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const toRad = d => d * Math.PI / 180
+  const dLat = toRad(lat2 - lat1)
+  const dLon = toRad(lon2 - lon1)
+  const a = Math.sin(dLat / 2) ** 2
+          + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(a))
+}
+// Returns { tier: 'ok'|'warn'|'danger', icon, label } or null when the two
+// stops are essentially the same spot.
+function describeStopDistance(km) {
+  if (km < 0.05) return null
+  if (km < 1) {
+    const mins = Math.max(1, Math.round(km * 12))
+    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min walk to next stop` }
+  }
+  if (km < 3) {
+    const mins = Math.max(3, Math.round(km * 3))
+    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min · easy taxi or metro` }
+  }
+  if (km < 8) {
+    const mins = Math.max(8, Math.round(km * 3))
+    return { tier: 'warn', icon: '⚠', label: `${km.toFixed(1)} km · ${mins} min by taxi to next stop` }
+  }
+  const mins = Math.max(20, Math.round(km * 3))
+  return { tier: 'danger', icon: '⚠', label: `${km.toFixed(1)} km · ${mins} min · long hop, consider regrouping` }
+}
+function getSlotLatLng(slot) {
+  const d = slot?._placeData
+  if (!d) return null
+  const lat = parseFloat(d.latitude)
+  const lng = parseFloat(d.longitude)
+  if (!isFinite(lat) || !isFinite(lng)) return null
+  return { lat, lng }
+}
+// Wipe existing distance indicators in a day container and compute fresh
+// ones for every consecutive pair of slots that both carry coordinates.
+// Manual-entry slots (no linked Place) silently break the chain.
+function refreshDayDistances(dayContainer) {
+  if (!dayContainer) return
+  dayContainer.querySelectorAll(':scope > .slot-distance').forEach(el => el.remove())
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  for (let i = 0; i < slots.length - 1; i++) {
+    const a = getSlotLatLng(slots[i])
+    const b = getSlotLatLng(slots[i + 1])
+    if (!a || !b) continue
+    const desc = describeStopDistance(haversineKm(a.lat, a.lng, b.lat, b.lng))
+    if (!desc) continue
+    const el = document.createElement('div')
+    el.className = `slot-distance slot-distance-${desc.tier}`
+    el.innerHTML = `<span class="sd-icon">${desc.icon}</span><span class="sd-text">${escapeHtml(desc.label)}</span>`
+    dayContainer.insertBefore(el, slots[i + 1])
+  }
+}
+// Helper to refresh every day's distances at once — used after bulk loads.
+function refreshAllDistances() {
+  document.querySelectorAll('[id^="slots-day-"]').forEach(refreshDayDistances)
+}
+
 // Inline handler for the "Change time to X" quick fix in the warning banner.
 function applyTimeFix(slotId, hhmm) {
   const slot = document.getElementById(slotId)
@@ -13445,6 +13541,7 @@ function clearLinkedPlaceById(slotId) {
 function clearLinkedPlace(slot, { keepTitle = false, clearInputs = false } = {}) {
   if (!slot) return
   slot.classList.remove('slot-place-linked')
+  slot.classList.remove('slot-time-conflict')
   delete slot._placeData
   const chip = slot.querySelector('.places-linked-chip')
   if (chip) chip.innerHTML = ''
@@ -13458,6 +13555,9 @@ function clearLinkedPlace(slot, { keepTitle = false, clearInputs = false } = {})
     if (!keepTitle && titleInput) titleInput.value = ''
     if (titleInput) titleInput.focus()
   }
+  // Losing the linkage means this slot no longer has coordinates — any
+  // distance indicator that touched it is now stale.
+  refreshDayDistances(slot.closest('[id^="slots-day-"]'))
   autoSaveDraft()
 }
 
@@ -13613,13 +13713,18 @@ function addSlot(dayNum, seed = null) {
   container.appendChild(slot);
   attachPlacesSearch(slot);
   updateDayMeta(dayNum);
+  refreshDayDistances(container);
 }
 
 function removeSlot(id) {
   const el = document.getElementById(id);
   const dayNum = el?.closest('.day-section')?.id?.replace('day-','')
+  // Capture the slots container BEFORE removing the element so we can refresh
+  // distance indicators on the now-shrunk chain.
+  const container = el?.closest('[id^="slots-day-"]')
   if (el) el.remove();
   if (dayNum) updateDayMeta(dayNum);
+  if (container) refreshDayDistances(container);
 }
 
 // Collapsible day sections — user can focus on one day at a time
