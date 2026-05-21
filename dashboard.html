@@ -1885,6 +1885,62 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .slot-address-input{width:100%;padding:8px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;}
 .slot-address-input:focus{border-color:var(--green-mid);}
 
+/* ─── Google Places autocomplete (activity / meal / accommodation only) ───
+   The title input doubles as the search box. While the planner types,
+   .places-dropdown appears beneath it with suggestions. On selection, the
+   slot enters "linked" state — title + address lock and a small chip
+   appears with the rating + a "Change" button to re-search. */
+.slot-title-wrap{position:relative;}
+.places-dropdown{
+  position:absolute;top:calc(100% + 2px);left:0;right:0;
+  background:var(--surface);border:1px solid var(--border-med);border-radius:8px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.10);
+  max-height:240px;overflow-y:auto;z-index:50;
+  font-family:'DM Sans',sans-serif;
+  padding:4px 0;
+}
+.places-suggestion{
+  padding:8px 12px;cursor:pointer;font-size:12.5px;color:var(--text);
+  border-bottom:1px solid var(--border);line-height:1.35;
+}
+.places-suggestion:last-child{border-bottom:none;}
+.places-suggestion:hover,.places-suggestion.is-focused{background:var(--green-light);}
+.places-suggestion .ps-main{font-weight:500;color:var(--text);}
+.places-suggestion .ps-sec{font-size:11px;color:var(--text-3);margin-top:2px;}
+.places-dropdown-status{
+  padding:10px 12px;font-size:12px;color:var(--text-3);font-style:italic;
+}
+.places-linked-chip{
+  display:none;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:6px;padding:6px 10px;
+  background:var(--green-light);border:1px solid rgba(45,158,122,0.32);
+  border-radius:8px;font-size:11.5px;color:var(--green-dark);
+  font-family:'DM Sans',sans-serif;
+}
+.activity-slot.slot-place-linked .places-linked-chip{display:flex;}
+.places-linked-chip .pl-google{font-weight:600;letter-spacing:0.02em;}
+.places-linked-chip .pl-rating{color:var(--amber);font-weight:500;}
+.places-linked-chip .pl-sep{color:rgba(0,0,0,0.15);}
+.places-linked-chip .pl-change{
+  margin-left:auto;background:none;border:none;color:var(--green-dark);
+  font:inherit;text-decoration:underline;cursor:pointer;padding:0;
+}
+.places-linked-chip .pl-change:hover{color:var(--green);}
+/* Locked inputs while a place is linked — visually softer + non-editable. */
+.activity-slot.slot-place-linked .slot-title-input,
+.activity-slot.slot-place-linked .slot-address-input{
+  background:var(--bg);color:var(--text-2);cursor:default;
+}
+/* Hide the search-related UI for slot types that don't get autocomplete. */
+.activity-slot.slot-type-transport .places-dropdown,
+.activity-slot.slot-type-freetime  .places-dropdown,
+.activity-slot.slot-type-transport .places-linked-chip,
+.activity-slot.slot-type-freetime  .places-linked-chip{display:none!important;}
+/* .activity-slot has overflow:hidden for its rounded corners — that clips the
+   absolutely-positioned dropdown. Override only while a dropdown is showing
+   (modern :has() support — Chrome 105+, Safari 15.4+, Firefox 121+). */
+.activity-slot:has(.places-dropdown:not([hidden])){overflow:visible;}
+
 /* Duration dropdown — Activity-only field. Compact picker styled to match
    the time/type dropdowns. */
 .duration-dd{position:relative;display:inline-flex;}
@@ -8912,6 +8968,16 @@ function animateCount(el, target, opts={}){
 const SUPABASE_URL  = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqY2h5cWFma3Bicnl6bHFocHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNTQ4OTEsImV4cCI6MjA5NDkzMDg5MX0.Ns9MybkhAjZGNKCv-pSPztB3msExD7PGBcZTXygfsSE'
 
+// ── GOOGLE PLACES (NEW) CONFIG ──────────────────────────────
+// Browser-side key — protected by HTTP referrer restrictions configured in
+// Google Cloud (Places API New only, limited to our domains). Stealing the
+// key from page source is useless without a matching Referer header.
+const GOOGLE_PLACES_API_KEY = 'AIzaSyD7T_nnZtg3qyXVckLMcPKUPdYlsW-lHlc'
+// Slot types that get autocomplete. Transport ("Tokyo → Kyoto") and Free time
+// ("Asakusa afternoon") don't map to a Google place, so they keep the manual
+// 3-input flow.
+const PLACES_ENABLED_TYPES = new Set(['activity','meal','accommodation'])
+
 // ── AUTH CHECK ───────────────────────────────────────────────
 const token   = localStorage.getItem('jj_token')
 const planner = JSON.parse(localStorage.getItem('jj_planner') || 'null')
@@ -11407,6 +11473,9 @@ async function openItineraryForm(planId) {
   // and the time picker on the LAST day can cap at departure_time.
   window._currentArrivalTime   = t.arrival_time   || null
   window._currentDepartureTime = t.departure_time || null
+  // Expose the traveler's destination so the Places autocomplete can bias
+  // search results to that city (much more relevant than unbiased global).
+  window._currentDestination   = t.destination    || null
   const travType = t.traveler_type || plan.type || ''
   const duration = t.duration     || plan.duration || '3D2N'
   const isBond   = t.requires_bond || plan.deposit || false
@@ -12014,6 +12083,29 @@ function fillItineraryItems(items) {
       // Address (new field — null for legacy rows, just leaves the input blank)
       const addrInput = slot.querySelector('.slot-address-input')
       if (addrInput) addrInput.value = it.address || ''
+      // Restore Google-Place linkage if the row carries a place_id. We rebuild
+      // _placeData from the persisted columns so submit/autosave round-trips
+      // the same metadata back without a redundant API call.
+      if (it.google_place_id) {
+        slot._placeData = {
+          google_place_id:    it.google_place_id,
+          name:               it.title || '',
+          address:            it.address || '',
+          latitude:           it.latitude            ?? null,
+          longitude:          it.longitude           ?? null,
+          rating:             it.rating              ?? null,
+          user_rating_count:  it.user_rating_count   ?? null,
+          price_level:        it.price_level         || null,
+          phone:              it.phone               || null,
+          website:            it.website             || null,
+          google_maps_url:    it.google_maps_url     || null,
+          opening_hours_json: it.opening_hours_json  || null,
+          photo_refs:         it.photo_refs          || null,
+          place_types:        it.place_types         || null,
+        }
+        slot.classList.add('slot-place-linked')
+        renderLinkedChip(slot)
+      }
       // Duration (new field — Activity-only, null on other types and on legacy rows)
       const durHidden = slot.querySelector('.slot-duration-input')
       const durLabel  = slot.querySelector('.duration-dd-label')
@@ -12464,6 +12556,11 @@ function selectTypeDD(btn, label, key){
     slot.classList.forEach(c => { if (c.startsWith('slot-type-')) slot.classList.remove(c) })
     slot.classList.add('slot-type-' + key)
     updateSlotFieldLabels(slot, key)
+    // Switching to a type that can't have a Google place — drop the linkage
+    // but keep what the planner already typed so nothing visible is lost.
+    if (!PLACES_ENABLED_TYPES.has(key) && slot.classList.contains('slot-place-linked')) {
+      clearLinkedPlace(slot, { keepTitle: true })
+    }
   }
   autoSaveDraft()
 }
@@ -12620,6 +12717,269 @@ const SEED_DEFAULTS = {
   dinner:     { typeLabel:'Meal',          typeKey:'meal',          title:'Dinner',          titleKey:'seed.dinner',    time:'19:00'    },
 }
 
+// ─── Google Places autocomplete (per-slot) ──────────────────────────────
+// Each slot manages its own session token. A "session" = N autocomplete
+// keystrokes + 1 details lookup, billed as one event. Token starts on the
+// first keystroke past 3 chars, fires once on selection, then resets so the
+// next search opens a fresh session.
+//
+// On selection, the slot enters "linked" state: title + address lock, chip
+// shows below address with the rating + a Change button. Place metadata is
+// stashed on `slot._placeData` and read back during submit/autosave.
+function attachPlacesSearch(slot) {
+  if (!slot) return
+  const titleInput = slot.querySelector('.slot-title-input')
+  const dropdown   = slot.querySelector('.places-dropdown')
+  if (!titleInput || !dropdown) return
+  let debounceTimer = null
+  let blurTimer = null
+  titleInput.addEventListener('input', () => {
+    const type = slot.querySelector('.slot-type-select')?.value || 'activity'
+    if (!PLACES_ENABLED_TYPES.has(type)) { hidePlacesDropdown(slot); return }
+    // Already linked? typing should unlink so the planner can search fresh.
+    if (slot.classList.contains('slot-place-linked')) clearLinkedPlace(slot, { keepTitle: true })
+    const query = titleInput.value.trim()
+    if (query.length < 3) { hidePlacesDropdown(slot); return }
+    if (!slot.dataset.placesSessionToken) slot.dataset.placesSessionToken = uuidV4()
+    clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => fetchPlacesPredictions(slot, query), 280)
+  })
+  titleInput.addEventListener('focus', () => {
+    const type = slot.querySelector('.slot-type-select')?.value || 'activity'
+    if (!PLACES_ENABLED_TYPES.has(type)) return
+    if (titleInput.value.trim().length >= 3 && dropdown.children.length) dropdown.hidden = false
+  })
+  titleInput.addEventListener('blur', () => {
+    // Delay so a click on a suggestion can fire before the dropdown disappears.
+    clearTimeout(blurTimer)
+    blurTimer = setTimeout(() => hidePlacesDropdown(slot), 160)
+  })
+}
+
+function hidePlacesDropdown(slot) {
+  const dd = slot.querySelector('.places-dropdown')
+  if (dd) dd.hidden = true
+}
+
+function uuidV4() {
+  if (crypto?.randomUUID) return crypto.randomUUID()
+  // Fallback for older browsers — good-enough randomness for session-token use.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+  })
+}
+
+async function fetchPlacesPredictions(slot, query) {
+  const dropdown = slot.querySelector('.places-dropdown')
+  if (!dropdown) return
+  dropdown.innerHTML = '<div class="places-dropdown-status">Searching…</div>'
+  dropdown.hidden = false
+  const body = {
+    input: query,
+    sessionToken: slot.dataset.placesSessionToken,
+  }
+  // Bias to the traveler's destination city if we have one. Falls back to
+  // unbiased global search if the plan has no destination set yet.
+  const bias = buildDestBias(window._currentDestination)
+  if (bias) body.locationBias = bias
+  try {
+    const resp = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY },
+      body: JSON.stringify(body)
+    })
+    if (!resp.ok) {
+      const errTxt = await resp.text().catch(() => '')
+      console.warn('[places] autocomplete failed', resp.status, errTxt)
+      dropdown.innerHTML = `<div class="places-dropdown-status">Search unavailable (${resp.status}). Type the place manually.</div>`
+      return
+    }
+    const data = await resp.json()
+    const suggestions = (data?.suggestions || []).slice(0, 6)
+    if (!suggestions.length) {
+      dropdown.innerHTML = '<div class="places-dropdown-status">No matches. Type the place manually.</div>'
+      return
+    }
+    renderPlacesSuggestions(slot, suggestions)
+  } catch (e) {
+    console.warn('[places] autocomplete threw', e)
+    dropdown.innerHTML = '<div class="places-dropdown-status">Network issue. Try again or type the place manually.</div>'
+  }
+}
+
+// City-to-circle bias. Hand-picked centers for the cities Journey Junction
+// commonly serves; everything else falls back to unbiased.
+const CITY_BIAS = {
+  tokyo:     { lat: 35.6762, lng: 139.6503, r: 30000 },
+  osaka:     { lat: 34.6937, lng: 135.5023, r: 25000 },
+  kyoto:     { lat: 35.0116, lng: 135.7681, r: 20000 },
+  hokkaido:  { lat: 43.0618, lng: 141.3545, r: 60000 }, // Sapporo center
+  sapporo:   { lat: 43.0618, lng: 141.3545, r: 30000 },
+  okinawa:   { lat: 26.2125, lng: 127.6809, r: 40000 },
+  fukuoka:   { lat: 33.5904, lng: 130.4017, r: 25000 },
+  nagoya:    { lat: 35.1815, lng: 136.9066, r: 25000 },
+  hiroshima: { lat: 34.3853, lng: 132.4553, r: 20000 },
+  nara:      { lat: 34.6851, lng: 135.8048, r: 15000 },
+}
+function buildDestBias(dest) {
+  if (!dest) return null
+  const key = String(dest).toLowerCase().split(/[\s,/]/)[0]
+  const c = CITY_BIAS[key]
+  if (!c) return null
+  return { circle: { center: { latitude: c.lat, longitude: c.lng }, radius: c.r } }
+}
+
+function renderPlacesSuggestions(slot, suggestions) {
+  const dropdown = slot.querySelector('.places-dropdown')
+  if (!dropdown) return
+  dropdown.innerHTML = ''
+  for (const s of suggestions) {
+    const p = s?.placePrediction
+    if (!p?.placeId) continue
+    const main = p?.structuredFormat?.mainText?.text || p?.text?.text || ''
+    const sec  = p?.structuredFormat?.secondaryText?.text || ''
+    const el = document.createElement('div')
+    el.className = 'places-suggestion'
+    el.innerHTML = `<div class="ps-main">${escapeHtml(main)}</div>${sec ? `<div class="ps-sec">${escapeHtml(sec)}</div>` : ''}`
+    el.addEventListener('mousedown', (e) => { e.preventDefault(); selectPlaceForSlot(slot, p.placeId) })
+    dropdown.appendChild(el)
+  }
+  dropdown.hidden = false
+}
+
+async function selectPlaceForSlot(slot, placeId) {
+  const dropdown = slot.querySelector('.places-dropdown')
+  if (dropdown) dropdown.innerHTML = '<div class="places-dropdown-status">Loading place…</div>'
+  const fields = [
+    'id','displayName','formattedAddress','location',
+    'rating','userRatingCount','priceLevel',
+    'regularOpeningHours','internationalPhoneNumber',
+    'websiteUri','googleMapsUri','types','photos'
+  ].join(',')
+  const sessionToken = slot.dataset.placesSessionToken || ''
+  try {
+    const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?sessionToken=${encodeURIComponent(sessionToken)}`
+    const resp = await fetch(url, {
+      headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields }
+    })
+    if (!resp.ok) {
+      const errTxt = await resp.text().catch(() => '')
+      console.warn('[places] details failed', resp.status, errTxt)
+      if (dropdown) dropdown.innerHTML = `<div class="places-dropdown-status">Couldn't load place (${resp.status}). Type manually or try another.</div>`
+      return
+    }
+    const place = await resp.json()
+    applyPlaceToSlot(slot, place)
+  } catch (e) {
+    console.warn('[places] details threw', e)
+    if (dropdown) dropdown.innerHTML = '<div class="places-dropdown-status">Network issue loading place.</div>'
+  } finally {
+    // Whether success or failure, this session is done — next search will
+    // open a fresh one.
+    delete slot.dataset.placesSessionToken
+  }
+}
+
+function applyPlaceToSlot(slot, place) {
+  if (!place || !place.id) return
+  const titleInput = slot.querySelector('.slot-title-input')
+  const addrInput  = slot.querySelector('.slot-address-input')
+  const name = place.displayName?.text || place.displayName || ''
+  const address = place.formattedAddress || ''
+  if (titleInput) titleInput.value = name
+  if (addrInput)  addrInput.value  = address
+  // photo_refs — just the resource names (e.g. "places/X/photos/Y"). We don't
+  // fetch any bytes here; the URL is constructed at view time so cost stays $0.
+  const photoRefs = Array.isArray(place.photos)
+    ? place.photos.map(p => p?.name).filter(Boolean).slice(0, 6)
+    : []
+  slot._placeData = {
+    google_place_id:   place.id,
+    name,
+    address,
+    latitude:          place.location?.latitude ?? null,
+    longitude:         place.location?.longitude ?? null,
+    rating:            (typeof place.rating === 'number') ? place.rating : null,
+    user_rating_count: (typeof place.userRatingCount === 'number') ? place.userRatingCount : null,
+    price_level:       place.priceLevel || null,
+    phone:             place.internationalPhoneNumber || null,
+    website:           place.websiteUri || null,
+    google_maps_url:   place.googleMapsUri || null,
+    opening_hours_json: place.regularOpeningHours || null,
+    photo_refs:        photoRefs,
+    place_types:       Array.isArray(place.types) ? place.types : null,
+  }
+  renderLinkedChip(slot)
+  slot.classList.add('slot-place-linked')
+  hidePlacesDropdown(slot)
+  autoSaveDraft()
+}
+
+function renderLinkedChip(slot) {
+  const chip = slot.querySelector('.places-linked-chip')
+  if (!chip || !slot._placeData) return
+  const d = slot._placeData
+  const ratingBit = (d.rating != null)
+    ? `<span class="pl-rating">★ ${Number(d.rating).toFixed(1)}${d.user_rating_count ? ' (' + d.user_rating_count + ')' : ''}</span><span class="pl-sep">·</span>`
+    : ''
+  chip.innerHTML = `
+    <span class="pl-google">Google</span>
+    <span class="pl-sep">·</span>
+    ${ratingBit}
+    ${d.google_maps_url ? `<a href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">View on Maps</a>` : ''}
+    <button type="button" class="pl-change" onclick="clearLinkedPlaceById('${slot.id}')">Change</button>
+  `
+}
+
+// Called from the "Change" button inline handler — looks the slot up by id
+// since arrow functions inside the template literal can't easily capture it.
+function clearLinkedPlaceById(slotId) {
+  const slot = document.getElementById(slotId)
+  if (slot) clearLinkedPlace(slot, { clearInputs: true })
+}
+
+function clearLinkedPlace(slot, { keepTitle = false, clearInputs = false } = {}) {
+  if (!slot) return
+  slot.classList.remove('slot-place-linked')
+  delete slot._placeData
+  const chip = slot.querySelector('.places-linked-chip')
+  if (chip) chip.innerHTML = ''
+  hidePlacesDropdown(slot)
+  // Always clear the address — it was auto-filled from the place and is no
+  // longer authoritative once we unlink.
+  const titleInput = slot.querySelector('.slot-title-input')
+  const addrInput  = slot.querySelector('.slot-address-input')
+  if (addrInput) addrInput.value = ''
+  if (clearInputs) {
+    if (!keepTitle && titleInput) titleInput.value = ''
+    if (titleInput) titleInput.focus()
+  }
+  autoSaveDraft()
+}
+
+// Read place fields off a slot for save/autosave. Returns an object with the
+// google_* / lat / lng / etc. columns; empty object when no place is linked.
+function getPlaceFieldsForSlot(slot) {
+  const d = slot?._placeData
+  if (!d) return {}
+  return {
+    google_place_id:    d.google_place_id    || null,
+    latitude:           d.latitude           ?? null,
+    longitude:          d.longitude          ?? null,
+    rating:             d.rating             ?? null,
+    user_rating_count:  d.user_rating_count  ?? null,
+    price_level:        d.price_level        || null,
+    phone:              d.phone              || null,
+    website:            d.website            || null,
+    google_maps_url:    d.google_maps_url    || null,
+    opening_hours_json: d.opening_hours_json || null,
+    photo_refs:         d.photo_refs         || null,
+    place_types:        d.place_types        || null,
+    places_synced_at:   new Date().toISOString(),
+  }
+}
+
 function addSlot(dayNum, seed = null) {
   slotCounter++;
   const id = `slot-${slotCounter}`;
@@ -12712,10 +13072,14 @@ function addSlot(dayNum, seed = null) {
       <button class="slot-remove" onclick="removeSlot('${id}')" title="${t('slot.remove','Remove')}">✕</button>
     </div>
     <div class="slot-body">
-      <input type="text" class="slot-title-input" placeholder="${escapeHtml(titlePlaceholder)}" value="" data-seed-title="" oninput="autoSaveDraft()">
+      <div class="slot-title-wrap">
+        <input type="text" class="slot-title-input" placeholder="${escapeHtml(titlePlaceholder)}" value="" data-seed-title="" oninput="autoSaveDraft()" autocomplete="off">
+        <div class="places-dropdown" hidden></div>
+      </div>
       <div class="slot-row-address">
         <input type="text" class="slot-address-input" placeholder="${escapeHtml(getAddressPlaceholder(seedTypeKey))}" oninput="autoSaveDraft()">
       </div>
+      <div class="places-linked-chip"></div>
       <div class="slot-row-duration">
         <span class="slot-row-label">${escapeHtml(t('slot.duration.label','How long to stay'))}</span>
         <div class="duration-dd">
@@ -12743,6 +13107,7 @@ function addSlot(dayNum, seed = null) {
       <div class="img-previews" id="previews-${id}"></div>
     </div>`;
   container.appendChild(slot);
+  attachPlacesSearch(slot);
   updateDayMeta(dayNum);
 }
 
@@ -13017,6 +13382,7 @@ async function submitPlan() {
         duration_minutes: (type === 'activity' && Number.isFinite(durMins)) ? durMins : null,
         notes,
         sort_order: sortOrder,
+        ...getPlaceFieldsForSlot(slot),
         _seedUnchanged, _hasImage,
         _slotEl: slot  // DOM ref for scroll-and-flash on validation failure
       })
@@ -13311,7 +13677,8 @@ async function _persistDraft(planId) {
         address:    slot.querySelector('.slot-address-input')?.value?.trim() || null,
         duration_minutes: (slotType === 'activity' && Number.isFinite(durMins)) ? durMins : null,
         notes:      slot.querySelector('.slot-notes-input')?.value?.trim() || '',
-        sort_order: sortOrder
+        sort_order: sortOrder,
+        ...getPlaceFieldsForSlot(slot)
       })
       const urls = [...slot.querySelectorAll('.img-preview-wrap')]
         .map(w => w.dataset.url).filter(Boolean)
