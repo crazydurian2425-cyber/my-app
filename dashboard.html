@@ -11548,11 +11548,9 @@ const AIRPORT_BY_CITY = {
   'Pyrenees (Lourdes)':'LDE','Carcassonne':'CCF','Cognac':'BOD','Saint-Émilion':'BOD','Avignon':'AVN',
   'Aix-en-Provence':'MRS',
 }
-// Brief inline badges. Per the mockup these are small subtle pills — not
-// the heavy dark-mode chips we tried before.
-function newBadge() {
-  return '<span style="background:var(--color-background-info);color:var(--color-text-info);font-size:9px;padding:1px 5px;border-radius:var(--border-radius-md);margin-left:4px;font-weight:500;letter-spacing:0.04em;">NEW</span>'
-}
+// Brief inline badges. Per-field NEW pills have been removed from the
+// final layout — only CRITICAL (dietary), NEW SECTION (section header),
+// and the tier badge (Budgets header) remain.
 function criticalBadge() {
   return '<span style="background:var(--color-background-danger);color:var(--color-text-danger);font-size:9px;padding:1px 5px;border-radius:var(--border-radius-md);margin-left:4px;font-weight:600;letter-spacing:0.04em;">CRITICAL</span>'
 }
@@ -11810,7 +11808,7 @@ async function renderTravelerBrief(plan, t, notes) {
       ${cell('Departure', escapeHtml(departureTxt))}
       ${cell('This unit', `<span style="font-weight:500;">${escapeHtml(t.duration || '')}</span><span style="color:var(--color-text-tertiary);"> · ${escapeHtml(unitEndsTxt || '')}</span>`, { span2: true })}
       ${cell('Pace', escapeHtml(paceLabel))}
-      ${cell('Occasion', escapeHtml(occasion), { badge: newBadge() })}
+      ${cell('Occasion', escapeHtml(occasion))}
     `)}
   `)
 
@@ -11823,12 +11821,12 @@ async function renderTravelerBrief(plan, t, notes) {
     ${sectionHeader('users', 'Travelers')}
     ${grid2(`
       ${cell('Group type', escapeHtml(groupTypeTxt))}
-      ${cell('Ages', escapeHtml(ages), { badge: newBadge() })}
-      ${cell('Languages', escapeHtml(langs), { badge: newBadge() })}
+      ${cell('Ages', escapeHtml(ages))}
+      ${cell('Languages', escapeHtml(langs))}
       ${cell('Mobility', escapeHtml(titleCaseEnum(mob || 'none')), {
-        badge: newBadge(), criticalLabel: mobCritical
+        criticalLabel: mobCritical
       })}
-      ${cell('Previous visits', escapeHtml(titleCaseEnum(meta.previous_visits_to_france || '')), { badge: newBadge(), span2: true })}
+      ${cell('Previous visits', escapeHtml(titleCaseEnum(meta.previous_visits_to_france || '')), { span2: true })}
       ${cell('From', fromTxt, { span2: true })}
     `)}
   `)
@@ -11850,8 +11848,8 @@ async function renderTravelerBrief(plan, t, notes) {
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
       ${cell('Hotel / night / pax', hotelTxt)}
-      ${cell('Splurge willingness', escapeHtml(splurgeTxt), { badge: newBadge() })}
-      ${cell('Booking authority', escapeHtml(bookingTxt), { badge: newBadge() })}
+      ${cell('Splurge willingness', escapeHtml(splurgeTxt))}
+      ${cell('Booking authority', escapeHtml(bookingTxt))}
     `)}
   `)
 
@@ -11913,8 +11911,8 @@ async function renderTravelerBrief(plan, t, notes) {
         <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;letter-spacing:0.04em;">INTERESTS</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">${interestsHtml || '<span style="color:var(--color-text-tertiary);font-size:14px;">—</span>'}</div>
       </div>
-      ${cell('Intensity', escapeHtml(intensityTxt), { badge: newBadge() })}
-      ${cell('Daily timing', escapeHtml(dailyTimingTxt), { badge: newBadge() })}
+      ${cell('Intensity', escapeHtml(intensityTxt))}
+      ${cell('Daily timing', escapeHtml(dailyTimingTxt))}
       ${cell('Must avoid', escapeHtml(mustAvoid), { span2: true })}
     `)}
   `)
