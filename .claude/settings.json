@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/' -UseBasicParsing -TimeoutSec 30 } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\"; if \\($_.Exception.Response\\) { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); \"BODY: $\\($reader.ReadToEnd\\(\\)\\)\" } })",
+      "PowerShell(npx wrangler --version)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/' -UseBasicParsing -TimeoutSec 30 } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\"; if \\($_.Exception.Response\\) { $stream = $_.Exception.Response.GetResponseStream\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); \"BODY:\"; $reader.ReadToEnd\\(\\) } })",
+      "PowerShell(npx wrangler dev --port 8788 2>&1)",
+      "PowerShell(npm view @opennextjs/cloudflare version)",
+      "PowerShell(npm view @opennextjs/cloudflare dist-tags --json)",
+      "PowerShell(npm view @opennextjs/cloudflare peerDependencies --json)",
+      "PowerShell(npm view @opennextjs/cloudflare engines --json)",
+      "PowerShell(\"---\")",
+      "PowerShell(gh --version 2>$null)",
+      "PowerShell(git init -b main)",
+      "PowerShell(git add .)"
+    ]
+  }
+}

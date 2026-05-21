@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir c:\\\\Users\\\\user\\\\my-app)",
+      "PowerShell(npm run dev)",
+      "Bash(until grep *)",
+      "Read(//c/Users/user/AppData/Local/Temp/claude/c--Users-user-my-app/8e037d15-3239-469c-ac0a-467492389a53/tasks/**)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:3000/jobs' -UseBasicParsing -TimeoutSec 30; \"STATUS: $\\($r.StatusCode\\)\"; \"LEN: $\\($r.Content.Length\\)\"; if \\($r.Content -match 'Open roles we'\\) { 'HERO: ok' } else { 'HERO: missing' }; if \\($r.Content -match 'Senior Backend Engineer'\\) { 'JOB1: ok' } else { 'JOB1: missing' }; if \\($r.Content -match 'Engineering Manager'\\) { 'JOB8: ok' } else { 'JOB8: missing' }; if \\($r.Content -match 'Submit your CV'\\) { 'CTA: ok' } else { 'CTA: missing' } } catch { \"ERROR: $_\" })",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://localhost:3000/' -UseBasicParsing -TimeoutSec 30; \"STATUS: $\\($r.StatusCode\\)\"; if \\($r.Content -match 'Open roles'\\) { 'NAV: ok' } else { 'NAV: missing' } } catch { \"ERROR: $_\" })",
+      "PowerShell($conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if \\($conn\\) { \"Port 3000 still in use by PID\\(s\\): $\\($conn.OwningProcess -join ', '\\)\" } else { \"Port 3000 free\" })",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/' -UseBasicParsing -TimeoutSec 30 -ErrorAction Stop; \"STATUS: $\\($r.StatusCode\\)\"; \"LEN: $\\($r.Content.Length\\)\"; $r.Content.Substring\\(0, [Math]::Min\\(500, $r.Content.Length\\)\\) } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\"; \"BODY: $\\($_.ErrorDetails.Message\\)\" })",
+      "PowerShell(Test-Path .open-next; Test-Path .open-next/worker.js; if \\(Test-Path .open-next/worker.js\\) { \\(Get-Item .open-next/worker.js\\).LastWriteTime })",
+      "PowerShell(npm run push)",
+      "PowerShell(try { $r1 = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/' -UseBasicParsing -TimeoutSec 30; \"/   STATUS: $\\($r1.StatusCode\\) LEN: $\\($r1.Content.Length\\)\" } catch { \"/   ERROR: $\\($_.Exception.Response.StatusCode.value__\\)\" }; try { $r2 = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/jobs' -UseBasicParsing -TimeoutSec 30; \"/jobs STATUS: $\\($r2.StatusCode\\) LEN: $\\($r2.Content.Length\\)\"; if \\($r2.Content -match 'Senior Backend Engineer'\\) { '/jobs CONTENT: ok' } else { '/jobs CONTENT: missing job listings' } } catch { \"/jobs ERROR: $\\($_.Exception.Response.StatusCode.value__\\)\" })",
+      "PowerShell(npx wrangler deployments list 2>&1)",
+      "PowerShell(npx wrangler tail my-app --format=json)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/' -UseBasicParsing -TimeoutSec 30 } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\"; \"HEADERS:\"; foreach \\($h in $_.Exception.Response.Headers\\) { \"  $h\" }; \"BODY:\"; $_.ErrorDetails.Message })",
+      "PowerShell(npx opennextjs-cloudflare preview 2>&1)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/' -UseBasicParsing -TimeoutSec 30; \"STATUS: $\\($r.StatusCode\\) LEN: $\\($r.Content.Length\\)\"; if \\($r.Content -match 'Apex Talent'\\) { 'CONTENT: ok' } else { 'CONTENT: unexpected' } } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\" })"
+    ]
+  }
+}
