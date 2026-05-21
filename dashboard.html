@@ -11757,15 +11757,18 @@ async function renderTravelerBrief(plan, t, notes) {
   // ── helper: field cell ──
   // Mockup tokens: label 11px tertiary text, value 14px primary text,
   // badge inline next to label, optional `span2:true` to take the full row.
+  // Per spec: missing values render as a subtle "—" placeholder so the
+  // layout stays intact instead of collapsing.
   const cell = (label, value, opts = {}) => {
-    if (!value && value !== 0) return ''
+    const isEmpty = (value === null || value === undefined || value === '')
+    const display = isEmpty ? '<span style="color:var(--color-text-tertiary);">—</span>' : value
     const labelExtra = opts.badge || ''
     const labelColor = opts.criticalLabel ? 'var(--color-text-danger)' : 'var(--color-text-tertiary)'
     const spanStyle = opts.span2 ? 'grid-column:span 2;' : ''
     return `
       <div style="${spanStyle}min-width:0;">
         <div style="font-size:11px;color:${labelColor};margin-bottom:2px;font-weight:500;letter-spacing:0.04em;">${escapeHtml(label)}${labelExtra}</div>
-        <div style="font-size:14px;color:var(--text,#1A2E25);line-height:1.4;word-wrap:break-word;">${value}</div>
+        <div style="font-size:14px;color:var(--text,#1A2E25);line-height:1.4;word-wrap:break-word;">${display}</div>
       </div>`
   }
   const grid2 = (children) => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;">${children}</div>`
@@ -11841,7 +11844,8 @@ async function renderTravelerBrief(plan, t, notes) {
   const tierBadgeHtml = tier
     ? `<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:${tier.bg};color:${tier.fg};border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">${tier.icon} ${tier.label}</span>`
     : ''
-  const sectionBudgets = (dailyTxt || hotelTxt || splurgeTxt || bookingTxt) ? wrap(`
+  // Budgets always renders — empty fields fall back to "—" via the cell helper.
+  const sectionBudgets = wrap(`
     ${sectionHeader('wallet', 'Budgets', tierBadgeHtml)}
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
@@ -11849,21 +11853,22 @@ async function renderTravelerBrief(plan, t, notes) {
       ${cell('Splurge willingness', escapeHtml(splurgeTxt), { badge: newBadge() })}
       ${cell('Booking authority', escapeHtml(bookingTxt), { badge: newBadge() })}
     `)}
-  `) : ''
+  `)
 
   // ── SECTION 4: accommodation [NEW SECTION] ──
   const accomTxt = meta.accommodation_preference ? titleCaseEnum(meta.accommodation_preference) : ''
   const roomTxt = meta.accommodation_room || ''                         // optional future field
   const accomMustHaves = Array.isArray(meta.accommodation_must_haves)
     ? meta.accommodation_must_haves.join(' · ') : ''
-  const sectionAccom = (accomTxt || roomTxt || accomMustHaves) ? wrap(`
+  // Accommodation always renders — keeps the brief structurally consistent.
+  const sectionAccom = wrap(`
     ${sectionHeader('bed', 'Accommodation', newSectionBadge())}
     ${grid2(`
       ${cell('Type', escapeHtml(accomTxt))}
       ${cell('Room', escapeHtml(roomTxt))}
-      ${accomMustHaves ? cell('Must-haves', escapeHtml(accomMustHaves), { span2: true }) : ''}
+      ${cell('Must-haves', escapeHtml(accomMustHaves), { span2: true })}
     `)}
-  `) : ''
+  `)
 
   // ── SECTION 5: food & dining [NEW SECTION] ──
   const diningStyle = meta.dining_style ? titleCaseEnum(meta.dining_style) : ''
@@ -11879,7 +11884,9 @@ async function renderTravelerBrief(plan, t, notes) {
         ? highlightNegativePrefs(diet) || `<span style="color:#b84a3e;font-weight:600;">${escapeHtml(titleCaseEnum(diet))}</span>`
         : `✓ ${escapeHtml(titleCaseEnum(diet))}`)
     : ''
-  const sectionFood = (diet || diningStyle || cuisineRaw) ? wrap(`
+  // Food & dining always renders — even None gets shown as "✓ None" so the
+  // planner sees the field has been verified rather than just missing.
+  const sectionFood = wrap(`
     ${sectionHeader('tools-kitchen-2', 'Food & dining', newSectionBadge())}
     ${grid2(`
       ${cell('Dietary', dietHtml, {
@@ -11887,9 +11894,9 @@ async function renderTravelerBrief(plan, t, notes) {
         criticalLabel: dietCritical
       })}
       ${cell('Dining style', escapeHtml(diningStyle))}
-      ${cuisineHtml ? cell('Cuisine interests', cuisineHtml, { span2: true }) : ''}
+      ${cell('Cuisine interests', cuisineHtml, { span2: true })}
     `)}
-  `) : ''
+  `)
 
   // ── SECTION 6: interests & priorities (pills + intensity + daily timing + must avoid) ──
   const interestsHtml = renderInterestPills(meta.interests)
@@ -11897,19 +11904,20 @@ async function renderTravelerBrief(plan, t, notes) {
                      : (meta.pace ? titleCaseEnum(meta.pace) + ' walking' : '')
   const dailyTimingTxt = meta.daily_timing ? titleCaseEnum(meta.daily_timing) : ''
   const mustAvoid = meta.must_avoid ? meta.must_avoid.split(/\s*,\s*/).join(' · ') : ''
-  const sectionInterests = (interestsHtml || intensityTxt || dailyTimingTxt || mustAvoid) ? wrap(`
+  // Interests always renders. Pills row stays on top spanning 2 cols even
+  // when empty, so the layout doesn't reflow plan-to-plan.
+  const sectionInterests = wrap(`
     ${sectionHeader('heart', 'Interests & priorities')}
     ${grid2(`
-      ${interestsHtml ? `
-        <div style="grid-column:span 2;">
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;letter-spacing:0.04em;">INTERESTS</div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">${interestsHtml}</div>
-        </div>` : ''}
+      <div style="grid-column:span 2;">
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;letter-spacing:0.04em;">INTERESTS</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${interestsHtml || '<span style="color:var(--color-text-tertiary);font-size:14px;">—</span>'}</div>
+      </div>
       ${cell('Intensity', escapeHtml(intensityTxt), { badge: newBadge() })}
       ${cell('Daily timing', escapeHtml(dailyTimingTxt), { badge: newBadge() })}
-      ${mustAvoid ? cell('Must avoid', escapeHtml(mustAvoid), { span2: true }) : ''}
+      ${cell('Must avoid', escapeHtml(mustAvoid), { span2: true })}
     `)}
-  `) : ''
+  `)
 
   // ── TRIP CONTEXT (privacy-aware): own units full, others locked ──
   let sectionContext = ''
