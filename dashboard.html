@@ -11767,13 +11767,13 @@ async function renderTravelerBrief(plan, t, notes) {
       </div>`
   }
   const grid2 = (children) => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;">${children}</div>`
-  // Section header per mockup: small gray icon + gray label, 0.5px hairline.
-  // Icons are NOT green here — they share the secondary text colour so the
-  // whole row reads as a quiet divider. Pass iconColor to override.
-  const sectionHeader = (iconClass, title, badge = '', iconColor = 'var(--color-text-secondary)') =>
-    `<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary);">
-       <i class="ti ti-${iconClass}" style="color:${iconColor};font-size:14px;" aria-hidden="true"></i>
-       <span style="font-size:11px;font-weight:500;letter-spacing:0.5px;color:var(--color-text-secondary);">${escapeHtml(title).toUpperCase()}${badge}</span>
+  // Section header: bolder + darker so it reads as a real divider, not a
+  // sub-label. Dark green icon (#2C5F2D, matches the top "TRAVELER BRIEF"),
+  // 13px label in primary ink, weight 700. Pass iconColor to override.
+  const sectionHeader = (iconClass, title, badge = '', iconColor = '#2C5F2D') =>
+    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--color-border-tertiary);">
+       <i class="ti ti-${iconClass}" style="color:${iconColor};font-size:16px;" aria-hidden="true"></i>
+       <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:var(--text,#1A2E25);">${escapeHtml(title).toUpperCase()}${badge}</span>
      </div>`
   // Section wrapper — keeps consistent vertical rhythm between sections.
   const wrap = (innerHtml) => `<div style="margin-bottom:1.5rem;">${innerHtml}</div>`
@@ -12013,7 +12013,7 @@ async function renderTravelerBrief(plan, t, notes) {
   box.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;">
       <i class="ti ti-map-pin" style="font-size:18px;color:#2C5F2D;" aria-hidden="true"></i>
-      <span style="font-size:12px;font-weight:500;letter-spacing:1px;color:var(--color-text-secondary);">TRAVELER BRIEF</span>
+      <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:#2C5F2D;">TRAVELER BRIEF</span>
     </div>
     ${sectionBasics}
     ${sectionTravelers}
