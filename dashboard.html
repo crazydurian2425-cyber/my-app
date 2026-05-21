@@ -11836,12 +11836,10 @@ async function renderTravelerBrief(plan, t, notes) {
     ? `${titleCaseEnum(meta.splurge_willingness)}${splurgeAmt ? ' (' + fmtEur(splurgeAmt) + '+)' : ''}`
     : ''
   const bookingTxt = meta.booking_authority ? titleCaseEnum(meta.booking_authority) : ''
-  const tierBadgeHtml = tier
-    ? `<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:${tier.bg};color:${tier.fg};border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">${tier.icon} ${tier.label}</span>`
-    : ''
   // Budgets always renders — empty fields fall back to "—" via the cell helper.
+  // Tier pill removed per latest mockup; section header is icon + label only.
   const sectionBudgets = wrap(`
-    ${sectionHeader('wallet', 'Budgets', tierBadgeHtml)}
+    ${sectionHeader('wallet', 'Budgets')}
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
       ${cell('Hotel / night / pax', hotelTxt)}
