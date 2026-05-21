@@ -11675,7 +11675,7 @@ async function openItineraryForm(planId) {
   // sees the saved itinerary in read-only mode (rather than an empty form).
   if (['in_progress','submitted','approved','revision','bond_pending'].includes(status)) {
     const { data: items } = await sb.from('itinerary_items')
-      .select('id, day_number, time, type, title, address, duration_minutes, notes, sort_order, item_images(id,url)')
+      .select('*, item_images(id,url)')
       .eq('plan_id', plan.id).order('sort_order', { ascending: true })
     if (items?.length) fillItineraryItems(items)
   }
@@ -11814,7 +11814,7 @@ async function openPlanSummary(plan) {
 
   // Fetch saved itinerary items for this plan
   const { data: items } = await sb.from('itinerary_items')
-    .select('day_number, time, type, title, address, duration_minutes, notes, sort_order, item_images(id,url)')
+    .select('*, item_images(id,url)')
     .eq('plan_id', plan.id).order('day_number').order('sort_order')
 
   // Group by day
