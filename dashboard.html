@@ -11532,14 +11532,14 @@ const AIRPORT_BY_CITY = {
   'Pyrenees (Lourdes)':'LDE','Carcassonne':'CCF','Cognac':'BOD','Saint-Émilion':'BOD','Avignon':'AVN',
   'Aix-en-Provence':'MRS',
 }
-function newBadge() {
-  return '<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:#2b5fa0;color:#fff;border-radius:99px;font-size:8.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">NEW</span>'
-}
+// Per-spec badges. Per-field NEW pills are dropped in the final layout —
+// only CRITICAL (dietary), NEW SECTION (Accommodation/Food until launch),
+// and YOU ARE HERE (Trip Context) remain.
 function criticalBadge() {
-  return '<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:#b84a3e;color:#fff;border-radius:99px;font-size:8.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">CRITICAL</span>'
+  return '<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:#7a1f1f;color:#ffb3b3;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">CRITICAL</span>'
 }
 function newSectionBadge() {
-  return '<span style="display:inline-block;margin-left:8px;padding:2px 7px;background:#2b5fa0;color:#fff;border-radius:99px;font-size:9px;font-weight:700;letter-spacing:0.1em;vertical-align:middle;">NEW SECTION</span>'
+  return '<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:#1d3a5f;color:#7BB8E8;border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.1em;vertical-align:middle;">NEW SECTION</span>'
 }
 function fmtTimeColon(s) {
   if (!s) return ''
@@ -11617,9 +11617,10 @@ function fmtBriefDateShort(s) {
   } catch (e) { return s }
 }
 // Pretty list of cuisine / interest tags into pill HTML.
+// Per spec: cream text (#E8B894) on warm coffee (#3d2e1f), pill shape, 13px.
 function renderInterestPills(arr) {
   if (!Array.isArray(arr) || !arr.length) return ''
-  return arr.map(it => `<span style="display:inline-block;padding:4px 10px;background:rgba(193,125,42,0.10);color:#8a5a1c;border-radius:99px;font-size:11px;font-weight:500;margin:0 4px 4px 0;">${escapeHtml(titleCaseEnum(it))}</span>`).join('')
+  return arr.map(it => `<span style="display:inline-block;padding:6px 14px;background:#3d2e1f;color:#E8B894;border-radius:999px;font-size:13px;font-weight:500;margin:0 6px 6px 0;">${escapeHtml(titleCaseEnum(it))}</span>`).join('')
 }
 
 async function renderTravelerBrief(plan, t, notes) {
@@ -11736,22 +11737,31 @@ async function renderTravelerBrief(plan, t, notes) {
   const mob = meta.mobility
   const mobCritical = mob && mob !== 'none'
 
-  // ── helper: field cell ──
+  // ── helper: field cell (dark spec) ──
+  // Per spec: 10px label gray #8a8a8a, 14px white value, optional badge slot.
+  // Dropping the per-field [NEW] pill — only CRITICAL is honoured here now.
   const cell = (label, value, opts = {}) => {
-    if (!value) return ''
+    if (!value && value !== 0) return ''
     const labelExtra = opts.badge || ''
-    const labelColor = opts.criticalLabel ? '#b84a3e' : 'var(--e-ink-3,#8a816f)'
-    const valueColor = opts.criticalValue ? '#b84a3e' : 'var(--e-ink,#1f1c16)'
-    const valueWeight = opts.criticalValue ? '600' : '500'
+    const labelColor = opts.criticalLabel ? '#ffb3b3' : '#8a8a8a'
+    const valueColor = opts.criticalValue ? '#ffb3b3' : '#ffffff'
     return `
-      <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-        <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:${labelColor};">${escapeHtml(label)}${labelExtra}</div>
-        <div style="font-size:12.5px;color:${valueColor};font-weight:${valueWeight};word-wrap:break-word;">${value}</div>
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:${labelColor};">${escapeHtml(label)}${labelExtra}</div>
+        <div style="font-size:14px;color:${valueColor};font-weight:400;word-wrap:break-word;line-height:1.4;">${value}</div>
       </div>`
   }
-  const grid2 = (children) => `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;">${children}</div>`
+  const grid2 = (children) => `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px;">${children}</div>`
+  // Section header: green #3FBA73, 11px, ALL CAPS, letter-spacing 1px.
+  // Hairline divider #3a3a3a underneath.
   const sectionHeader = (icon, title, badge = '') =>
-    `<div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--e-green-d,#0f5240);margin-bottom:8px;display:flex;align-items:center;gap:6px;"><span>${icon}</span><span>${escapeHtml(title)}</span>${badge}</div>`
+    `<div style="display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid #3a3a3a;">
+       <span style="color:#3FBA73;font-size:14px;line-height:1;">${icon}</span>
+       <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#3FBA73;">${escapeHtml(title)}</span>
+       ${badge}
+     </div>`
+  // Section wrapper — adds a top hairline + space between sections.
+  const wrap = (innerHtml) => `<div style="padding:18px 0;">${innerHtml}</div>`
 
   // ── SECTION 1: trip basics — trip-level dates, unit-level dates ──
   const arrivalTxt = tripStart
@@ -11771,40 +11781,37 @@ async function renderTravelerBrief(plan, t, notes) {
   const occasion = meta.occasion ? titleCaseEnum(meta.occasion) : ''
   const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
 
-  const sectionBasics = `
-    <div style="margin-top:14px;">
-      ${sectionHeader('🗺', 'Trip basics')}
-      ${grid2(`
-        ${cell('Destination', escapeHtml(destinationTxt))}
-        ${cell('Trip duration', escapeHtml(tripDurationTxt))}
-        ${cell('Trip arrival', escapeHtml(arrivalTxt))}
-        ${cell('Trip departure', escapeHtml(departureTxt))}
-        ${cell('This unit', `<span style="font-weight:600;">${escapeHtml(t.duration || '')}</span><span style="color:var(--e-ink-3,#8a816f);"> · ${escapeHtml(unitEndsTxt || '')}</span>`)}
-        ${cell('Pace', escapeHtml(paceLabel))}
-        ${cell('Occasion', escapeHtml(occasion), { badge: newBadge() })}
-      `)}
-    </div>`
+  const sectionBasics = wrap(`
+    ${sectionHeader('🔄', 'Trip basics')}
+    ${grid2(`
+      ${cell('Destination', escapeHtml(destinationTxt))}
+      ${cell('Trip duration', escapeHtml(tripDurationTxt))}
+      ${cell('Trip arrival', escapeHtml(arrivalTxt))}
+      ${cell('Trip departure', escapeHtml(departureTxt))}
+      ${cell('This unit', `<span style="font-weight:600;">${escapeHtml(t.duration || '')}</span><span style="color:#8a8a8a;"> · ${escapeHtml(unitEndsTxt || '')}</span>`)}
+      ${cell('Pace', escapeHtml(paceLabel))}
+      ${cell('Occasion', escapeHtml(occasion))}
+    `)}
+  `)
 
   // ── SECTION 2: travelers ──
   const groupTypeTxt = t.traveler_type
     ? `${titleCaseEnum(t.traveler_type)}${t.group_size ? ' · ' + t.group_size + ' pax' : ''}`
     : (t.group_size ? `${t.group_size} pax` : '')
   const fromTxt = origin ? `${flag ? flag + ' ' : ''}${escapeHtml(origin)}` : ''
-  const sectionTravelers = `
-    <div style="margin-top:14px;">
-      ${sectionHeader('👥', 'Travelers')}
-      ${grid2(`
-        ${cell('Group type', escapeHtml(groupTypeTxt))}
-        ${cell('Ages', escapeHtml(ages), { badge: newBadge() })}
-        ${cell('Languages', escapeHtml(langs), { badge: newBadge() })}
-        ${cell('Mobility', escapeHtml(titleCaseEnum(mob || 'none')), {
-          badge: newBadge(),
-          criticalLabel: mobCritical, criticalValue: mobCritical
-        })}
-        ${cell('Previous visits', escapeHtml(titleCaseEnum(meta.previous_visits_to_france || '')), { badge: newBadge() })}
-        ${cell('From', fromTxt)}
-      `)}
-    </div>`
+  const sectionTravelers = wrap(`
+    ${sectionHeader('👥', 'Travelers')}
+    ${grid2(`
+      ${cell('Group type', escapeHtml(groupTypeTxt))}
+      ${cell('Ages', escapeHtml(ages))}
+      ${cell('Languages', escapeHtml(langs))}
+      ${cell('Mobility', escapeHtml(titleCaseEnum(mob || 'none')), {
+        criticalLabel: mobCritical, criticalValue: mobCritical
+      })}
+      ${cell('Previous visits', escapeHtml(titleCaseEnum(meta.previous_visits_to_france || '')))}
+      ${cell('From', fromTxt)}
+    `)}
+  `)
 
   // ── SECTION 3: budgets (tier badge in corner) ──
   const dailyTxt = meta.daily_spend_per_pax_eur ? fmtEur(meta.daily_spend_per_pax_eur) : ''
@@ -11817,35 +11824,33 @@ async function renderTravelerBrief(plan, t, notes) {
   const tierBadgeHtml = tier
     ? `<span style="display:inline-block;margin-left:8px;padding:2px 8px;background:${tier.bg};color:${tier.fg};border-radius:99px;font-size:9.5px;font-weight:700;letter-spacing:0.08em;vertical-align:middle;">${tier.icon} ${tier.label}</span>`
     : ''
-  const sectionBudgets = (dailyTxt || hotelTxt || splurgeTxt || bookingTxt) ? `
-    <div style="margin-top:14px;">
-      ${sectionHeader('💰', 'Budgets', tierBadgeHtml)}
-      ${grid2(`
-        ${cell('Daily / pax', dailyTxt)}
-        ${cell('Hotel / night / pax', hotelTxt)}
-        ${cell('Splurge willingness', escapeHtml(splurgeTxt), { badge: newBadge() })}
-        ${cell('Booking authority', escapeHtml(bookingTxt), { badge: newBadge() })}
-      `)}
-    </div>` : ''
+  const sectionBudgets = (dailyTxt || hotelTxt || splurgeTxt || bookingTxt) ? wrap(`
+    ${sectionHeader('💰', 'Budgets', tierBadgeHtml)}
+    ${grid2(`
+      ${cell('Daily / pax', dailyTxt)}
+      ${cell('Hotel / night / pax', hotelTxt)}
+      ${cell('Splurge willingness', escapeHtml(splurgeTxt))}
+      ${cell('Booking authority', escapeHtml(bookingTxt))}
+    `)}
+  `) : ''
 
   // ── SECTION 4: accommodation [NEW SECTION] ──
   const accomTxt = meta.accommodation_preference ? titleCaseEnum(meta.accommodation_preference) : ''
   const roomTxt = meta.accommodation_room || ''                         // optional future field
   const accomMustHaves = Array.isArray(meta.accommodation_must_haves)
     ? meta.accommodation_must_haves.join(' · ') : ''
-  const sectionAccom = (accomTxt || roomTxt || accomMustHaves) ? `
-    <div style="margin-top:14px;">
-      ${sectionHeader('🛏', 'Accommodation', newSectionBadge())}
-      ${grid2(`
-        ${cell('Type', escapeHtml(accomTxt))}
-        ${cell('Room', escapeHtml(roomTxt))}
-      `)}
-      ${accomMustHaves ? `
-        <div style="margin-top:8px;">
-          <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:var(--e-ink-3,#8a816f);">Must-haves</div>
-          <div style="font-size:12.5px;color:var(--e-ink,#1f1c16);font-weight:500;margin-top:2px;">${escapeHtml(accomMustHaves)}</div>
-        </div>` : ''}
-    </div>` : ''
+  const sectionAccom = (accomTxt || roomTxt || accomMustHaves) ? wrap(`
+    ${sectionHeader('🛏', 'Accommodation', newSectionBadge())}
+    ${grid2(`
+      ${cell('Type', escapeHtml(accomTxt))}
+      ${cell('Room', escapeHtml(roomTxt))}
+    `)}
+    ${accomMustHaves ? `
+      <div style="margin-top:14px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:4px;">Must-haves</div>
+        <div style="font-size:14px;color:#ffffff;font-weight:400;line-height:1.5;">${escapeHtml(accomMustHaves)}</div>
+      </div>` : ''}
+  `) : ''
 
   // ── SECTION 5: food & dining [NEW SECTION] ──
   const diningStyle = meta.dining_style ? titleCaseEnum(meta.dining_style) : ''
@@ -11861,22 +11866,21 @@ async function renderTravelerBrief(plan, t, notes) {
         ? highlightNegativePrefs(diet) || `<span style="color:#b84a3e;font-weight:600;">${escapeHtml(titleCaseEnum(diet))}</span>`
         : `✓ ${escapeHtml(titleCaseEnum(diet))}`)
     : ''
-  const sectionFood = (diet || diningStyle || cuisineRaw) ? `
-    <div style="margin-top:14px;">
-      ${sectionHeader('🍴', 'Food & dining', newSectionBadge())}
-      ${grid2(`
-        ${cell('Dietary', dietHtml, {
-          badge: dietCritical ? criticalBadge() : '',
-          criticalLabel: dietCritical
-        })}
-        ${cell('Dining style', escapeHtml(diningStyle))}
-      `)}
-      ${cuisineHtml ? `
-        <div style="margin-top:8px;">
-          <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:var(--e-ink-3,#8a816f);">Cuisine interests</div>
-          <div style="font-size:12.5px;color:var(--e-ink,#1f1c16);font-weight:500;margin-top:2px;">${cuisineHtml}</div>
-        </div>` : ''}
-    </div>` : ''
+  const sectionFood = (diet || diningStyle || cuisineRaw) ? wrap(`
+    ${sectionHeader('🍴', 'Food & dining', newSectionBadge())}
+    ${grid2(`
+      ${cell('Dietary', dietHtml, {
+        badge: dietCritical ? criticalBadge() : '',
+        criticalLabel: dietCritical
+      })}
+      ${cell('Dining style', escapeHtml(diningStyle))}
+    `)}
+    ${cuisineHtml ? `
+      <div style="margin-top:14px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:4px;">Cuisine interests</div>
+        <div style="font-size:14px;color:#ffffff;font-weight:400;line-height:1.5;">${cuisineHtml}</div>
+      </div>` : ''}
+  `) : ''
 
   // ── SECTION 6: interests & priorities (pills + intensity + daily timing + must avoid) ──
   const interestsHtml = renderInterestPills(meta.interests)
@@ -11884,24 +11888,23 @@ async function renderTravelerBrief(plan, t, notes) {
                      : (meta.pace ? titleCaseEnum(meta.pace) + ' walking' : '')
   const dailyTimingTxt = meta.daily_timing ? titleCaseEnum(meta.daily_timing) : ''
   const mustAvoid = meta.must_avoid ? meta.must_avoid.split(/\s*,\s*/).join(' · ') : ''
-  const sectionInterests = (interestsHtml || intensityTxt || dailyTimingTxt || mustAvoid) ? `
-    <div style="margin-top:14px;">
-      ${sectionHeader('❤️', 'Interests & priorities')}
-      ${interestsHtml ? `
-        <div style="margin-bottom:10px;">
-          <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:var(--e-ink-3,#8a816f);margin-bottom:6px;">Interests</div>
-          ${interestsHtml}
-        </div>` : ''}
-      ${grid2(`
-        ${cell('Intensity', escapeHtml(intensityTxt), { badge: newBadge() })}
-        ${cell('Daily timing', escapeHtml(dailyTimingTxt), { badge: newBadge() })}
-      `)}
-      ${mustAvoid ? `
-        <div style="margin-top:10px;">
-          <div style="font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;font-weight:600;color:var(--e-ink-3,#8a816f);margin-bottom:4px;">Must avoid</div>
-          <div style="font-size:12.5px;color:var(--e-ink,#1f1c16);font-weight:500;">${escapeHtml(mustAvoid)}</div>
-        </div>` : ''}
-    </div>` : ''
+  const sectionInterests = (interestsHtml || intensityTxt || dailyTimingTxt || mustAvoid) ? wrap(`
+    ${sectionHeader('❤️', 'Interests & priorities')}
+    ${interestsHtml ? `
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:8px;">Interests</div>
+        <div style="line-height:1.8;">${interestsHtml}</div>
+      </div>` : ''}
+    ${grid2(`
+      ${cell('Intensity', escapeHtml(intensityTxt))}
+      ${cell('Daily timing', escapeHtml(dailyTimingTxt))}
+    `)}
+    ${mustAvoid ? `
+      <div style="margin-top:14px;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;color:#8a8a8a;margin-bottom:4px;">Must avoid</div>
+        <div style="font-size:14px;color:#ffffff;font-weight:400;line-height:1.5;">${escapeHtml(mustAvoid)}</div>
+      </div>` : ''}
+  `) : ''
 
   // ── TRIP CONTEXT (privacy-aware): own units full, others locked ──
   let sectionContext = ''
@@ -11924,18 +11927,18 @@ async function renderTravelerBrief(plan, t, notes) {
       const order = s.meta?.unit_order || '?'
 
       if (isMine) {
-        // Full info — green border, "YOU ARE HERE" or "Unit N · you"
+        // Full info — green border, "YOU ARE HERE" or "Unit N · yours"
         const myFee = baseCommissionForDuration(s.duration) + (Number(s.meta?.unit_order || 0) > 1 ? 10 : 0)
         return `
-          <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${isCurrent ? 'rgba(45,158,122,0.20)' : 'rgba(45,158,122,0.08)'};border:1px solid ${isCurrent ? 'rgba(45,158,122,0.55)' : 'rgba(45,158,122,0.25)'};margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(63,186,115,0.12);border:1px solid rgba(63,186,115,0.45);margin-bottom:6px;">
             ${isCurrent
-              ? '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;background:#1a7a5e;color:#fff;padding:2px 6px;border-radius:4px;flex-shrink:0;">You are here</span>'
-              : `<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#1a7a5e;flex-shrink:0;">Unit ${order} · yours</span>`}
-            <div style="flex:1;min-width:0;font-size:12px;color:var(--e-ink,#1a3a2e);">
+              ? '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#3FBA73;color:#0a1f12;padding:3px 8px;border-radius:4px;flex-shrink:0;">You are here</span>'
+              : `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#3FBA73;flex-shrink:0;">Unit ${order} · yours</span>`}
+            <div style="flex:1;min-width:0;font-size:14px;color:#ffffff;">
               <strong>${escapeHtml(s.destination || '—')}</strong>
-              <span style="color:var(--e-ink-3,#5a7a6e);"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
+              <span style="color:#8a8a8a;"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
             </div>
-            <span style="font-size:11px;font-weight:600;color:#1a7a5e;flex-shrink:0;">${fmtEur(myFee)}</span>
+            <span style="font-size:13px;font-weight:600;color:#3FBA73;flex-shrink:0;">${fmtEur(myFee)}</span>
           </div>`
       }
       // Locked card — no commission, no planner identity. Status only.
@@ -11943,18 +11946,18 @@ async function renderTravelerBrief(plan, t, notes) {
       const isCompleted = s.status === 'completed' || s.status === 'approved'
       const statusLabel = isCompleted ? 'Completed' : (isUnclaimed ? 'Awaiting planner' : 'Planned by another')
       return `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(0,0,0,0.04);border:1px solid rgba(0,0,0,0.10);margin-bottom:4px;opacity:0.72;">
-          <span style="font-size:14px;flex-shrink:0;line-height:1;">🔒</span>
-          <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--e-ink-3,#7a7a74);flex-shrink:0;">Unit ${order}</span>
-          <div style="flex:1;min-width:0;font-size:12px;color:var(--e-ink-2,#554e3f);">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid #3a3a3a;margin-bottom:6px;opacity:0.6;">
+          <span style="font-size:14px;flex-shrink:0;line-height:1;color:#8a8a8a;">🔒</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#8a8a8a;flex-shrink:0;">Unit ${order}</span>
+          <div style="flex:1;min-width:0;font-size:14px;color:#cccccc;">
             <strong>${escapeHtml(s.destination || '—')}</strong>
-            <span style="color:var(--e-ink-3,#8a816f);"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
+            <span style="color:#8a8a8a;"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
           </div>
-          <span style="font-size:10px;font-weight:600;color:var(--e-ink-3,#8a816f);flex-shrink:0;font-style:italic;">${statusLabel}</span>
+          <span style="font-size:11px;font-weight:600;color:#8a8a8a;flex-shrink:0;font-style:italic;">${statusLabel}</span>
         </div>`
     }).join('')
 
-    // Helpful context tip — derived from adjacent units (no other planners' details).
+    // Helpful context tip — derived from adjacent units only.
     const tipParts = []
     if (prevUnit) {
       tipParts.push(`Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — plan check-in near transit.`)
@@ -11963,44 +11966,50 @@ async function renderTravelerBrief(plan, t, notes) {
       tipParts.push(`Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — leave time on the last day.`)
     }
     const tipHtml = tipParts.length
-      ? `<div style="margin-top:10px;padding:10px 12px;background:rgba(193,125,42,0.08);border:1px solid rgba(193,125,42,0.22);border-radius:8px;font-size:11.5px;color:var(--e-ink-2,#554e3f);line-height:1.5;"><strong style="color:#8a5a1c;">💡 Helpful context · </strong>${tipParts.join(' ')}</div>`
+      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.08);border:1px solid rgba(224,139,58,0.22);border-radius:8px;font-size:13px;color:#cccccc;line-height:1.5;"><strong style="color:#E08B3A;">💡 Helpful context · </strong>${tipParts.join(' ')}</div>`
       : ''
 
-    sectionContext = `
-      <div style="margin-top:14px;">
-        ${sectionHeader('📍', `Trip context · ${siblings.length} units · ${totalNights} nights total`)}
-        ${rows}
-        ${tipHtml}
-        <div style="margin-top:6px;font-size:10px;color:var(--e-ink-3,#8a816f);font-style:italic;">🔒 Other units are locked for privacy. You can only see the cities + dates so you plan around them.</div>
-      </div>`
+    sectionContext = wrap(`
+      ${sectionHeader('📍', `Trip context · ${siblings.length} units · ${totalNights} nights total`)}
+      ${rows}
+      ${tipHtml}
+      <div style="margin-top:8px;font-size:11px;color:#8a8a8a;font-style:italic;">🔒 Other units locked for privacy — you see cities + dates only.</div>
+    `)
   }
 
-  // ── COMMISSION BAR (dark, full-width, € serif on the right) ──
-  // Show base + continuity breakdown when continuity applies.
+  // ── COMMISSION BOX (per spec: #2a2a2a bg, large green amount) ──
   const breakdownTxt = (commission === computedFee && hasContinuity)
     ? `${fmtEur(baseFee)} base + ${fmtEur(10)} continuity bonus`
     : (commission === computedFee ? `${fmtEur(baseFee)} base` : '')
   const sectionCommission = commission > 0 ? `
-    <div style="margin-top:16px;padding:14px 16px;background:#1f1c16;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="margin-top:18px;padding:14px 16px;background:#2a2a2a;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
       <div style="min-width:0;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.14em;font-weight:700;color:#e6dcc4;">Your commission · this unit</div>
-        ${breakdownTxt ? `<div style="font-size:10.5px;color:#bdb19c;margin-top:2px;">${breakdownTxt}</div>` : ''}
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;color:#ffffff;">Your commission</div>
+        ${breakdownTxt ? `<div style="font-size:11px;color:#8a8a8a;margin-top:3px;">${breakdownTxt}</div>` : ''}
       </div>
-      <div style="font-family:'Fraunces','DM Serif Display',serif;font-size:26px;line-height:1;color:#fff;font-weight:600;flex-shrink:0;">${fmtEur(commission)}</div>
+      <div style="font-size:28px;line-height:1;color:#3FBA73;font-weight:700;flex-shrink:0;">${fmtEur(commission)}</div>
     </div>` : ''
 
-  // ── NOTE FROM TRAVELER (italic, dashed) ──
+  // ── NOTE FROM TRAVELER (per spec: orange header, no box, light body) ──
   const sectionNote = notes ? `
-    <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(193,125,42,0.42);">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#c17d2a;margin-bottom:6px;">Note from traveler</div>
-      <div style="font-family:'Lora',serif;font-size:13px;line-height:1.6;color:var(--e-ink-2,#554e3f);">${escapeHtml(notes)}</div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #3a3a3a;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#E08B3A;margin-bottom:8px;">Note from traveler</div>
+      <div style="font-size:14px;line-height:1.6;color:#cccccc;font-weight:400;">${escapeHtml(notes)}</div>
     </div>` : ''
 
-  // ── ASSEMBLE ──
+  // ── ASSEMBLE (dark theme per spec) ──
+  // Force the outer container to spec colours regardless of theme — the spec
+  // is dark-mode-only, so we overwrite the inline gradient that's on the
+  // wiz page's #itin-brief div.
+  box.style.background = '#1f1f1f'
+  box.style.border = '1px solid #2a2a2a'
+  box.style.borderRadius = '12px'
+  box.style.padding = '18px 22px'
+  box.style.color = '#ffffff'
   box.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--e-green-d,#0f5240);"><path d="M12 22s-8-7.5-8-13a8 8 0 1116 0c0 5.5-8 13-8 13z"/><circle cx="12" cy="9" r="3"/></svg>
-      <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--e-green-d,#0f5240);">Traveler brief</div>
+    <div style="display:flex;align-items:center;gap:8px;padding-bottom:14px;border-bottom:1px solid #3a3a3a;">
+      <span style="color:#3FBA73;font-size:15px;line-height:1;">📍</span>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:#3FBA73;">Traveler brief</div>
     </div>
     ${sectionBasics}
     ${sectionTravelers}
