@@ -13511,7 +13511,21 @@ function _ensureArrivalTaxiPresent() {
     if (!next) { console.log('[arrival-taxi-safety] no next sibling after anchor'); return }
     console.log('[arrival-taxi-safety] next is', { id: next.id, cls: next.className })
     if (next.classList.contains('slot-type-transport')) {
-      console.log('[arrival-taxi-safety] transport already present, no-op')
+      // Transport already sits between arrival anchor + first venue. Save+
+      // load wipes the slot's dataset attrs (DB doesn't persist them), so
+      // re-attach the resolved station coords now that the lookup has
+      // resolved this session. Then refresh the slot so its distance /
+      // duration / cost cells repopulate via heuristic + Routes API.
+      if (window._currentArrivalStationLatLng && !next.dataset.fromPlaceId) {
+        next.dataset.fromPlaceId = window._currentArrivalStationPlaceId || ''
+        next.dataset.fromName    = window._currentArrivalStationResolvedName || ''
+        next.dataset.fromLat     = String(window._currentArrivalStationLatLng.lat)
+        next.dataset.fromLng     = String(window._currentArrivalStationLatLng.lng)
+        console.log('[arrival-taxi-safety] transport already present — re-attached station coords + refreshing')
+        refreshTransportSlot(next)
+      } else {
+        console.log('[arrival-taxi-safety] transport already present, no-op')
+      }
       return
     }
     console.log('[arrival-taxi-safety] no transport found → inserting')
@@ -15942,7 +15956,10 @@ function refreshTransportSlot(slot) {
   const isFirstNonLocked = !slot.previousElementSibling
     || slot.previousElementSibling.classList.contains('is-locked')
   if (!fromName && !prev && isFirstNonLocked) {
-    fromName = slot.dataset.fromName || window._currentArrivalLocation || ''
+    fromName = slot.dataset.fromName
+            || window._currentArrivalStationResolvedName
+            || window._currentArrivalLocation
+            || ''
   }
   const toName   = _venueNameOf(next)
   // Lat/lng: prev's _placeData first; otherwise the transport's own
