@@ -14510,26 +14510,51 @@ function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon
 // Build a Google Maps directions URL the planner can open in a new tab.
 // Uses place_id when available (most accurate match against Google's
 // database) — falls back to the formatted address. Returns null when
-// either end lacks data (e.g. the planner hasn't linked a place yet).
+// either end lacks data.
+//
+// IMPORTANT: when using "place_id:XYZ" Google expects the colon to stay
+// LITERAL. encodeURIComponent turns it into %3A and Google fails to
+// parse the param. So we encode the value separately and stitch the
+// "place_id:" prefix back on unescaped.
+function _mapsDirParam(placeData) {
+  if (!placeData) return ''
+  if (placeData.google_place_id) {
+    return 'place_id:' + placeData.google_place_id   // colon NOT encoded
+  }
+  return encodeURIComponent(placeData.address || placeData.name || '')
+}
 function buildGmapsDirUrl(fromSlot, toSlot, mode) {
-  const from = fromSlot?._placeData
-  const to   = toSlot?._placeData
-  if (!from || !to) return null
-  const fromArg = from.google_place_id
-    ? `place_id:${from.google_place_id}`
-    : (from.address || from.name || '')
-  const toArg   = to.google_place_id
-    ? `place_id:${to.google_place_id}`
-    : (to.address || to.name || '')
+  const fromArg = _mapsDirParam(fromSlot?._placeData)
+  const toArg   = _mapsDirParam(toSlot?._placeData)
   if (!fromArg || !toArg) return null
   const travelmode = ({
     walk:'walking', taxi:'driving', car:'driving',
     transit:'transit', train:'transit', hsr:'transit', flight:'transit'
   })[mode] || 'driving'
   return 'https://www.google.com/maps/dir/?api=1'
-       + '&origin='      + encodeURIComponent(fromArg)
-       + '&destination=' + encodeURIComponent(toArg)
+       + '&origin='      + fromArg
+       + '&destination=' + toArg
        + '&travelmode='  + travelmode
+}
+
+// Build a Maps Embed API URL for inline display. Embed API is FREE for
+// unlimited use as long as the key has it enabled in Google Cloud
+// Console (alongside Places API New). Mode values match the Embed API
+// spec — note that "flying" is supported (it's "flight" in our enum).
+function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
+  if (!GOOGLE_PLACES_API_KEY) return null
+  const fromArg = _mapsDirParam(fromSlot?._placeData)
+  const toArg   = _mapsDirParam(toSlot?._placeData)
+  if (!fromArg || !toArg) return null
+  const embedMode = ({
+    walk:'walking', taxi:'driving', car:'driving',
+    transit:'transit', train:'transit', hsr:'transit', flight:'flying'
+  })[mode] || 'driving'
+  return 'https://www.google.com/maps/embed/v1/directions'
+       + '?key=' + encodeURIComponent(GOOGLE_PLACES_API_KEY)
+       + '&origin='      + fromArg
+       + '&destination=' + toArg
+       + '&mode='        + embedMode
 }
 
 function _transportEstimates(mode, km) {
@@ -14702,18 +14727,33 @@ function refreshTransportSlot(slot) {
          ⚠ ${km.toFixed(0)} km between the two venues — that's outside any normal day-trip range. Check that both stops are in the same trip area.
        </div>`
     : ''
-  // "View on Google Maps" — opens the full step-by-step directions panel
-  // in a new tab. Only shows when both neighbour slots have linked Places
-  // (otherwise we don't have enough info to build a useful URL).
-  const dirUrl = (!tooFar) ? buildGmapsDirUrl(prev, next, mode) : null
+  // Directions — two affordances:
+  //   1) "Show map" toggle — expands an inline iframe (Maps Embed API,
+  //      free) with the full step-by-step directions panel.
+  //   2) "Open in Google Maps" — fallback link, opens new tab.
+  // Only render when both neighbours are linked Places and distance is sane.
+  const dirUrl   = (!tooFar) ? buildGmapsDirUrl(prev, next, mode) : null
+  const embedUrl = (!tooFar) ? buildGmapsEmbedUrl(prev, next, mode) : null
   const directionsLink = dirUrl
-    ? `<a href="${dirUrl}" target="_blank" rel="noopener"
-          style="display:inline-flex;align-items:center;gap:4px;
-                 font-size:11.5px;color:var(--green-dark,#1a7a5e);
-                 text-decoration:none;margin-top:8px;align-self:flex-start;">
-         <i class="ti ti-external-link" aria-hidden="true" style="font-size:13px;"></i>
-         View step-by-step on Google Maps
-       </a>`
+    ? `<div style="display:flex;align-items:center;gap:14px;margin-top:8px;font-size:11.5px;">
+         ${embedUrl ? `<button type="button" class="transport-map-toggle"
+                         onclick="toggleTransportMap('${slot.id}', this)"
+                         style="background:none;border:0;padding:0;cursor:pointer;
+                                color:var(--green-dark,#1a7a5e);font-family:inherit;
+                                font-size:11.5px;display:inline-flex;align-items:center;gap:4px;">
+                         <i class="ti ti-map" aria-hidden="true" style="font-size:13px;"></i>
+                         <span class="transport-map-toggle-label">Show route map</span>
+                       </button>` : ''}
+         <a href="${dirUrl}" target="_blank" rel="noopener"
+            style="display:inline-flex;align-items:center;gap:4px;
+                   color:var(--green-dark,#1a7a5e);text-decoration:none;">
+           <i class="ti ti-external-link" aria-hidden="true" style="font-size:13px;"></i>
+           Open in Google Maps
+         </a>
+       </div>
+       ${embedUrl ? `<div class="transport-map-host" data-embed-url="${embedUrl}" hidden
+                          style="margin-top:8px;border-radius:6px;overflow:hidden;
+                                 border:1px solid var(--border-med);"></div>` : ''}`
     : ''
   host.innerHTML = `
     <div class="transport-head">
@@ -14775,6 +14815,42 @@ function _sortSlotsInPlace(container) {
     .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00' }))
     .sort((a, b) => a.t.localeCompare(b.t))
     .forEach(({ el }) => container.appendChild(el))
+}
+
+// Toggle the inline Google Maps Embed iframe for a transport slot.
+// Lazily creates the iframe on first expand so we don't load a map for
+// every transport block up front (slow + uses bandwidth). The Embed API
+// itself is free for unlimited use, but the iframe still costs ~350 KB
+// of network + ~30 MB of memory each, so we only load on demand.
+function toggleTransportMap(slotId, btn) {
+  const slot = document.getElementById(slotId)
+  if (!slot) return
+  const host = slot.querySelector('.transport-map-host')
+  if (!host) return
+  const label = btn.querySelector('.transport-map-toggle-label')
+  const showing = !host.hidden
+  if (showing) {
+    host.hidden = true
+    if (label) label.textContent = 'Show route map'
+    return
+  }
+  // First-time expand → mount the iframe.
+  if (!host.querySelector('iframe')) {
+    const url = host.dataset.embedUrl
+    if (url) {
+      const iframe = document.createElement('iframe')
+      iframe.src = url
+      iframe.width = '100%'
+      iframe.height = '320'
+      iframe.style.border = '0'
+      iframe.loading = 'lazy'
+      iframe.referrerPolicy = 'no-referrer-when-downgrade'
+      iframe.allowFullscreen = true
+      host.appendChild(iframe)
+    }
+  }
+  host.hidden = false
+  if (label) label.textContent = 'Hide route map'
 }
 
 // Mode picker change handler — stash the new mode + re-render the panel.
