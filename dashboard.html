@@ -13215,6 +13215,10 @@ function fillItineraryItems(items) {
   // After every slot is populated we have lat/lng on each linked slot —
   // compute the between-stop distance indicators for every day at once.
   refreshAllDistances()
+  // Fire the arrival-station Places lookup as a safety net. If the seed
+  // above didn't insert a taxi (timing, broken DOM, planner deleted it),
+  // _ensureArrivalTaxiPresent kicks in once Places resolves.
+  _initArrivalStationLookup()
 }
 
 // Look up the arrival station via Google Places textSearch, then stash
@@ -13286,9 +13290,12 @@ async function _lookupStationAndAttach(transportSlot) {
   live.dataset.fromName    = resolved.name
   live.dataset.fromLat     = String(resolved.lat)
   live.dataset.fromLng     = String(resolved.lng)
-  // Also expose the resolved name so the arrival anchor's title can show
-  // the real station ("Paris Gare Montparnasse") on the next render.
+  // Also expose the resolved name + coords + place_id globally so the
+  // arrival anchor's title can show the real station and the safety-net
+  // taxi-insert can stamp the transport with the from-coords.
   window._currentArrivalStationResolvedName = resolved.name
+  window._currentArrivalStationLatLng       = { lat: resolved.lat, lng: resolved.lng }
+  window._currentArrivalStationPlaceId      = resolved.placeId
   // Trigger refreshes so both the transport panel AND the arrival anchor
   // pick up the resolved data.
   if (typeof refreshTransportSlot === 'function') refreshTransportSlot(live)
@@ -13297,6 +13304,61 @@ async function _lookupStationAndAttach(transportSlot) {
     const m = dayContainer.id.match(/slots-day-(\d+)/)
     const dayNum = m ? parseInt(m[1], 10) : 1
     renderDayBookends(dayContainer, dayNum, (typeof dayCount === 'number') ? dayCount : null)
+  }
+}
+
+// Independent kick-off of the station Places lookup — fires from
+// fillItineraryItems regardless of whether _autoSeedDay1HotelIfNeeded
+// inserted a taxi. Caches globally so we don't pay for the same
+// query twice per plan-open. Calls _ensureArrivalTaxiPresent on
+// success so Day 1 always ends up with the transport block.
+async function _initArrivalStationLookup() {
+  if (window._currentArrivalStationLatLng) {
+    // Already resolved earlier this session — still run the safety net
+    // in case the planner reopened the plan with no transport.
+    _ensureArrivalTaxiPresent()
+    return
+  }
+  const rawLoc = (window._currentArrivalLocation || '').trim()
+  if (!rawLoc) return
+  const city = (window._currentDestination || '').trim()
+  const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  const query = isIata
+    ? `${rawLoc} Airport`
+    : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
+      ? `${rawLoc}, ${city}`
+      : rawLoc
+  try {
+    const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
+    const bias = buildDestBias(city)
+    if (bias) body.locationBias = bias
+    const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
+      },
+      body: JSON.stringify(body),
+    })
+    if (!resp.ok) return
+    const data = await resp.json()
+    const p = data?.places?.[0]
+    if (!p?.id || !p?.location) return
+    window._currentArrivalStationResolvedName = p.displayName?.text || rawLoc
+    window._currentArrivalStationLatLng       = { lat: p.location.latitude, lng: p.location.longitude }
+    window._currentArrivalStationPlaceId      = p.id
+    // Repaint Day 1's arrival anchor with the resolved name.
+    const day1 = document.getElementById('slots-day-1')
+    if (day1 && typeof renderDayBookends === 'function') {
+      renderDayBookends(day1, 1, (typeof dayCount === 'number') ? dayCount : null)
+    }
+    // Safety net: make sure a taxi block exists between arrival and the
+    // first venue. If _autoSeedDay1HotelIfNeeded didn't fire properly,
+    // this catches it.
+    _ensureArrivalTaxiPresent()
+  } catch (e) {
+    console.warn('[station-lookup] init threw', e)
   }
 }
 
@@ -13315,53 +13377,98 @@ async function _lookupStationAndAttach(transportSlot) {
 // Tracked per (plan-open × planId) so re-renders don't re-insert after
 // a planner delete.
 function _autoSeedDay1HotelIfNeeded() {
-  const arr = window._currentArrivalTime || ''
-  const arrHour = parseInt(String(arr).split(':')[0], 10)
-  console.log('[day1-seed]', { arr, arrHour, planId: currentPlanId, location: window._currentArrivalLocation })
-  if (!Number.isFinite(arrHour) || arrHour < 13) { console.log('[day1-seed] skip: no afternoon arrival'); return }
-  const day1 = document.getElementById('slots-day-1')
-  if (!day1) { console.log('[day1-seed] skip: no day-1 container'); return }
-  const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
-    .filter(s => !s.classList.contains('is-locked'))
-  const firstStop = userStops[0] || null
-  console.log('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
-  // Helper — append a taxi-to-hotel transport block. `beforeEl` (optional)
-  // moves the new slot ahead of an existing first stop so _findVenueNeighbors
-  // sees prev=null and refreshTransportSlot doesn't reset the time.
-  const addTaxi = (beforeEl) => {
+  try {
+    const arr = window._currentArrivalTime || ''
+    const arrHour = parseInt(String(arr).split(':')[0], 10)
+    console.log('[day1-seed]', { arr, arrHour, planId: currentPlanId, location: window._currentArrivalLocation })
+    if (!Number.isFinite(arrHour) || arrHour < 13) { console.log('[day1-seed] skip: no afternoon arrival'); return }
+    const day1 = document.getElementById('slots-day-1')
+    if (!day1) { console.log('[day1-seed] skip: no day-1 container'); return }
+    const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
+      .filter(s => !s.classList.contains('is-locked'))
+    const firstStop = userStops[0] || null
+    console.log('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
+    if (userStops.length === 0) {
+      console.log('[day1-seed] empty day → adding taxi + hotel')
+      _insertArrivalTaxi(null)
+      addSlot(1, { icon: 'hotel' })
+      return
+    }
+    if (!firstStop.classList.contains('slot-type-transport')) {
+      console.log('[day1-seed] saved day, first stop is non-transport → injecting taxi before it')
+      _insertArrivalTaxi(firstStop)
+    } else {
+      console.log('[day1-seed] first stop already a transport — leaving as-is')
+    }
+  } catch (e) {
+    console.warn('[day1-seed] threw', e)
+  }
+}
+
+// Robustly insert the auto-seeded "Taxi to hotel" between the arrival
+// anchor and `beforeEl` (the planner's first non-locked stop). Uses the
+// snapshot-diff pattern (same as addTransportBetween) instead of the
+// fragile :last-of-type selector so we always identify the correct new
+// slot even when there are multiple transports.
+function _insertArrivalTaxi(beforeEl) {
+  try {
+    const day1 = document.getElementById('slots-day-1')
+    if (!day1) return
+    const arr = window._currentArrivalTime || '14:00'
+    // Snapshot BEFORE addSlot so we can identify the new slot reliably.
+    const before = new Set([...day1.querySelectorAll(':scope > .activity-slot')])
     addSlot(1, { icon: 'transport', time: arr })
-    const t = day1.querySelector(':scope > .activity-slot.slot-type-transport:last-of-type')
-    if (!t) return
+    const t = [...day1.querySelectorAll(':scope > .activity-slot')].find(s => !before.has(s))
+    if (!t) { console.warn('[arrival-taxi] new slot not found post-addSlot'); return }
     t.dataset.transportMode = 'taxi'
+    t.dataset.autoSeededArrivalTaxi = 'true'
     const titleInput = t.querySelector('.slot-title-input')
     if (titleInput) titleInput.value = 'Taxi to hotel'
-    // FORCE the time to arrival_time. addSlot's bumpAnd logic pushes the
-    // new slot to latestExisting+60 when seedFixedTime <= latestExisting,
-    // which would land the taxi AFTER the hotel and break the ordering.
+    // FORCE the time to arrival_time. addSlot's bumpAnd logic would push
+    // the new slot past the existing hotel slot.
     _applySlotTime(t, arr)
-    if (beforeEl && beforeEl.parentNode === day1) {
-      day1.insertBefore(t, beforeEl)
-    }
+    if (beforeEl && beforeEl.parentNode === day1) day1.insertBefore(t, beforeEl)
+    console.log('[arrival-taxi] inserted', { id: t.id, time: arr, before: beforeEl?.id })
     // Async: resolve the arrival station via Places textSearch + attach
-    // its place_id / coords / display name to the transport so distance,
-    // duration, and Routes API light up automatically.
+    // its place_id / coords / display name to the transport.
     _lookupStationAndAttach(t)
+  } catch (e) {
+    console.warn('[arrival-taxi] threw', e)
   }
-  if (userStops.length === 0) {
-    // Empty Day 1 — seed transport + hotel.
-    console.log('[day1-seed] empty day → adding taxi + hotel')
-    addTaxi(null)
-    addSlot(1, { icon: 'hotel' })
-    return
-  }
-  // Day 1 has stops already. If the FIRST stop isn't a transport block,
-  // inject one BEFORE the first venue so it sits between the arrival
-  // anchor and that venue in DOM order.
-  if (!firstStop.classList.contains('slot-type-transport')) {
-    console.log('[day1-seed] saved day, first stop is non-transport → injecting taxi before it')
-    addTaxi(firstStop)
-  } else {
-    console.log('[day1-seed] first stop already a transport — leaving as-is')
+}
+
+// Safety-net: after the station Places lookup resolves, double-check that
+// Day 1 actually has a taxi between the arrival anchor and the first venue.
+// If _autoSeedDay1HotelIfNeeded missed (e.g. timing race, broken DOM), add
+// one now. Idempotent — bails when a transport already sits there.
+function _ensureArrivalTaxiPresent() {
+  try {
+    const arr = window._currentArrivalTime || ''
+    const arrHour = parseInt(String(arr).split(':')[0], 10)
+    if (!Number.isFinite(arrHour) || arrHour < 13) return
+    const day1 = document.getElementById('slots-day-1')
+    if (!day1) return
+    // Walk from arrival anchor forward, skipping locked rows + non-activity-slot
+    // siblings (helper cards etc) until we hit something with a class.
+    const anchor = day1.querySelector(':scope > .activity-slot.is-locked.anchor-arrival')
+    if (!anchor) return
+    let next = anchor.nextElementSibling
+    while (next) {
+      if (next.classList?.contains('activity-slot')) {
+        if (next.classList.contains('is-locked')) { next = next.nextElementSibling; continue }
+        break    // first venue OR transport
+      }
+      next = next.nextElementSibling
+    }
+    if (!next) return
+    if (next.classList.contains('slot-type-transport')) {
+      console.log('[arrival-taxi-safety] transport already present, no-op')
+      return
+    }
+    console.log('[arrival-taxi-safety] no transport found → inserting')
+    _insertArrivalTaxi(next)
+  } catch (e) {
+    console.warn('[arrival-taxi-safety] threw', e)
   }
 }
 
