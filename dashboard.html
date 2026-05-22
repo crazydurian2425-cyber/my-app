@@ -11649,6 +11649,19 @@ function fmtBriefDateShort(s) {
     return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' })
   } catch (e) { return s }
 }
+// Add N days to a YYYY-MM-DD date string, return YYYY-MM-DD.
+// Hand-rolled because `new Date(s+'T00:00:00').setDate(..)` then
+// `.toISOString()` rolls back a day in UTC+ timezones — that bug
+// was showing "3D2N · 11 Jun-12 Jun" instead of "11 Jun-13 Jun".
+function addDaysLocal(s, days) {
+  if (!s) return ''
+  const [y, m, d] = s.split('-').map(Number)
+  const dt = new Date(y, m - 1, d + days)
+  const yy = dt.getFullYear()
+  const mm = String(dt.getMonth() + 1).padStart(2, '0')
+  const dd = String(dt.getDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
 // Interest pills — peachy cream per the latest brief mockup. Light theme.
 function renderInterestPills(arr) {
   if (!Array.isArray(arr) || !arr.length) return ''
@@ -11714,8 +11727,7 @@ async function renderTravelerBrief(plan, t, notes) {
     if (lastUnit?.arrival_date && lastUnit?.duration) {
       const m = String(lastUnit.duration).match(/(\d+)D/i)
       const nights = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
-      const d = new Date(lastUnit.arrival_date + 'T00:00:00')
-      if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nights); tripEnd = d.toISOString().split('T')[0] }
+      tripEnd = addDaysLocal(lastUnit.arrival_date, nights)
     }
   }
   const tripDurationTxt = meta.trip_total_duration
@@ -11727,8 +11739,7 @@ async function renderTravelerBrief(plan, t, notes) {
   if (t.arrival_date && t.duration) {
     const m = String(t.duration).match(/(\d+)D/i)
     const nights = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
-    const d = new Date(t.arrival_date + 'T00:00:00')
-    if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nights); unitEnd = d.toISOString().split('T')[0] }
+    unitEnd = addDaysLocal(t.arrival_date, nights)
   }
   const unitDatesTxt = t.arrival_date
     ? `${fmtBriefDateShort(t.arrival_date)}${unitEnd ? '–' + fmtBriefDateShort(unitEnd) : ''}`
@@ -11986,27 +11997,29 @@ async function renderTravelerBrief(plan, t, notes) {
       const isMine = myTravelerIds.has(s.id)
       const m = String(s.duration || '').match(/(\d+)D/i)
       const nightsUnit = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
-      let endStr = ''
-      if (s.arrival_date) {
-        const d = new Date(s.arrival_date + 'T00:00:00')
-        if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nightsUnit); endStr = d.toISOString().split('T')[0] }
-      }
+      const endStr = s.arrival_date ? addDaysLocal(s.arrival_date, nightsUnit) : ''
       const datesTxt = s.arrival_date ? `${fmtBriefDateShort(s.arrival_date)}${endStr ? '–' + fmtBriefDateShort(endStr) : ''}` : ''
       const order = s.meta?.unit_order || '?'
 
+      // Color tokens for the light editorial theme. The earlier values
+      // (#ffffff for owned, #cccccc for locked) were dark-theme leftovers
+      // that vanished against the cream background.
+      const INK = 'var(--text,#1A2E25)'
+      const INK_MUTED = 'var(--color-text-secondary,#5a6b62)'
+      const INK_TERTIARY = 'var(--color-text-tertiary,#8a958f)'
       if (isMine) {
         // Full info — green border, "YOU ARE HERE" or "Unit N · yours"
         const myFee = baseCommissionForDuration(s.duration) + (Number(s.meta?.unit_order || 0) > 1 ? 10 : 0)
         return `
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(63,186,115,0.12);border:1px solid rgba(63,186,115,0.45);margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(63,186,115,0.10);border:1px solid rgba(63,186,115,0.45);margin-bottom:6px;">
             ${isCurrent
-              ? '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#3FBA73;color:#0a1f12;padding:3px 8px;border-radius:4px;flex-shrink:0;">You are here</span>'
-              : `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#3FBA73;flex-shrink:0;">Unit ${order} · yours</span>`}
-            <div style="flex:1;min-width:0;font-size:14px;color:#ffffff;">
+              ? '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#2C5F2D;color:#ffffff;padding:3px 8px;border-radius:4px;flex-shrink:0;">You are here</span>'
+              : `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#2C5F2D;flex-shrink:0;">Unit ${order} · yours</span>`}
+            <div style="flex:1;min-width:0;font-size:14px;color:${INK};">
               <strong>${escapeHtml(s.destination || '—')}</strong>
-              <span style="color:#8a8a8a;"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
+              <span style="color:${INK_MUTED};"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
             </div>
-            <span style="font-size:13px;font-weight:600;color:#3FBA73;flex-shrink:0;">${fmtEur(myFee)}</span>
+            <span style="font-size:13px;font-weight:600;color:#2C5F2D;flex-shrink:0;">${fmtEur(myFee)}</span>
           </div>`
       }
       // Locked card — no commission, no planner identity. Status only.
@@ -12014,14 +12027,14 @@ async function renderTravelerBrief(plan, t, notes) {
       const isCompleted = s.status === 'completed' || s.status === 'approved'
       const statusLabel = isCompleted ? 'Completed' : (isUnclaimed ? 'Awaiting planner' : 'Planned by another')
       return `
-        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid #3a3a3a;margin-bottom:6px;opacity:0.6;">
-          <span style="font-size:14px;flex-shrink:0;line-height:1;color:#8a8a8a;">🔒</span>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#8a8a8a;flex-shrink:0;">Unit ${order}</span>
-          <div style="flex:1;min-width:0;font-size:14px;color:#cccccc;">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(0,0,0,0.025);border:1px solid var(--color-border-tertiary);margin-bottom:6px;opacity:0.75;">
+          <span style="font-size:14px;flex-shrink:0;line-height:1;color:${INK_TERTIARY};">🔒</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${INK_TERTIARY};flex-shrink:0;">Unit ${order}</span>
+          <div style="flex:1;min-width:0;font-size:14px;color:${INK_MUTED};">
             <strong>${escapeHtml(s.destination || '—')}</strong>
-            <span style="color:#8a8a8a;"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
+            <span style="color:${INK_TERTIARY};"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
           </div>
-          <span style="font-size:11px;font-weight:600;color:#8a8a8a;flex-shrink:0;font-style:italic;">${statusLabel}</span>
+          <span style="font-size:11px;font-weight:600;color:${INK_TERTIARY};flex-shrink:0;font-style:italic;">${statusLabel}</span>
         </div>`
     }).join('')
 
@@ -12034,14 +12047,14 @@ async function renderTravelerBrief(plan, t, notes) {
       tipParts.push(`Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — leave time on the last day.`)
     }
     const tipHtml = tipParts.length
-      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.08);border:1px solid rgba(224,139,58,0.22);border-radius:8px;font-size:13px;color:#cccccc;line-height:1.5;"><strong style="color:#E08B3A;">💡 Helpful context · </strong>${tipParts.join(' ')}</div>`
+      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.10);border:1px solid rgba(224,139,58,0.30);border-radius:8px;font-size:13px;color:var(--text,#1A2E25);line-height:1.55;"><strong style="color:#BA6A1A;">💡 Helpful context · </strong>${tipParts.join(' ')}</div>`
       : ''
 
     sectionContext = wrap(`
       ${sectionHeader('map-pin', `Trip context · ${siblings.length} units · ${totalNights} nights total`)}
       ${rows}
       ${tipHtml}
-      <div style="margin-top:8px;font-size:11px;color:#8a8a8a;font-style:italic;">🔒 Other units locked for privacy — you see cities + dates only.</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--color-text-secondary,#5a6b62);font-style:italic;">🔒 Other units locked for privacy — you see cities + dates only.</div>
     `)
   }
 
