@@ -2322,7 +2322,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .duration-dd-label{min-width:62px;text-align:left;}
 .duration-dd-label.is-empty{color:var(--text-3);}
 .duration-dd-caret{width:11px;height:11px;color:var(--text-3);}
-.duration-dd-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:140px;background:var(--surface);border:1px solid var(--border-med);border-radius:6px;box-shadow:0 6px 20px rgba(31,28,22,0.10);z-index:30;overflow:hidden;}
+.duration-dd-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:140px;max-height:280px;overflow-y:auto;background:var(--surface);border:1px solid var(--border-med);border-radius:6px;box-shadow:0 6px 20px rgba(31,28,22,0.10);z-index:30;}
 .duration-dd.open .duration-dd-menu{display:block;}
 .duration-dd-option{display:block;width:100%;padding:8px 12px;background:transparent;border:0;text-align:left;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--text-2);cursor:pointer;}
 .duration-dd-option:hover{background:var(--green-light);color:var(--text);}
@@ -13656,18 +13656,41 @@ function updateSlotFieldLabels(slot, typeKey){
   if (notesInp) notesInp.placeholder = getNotesPlaceholder(typeKey)
 }
 // Duration label for a stored minutes value.
+// Format any minute value as a friendly stay-duration label.
+//   45  → "45 min"
+//   60  → "1 hour" / "1 heure"
+//   75  → "1 h 15"
+//   120 → "2 hours" / "2 heures"
+//   180 → "3 hours" / "3 heures"
+//   480 → "8 hours" / "8 heures"
+// French uses "h" abbreviation for mixed values ("1 h 15") which works
+// natively in fr; English keeps it consistent with the same short form
+// so the dropdown column doesn't shift width between locales.
 function formatDurationLabel(mins){
   const m = parseInt(mins, 10)
-  if (m === 15)  return t('slot.duration.15',  '15 min')
-  if (m === 30)  return t('slot.duration.30',  '30 min')
-  if (m === 45)  return t('slot.duration.45',  '45 min')
-  if (m === 60)  return t('slot.duration.60',  '1 hour')
-  if (m === 90)  return t('slot.duration.90',  '1.5 hours')
-  if (m === 120) return t('slot.duration.120', '2 hours')
-  if (m === 180) return t('slot.duration.180', '3 hours')
-  if (m === 240) return t('slot.duration.240', 'Half day')
-  if (m === 480) return t('slot.duration.480', 'Full day')
-  return ''
+  if (!Number.isFinite(m) || m <= 0) return ''
+  const isFrench = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja')
+  if (m < 60) return `${m} min`
+  const h = Math.floor(m / 60)
+  const mm = m % 60
+  if (mm === 0) {
+    if (isFrench) return h === 1 ? '1 heure' : `${h} heures`
+    return h === 1 ? '1 hour' : `${h} hours`
+  }
+  return `${h} h ${mm}`
+}
+
+// Generate every 15-min slot from 15 minutes up to 8 hours as <option>-style
+// buttons for the duration-dd menu. 32 buttons total — the planner can
+// always tap a specific 1 h 45 or 6 h 30 stay duration.
+function buildDurationOptions(){
+  const out = []
+  for (let m = 15; m <= 8 * 60; m += 15) {
+    const label = formatDurationLabel(m)
+    const safe = label.replace(/'/g, "\\'")
+    out.push(`<button type="button" class="duration-dd-option" onclick="selectDurationDD(this, ${m}, '${safe}')">${label}</button>`)
+  }
+  return out.join('')
 }
 function toggleDurationDD(btn, e){
   e?.stopPropagation?.()
@@ -15855,15 +15878,7 @@ function addSlot(dayNum, seed = null) {
             <svg class="duration-dd-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 6 8 9 5"/></svg>
           </button>
           <div class="duration-dd-menu">
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 15,  '${t('slot.duration.15','15 min').replace(/'/g,"\\'")}')">${t('slot.duration.15','15 min')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 30,  '${t('slot.duration.30','30 min').replace(/'/g,"\\'")}')">${t('slot.duration.30','30 min')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 45,  '${t('slot.duration.45','45 min').replace(/'/g,"\\'")}')">${t('slot.duration.45','45 min')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 60,  '${t('slot.duration.60','1 hour').replace(/'/g,"\\'")}')">${t('slot.duration.60','1 hour')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 90,  '${t('slot.duration.90','1.5 hours').replace(/'/g,"\\'")}')">${t('slot.duration.90','1.5 hours')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 120, '${t('slot.duration.120','2 hours').replace(/'/g,"\\'")}')">${t('slot.duration.120','2 hours')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 180, '${t('slot.duration.180','3 hours').replace(/'/g,"\\'")}')">${t('slot.duration.180','3 hours')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 240, '${t('slot.duration.240','Half day').replace(/'/g,"\\'")}')">${t('slot.duration.240','Half day')}</button>
-            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 480, '${t('slot.duration.480','Full day').replace(/'/g,"\\'")}')">${t('slot.duration.480','Full day')}</button>
+            ${buildDurationOptions()}
           </div>
         </div>
       </div>
