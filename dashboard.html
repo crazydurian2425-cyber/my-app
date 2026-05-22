@@ -14653,6 +14653,15 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       travelMode,
       units: 'METRIC',
     }
+    // DRIVE without routingPreference defaults to TRAFFIC_UNAWARE which
+    // ignores real-world congestion. The embed iframe always uses live
+    // traffic, so without this our number was always faster than what the
+    // map showed (planner sees 15 min in grid, then opens map and sees
+    // 19 min — looks broken). TRAFFIC_AWARE matches the embed.
+    if (travelMode === 'DRIVE') {
+      body.routingPreference = 'TRAFFIC_AWARE'
+      body.departureTime = new Date(Date.now() + 60_000).toISOString()
+    }
     // Pull step-by-step transit details too — line names, station names,
     // walking segments, headsign, stop count. Costs the same as the
     // simpler call; the only price is bigger response payload.
@@ -14752,9 +14761,13 @@ function applyRouteDataToSlot(slot, data) {
     const range = host.querySelector('.transport-time-range')
     if (range) range.textContent = `${formatTimeDisplay(departHHMM)} → ${formatTimeDisplay(arrive)}`
   }
-  // Step-by-step transit timeline. Lives between the grid and the
-  // "Show route map" / "Open in Google Maps" link row.
-  if (data.steps && data.steps.length) {
+  // Step-by-step timeline — ONLY useful when the trip mixes transit with
+  // walks (planner needs to know which line + station + walks between).
+  // Pure-walk and pure-drive trips return many tiny "Walk · 1 min · 14 m"
+  // turn-by-turn sub-steps that just look like noise; the summary grid
+  // already shows the total. Skip the timeline in those cases.
+  const hasTransitStep = (data.steps || []).some(s => s.kind === 'transit')
+  if (hasTransitStep) {
     let stepsHost = host.querySelector('.transport-steps')
     if (!stepsHost) {
       stepsHost = document.createElement('div')
@@ -14764,7 +14777,19 @@ function applyRouteDataToSlot(slot, data) {
       else if (grid) grid.parentNode.appendChild(stepsHost)
       else host.appendChild(stepsHost)
     }
-    stepsHost.innerHTML = data.steps.map(s => {
+    // Collapse runs of consecutive walk sub-steps into one summary row,
+    // so a 6-min walk doesn't appear as five "Walk · 1 min" lines.
+    const collapsed = []
+    for (const s of data.steps) {
+      const last = collapsed[collapsed.length - 1]
+      if (s.kind === 'walk' && last && last.kind === 'walk') {
+        last.mins += s.mins
+        last.distanceM += s.distanceM
+      } else {
+        collapsed.push({ ...s })
+      }
+    }
+    stepsHost.innerHTML = collapsed.map(s => {
       if (s.kind === 'walk') {
         const distTxt = s.distanceM >= 1000
           ? `${(s.distanceM/1000).toFixed(1)} km`
@@ -14795,6 +14820,11 @@ function applyRouteDataToSlot(slot, data) {
           </div>
         </div>`
     }).join('')
+  } else {
+    // No transit involved — remove any stale steps panel from a previous
+    // mode (e.g. planner just switched from "transit" to "taxi").
+    const existing = host.querySelector('.transport-steps')
+    if (existing) existing.remove()
   }
 }
 
