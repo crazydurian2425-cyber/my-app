@@ -15213,6 +15213,22 @@ function applyRouteDataToSlot(slot, data) {
     const arrive = _addMinutes(departHHMM, data.durationMin)
     const range = host.querySelector('.transport-time-range')
     if (range) range.textContent = `${formatTimeDisplay(departHHMM)} → ${formatTimeDisplay(arrive)}`
+    // ── Re-snap next venue against the REAL arrival time ──
+    // refreshTransportSlot's initial pass uses the haversine-based heuristic
+    // (≈17 min for 4.6 km Uber). Routes API often returns more (≈28 min with
+    // traffic), so the next venue would be stranded at the heuristic snap.
+    // Push it forward to match the real arrival.
+    const { next } = _findVenueNeighbors(slot)
+    if (next) {
+      const nextHidden = next.querySelector('.slot-time-input')
+      const nextCurrent = nextHidden?.value || '23:59'
+      const minStart = _snapUp30(arrive)
+      const curMin = parseSlotTime(nextCurrent)
+      const minMin = parseSlotTime(minStart)
+      if (curMin != null && minMin != null && curMin !== minMin) {
+        _applySlotTime(next, minStart)
+      }
+    }
   }
   // Step-by-step timeline — ONLY useful when the trip mixes transit with
   // walks (planner needs to know which line + station + walks between).
