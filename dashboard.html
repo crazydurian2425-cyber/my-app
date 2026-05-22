@@ -13407,19 +13407,22 @@ function _autoSeedDay1HotelIfNeeded() {
 
 // Robustly insert the auto-seeded "Taxi to hotel" between the arrival
 // anchor and `beforeEl` (the planner's first non-locked stop). Uses the
-// snapshot-diff pattern (same as addTransportBetween) instead of the
-// fragile :last-of-type selector so we always identify the correct new
-// slot even when there are multiple transports.
+// snapshot-diff pattern but RESTRICTED to .slot-type-transport — addSlot
+// internally calls refreshDayDistances which re-adds the locked bookends,
+// so a snapshot of all .activity-slot would pick those up as "new" and
+// mistake the arrival anchor for the new transport.
 function _insertArrivalTaxi(beforeEl) {
   try {
     const day1 = document.getElementById('slots-day-1')
     if (!day1) return
     const arr = window._currentArrivalTime || '14:00'
-    // Snapshot BEFORE addSlot so we can identify the new slot reliably.
-    const before = new Set([...day1.querySelectorAll(':scope > .activity-slot')])
+    // Snapshot ONLY existing transport slots — addSlot's tail call to
+    // refreshDayDistances adds locked anchors, which would otherwise
+    // pollute a plain `.activity-slot` snapshot.
+    const before = new Set([...day1.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
     addSlot(1, { icon: 'transport', time: arr })
-    const t = [...day1.querySelectorAll(':scope > .activity-slot')].find(s => !before.has(s))
-    if (!t) { console.warn('[arrival-taxi] new slot not found post-addSlot'); return }
+    const t = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-transport')].find(s => !before.has(s))
+    if (!t) { console.warn('[arrival-taxi] new transport slot not found post-addSlot'); return }
     t.dataset.transportMode = 'taxi'
     t.dataset.autoSeededArrivalTaxi = 'true'
     const titleInput = t.querySelector('.slot-title-input')
@@ -13428,7 +13431,7 @@ function _insertArrivalTaxi(beforeEl) {
     // the new slot past the existing hotel slot.
     _applySlotTime(t, arr)
     if (beforeEl && beforeEl.parentNode === day1) day1.insertBefore(t, beforeEl)
-    console.log('[arrival-taxi] inserted', { id: t.id, time: arr, before: beforeEl?.id })
+    console.log('[arrival-taxi] inserted', { id: t.id, time: arr, before: beforeEl?.id, cls: t.className })
     // Async: resolve the arrival station via Places textSearch + attach
     // its place_id / coords / display name to the transport.
     _lookupStationAndAttach(t)
