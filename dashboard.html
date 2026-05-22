@@ -13633,17 +13633,22 @@ function attachPlacesSearch(slot) {
   if (!titleInput || !dropdown) return
   let debounceTimer = null
   let blurTimer = null
-  titleInput.addEventListener('input', () => preserveItinScroll(() => {
+  titleInput.addEventListener('input', () => {
     const type = slot.querySelector('.slot-type-select')?.value || 'activity'
     if (!PLACES_ENABLED_TYPES.has(type)) { hidePlacesDropdown(slot); return }
-    // Already linked? typing should unlink so the planner can search fresh.
-    if (slot.classList.contains('slot-place-linked')) clearLinkedPlace(slot, { keepTitle: true })
+    // IMPORTANT: do NOT clearLinkedPlace here. Removing the chip on every
+    // keystroke caused an ~80px layout collapse which the browser's scroll
+    // anchor fought against — net effect: the modal kept jumping back to
+    // the top of Day 1 every time the planner typed a letter. The linked
+    // place stays visible while typing; it's only replaced when the
+    // planner actually picks a new suggestion (selectPlaceForSlot →
+    // applyPlaceToSlot atomically swaps the chip content).
     const query = titleInput.value.trim()
     if (query.length < 3) { hidePlacesDropdown(slot); return }
     if (!slot.dataset.placesSessionToken) slot.dataset.placesSessionToken = uuidV4()
     clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => fetchPlacesPredictions(slot, query), 280)
-  }))
+  })
   titleInput.addEventListener('focus', () => {
     const type = slot.querySelector('.slot-type-select')?.value || 'activity'
     if (!PLACES_ENABLED_TYPES.has(type)) return
