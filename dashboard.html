@@ -16060,8 +16060,20 @@ function refreshTransportSlot(slot) {
   //      free) with the full step-by-step directions panel.
   //   2) "Open in Google Maps" — fallback link, opens new tab.
   // Only render when both neighbours are linked Places and distance is sane.
-  const dirUrl   = (!tooFar) ? buildGmapsDirUrl(prev, next, mode) : null
-  const embedUrl = (!tooFar) ? buildGmapsEmbedUrl(prev, next, mode) : null
+  // When prev is null (auto-seeded arrival taxi — locked anchor isn't a
+  // venue), synthesize an origin slot from the transport's own dataset
+  // (populated by _lookupStationAndAttach) so the route map + Open in
+  // Google Maps links still render.
+  const _gmapsOrigin = prev || ((slot.dataset.fromPlaceId || slot.dataset.fromLat) ? {
+    _placeData: {
+      google_place_id: slot.dataset.fromPlaceId || null,
+      name:            slot.dataset.fromName || '',
+      latitude:        parseFloat(slot.dataset.fromLat),
+      longitude:       parseFloat(slot.dataset.fromLng),
+    }
+  } : null)
+  const dirUrl   = (!tooFar) ? buildGmapsDirUrl(_gmapsOrigin, next, mode) : null
+  const embedUrl = (!tooFar) ? buildGmapsEmbedUrl(_gmapsOrigin, next, mode) : null
   const directionsLink = dirUrl
     ? `<div style="display:flex;align-items:center;gap:14px;margin-top:8px;font-size:11.5px;">
          ${embedUrl ? `<button type="button" class="transport-map-toggle"
