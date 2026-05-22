@@ -13098,8 +13098,19 @@ function fillItineraryItems(items) {
     container.innerHTML = ''
     list.sort((a,b) => (a.sort_order||0) - (b.sort_order||0))
     list.forEach(it => {
+      // Snapshot non-locked slots BEFORE addSlot — addSlot internally calls
+      // refreshDayDistances which adds the locked bookend anchors. Without
+      // this diff, container.lastElementChild would resolve to the
+      // end-of-day anchor (a locked row with no .slot-title-input), and
+      // every field assignment below would silently no-op. The result:
+      // the saved item appears as a blank slot, gets skipped on autosave,
+      // and the planner's data vanishes on the next plan-open.
+      const _beforeAddNonLocked = new Set(
+        [...container.querySelectorAll(':scope > .activity-slot:not(.is-locked)')]
+      )
       addSlot(parseInt(day, 10))
-      const slot = container.lastElementChild
+      const slot = [...container.querySelectorAll(':scope > .activity-slot:not(.is-locked)')]
+        .find(s => !_beforeAddNonLocked.has(s))
       if (!slot) return
       // Time
       const timeInput = slot.querySelector('.slot-time-input')
