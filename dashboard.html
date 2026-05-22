@@ -16035,6 +16035,7 @@ function refreshTransportSlot(slot) {
   //   - locked arrival anchor → arrival_time + 10 min disembark buffer.
   //   - locked morning anchor → wake_time + 0 (planner starts day moving).
   //   - other / no prev → keep existing depart.
+  console.log('[refreshTransport]', slot.id, '· current depart=', departHHMM, '· prev=', prev?.id || prev?.className || 'null', '· prev.time=', prev?.querySelector?.('.slot-time-input')?.value || 'n/a')
   if (prev) {
     let corrected = null
     if (!prev.classList.contains('is-locked')) {
@@ -16050,6 +16051,7 @@ function refreshTransportSlot(slot) {
       const wakeMin = m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 8 * 60 + 30
       corrected = minsToHHMM(Math.min(wakeMin, 23 * 60 + 45))
     }
+    console.log('[refreshTransport]', slot.id, '· corrected=', corrected, '· willUpdate=', !!(corrected && corrected !== departHHMM))
     if (corrected && corrected !== departHHMM) {
       departHHMM = corrected
       _applySlotTime(slot, corrected)
