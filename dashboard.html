@@ -13478,6 +13478,12 @@ function selectTimeDD(btn, val){
 // Sort all slots in a day container by their current time value (ascending)
 function resortSlots(container) {
   if (!container) return
+  // Snapshot the modal-body scroll position. Reordering via appendChild
+  // can lose the browser's scroll anchor and snap the page to the top
+  // (planner picks 9:00 → 9:30 and the page jumps back to the day
+  // recommendation card). We restore it explicitly after the reorder.
+  const modalBody = container.closest('.modal-body')
+  const savedScrollTop = modalBody ? modalBody.scrollTop : null
   const slots = [...container.querySelectorAll('.activity-slot')]
   slots
     .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00' }))
@@ -13486,6 +13492,7 @@ function resortSlots(container) {
   // Reordering moves slot DOM nodes to the end — any distance indicators
   // that were between them now sit in the wrong positions. Wipe + rebuild.
   refreshDayDistances(container)
+  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
 }
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.type-dd') && !e.target.closest('.time-dd')) {
@@ -14980,6 +14987,11 @@ function closedAltsAction(slotId, action) {
 
 function refreshDayDistances(dayContainer) {
   if (!dayContainer) return
+  // Same scroll-preservation trick as resortSlots — internal _sortSlotsInPlace
+  // calls appendChild which can drop the browser's scroll anchor. Without
+  // this, picking a new venue snaps the modal back to its top.
+  const modalBody = dayContainer.closest('.modal-body')
+  const savedScrollTop = modalBody ? modalBody.scrollTop : null
   // Remove any previously-injected distance rows AND helper cards.
   dayContainer.querySelectorAll(':scope > .slot-distance, :scope > .slot-dist-helper').forEach(el => el.remove())
   // First pass: refresh transport blocks. Each one may push the NEXT
@@ -15018,6 +15030,8 @@ function refreshDayDistances(dayContainer) {
     card.innerHTML = buildDistHelperHtml({ ...desc, km, travelMin: Math.round(km * 3) }, slots[i].id, slots[i + 1].id, modes)
     dayContainer.insertBefore(card.firstElementChild, slots[i + 1])
   }
+  // Restore the modal's scroll position — see top of function for why.
+  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
 }
 // Helper to refresh every day's distances at once — used after bulk loads.
 function refreshAllDistances() {
