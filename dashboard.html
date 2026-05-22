@@ -15513,23 +15513,9 @@ function refreshTransportSlot(slot) {
     const minStart = _snapUp30(arriveHHMM)
     const curMin = parseSlotTime(nextCurrent)
     const minMin = parseSlotTime(minStart)
-    console.log('[transport-sync]', {
-      slot: slot.id,
-      prevId: prev?.id,
-      nextId: next?.id,
-      departHHMM,
-      arriveHHMM,
-      minStart,
-      nextCurrent,
-      curMin,
-      minMin,
-      willPush: (curMin != null && minMin != null && curMin !== minMin),
-    })
     if (curMin != null && minMin != null && curMin !== minMin) {
       _applySlotTime(next, minStart)
     }
-  } else {
-    console.log('[transport-sync] no next venue', { slot: slot.id, prevId: prev?.id })
   }
   const departLabel = formatTimeDisplay(departHHMM)
   const arriveLabel = formatTimeDisplay(arriveHHMM)
@@ -15636,6 +15622,14 @@ function _applySlotTime(slot, hhmm) {
   slot.querySelectorAll('.time-dd-option').forEach(opt => {
     opt.classList.toggle('is-selected', !!opt.getAttribute('onclick')?.includes(`'${hhmm}'`))
   })
+  // Re-render the linked-place chip so the time-vs-opening-hours warning
+  // re-evaluates. Without this, an auto-pushed slot (e.g. dinner auto-shifted
+  // from 9:30 PM to 11:00 PM by an upstream transport recompute) keeps its
+  // old warning state — closed-venue / late-arrival banners never appear
+  // until the planner manually re-picks the time.
+  if (slot._placeData && typeof renderLinkedChip === 'function') {
+    renderLinkedChip(slot)
+  }
 }
 
 // In-place sort of slots by time-input value — same logic as resortSlots
