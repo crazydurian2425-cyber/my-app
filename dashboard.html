@@ -14617,27 +14617,30 @@ function refreshTransportSlot(slot) {
                 : (est.costEur === 0) ? 'free'
                 : `~€${est.costEur}`
   // Depart time recomputes from the PREVIOUS slot's start + its stay
-  // duration so a "2 hour" prev stay → transport leaves 2 hours later
-  // (not 15 min later, which used to give wrong results like "Eiffel
-  // 3:30 pm · 2h" + "Taxi at 4:00 pm"). Auto-syncs back into the slot's
-  // hidden time-input so save/sort logic see the right value too.
+  // duration so a "2 hour" prev stay → transport leaves 2 hours later.
+  // Auto-syncs back into the hidden time-input so save/sort see the
+  // right value too.
   let departHHMM = slot.querySelector('.slot-time-input')?.value || '09:00'
   if (prev) {
     const corrected = _suggestTransportStart(prev)
     if (corrected !== departHHMM) {
       departHHMM = corrected
-      const ti = slot.querySelector('.slot-time-input')
-      if (ti) ti.value = corrected
-      // Keep the legacy time-dd dropdown in sync (it's hidden but still
-      // backs the picker if planner ever switches type back to activity).
-      const lbl = slot.querySelector('.time-dd-label')
-      if (lbl) lbl.textContent = formatTimeDisplay(corrected)
-      slot.querySelectorAll('.time-dd-option').forEach(opt => {
-        opt.classList.toggle('is-selected', !!opt.getAttribute('onclick')?.includes(`'${corrected}'`))
-      })
+      _applySlotTime(slot, corrected)
     }
   }
   const arriveHHMM = _addMinutes(departHHMM, est.mins || 0)
+  // ── Auto-push next venue's start time when transport now arrives later ──
+  // Snapped UP to the 30-min picker grid since the venue's time picker
+  // only accepts those values. Example: Eiffel 3:30 + 2h = 5:30, taxi
+  // arrives 5:36 → next venue gets pushed to 6:00 (snap-up of 5:36).
+  if (next) {
+    const nextHidden = next.querySelector('.slot-time-input')
+    const nextCurrent = nextHidden?.value || '23:59'
+    const minStart = _snapUp30(arriveHHMM)
+    if (minStart > nextCurrent) {
+      _applySlotTime(next, minStart)
+    }
+  }
   const departLabel = formatTimeDisplay(departHHMM)
   const arriveLabel = formatTimeDisplay(arriveHHMM)
   // Mode picker — only modes that make sense for THIS distance show up,
@@ -14672,6 +14675,41 @@ function _addMinutes(hhmm, mins) {
   if (total < 0) total = 0
   if (total > 23 * 60 + 59) total = 23 * 60 + 59
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+}
+
+// Snap a HH:MM up to the 30-min picker grid (so the value lands on a
+// real option in the time dropdown). Used by the auto-push logic.
+function _snapUp30(hhmm) {
+  const [h, m] = String(hhmm || '09:00').split(':').map(Number)
+  let total = Math.ceil(((h || 0) * 60 + (m || 0)) / 30) * 30
+  if (total > 23 * 60 + 30) total = 23 * 60 + 30
+  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+}
+
+// Apply a HH:MM time to a slot — updates the hidden input, the visible
+// label, and the dropdown's selected state. Used by the auto-push so a
+// pushed slot looks coherent everywhere (not just in the hidden input).
+function _applySlotTime(slot, hhmm) {
+  if (!slot || !hhmm) return
+  const ti = slot.querySelector('.slot-time-input')
+  if (ti) ti.value = hhmm
+  const lbl = slot.querySelector('.time-dd-label')
+  if (lbl) lbl.textContent = formatTimeDisplay(hhmm)
+  slot.querySelectorAll('.time-dd-option').forEach(opt => {
+    opt.classList.toggle('is-selected', !!opt.getAttribute('onclick')?.includes(`'${hhmm}'`))
+  })
+}
+
+// In-place sort of slots by time-input value — same logic as resortSlots
+// but DOESN'T call refreshDayDistances at the end, so refreshDayDistances
+// can use it internally without recursion.
+function _sortSlotsInPlace(container) {
+  if (!container) return
+  const slots = [...container.querySelectorAll('.activity-slot')]
+  slots
+    .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00' }))
+    .sort((a, b) => a.t.localeCompare(b.t))
+    .forEach(({ el }) => container.appendChild(el))
 }
 
 // Mode picker change handler — stash the new mode + re-render the panel.
@@ -14974,9 +15012,18 @@ function refreshDayDistances(dayContainer) {
   if (!dayContainer) return
   // Remove any previously-injected distance rows AND helper cards.
   dayContainer.querySelectorAll(':scope > .slot-distance, :scope > .slot-dist-helper').forEach(el => el.remove())
+  // First pass: refresh transport blocks. Each one may push the NEXT
+  // venue's start time forward if the transport now arrives later than
+  // that venue's currently-set time. We iterate in DOM order so a chain
+  // (Stop A → Taxi → Stop B → Taxi → Stop C) propagates correctly.
+  const transportSlots = [...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')]
+  transportSlots.forEach(refreshTransportSlot)
+  // Some venue times may have been pushed forward → sort by time
+  // in-place. _sortSlotsInPlace doesn't call refreshDayDistances back
+  // (resortSlots does, which would recurse).
+  _sortSlotsInPlace(dayContainer)
+  // Re-grab slots in the new chronological order before computing distance markers.
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
-  // Refresh transport blocks (now their neighbors are stable post-resort).
-  slots.filter(s => s.classList.contains('slot-type-transport')).forEach(refreshTransportSlot)
   for (let i = 0; i < slots.length - 1; i++) {
     const a = getSlotLatLng(slots[i])
     const b = getSlotLatLng(slots[i + 1])
