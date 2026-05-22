@@ -1998,6 +1998,58 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   background:rgba(184,74,62,0.10);color:#b84a3e;font-weight:500;
   border:1px solid rgba(184,74,62,0.25);
 }
+
+/* ── Closed-venue smart alternatives ──
+   Shown directly under .pl-planned-closed. Pulls nearbySearch results,
+   filters to "open on planned day", lets planner Swap with one click. */
+.pl-closed-alts{
+  margin-top:6px;padding:10px 12px;
+  background:rgba(184,74,62,0.06);
+  border:1px solid rgba(184,74,62,0.18);
+  border-radius:6px;
+  font-size:12px;color:var(--text-2);
+}
+.pl-closed-alts-head{font-size:11.5px;color:#8a3329;font-weight:500;margin-bottom:8px;}
+.pl-closed-alts-loading{font-size:11.5px;color:var(--text-3);font-style:italic;padding:6px 0;}
+.pl-closed-alts-empty{font-size:11.5px;color:var(--text-3);padding:6px 0;}
+.pl-closed-alt{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;margin-bottom:6px;
+  background:#fff;border:1px solid var(--border-med);
+  border-radius:6px;
+}
+.pl-closed-alt:last-of-type{margin-bottom:0;}
+.pl-closed-alt-body{flex:1;min-width:0;}
+.pl-closed-alt-name{font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pl-closed-alt-meta{font-size:11px;color:var(--text-3);display:flex;flex-wrap:wrap;gap:4px;align-items:center;}
+.pl-closed-alt-meta .pl-closed-alt-open{
+  background:rgba(45,158,122,0.12);color:#1a7a5e;
+  padding:1px 6px;border-radius:4px;font-weight:500;
+}
+.pl-closed-alt-meta .pl-closed-alt-rating{color:var(--text-2);}
+.pl-closed-alt-sep{color:var(--text-3);}
+.pl-closed-alt-swap{
+  flex-shrink:0;
+  background:var(--green-dark,#1a7a5e);color:#fff;
+  border:0;padding:5px 12px;border-radius:5px;
+  font-size:11.5px;font-weight:500;font-family:inherit;cursor:pointer;
+  transition:background 0.12s;
+}
+.pl-closed-alt-swap:hover{background:#155f48;}
+.pl-closed-alt-swap:disabled{background:var(--text-3);cursor:default;}
+.pl-closed-alts-footer{
+  display:flex;gap:14px;margin-top:8px;
+  padding-top:8px;border-top:1px dashed rgba(184,74,62,0.20);
+  font-size:11.5px;
+}
+.pl-closed-alts-footer a{
+  color:#8a3329;text-decoration:underline;cursor:pointer;
+}
+.pl-closed-alts-footer a:hover{color:#5d201a;}
+.pl-closed-alts-suggest-note{
+  margin-top:8px;font-size:11px;color:var(--text-3);font-style:italic;
+}
 .places-linked-chip .pl-schedule-toggle{
   background:none;border:none;color:var(--green-dark);
   font:inherit;font-size:11px;text-decoration:underline;cursor:pointer;
@@ -13689,6 +13741,319 @@ function applyPlaceToSlot(slot, place) {
   autoSaveDraft()
 }
 
+// ── CLOSED-VENUE SMART ALTERNATIVES ────────────────────────────────────────
+//
+// When a linked place is closed on the planned day, we don't just warn the
+// planner — we fetch 3 nearby alternatives that ARE open that day and let
+// the planner Swap with one click.
+//
+// Cost control:
+//   1) localStorage cache keyed on (place_id + planned_date). 24h TTL.
+//      A re-render of the same slot the same day → 0 API calls.
+//   2) Daily call cap. PLACES_NEARBY_DAILY_CAP (default 50) prevents a
+//      runaway loop from burning $$$. Counter resets at local midnight.
+//   3) Triggered only when status === 'closed' AND chip is rendering for
+//      the first time (idempotent via slot.dataset.altsState).
+//
+// The alternatives panel is async — we render a "Loading…" stub immediately,
+// then patch the DOM in-place when results arrive.
+
+const PLACES_NEARBY_DAILY_CAP = 50
+const PLACES_NEARBY_CACHE_TTL_MS = 24 * 60 * 60 * 1000   // 24h
+const PLACES_NEARBY_CACHE_PREFIX = 'jj_nearby_v1_'
+
+function _todayKey() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+function _readNearbyDailyCount() {
+  try {
+    const raw = localStorage.getItem('jj_nearby_daily_count')
+    if (!raw) return 0
+    const o = JSON.parse(raw)
+    return (o.date === _todayKey()) ? Number(o.count) || 0 : 0
+  } catch (e) { return 0 }
+}
+function _bumpNearbyDailyCount() {
+  try {
+    const c = _readNearbyDailyCount() + 1
+    localStorage.setItem('jj_nearby_daily_count', JSON.stringify({ date: _todayKey(), count: c }))
+    return c
+  } catch (e) { return 0 }
+}
+function _canCallNearby() {
+  return _readNearbyDailyCount() < PLACES_NEARBY_DAILY_CAP
+}
+function _cacheKeyForNearby(placeId, plannedDate) {
+  return `${PLACES_NEARBY_CACHE_PREFIX}${placeId}_${plannedDate || 'noday'}`
+}
+function _readNearbyCache(placeId, plannedDate) {
+  try {
+    const raw = localStorage.getItem(_cacheKeyForNearby(placeId, plannedDate))
+    if (!raw) return null
+    const o = JSON.parse(raw)
+    if (!o.t || Date.now() - o.t > PLACES_NEARBY_CACHE_TTL_MS) return null
+    return o.results || null
+  } catch (e) { return null }
+}
+function _writeNearbyCache(placeId, plannedDate, results) {
+  try {
+    localStorage.setItem(_cacheKeyForNearby(placeId, plannedDate),
+      JSON.stringify({ t: Date.now(), results }))
+  } catch (e) { /* quota exceeded — silent */ }
+}
+
+// Pick the includedPrimaryType for the nearbySearch from the slot's
+// place_types. Same matching as detectSlotTypeFromTypes but returns the
+// Google API type string. Defaults to a broad category so we still get
+// useful candidates.
+function _nearbyTypeFor(placeTypes) {
+  if (!Array.isArray(placeTypes) || !placeTypes.length) return 'tourist_attraction'
+  const set = new Set(placeTypes.map(t => String(t).toLowerCase()))
+  // Most-specific first
+  if (set.has('restaurant')) return 'restaurant'
+  if (set.has('cafe')) return 'cafe'
+  if (set.has('bakery')) return 'bakery'
+  if (set.has('bar')) return 'bar'
+  if (set.has('meal_takeaway')) return 'meal_takeaway'
+  if (set.has('museum')) return 'museum'
+  if (set.has('art_gallery')) return 'art_gallery'
+  if (set.has('park')) return 'park'
+  if (set.has('zoo')) return 'zoo'
+  if (set.has('aquarium')) return 'aquarium'
+  if (set.has('shopping_mall')) return 'shopping_mall'
+  if (set.has('market')) return 'market'
+  if (set.has('night_club')) return 'night_club'
+  if (set.has('movie_theater')) return 'movie_theater'
+  if (set.has('place_of_worship') || set.has('church') || set.has('temple') ||
+      set.has('mosque') || set.has('synagogue') || set.has('hindu_temple')) return 'tourist_attraction'
+  if (set.has('lodging') || set.has('hotel')) return 'lodging'
+  return 'tourist_attraction'
+}
+
+// Check whether a candidate's regularOpeningHours says it's open on
+// `plannedDate` (YYYY-MM-DD). Reuses Google's `weekdayDescriptions` since
+// that's how the linked-chip's open/closed check works today.
+function _isOpenOn(openingHoursJson, plannedDate) {
+  if (!openingHoursJson || !plannedDate) return false
+  const wk = openingHoursJson.weekdayDescriptions
+  if (!Array.isArray(wk) || wk.length < 7) return false
+  // weekdayDescriptions starts on Monday per Google docs.
+  const [yr, mo, da] = plannedDate.split('-').map(Number)
+  const d = new Date(yr, mo - 1, da)
+  const jsDow = d.getDay()           // 0=Sun..6=Sat
+  const idx = jsDow === 0 ? 6 : jsDow - 1
+  const line = wk[idx] || ''
+  if (/closed/i.test(line)) return false
+  return /\d/.test(line)
+}
+
+// POST /v1/places:searchNearby. Returns Promise<Array<placeObj>>.
+async function _fetchNearbyAlternatives(centerLat, centerLng, includedType) {
+  const fields = [
+    'places.id','places.displayName','places.formattedAddress','places.location',
+    'places.rating','places.userRatingCount','places.priceLevel','places.priceRange',
+    'places.regularOpeningHours','places.types','places.photos'
+  ].join(',')
+  const body = {
+    includedPrimaryTypes: [includedType],
+    locationRestriction: {
+      circle: { center: { latitude: centerLat, longitude: centerLng }, radius: 3000 }
+    },
+    maxResultCount: 20,
+    rankPreference: 'POPULARITY',
+  }
+  const resp = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+      'X-Goog-FieldMask': fields,
+    },
+    body: JSON.stringify(body),
+  })
+  if (!resp.ok) {
+    const errTxt = await resp.text().catch(() => '')
+    console.warn('[places] nearbySearch failed', resp.status, errTxt)
+    return []
+  }
+  const data = await resp.json().catch(() => null)
+  return Array.isArray(data?.places) ? data.places : []
+}
+
+// Filter + rank alternatives. Keep only places open on the planned day, with
+// rating ≥ 4.0 (when available), exclude the original. Returns top 3.
+function _filterAlternatives(candidates, plannedDate, excludeId) {
+  return candidates
+    .filter(p => p.id && p.id !== excludeId)
+    .filter(p => _isOpenOn(p.regularOpeningHours, plannedDate))
+    .filter(p => (typeof p.rating !== 'number') || p.rating >= 4.0)
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 3)
+}
+
+// Format the "Open Sunday" pill from a place's opening hours for the day.
+function _openOnDayLabel(openingHoursJson, plannedDate) {
+  if (!openingHoursJson || !plannedDate) return ''
+  const wk = openingHoursJson.weekdayDescriptions
+  if (!Array.isArray(wk) || wk.length < 7) return ''
+  const [yr, mo, da] = plannedDate.split('-').map(Number)
+  const d = new Date(yr, mo - 1, da)
+  const jsDow = d.getDay()
+  const idx = jsDow === 0 ? 6 : jsDow - 1
+  const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][idx]
+  return `Open ${dayName}`
+}
+
+// Build the alternatives panel HTML (data already filtered).
+function buildClosedAltsHtml(alternatives, plannedDate, slotId) {
+  if (!alternatives || !alternatives.length) {
+    return `
+      <div class="pl-closed-alts">
+        <div class="pl-closed-alts-head">No good open alternatives within 3 km.</div>
+        <div class="pl-closed-alts-footer">
+          <a onclick="closedAltsAction('${slotId}','manual')">Search manually instead</a>
+          <a onclick="closedAltsAction('${slotId}','keep')">Keep this stop anyway</a>
+        </div>
+      </div>`
+  }
+  const items = alternatives.map(p => {
+    const name = (p.displayName?.text || p.displayName || 'Unnamed place')
+    const rating = (typeof p.rating === 'number')
+      ? `★ ${p.rating.toFixed(1)}${p.userRatingCount ? ` (${p.userRatingCount})` : ''}`
+      : ''
+    const priceTxt = formatPriceRange(p.priceRange) || formatPriceLevel(p.priceLevel, currencyForAddress(p.formattedAddress))
+    const openPill = _openOnDayLabel(p.regularOpeningHours, plannedDate)
+    const metaParts = []
+    if (openPill) metaParts.push(`<span class="pl-closed-alt-open">${escapeHtml(openPill)}</span>`)
+    if (rating)  metaParts.push(`<span class="pl-closed-alt-rating">${escapeHtml(rating)}</span>`)
+    if (priceTxt) metaParts.push(`<span>${escapeHtml(priceTxt)}</span>`)
+    const meta = metaParts.join('<span class="pl-closed-alt-sep">·</span>')
+    return `
+      <div class="pl-closed-alt">
+        <div class="pl-closed-alt-body">
+          <div class="pl-closed-alt-name">${escapeHtml(name)}</div>
+          <div class="pl-closed-alt-meta">${meta}</div>
+        </div>
+        <button type="button" class="pl-closed-alt-swap"
+          onclick="closedAltsSwap('${slotId}','${escapeHtml(p.id)}')">Swap</button>
+      </div>`
+  }).join('')
+  return `
+    <div class="pl-closed-alts">
+      <div class="pl-closed-alts-head">Pick a similar nearby venue that's open on this day:</div>
+      ${items}
+      <div class="pl-closed-alts-footer">
+        <a onclick="closedAltsAction('${slotId}','manual')">Search manually instead</a>
+        <a onclick="closedAltsAction('${slotId}','keep')">Keep this stop anyway</a>
+      </div>
+      <div class="pl-closed-alts-suggest-note">Same category, open on this day, within 3 km, rating ≥ 4.0.</div>
+    </div>`
+}
+
+// Kick off the lookup + DOM patch. Called from renderLinkedChip when status
+// is 'closed'. Uses slot.dataset.altsState to dedupe — re-renders of the
+// same slot won't refetch.
+async function ensureClosedAlternatives(slot, plannedDate) {
+  if (!slot || !plannedDate) return
+  const d = slot._placeData
+  if (!d || !d.google_place_id) return
+  if (slot.dataset.altsState === 'dismissed') return
+  const cached = _readNearbyCache(d.google_place_id, plannedDate)
+  const container = slot.querySelector('.pl-closed-alts-host')
+  if (!container) return
+  if (cached) {
+    const filtered = _filterAlternatives(cached, plannedDate, d.google_place_id)
+    container.outerHTML = buildClosedAltsHtml(filtered, plannedDate, slot.id)
+    return
+  }
+  if (slot.dataset.altsState === 'loading' || slot.dataset.altsState === 'loaded') return
+  if (!_canCallNearby()) {
+    container.outerHTML = `<div class="pl-closed-alts">
+      <div class="pl-closed-alts-head">Hit today's lookup limit (${PLACES_NEARBY_DAILY_CAP}/day).</div>
+      <div class="pl-closed-alts-footer">
+        <a onclick="closedAltsAction('${slot.id}','manual')">Search manually instead</a>
+        <a onclick="closedAltsAction('${slot.id}','keep')">Keep this stop anyway</a>
+      </div>
+    </div>`
+    return
+  }
+  slot.dataset.altsState = 'loading'
+  if (d.latitude == null || d.longitude == null) {
+    container.outerHTML = `<div class="pl-closed-alts">
+      <div class="pl-closed-alts-empty">No coordinates on this place — can't find alternatives.</div>
+    </div>`
+    return
+  }
+  const includedType = _nearbyTypeFor(d.place_types)
+  const candidates = await _fetchNearbyAlternatives(d.latitude, d.longitude, includedType)
+  _bumpNearbyDailyCount()
+  _writeNearbyCache(d.google_place_id, plannedDate, candidates)
+  // Slot might have been removed / re-rendered during the await — re-find.
+  const live = document.getElementById(slot.id)
+  if (!live) return
+  const liveContainer = live.querySelector('.pl-closed-alts-host, .pl-closed-alts')
+  if (!liveContainer) return
+  const filtered = _filterAlternatives(candidates, plannedDate, d.google_place_id)
+  liveContainer.outerHTML = buildClosedAltsHtml(filtered, plannedDate, live.id)
+  live.dataset.altsState = 'loaded'
+}
+
+// Swap the current slot to an alternative place. Reuses the existing
+// selectPlaceForSlot path. Snapshots time/category/notes BEFORE the swap
+// and restores them AFTER — applyPlaceToSlot can otherwise auto-flip the
+// type from the new venue's Google place_types, which would surprise the
+// planner who just wanted a 1:1 replacement.
+async function closedAltsSwap(slotId, placeId) {
+  const slot = document.getElementById(slotId)
+  if (!slot || !placeId) return
+  // Disable the button while the fetch runs to prevent double-clicks.
+  const btn = slot.querySelector(`.pl-closed-alt-swap[onclick*="${placeId}"]`)
+  if (btn) { btn.disabled = true; btn.textContent = 'Swapping…' }
+  // Snapshot the fields we want to preserve.
+  const savedType = slot.querySelector('.slot-type-select')?.value || null
+  const savedTime = slot.querySelector('.slot-time-input')?.value || null
+  const savedNotes = slot.querySelector('.slot-notes-input')?.value || null
+  await selectPlaceForSlot(slot, placeId)
+  // Restore. Type might have been auto-flipped; force back to the original.
+  if (savedType) {
+    const typeInput = slot.querySelector('.slot-type-select')
+    if (typeInput && typeInput.value !== savedType) {
+      applySlotTypeChange(slot, savedType)
+    }
+  }
+  if (savedTime) {
+    const timeInput = slot.querySelector('.slot-time-input')
+    if (timeInput) timeInput.value = savedTime
+    const label = slot.querySelector('.time-dd-label')
+    if (label) label.textContent = formatTimeDisplay(savedTime)
+  }
+  if (savedNotes) {
+    const noteInput = slot.querySelector('.slot-notes-input')
+    if (noteInput) noteInput.value = savedNotes
+  }
+}
+
+// Footer actions: "Search manually" reopens the title input for editing,
+// "Keep this stop anyway" dismisses the alternatives panel (session-only;
+// won't persist across reloads).
+function closedAltsAction(slotId, action) {
+  const slot = document.getElementById(slotId)
+  if (!slot) return
+  if (action === 'manual') {
+    clearLinkedPlaceById(slotId)
+    const titleInput = slot.querySelector('.slot-title-input')
+    if (titleInput) { titleInput.focus(); titleInput.select() }
+    return
+  }
+  if (action === 'keep') {
+    slot.dataset.altsState = 'dismissed'
+    const panel = slot.querySelector('.pl-closed-alts, .pl-closed-alts-host')
+    if (panel) panel.remove()
+    return
+  }
+}
+
 // Map Google place types → our slot type enum. Order matters: the first match
 // wins. Accommodation before activity because some hotels also tag as
 // `tourist_attraction`. Returns null if no confident match.
@@ -13918,7 +14283,11 @@ function renderLinkedChip(slot) {
   // closed on that day so it's impossible to miss.
   let plannedRow = ''
   if (open.status === 'closed' && open.dayName) {
-    plannedRow = `<div class="pl-planned pl-planned-closed">🔴 <strong>CLOSED on ${escapeHtml(open.dayName)}</strong> — pick another option</div>`
+    // Closed on the planned day → render the warning AND a placeholder host
+    // that ensureClosedAlternatives() will patch in-place once the
+    // nearbySearch resolves. Placeholder starts as a "Loading…" line.
+    plannedRow = `<div class="pl-planned pl-planned-closed">🔴 <strong>CLOSED on ${escapeHtml(open.dayName)}</strong> — finding alternatives nearby…</div>
+      <div class="pl-closed-alts-host"><div class="pl-closed-alts"><div class="pl-closed-alts-loading">Looking up similar venues open on ${escapeHtml(open.dayName)}…</div></div></div>`
   } else if (open.status === 'open' && open.dayName) {
     plannedRow = `<div class="pl-planned pl-planned-open">🟢 Open ${escapeHtml(open.dayName)}${open.plannedHours ? ' · ' + escapeHtml(open.plannedHours) : ''}</div>`
   } else if (open.label) {
@@ -13979,6 +14348,13 @@ function renderLinkedChip(slot) {
       ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">View on Google Maps ↗</a>` : ''}
     </div>
   `
+  // Closed on the planned day? Kick off the nearby-alternatives lookup.
+  // ensureClosedAlternatives() handles cache hits (synchronous) AND fresh
+  // fetches (async); either way it patches the .pl-closed-alts-host that
+  // plannedRow inserted above.
+  if (open.status === 'closed' && plannedDate) {
+    ensureClosedAlternatives(slot, plannedDate)
+  }
 }
 
 // Toggle the per-day schedule list inside a place chip.
