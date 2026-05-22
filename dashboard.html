@@ -16747,6 +16747,19 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
         title: `${formatTimeDisplay(arrTime)} · ${methodLabel} arrives${locBit}`,
         subtitle: arrFrom && arrFrom !== 'origin' ? `from ${arrFrom} · Day 1 begins on arrival` : `Day 1 begins on arrival`,
       })
+      // Hang the resolved station coords on the anchor so getSlotLatLng
+      // works for the universal gap-fill pass downstream (auto-insert
+      // transport between arrival anchor and the first venue when km > 0.5).
+      const stLL = window._currentArrivalStationLatLng
+      if (stLL && Number.isFinite(stLL.lat) && Number.isFinite(stLL.lng)) {
+        topAnchor._placeData = {
+          google_place_id: window._currentArrivalStationPlaceId || null,
+          name: window._currentArrivalStationResolvedName || arrLoc,
+          latitude:  stLL.lat,
+          longitude: stLL.lng,
+        }
+        topAnchor.dataset.arrivalTime = arrTime
+      }
     }
   } else {
     const breakfastBit = window._currentHotelBreakfast
@@ -16872,31 +16885,89 @@ function refreshDayDistances(dayContainer) {
     }
     if (pushedAny) _sortSlotsInPlace(dayContainer)
   }
-  // Re-grab slots in the new chronological order before computing distance markers.
+  // ── UNIVERSAL gap-fill: AUTO-INSERT a transport between every pair of
+  // consecutive venues (including arrival anchor) where distance > 500 m.
+  // Idempotent: the inserted transport breaks up the venue→venue adjacency,
+  // so the next iteration won't insert another one. Sub-500 m hops still
+  // get the small inline distance marker (walking is obvious).
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
   for (let i = 0; i < slots.length - 1; i++) {
-    const a = getSlotLatLng(slots[i])
-    const b = getSlotLatLng(slots[i + 1])
+    const aSlot = slots[i]
+    const bSlot = slots[i + 1]
+    // Skip when either side IS a transport — adjacency already correct.
+    if (aSlot.classList.contains('slot-type-transport')) continue
+    if (bSlot.classList.contains('slot-type-transport')) continue
+    const a = getSlotLatLng(aSlot)
+    const b = getSlotLatLng(bSlot)
     if (!a || !b) continue
     const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
-    const desc = describeStopDistance(km)
-    if (!desc) continue
-    // Show the helper card whenever pickTransportModes has something to
-    // offer (km >= 1). Sub-1km hops just get the small inline indicator
-    // since walking is the obvious answer.
-    const modes = pickTransportModes(km)
-    if (!modes) {
-      const el = document.createElement('div')
-      el.className = `slot-distance slot-distance-${desc.tier}`
-      el.innerHTML = `<span class="sd-icon">${desc.icon}</span><span class="sd-text">${escapeHtml(desc.label)}</span>`
-      dayContainer.insertBefore(el, slots[i + 1])
+    if (!Number.isFinite(km)) continue
+    if (km < 0.5) {
+      // Sub-500m — inline distance marker only.
+      const desc = describeStopDistance(km)
+      if (desc) {
+        const el = document.createElement('div')
+        el.className = `slot-distance slot-distance-${desc.tier}`
+        el.innerHTML = `<span class="sd-icon">${desc.icon}</span><span class="sd-text">${escapeHtml(desc.label)}</span>`
+        dayContainer.insertBefore(el, bSlot)
+      }
       continue
     }
-    // Helper card. travelMin is taxi-pace estimate for the header summary;
-    // the per-mode options below carry their own time estimate.
-    const card = document.createElement('div')
-    card.innerHTML = buildDistHelperHtml({ ...desc, km, travelMin: Math.round(km * 3) }, slots[i].id, slots[i + 1].id, modes)
-    dayContainer.insertBefore(card.firstElementChild, slots[i + 1])
+    // km ≥ 500m — auto-insert a transport between aSlot and bSlot.
+    try {
+      // Depart time = a's release time. For the locked arrival anchor we
+      // add a 10-min disembark buffer; for venues we use start + stay
+      // (with type-based floors).
+      let departHHMM
+      if (aSlot.classList.contains('is-locked') && aSlot.dataset.anchorType === 'arrival') {
+        const arr = aSlot.dataset.arrivalTime || window._currentArrivalTime || '14:00'
+        const m = arr.match(/^(\d{1,2}):(\d{2})$/)
+        const arrMin = m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 14 * 60
+        departHHMM = minsToHHMM(Math.min(arrMin + 10, 23 * 60 + 45))
+      } else {
+        const startMin = parseSlotTime(aSlot.querySelector('.slot-time-input')?.value || '')
+        if (startMin == null) continue
+        const type = aSlot.querySelector('.slot-type-select')?.value || 'activity'
+        let stay = parseInt(aSlot.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+        if (type === 'accommodation') stay = Math.max(stay, 30)
+        else if (type === 'meal')     stay = Math.max(stay, 30)
+        if (stay <= 0) stay = 15
+        departHHMM = minsToHHMM(Math.min(startMin + stay, 23 * 60 + 45))
+      }
+      const departHour = parseInt(departHHMM.split(':')[0], 10)
+      const isNight = departHour >= 22 || departHour < 6
+      const mode = (km < 1) ? 'walk' : (km > 5 || isNight) ? 'taxi' : 'transit'
+      // Snapshot ONLY transport slots so we identify the new one cleanly
+      // (addSlot's tail-call to refreshDayDistances re-adds anchors).
+      const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10) || 1
+      const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
+      addSlot(dayNum, { icon: 'transport', time: departHHMM })
+      const newT = [...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')].find(s => !transportSnap.has(s))
+      if (!newT) continue
+      newT.dataset.transportMode = mode
+      newT.dataset.autoInserted = 'true'
+      _applySlotTime(newT, departHHMM)
+      const titleInput = newT.querySelector('.slot-title-input')
+      if (titleInput) {
+        const aName = _venueNameOf(aSlot) || aSlot.querySelector('.anchor-title')?.textContent || 'origin'
+        const bName = _venueNameOf(bSlot) || 'destination'
+        const modeName = mode === 'walk' ? 'Walk' : (mode === 'taxi' ? 'Taxi' : 'Metro')
+        titleInput.value = `${modeName} · ${aName} → ${bName}`
+      }
+      // Stamp from-coords when a is a locked arrival anchor (no prev venue
+      // to read lat/lng from in refreshTransportSlot).
+      if (aSlot.classList.contains('is-locked') && aSlot._placeData) {
+        newT.dataset.fromPlaceId = aSlot._placeData.google_place_id || ''
+        newT.dataset.fromName    = aSlot._placeData.name || ''
+        newT.dataset.fromLat     = String(aSlot._placeData.latitude)
+        newT.dataset.fromLng     = String(aSlot._placeData.longitude)
+      }
+      dayContainer.insertBefore(newT, bSlot)
+      refreshTransportSlot(newT)
+      if (typeof autoSaveDraft === 'function') autoSaveDraft()
+    } catch (e) {
+      console.warn('[auto-insert-transport] threw', e)
+    }
   }
   // Final brute-force chain enforcement — catches any case where the
   // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
