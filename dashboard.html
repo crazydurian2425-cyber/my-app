@@ -6462,7 +6462,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
 
     <!-- Language toggle — sits above Sign out -->
     <div class="sb-lang" role="group" aria-label="Language">
-      <button type="button" class="sb-lang-btn" data-lang="ja" onclick="setLang('ja')" aria-label="日本語 (Japanese)" title="日本語">
+      <button type="button" class="sb-lang-btn" data-lang="ja" onclick="setLang('ja')" aria-label="日本語 (Japanese)" title="日本語" style="display:none;">
         <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="13">
           <rect width="60" height="30" fill="#fff"/>
           <circle cx="30" cy="15" r="9" fill="#BC002D"/>
@@ -7013,7 +7013,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <div class="settings-row-sub" data-i18n="settings.language.sub">Changes the whole dashboard instantly</div>
             </div>
             <div class="settings-lang-pick">
-              <button type="button" class="settings-lang-btn" data-lang="ja" onclick="setLang('ja')">
+              <button type="button" class="settings-lang-btn" data-lang="ja" onclick="setLang('ja')" style="display:none;">
                 <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="22" height="14" style="border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,0.08);"><rect width="60" height="30" fill="#fff"/><circle cx="30" cy="15" r="9" fill="#BC002D"/></svg>
                 <span>日本語</span>
               </button>
@@ -8909,19 +8909,18 @@ const TM_I18N = {
   }
 }
 
-// Default to English now that the platform serves France. Old planners
-// whose localStorage was set to 'ja' get reset on first load post-pivot.
-// The 'jj_lang_resetv1' flag prevents re-resetting on every load.
+// France-only platform: English UI everywhere. Japanese UI is deprecated
+// (planners and travelers are EU now). We clear any stale 'ja' from
+// localStorage on every load AND force TM_LANG = 'en' regardless of
+// localStorage — so even if the planner clicked the (now-hidden) JA
+// toggle in a previous session, the next render is English.
 try {
-  if (!localStorage.getItem('jj_lang_resetv1')) {
-    if (localStorage.getItem('jj_planner_lang') === 'ja') {
-      localStorage.removeItem('jj_planner_lang')
-    }
-    localStorage.setItem('jj_lang_resetv1', '1')
+  if (localStorage.getItem('jj_planner_lang') === 'ja') {
+    localStorage.removeItem('jj_planner_lang')
   }
+  localStorage.setItem('jj_planner_lang', 'en')
 } catch (e) {}
-let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'en')
-if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'en'
+let TM_LANG = 'en'
 
 // ── Theme (light / dark) ───────────────────────────────────────
 function applyPlannerTheme(theme){
@@ -9023,125 +9022,60 @@ function setLang(lang){
 // ═══════════════════════════════════════════════════════════
 // ── Dashboard hero: city → travel photo map ─────────────
 // ═══════════════════════════════════════════════════════════
-// Each city points to a warm, recognisable editorial photo of that place.
-// Unsplash CDN; ?w=1600&q=75 keeps it crisp at banner size without bloat.
-// ── City hero photos ─────────────────────────────────────────
-// Only two Unsplash URLs are verified working for Japan content:
-//   * photo-1493976040374-85c8e12f0c0e — Mt Fuji reflected in the lake
-//   * photo-1545569341-9eb8b30979d9    — Fushimi Inari torii path, Kyoto
-// Earlier city-specific IDs resolved to unrelated stock (e.g. the Fukuoka
-// slot was serving a "Boxed Water" photo). Rather than risk more mismatches,
-// every city routes through one of these two, chosen to feel right for the
-// place (temple-towns → torii, port / urban / nature → Fuji). The overlay
-// carries the city name so planners still know which city they're seeing.
-const JP_HERO_FUJI  = 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1600&q=75&auto=format&fit=crop'
-const JP_HERO_TORII = 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=1600&q=75&auto=format&fit=crop'
-// Per-city distinct photos. Any that fail to load fall back to Mt Fuji via
-// the onerror handler in applyDashHero(). URLs chosen from widely-used
-// Unsplash editorial photos of each city so they're more stable than
-// arbitrary IDs.
-const JP_TOKYO_NIGHT   = 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1600&q=75&auto=format&fit=crop'
-const JP_OSAKA_CASTLE  = 'https://images.unsplash.com/photo-1590559899731-a382839e5549?w=1600&q=75&auto=format&fit=crop'
-const JP_SAPPORO_WIN   = 'https://images.unsplash.com/photo-1578469645742-46cae010e5d4?w=1600&q=75&auto=format&fit=crop'
-const JP_HIROSHIMA_TOR = 'https://images.unsplash.com/photo-1528164344705-47542687000d?w=1600&q=75&auto=format&fit=crop'
-const JP_OKINAWA_BEACH = 'https://images.unsplash.com/photo-1573124638362-0d0acfdd92ff?w=1600&q=75&auto=format&fit=crop'
-const JP_KOBE_NIGHT    = 'https://images.unsplash.com/photo-1589198840014-0f53ef0e6b24?w=1600&q=75&auto=format&fit=crop'
-const JP_NARA_DEER     = 'https://images.unsplash.com/photo-1580915340062-a65fd0ad2e21?w=1600&q=75&auto=format&fit=crop'
-const JP_NAGOYA_CASTLE = 'https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?w=1600&q=75&auto=format&fit=crop'
-const JP_FUKUOKA_STALL = 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=1600&q=75&auto=format&fit=crop'
+// France pivot — every hero image is now a French landmark. Tokyo / Kyoto
+// / etc. cities no longer match a specific entry; they fall through to
+// the generic Paris fallback. Wide Unsplash editorial IDs chosen for
+// reliable loading.
+const FR_HERO_EIFFEL    = 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=75&auto=format&fit=crop'
+const FR_HERO_ARC       = 'https://images.unsplash.com/photo-1431274172761-fca41d930114?w=1600&q=75&auto=format&fit=crop'
+const FR_HERO_LAVENDER  = 'https://images.unsplash.com/photo-1567945716310-4745a6b7844b?w=1600&q=75&auto=format&fit=crop'
+const FR_HERO_NICE      = 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?w=1600&q=75&auto=format&fit=crop'
+const FR_HERO_MSM       = 'https://images.unsplash.com/photo-1591104638137-6c25f4ec3741?w=1600&q=75&auto=format&fit=crop'
+const FR_HERO_LOIRE     = 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=75&auto=format&fit=crop'
 
-// All 47 prefectures, each mapped to a region-appropriate hero image.
-// Tuple: [English, Japanese, image, alt text].
-// Specific cities (Tokyo, Kyoto, Osaka, Nara, Hiroshima, Nagoya, Hyogo,
-// Hokkaido, Fukuoka, Okinawa) keep their own iconic image. The rest reuse
-// the closest regional image — the prefecture name in the sub still makes
-// it feel personal even when neighbours share a photo.
+// Sixteen French régions / iconic destinations. PREF_HERO kept as the
+// variable name so downstream resolveCityKey logic doesn't need rewriting.
+// Tuple shape: [English key, French label, image, alt text].
 const PREF_HERO = [
-  // Hokkaido + Tohoku → northern feel
-  ['Hokkaido','北海道',   JP_SAPPORO_WIN,   'Hokkaido winter cityscape'],
-  ['Aomori','青森県',     JP_SAPPORO_WIN,   'Northern Japan snow scene'],
-  ['Iwate','岩手県',      JP_SAPPORO_WIN,   'Northern Japan snow scene'],
-  ['Miyagi','宮城県',     JP_SAPPORO_WIN,   'Tohoku coast at dusk'],
-  ['Akita','秋田県',      JP_SAPPORO_WIN,   'Akita winter mountains'],
-  ['Yamagata','山形県',   JP_SAPPORO_WIN,   'Yamagata snow valleys'],
-  ['Fukushima','福島県',  JP_SAPPORO_WIN,   'Fukushima countryside'],
-  // Kanto → Tokyo neon
-  ['Ibaraki','茨城県',    JP_TOKYO_NIGHT,   'Kanto urban skyline'],
-  ['Tochigi','栃木県',    JP_TOKYO_NIGHT,   'Kanto countryside'],
-  ['Gunma','群馬県',      JP_TOKYO_NIGHT,   'Kanto onsen town'],
-  ['Saitama','埼玉県',    JP_TOKYO_NIGHT,   'Kanto suburb at night'],
-  ['Chiba','千葉県',      JP_TOKYO_NIGHT,   'Chiba coast'],
-  ['Tokyo','東京都',      JP_TOKYO_NIGHT,   'Tokyo Shibuya at night'],
-  ['Kanagawa','神奈川県', JP_TOKYO_NIGHT,   'Yokohama at night'],
-  // Chubu → Mt Fuji (Aichi gets Nagoya Castle)
-  ['Niigata','新潟県',    JP_HERO_FUJI,     'Chubu mountain landscape'],
-  ['Toyama','富山県',     JP_HERO_FUJI,     'Tateyama range'],
-  ['Ishikawa','石川県',   JP_HERO_FUJI,     'Kanazawa coastline'],
-  ['Fukui','福井県',      JP_HERO_FUJI,     'Fukui cliffs'],
-  ['Yamanashi','山梨県',  JP_HERO_FUJI,     'Mount Fuji reflected in lake'],
-  ['Nagano','長野県',     JP_HERO_FUJI,     'Nagano alpine view'],
-  ['Gifu','岐阜県',       JP_HERO_FUJI,     'Gifu mountain village'],
-  ['Shizuoka','静岡県',   JP_HERO_FUJI,     'Mount Fuji from Shizuoka'],
-  ['Aichi','愛知県',      JP_NAGOYA_CASTLE, 'Nagoya Castle'],
-  // Kansai
-  ['Mie','三重県',        JP_OSAKA_CASTLE,  'Ise shrine path'],
-  ['Shiga','滋賀県',      JP_HERO_TORII,    'Lake Biwa shoreline'],
-  ['Kyoto','京都府',      JP_HERO_TORII,    'Fushimi Inari torii gates, Kyoto'],
-  ['Osaka','大阪府',      JP_OSAKA_CASTLE,  'Osaka Castle with cherry blossoms'],
-  ['Hyogo','兵庫県',      JP_KOBE_NIGHT,    'Kobe harbour at night'],
-  ['Nara','奈良県',       JP_NARA_DEER,     'Nara deer near Todai-ji'],
-  ['Wakayama','和歌山県', JP_OSAKA_CASTLE,  'Wakayama coast'],
-  // Chugoku → Hiroshima Itsukushima
-  ['Tottori','鳥取県',    JP_HIROSHIMA_TOR, 'Tottori sand dunes by the sea'],
-  ['Shimane','島根県',    JP_HIROSHIMA_TOR, 'Izumo coast'],
-  ['Okayama','岡山県',    JP_HIROSHIMA_TOR, 'Okayama garden'],
-  ['Hiroshima','広島県',  JP_HIROSHIMA_TOR, 'Itsukushima torii near Hiroshima'],
-  ['Yamaguchi','山口県',  JP_HIROSHIMA_TOR, 'Yamaguchi coast'],
-  // Shikoku → also Itsukushima (island/sea aesthetic)
-  ['Tokushima','徳島県',  JP_HIROSHIMA_TOR, 'Tokushima river valley'],
-  ['Kagawa','香川県',     JP_HIROSHIMA_TOR, 'Seto Inland Sea'],
-  ['Ehime','愛媛県',      JP_HIROSHIMA_TOR, 'Matsuyama coast'],
-  ['Kochi','高知県',      JP_HIROSHIMA_TOR, 'Kochi shoreline'],
-  // Kyushu → Fukuoka yatai
-  ['Fukuoka','福岡県',    JP_FUKUOKA_STALL, 'Fukuoka yatai food stalls'],
-  ['Saga','佐賀県',       JP_FUKUOKA_STALL, 'Saga countryside'],
-  ['Nagasaki','長崎県',   JP_FUKUOKA_STALL, 'Nagasaki port'],
-  ['Kumamoto','熊本県',   JP_FUKUOKA_STALL, 'Kumamoto Castle area'],
-  ['Oita','大分県',       JP_FUKUOKA_STALL, 'Oita onsen town'],
-  ['Miyazaki','宮崎県',   JP_FUKUOKA_STALL, 'Miyazaki coastline'],
-  ['Kagoshima','鹿児島県',JP_FUKUOKA_STALL, 'Kagoshima with Sakurajima'],
-  // Okinawa
-  ['Okinawa','沖縄県',    JP_OKINAWA_BEACH, 'Okinawa turquoise beach']
+  ['Paris',              'Paris',                       FR_HERO_EIFFEL,   'Eiffel Tower at dusk'],
+  ['Île-de-France',      'Île-de-France',               FR_HERO_EIFFEL,   'Paris and surroundings'],
+  ['Versailles',         'Versailles',                  FR_HERO_ARC,      'Versailles Palace gardens'],
+  ['Lyon',               'Lyon',                        FR_HERO_LAVENDER, 'Vieux Lyon from above'],
+  ['Marseille',          'Marseille',                   FR_HERO_NICE,     'Vieux-Port de Marseille'],
+  ['Nice',               'Nice',                        FR_HERO_NICE,     'Promenade des Anglais, Nice'],
+  ['Cannes',             'Cannes',                      FR_HERO_NICE,     'Cannes seafront'],
+  ['Bordeaux',           'Bordeaux',                    FR_HERO_LAVENDER, 'Place de la Bourse, Bordeaux'],
+  ['Toulouse',           'Toulouse',                    FR_HERO_LAVENDER, 'Garonne river, Toulouse'],
+  ['Strasbourg',         'Strasbourg',                  FR_HERO_ARC,      'Petite France canal, Strasbourg'],
+  ['Lille',              'Lille',                       FR_HERO_ARC,      'Grand Place, Lille'],
+  ['Nantes',             'Nantes',                      FR_HERO_LOIRE,    'Château des Ducs, Nantes'],
+  ['Rennes',             'Rennes',                      FR_HERO_MSM,      'Rennes old town'],
+  ['Reims',              'Reims',                       FR_HERO_LAVENDER, 'Reims cathedral, Champagne country'],
+  ['Avignon',            'Avignon',                     FR_HERO_LAVENDER, "Palais des Papes, Avignon"],
+  ['Mont-Saint-Michel',  'Mont-Saint-Michel',           FR_HERO_MSM,      'Mont-Saint-Michel at high tide'],
+  ['Saint-Malo',         'Saint-Malo',                  FR_HERO_MSM,      'Saint-Malo ramparts'],
 ]
 
 // Build CITY_HERO from PREF_HERO (English key → image + alt + sub).
-// Sub label drops the 県/府/都 suffix on the JA side for cleaner display.
 const CITY_HERO = Object.fromEntries(
-  PREF_HERO.map(([en, ja, img, alt]) => [en, {
+  PREF_HERO.map(([en, fr, img, alt]) => [en, {
     img, alt,
     sub:{
-      en: `${en} · Japan`,
-      ja: `${ja.replace(/[県府都]$/, '')} · 日本`
+      en: `${en} · France`,
+      ja: `${fr} · France`
     }
   }])
 )
-// Legacy aliases — older 'Sapporo' / 'Kobe' values still resolve correctly
-CITY_HERO['Sapporo'] = { img:JP_SAPPORO_WIN, alt:'Sapporo winter cityscape', sub:{en:'Sapporo · Japan', ja:'札幌 · 日本'} }
-CITY_HERO['Nagoya']  = { img:JP_NAGOYA_CASTLE, alt:'Nagoya Castle',          sub:{en:'Nagoya · Japan',  ja:'名古屋 · 日本'} }
-CITY_HERO['Kobe']    = { img:JP_KOBE_NIGHT, alt:'Kobe harbour at night',     sub:{en:'Kobe · Japan',    ja:'神戸 · 日本'} }
-// Fallbacks
-CITY_HERO['_fallback_en'] = { img:JP_HERO_FUJI, alt:'Mount Fuji reflected in the lake', sub:{en:'Somewhere iconic · Japan', ja:'日本の名所'} }
-CITY_HERO['_fallback_ja'] = { img:JP_HERO_FUJI, alt:'Mount Fuji reflected in the lake', sub:{en:'Somewhere iconic · Japan', ja:'日本の名所'} }
-CITY_HERO['Other']        = { img:JP_HERO_FUJI, alt:'A beautiful destination in Japan', sub:{en:'Your city · Japan',        ja:'あなたの街 · 日本'} }
+// Fallbacks — used when a city isn't in the map above. Old Japanese city
+// names (Tokyo, Kyoto, Osaka, etc.) land here automatically.
+CITY_HERO['_fallback_en'] = { img:FR_HERO_EIFFEL, alt:'Eiffel Tower at dusk', sub:{en:'Somewhere iconic · France', ja:'France'} }
+CITY_HERO['_fallback_ja'] = { img:FR_HERO_EIFFEL, alt:'Eiffel Tower at dusk', sub:{en:'Somewhere iconic · France', ja:'France'} }
+CITY_HERO['Other']        = { img:FR_HERO_EIFFEL, alt:'A beautiful destination in France', sub:{en:'Your city · France', ja:'France'} }
 
-// Japanese-name aliases — both full form (北海道, 青森県) and short form (青森)
+// French-name aliases so a city stored as the French label still resolves.
 const CITY_ALIASES = (() => {
-  const map = { '札幌':'Sapporo','名古屋':'Nagoya','神戸':'Kobe' }
-  PREF_HERO.forEach(([en, ja]) => {
-    map[ja] = en
-    const short = ja.replace(/[県府都]$/, '')
-    if (short !== ja) map[short] = en
-  })
+  const map = {}
+  PREF_HERO.forEach(([en, fr]) => { if (fr !== en) map[fr] = en })
   return map
 })()
 
