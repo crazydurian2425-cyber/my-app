@@ -14815,18 +14815,14 @@ function _suggestTransportStart(prevSlot, nextSlot) {
   if (stayMin <= 0) stayMin = 15
   const [h, m] = base.split(':').map(Number)
   const baseMin = h * 60 + m
+  // Transport leaves prev.start + prev.stay — the planner's stated duration
+  // is the source of truth. We DON'T cap against next-slot time here:
+  // refreshTransportSlot's next-venue auto-sync (the `tooEarly` branch)
+  // already pushes the next venue forward when transport would overshoot.
+  // The old cap logic ran *before* the auto-sync, so picking "1 hour" with
+  // a tight next-slot time would pull transport BACKWARD (e.g. 3:30 → 3:15)
+  // instead of just shifting Eiffel forward.
   let total = baseMin + stayMin
-  // Cap: if there's a next slot already, transport must depart BEFORE it.
-  // Aim for `next.time - 10 min` as a safe ceiling.
-  const nextHidden = nextSlot?.querySelector('.slot-time-input')
-  const nextVal = nextHidden?.value || null
-  if (nextVal) {
-    const [nh, nm] = nextVal.split(':').map(Number)
-    const nextMin = nh * 60 + nm
-    if (total >= nextMin) {
-      total = Math.max(baseMin + 5, nextMin - 10)
-    }
-  }
   total = Math.ceil(total / 15) * 15
   if (total > 23 * 60 + 45) total = 23 * 60 + 45
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
