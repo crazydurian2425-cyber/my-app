@@ -14562,18 +14562,38 @@ function buildDistHelperHtml(desc, prevSlotId, nextSlotId, modes) {
 // nextSlot. We force the time on the new slot AFTER addSlot returns, then
 // resort to drop it into the right position.
 function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon, modeMeta) {
+  console.log('[addTransport]', { prevSlotId, nextSlotId, modeKey })
   const prevSlot = document.getElementById(prevSlotId)
   const nextSlot = document.getElementById(nextSlotId)
-  if (!prevSlot || !nextSlot) return
+  if (!prevSlot || !nextSlot) {
+    console.warn('[addTransport] missing slot', { prevSlot, nextSlot })
+    return
+  }
   const dayContainer = prevSlot.closest('[id^="slots-day-"]')
-  if (!dayContainer) return
+  if (!dayContainer) {
+    console.warn('[addTransport] no day container')
+    return
+  }
   const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10)
-  if (!Number.isFinite(dayNum)) return
+  if (!Number.isFinite(dayNum)) {
+    console.warn('[addTransport] bad dayNum', dayContainer.id)
+    return
+  }
   const startTime = _suggestTransportStart(prevSlot)
-  // Create the transport slot via addSlot (sets up type/time dropdowns).
+  // Snapshot the slot set BEFORE addSlot, so we can identify the NEW one
+  // by diff. Previous code used :scope > .activity-slot:last-of-type which
+  // is fragile when distance markers or helper cards sit between slots
+  // (:last-of-type matches by tag, not class — last <div> may not be the
+  // last slot).
+  const slotsBefore = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot')])
   addSlot(dayNum, { icon: 'transport', time: startTime })
-  const newSlot = dayContainer.querySelector(':scope > .activity-slot:last-of-type')
-  if (!newSlot) return
+  const newSlot = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+    .find(s => !slotsBefore.has(s))
+  if (!newSlot) {
+    console.warn('[addTransport] new slot not found post-addSlot')
+    return
+  }
+  console.log('[addTransport] new slot created', newSlot.id, 'time=', startTime)
   // Force the time to our desired start, overriding addSlot's bump logic.
   const timeInput = newSlot.querySelector('.slot-time-input')
   const timeLabel = newSlot.querySelector('.time-dd-label')
