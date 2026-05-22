@@ -16103,11 +16103,20 @@ function refreshTransportSlot(slot) {
   //   - locked arrival anchor → arrival_time + 10 min disembark buffer.
   //   - locked morning anchor → wake_time + 0 (planner starts day moving).
   //   - other / no prev → keep existing depart.
-  console.log('[refreshTransport]', slot.id, '· current depart=', departHHMM, '· prev=', prev?.id || prev?.className || 'null', '· prev.time=', prev?.querySelector?.('.slot-time-input')?.value || 'n/a')
+  const _prevTime = prev?.querySelector?.('.slot-time-input')?.value || 'n/a'
+  const _prevDur  = prev?.querySelector?.('.slot-duration-input')?.value || 'n/a'
+  const _prevType = prev?.querySelector?.('.slot-type-select')?.value || 'n/a'
+  console.log('[refreshTransport]', slot.id,
+    '· current depart=', departHHMM,
+    '· prev=', prev?.id || prev?.className || 'null',
+    '· prev.time=', _prevTime,
+    '· prev.dur=', _prevDur,
+    '· prev.type=', _prevType)
   if (prev) {
     let corrected = null
     if (!prev.classList.contains('is-locked')) {
       corrected = _suggestTransportStart(prev, next)
+      console.log('[refreshTransport]', slot.id, '· _suggestTransportStart →', corrected)
     } else if (prev.dataset.anchorType === 'arrival') {
       const arrTime = prev.dataset.arrivalTime || window._currentArrivalTime || '14:00'
       const m = String(arrTime).match(/^(\d{1,2}):(\d{2})$/)
@@ -17308,10 +17317,14 @@ function endDayBackToHotel(dayContainerId) {
       longitude: hotel.longitude,
     }
   }
-  refreshTransportSlot(newT)
-  // Hide the button (transport now sits before the anchor).
-  renderEndDayButton(dayContainer, dayNum, (typeof dayCount === 'number') ? dayCount : null)
-  if (typeof refreshDaySummary === 'function') refreshDaySummary(dayContainer)
+  // Full day refresh — recomputes transport depart against ONYX's
+  // current time+stay, re-runs _enforceTimeChain so the back-to-hotel
+  // transport's depart is in sync, re-renders the bookends so the
+  // "Back at Hôtel" anchor reads transport.arrive (not transport.depart).
+  // Without this, just calling refreshTransportSlot leaves the bookend's
+  // _computeActualDayEnd stale (it was computed BEFORE the transport
+  // existed).
+  if (typeof refreshDayDistances === 'function') refreshDayDistances(dayContainer)
   if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 
