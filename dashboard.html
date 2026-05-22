@@ -13335,6 +13335,10 @@ function _autoSeedDay1HotelIfNeeded() {
     t.dataset.transportMode = 'taxi'
     const titleInput = t.querySelector('.slot-title-input')
     if (titleInput) titleInput.value = 'Taxi to hotel'
+    // FORCE the time to arrival_time. addSlot's bumpAnd logic pushes the
+    // new slot to latestExisting+60 when seedFixedTime <= latestExisting,
+    // which would land the taxi AFTER the hotel and break the ordering.
+    _applySlotTime(t, arr)
     if (beforeEl && beforeEl.parentNode === day1) {
       day1.insertBefore(t, beforeEl)
     }
