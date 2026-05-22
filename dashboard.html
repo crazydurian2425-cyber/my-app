@@ -14553,7 +14553,12 @@ function applyPlaceToSlot(slot, place) {
   // Universal gap-fill: after the slot is linked, walk neighbours and
   // auto-insert transports for any pair with km ≥ 0.5. Runs AFTER
   // refreshDayDistances so addSlot's tail-call refresh doesn't recurse.
-  if (typeof _gapFillTransportsForDay === 'function') _gapFillTransportsForDay(_dayContainer)
+  console.log('[applyPlace] linked', slot.id, '→ calling gap-fill for', _dayContainer?.id)
+  if (typeof _gapFillTransportsForDay === 'function') {
+    _gapFillTransportsForDay(_dayContainer)
+  } else {
+    console.warn('[applyPlace] _gapFillTransportsForDay NOT DEFINED — function definition broke?')
+  }
   autoSaveDraft()
   // Restore modal scroll position last — every step above could have
   // shifted layout and let the browser snap to top.
