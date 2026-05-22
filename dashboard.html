@@ -16269,7 +16269,7 @@ function toggleTransportMap(slotId, btn) {
     if (label) label.textContent = 'Show route map'
     return
   }
-  // First-time expand → mount the iframe.
+  // First-time expand → mount the iframe + the route-mismatch caption.
   if (!host.querySelector('iframe')) {
     const url = host.dataset.embedUrl
     if (url) {
@@ -16282,6 +16282,15 @@ function toggleTransportMap(slotId, btn) {
       iframe.referrerPolicy = 'no-referrer-when-downgrade'
       iframe.allowFullscreen = true
       host.appendChild(iframe)
+      // Caption — the embed iframe and our Routes API call can pick
+      // different alternative routes (same drive time, different roads).
+      // The grid shows the Routes-API choice; the map below may show the
+      // Embed-API choice. Both are valid; planner just needs to know.
+      const note = document.createElement('div')
+      note.className = 'transport-map-note'
+      note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:var(--text-3);line-height:1.4;border-left:2px solid var(--border);'
+      note.textContent = 'Best route by current traffic. Google Maps may show an alternative route with the same duration via a different road.'
+      host.appendChild(note)
     }
   }
   host.hidden = false
