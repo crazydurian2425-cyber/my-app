@@ -16957,6 +16957,7 @@ function refreshAllDistances() {
 //                                 → _gapFillTransportsForDay → returns
 // No re-entry, no flag needed.
 function _gapFillTransportsForDay(dayContainer) {
+  console.log('[gap-fill] ENTERED for', dayContainer?.id, '· children:', dayContainer?.children?.length)
   if (!dayContainer) return
   const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10) || 1
   // Re-scan on each iteration because addSlot mutates the DOM. Cap at the
@@ -16966,17 +16967,20 @@ function _gapFillTransportsForDay(dayContainer) {
   const MAX = 20
   while (inserts < MAX) {
     const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+    console.log('[gap-fill] iteration', inserts, '· slots:', slots.length)
     let didInsert = false
     for (let i = 0; i < slots.length - 1; i++) {
       const aSlot = slots[i]
       const bSlot = slots[i + 1]
-      if (aSlot.classList.contains('slot-type-transport')) continue
-      if (bSlot.classList.contains('slot-type-transport')) continue
+      if (aSlot.classList.contains('slot-type-transport')) { console.log('  pair', i, 'skip: a=transport'); continue }
+      if (bSlot.classList.contains('slot-type-transport')) { console.log('  pair', i, 'skip: b=transport'); continue }
       const a = getSlotLatLng(aSlot)
       const b = getSlotLatLng(bSlot)
-      if (!a || !b) continue
+      if (!a) { console.log('  pair', i, 'skip: a no lat/lng', { aId: aSlot.id, aClass: aSlot.className, aHasPlaceData: !!aSlot._placeData }); continue }
+      if (!b) { console.log('  pair', i, 'skip: b no lat/lng', { bId: bSlot.id, bClass: bSlot.className, bHasPlaceData: !!bSlot._placeData }); continue }
       const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
-      if (!Number.isFinite(km) || km < 0.5) continue
+      if (!Number.isFinite(km) || km < 0.5) { console.log('  pair', i, 'skip: km =', km); continue }
+      console.log('  pair', i, '✓ will insert · km=', km.toFixed(2), '· a=', aSlot.id || aSlot.className, '→ b=', bSlot.id || bSlot.className)
       // Compute depart time + mode.
       let departHHMM
       if (aSlot.classList.contains('is-locked') && aSlot.dataset.anchorType === 'arrival') {
