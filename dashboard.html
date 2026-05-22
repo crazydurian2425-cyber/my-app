@@ -13448,10 +13448,32 @@ function _ensureArrivalTaxiPresent() {
     if (!Number.isFinite(arrHour) || arrHour < 13) return
     const day1 = document.getElementById('slots-day-1')
     if (!day1) return
+    // ── Belt-and-braces dedup: if ANY slot in Day 1 already has the
+    // dataset.autoSeededArrivalTaxi marker, we've already injected the
+    // taxi once this session. Bail unconditionally.
+    if (day1.querySelector(':scope > .activity-slot[data-auto-seeded-arrival-taxi="true"]')) {
+      console.log('[arrival-taxi-safety] dataset marker already present, no-op')
+      return
+    }
+    // Also check by mode/title (covers slots saved-then-loaded).
+    const existingTaxi = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-transport')]
+      .find(t => t.dataset.transportMode === 'taxi'
+              && (t.querySelector('.slot-title-input')?.value || '').toLowerCase().startsWith('taxi to hotel'))
+    if (existingTaxi) {
+      console.log('[arrival-taxi-safety] existing "Taxi to hotel" transport found, no-op', existingTaxi.id)
+      return
+    }
     // Walk from arrival anchor forward, skipping locked rows + non-activity-slot
     // siblings (helper cards etc) until we hit something with a class.
     const anchor = day1.querySelector(':scope > .activity-slot.is-locked.anchor-arrival')
-    if (!anchor) return
+    if (!anchor) { console.log('[arrival-taxi-safety] no arrival anchor in DOM'); return }
+    // Dump the children so we can see what the safety net actually sees.
+    const childDump = [...day1.children].map(el => ({
+      tag: el.tagName,
+      id: el.id || '(no id)',
+      cls: el.className,
+    }))
+    console.log('[arrival-taxi-safety] day1 children', childDump)
     let next = anchor.nextElementSibling
     while (next) {
       if (next.classList?.contains('activity-slot')) {
@@ -13460,7 +13482,8 @@ function _ensureArrivalTaxiPresent() {
       }
       next = next.nextElementSibling
     }
-    if (!next) return
+    if (!next) { console.log('[arrival-taxi-safety] no next sibling after anchor'); return }
+    console.log('[arrival-taxi-safety] next is', { id: next.id, cls: next.className })
     if (next.classList.contains('slot-type-transport')) {
       console.log('[arrival-taxi-safety] transport already present, no-op')
       return
