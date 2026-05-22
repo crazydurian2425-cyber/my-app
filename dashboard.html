@@ -15480,26 +15480,25 @@ function refreshTransportSlot(slot) {
   }
   const arriveHHMM = _addMinutes(departHHMM, est.mins || 0)
   // ── Auto-sync next venue's start time to the transport's arrival ──
-  // Two cases, both snap to _snapUp30(arrive):
-  //   (a) Next is TOO EARLY  — transport arrives after next's current
-  //       time → push next forward (otherwise traveler-can't-be-there).
-  //   (b) Next is WAY LATE   — gap > 60 min between arrival and next's
-  //       current start → pull next back. Example: Uber arrives 8:05,
-  //       ONYX was set to 10:00 (115 min gap) → snap to 8:15. Saves
-  //       the planner manually re-setting the next time after they
-  //       just added a transport block.
-  // Smaller gaps (≤ 60 min) are left alone so a planner who deliberately
-  // wants "arrive 8:05, walk around 30 min, sit down at 8:45" can do that.
+  // Always snap next to _snapUp30(arrive) — the planner's stated mental
+  // model is "transport arrives 5:14 PM → next stop starts 5:15 PM" with
+  // no in-between gap unless they explicitly add it. If they want a gap
+  // (sit down 30 min after arriving), they can pick the time manually
+  // after the snap fires.
+  // This unconditional snap also prevents a subtle sort bug: when prev's
+  // stay grows (e.g. 1h → 2h), transport's depart time jumps forward. If
+  // next venue's time isn't pushed along, _sortSlotsInPlace would place
+  // transport AFTER next venue → the slot-dist-helper card reappears
+  // between prev and next, making it look like the transport block
+  // "disappeared".
   if (next) {
     const nextHidden = next.querySelector('.slot-time-input')
     const nextCurrent = nextHidden?.value || '23:59'
     const minStart = _snapUp30(arriveHHMM)
     const curMin = parseSlotTime(nextCurrent)
     const minMin = parseSlotTime(minStart)
-    if (curMin != null && minMin != null) {
-      const tooEarly = minMin > curMin
-      const wayLate  = (curMin - minMin) > 60
-      if (tooEarly || wayLate) _applySlotTime(next, minStart)
+    if (curMin != null && minMin != null && curMin !== minMin) {
+      _applySlotTime(next, minStart)
     }
   }
   const departLabel = formatTimeDisplay(departHHMM)
