@@ -17148,9 +17148,15 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
   renderEndDayButton(dayContainer, dayNum, totalDays)
 }
 
-// Render or remove the "End day · back to hotel" action row. Pure DOM
-// op — call sites: end of renderDayBookends, plus any time a transport
-// is removed / added between the last venue and the bottom anchor.
+// Render the "End day · back to hotel" action row. Pure DOM op — call
+// sites: end of renderDayBookends, plus any time a transport is removed
+// or added between the last venue and the bottom anchor.
+//
+// Always visible (when the day has at least one real venue) so the
+// planner can re-trigger it after deleting a broken back-to-hotel
+// transport. Clicking the button is idempotent — it deletes any
+// existing transport sitting immediately above the end_of_day anchor
+// and inserts a fresh one with current data.
 function renderEndDayButton(dayContainer, dayNum, totalDays) {
   if (!dayContainer) return
   // Remove any existing row — we re-create on every refresh.
@@ -17161,22 +17167,25 @@ function renderEndDayButton(dayContainer, dayNum, totalDays) {
     ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
   )
   if (!endAnchor) return
-  // Find the last real venue (non-transport, non-locked, has _placeData).
+  // Find the last real venue (non-transport, non-locked).
   const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('slot-type-transport')
               && !s.classList.contains('is-locked'))
   if (!venues.length) return
-  // Skip if a transport already sits between the last venue and the
-  // bottom anchor — planner already wrapped this day.
+  // Detect whether a transport already sits right above the anchor.
+  // Used purely to tweak the button label so the action is obvious.
   let scan = endAnchor.previousElementSibling
   while (scan && scan.classList?.contains('is-locked')) scan = scan.previousElementSibling
-  if (scan && scan.classList?.contains('slot-type-transport')) return
+  const hasExisting = !!(scan && scan.classList?.contains('slot-type-transport'))
+  const label = hasExisting
+    ? 'Refresh back-to-hotel transport'
+    : 'End day · back to hotel'
   const row = document.createElement('div')
   row.className = 'end-day-row'
   row.innerHTML = `
     <button type="button" class="end-day-btn" onclick="endDayBackToHotel('${dayContainer.id}')">
       <span class="edb-icon">🌙</span>
-      <span class="edb-text">End day · back to hotel</span>
+      <span class="edb-text">${label}</span>
     </button>
   `
   dayContainer.insertBefore(row, endAnchor)
@@ -17194,6 +17203,20 @@ function endDayBackToHotel(dayContainerId) {
     ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
   )
   if (!endAnchor) return
+  // Idempotent — clear out ALL transports sitting between the last
+  // real venue and the bottom anchor (handles the orphan-transport
+  // case where a prior session left stale rows behind).
+  let scan = endAnchor.previousElementSibling
+  while (scan) {
+    const prev = scan.previousElementSibling
+    if (scan.classList?.contains('slot-type-transport')) {
+      scan.remove()
+      scan = prev
+      continue
+    }
+    if (scan.classList?.contains('is-locked')) { scan = prev; continue }
+    break    // first real venue — stop
+  }
   // Last real venue + the hotel coords.
   const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('slot-type-transport')
