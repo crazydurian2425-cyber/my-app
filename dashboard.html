@@ -13496,6 +13496,15 @@ function addDayBlock(dayNum, totalDays) {
   // been migrated yet. fillItineraryItems() replaces these with real saved
   // data if the plan has been worked on before.
   const seedList = Array.isArray(g.seedSlots) && g.seedSlots.length ? g.seedSlots : null
+  // Day 1 always begins with a Hotel check-in anchor (15:00 / 30 min) so
+  // the planner doesn't have to remember to add one. Skipped if the
+  // guideline's seedList already opens with a hotel seed, and replaced by
+  // saved data on plan reload (fillItineraryItems clears + re-populates).
+  if (dayNum === 1) {
+    const guidelineHasHotel = seedList && seedList.some(s => s?.icon === 'hotel')
+                          || (!seedList && Array.isArray(g.items) && g.items.some(it => it?.icon === 'hotel'))
+    if (!guidelineHasHotel) addSlot(dayNum, { icon: 'hotel' })
+  }
   if (seedList) {
     for (const seed of seedList) addSlot(dayNum, seed)
   } else {
