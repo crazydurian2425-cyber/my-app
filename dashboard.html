@@ -14620,7 +14620,12 @@ function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
 // the API key's allowed-APIs list (same key as Places).
 const ROUTES_DAILY_CAP = 200
 const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
-const ROUTES_CACHE_PREFIX = 'jj_route_v1_'
+// v2: prefix bumped after switching DRIVE to TRAFFIC_AWARE. The old v1
+// cache held traffic-unaware durations (~15 min for the 3.4 km Arc de
+// Triomphe → ONYX taxi) which kept showing up even after the code
+// change, because the cache key didn't include routing preference.
+// v2 entries always reflect the current TRAFFIC_AWARE behaviour.
+const ROUTES_CACHE_PREFIX = 'jj_route_v2_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
