@@ -2317,6 +2317,14 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:4px;
 }
 .transport-remove:hover{color:var(--text);background:rgba(0,0,0,0.04);}
+/* Locked auto-inserted transport (arrival→first-stop, last-stop→hotel) —
+   no × button, just a small "auto" badge in its place. */
+.transport-locked-badge{
+  margin-left:auto;display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;color:var(--text-3);padding:2px 8px;border-radius:10px;
+  border:1px solid var(--border);background:var(--surface);
+  text-transform:uppercase;letter-spacing:0.4px;font-weight:500;
+}
 .transport-from-to{
   font-size:13px;color:var(--green-dark,#1a7a5e);font-weight:600;
   display:flex;align-items:center;gap:6px;flex-wrap:wrap;
@@ -13450,6 +13458,7 @@ function _insertArrivalTaxi(beforeEl) {
     if (!t) { console.warn('[arrival-taxi] new transport slot not found post-addSlot'); return }
     t.dataset.transportMode = 'taxi'
     t.dataset.autoSeededArrivalTaxi = 'true'
+    t.dataset.isLocked = 'true'    // hide × — every itinerary needs this ride
     const titleInput = t.querySelector('.slot-title-input')
     if (titleInput) titleInput.value = 'Taxi to hotel'
     // FORCE the time to arrival_time. addSlot's bumpAnd logic would push
@@ -16140,11 +16149,26 @@ function refreshTransportSlot(slot) {
                           style="margin-top:8px;border-radius:6px;overflow:hidden;
                                  border:1px solid var(--border-med);"></div>` : ''}`
     : ''
+  // Lock the delete button when this transport is essential: the auto-
+  // inserted arrival → first-venue ride, and the auto-inserted last-venue
+  // → hotel ride. Planner can still swap modes (Uber/Metro/Walk) — only
+  // deletion is disabled, with a small "auto" badge in place of the ×.
+  // Auto-detect from neighbors so the lock re-applies on reload (DB
+  // doesn't persist DOM dataset attrs).
+  const _isArrivalTransport     = prev && prev.classList?.contains('is-locked') && prev.dataset?.anchorType === 'arrival'
+  const _isBackToHotelTransport = next && next.classList?.contains('is-locked') && next.dataset?.anchorType === 'end_of_day'
+  if (_isArrivalTransport || _isBackToHotelTransport) {
+    slot.dataset.isLocked = 'true'
+  }
+  const isLockedTransport = slot.dataset.isLocked === 'true'
+  const removeBtnHtml = isLockedTransport
+    ? `<span class="transport-locked-badge" title="Auto-inserted — always needed">🔒 auto</span>`
+    : `<button type="button" class="transport-remove" onclick="removeSlot('${slot.id}')" title="Remove transport">×</button>`
   host.innerHTML = `
     <div class="transport-head">
       <select class="transport-mode-select" onchange="setTransportMode('${slot.id}', this.value)"${tooFar?' disabled':''}>${modeOptions}</select>
       <span class="transport-time-range">${tooFar ? '—' : (escapeHtml(departLabel) + ' → ' + escapeHtml(arriveLabel))}</span>
-      <button type="button" class="transport-remove" onclick="removeSlot('${slot.id}')" title="Remove transport">×</button>
+      ${removeBtnHtml}
     </div>
     <div class="transport-from-to">
       ${fromHtml}<span class="tft-arrow">→</span>${toHtml}
@@ -17240,6 +17264,13 @@ function _gapFillTransportsForDay(dayContainer) {
         if (!newT) { console.warn('[gap-fill] new transport not found after addSlot'); continue }
         newT.dataset.transportMode = mode
         newT.dataset.autoInserted = 'true'
+        // Lock the back-to-hotel transport (b is the locked end-of-day
+        // anchor carrying hotel _placeData). Every day ends with this
+        // transport — planner shouldn't be able to delete the row, only
+        // swap modes if they want walk / metro instead of taxi.
+        if (bSlot.classList.contains('is-locked') && bSlot.dataset.anchorType === 'end_of_day') {
+          newT.dataset.isLocked = 'true'
+        }
         _applySlotTime(newT, departHHMM)
         const titleInput = newT.querySelector('.slot-title-input')
         if (titleInput) {
