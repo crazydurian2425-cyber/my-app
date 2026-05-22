@@ -2128,47 +2128,68 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.slot-type-freetime  .places-linked-chip{display:none!important;}
 
 /* ── Transport slot polish ──
-   Visually secondary so it reads as a CONNECTOR between stops, not as
-   another destination card. Dashed border, secondary bg, smaller padding,
-   irrelevant fields hidden (title/photo/duration/address). */
+   Reads as a CONNECTOR between stops, NOT another destination card.
+   The standard slot-header is hidden — transport renders its own
+   compact header (mode picker + depart→arrive + remove) inside the
+   transport-content panel. All other slot fields are hidden too
+   (title/address/duration/photo) since the From→To + grid say it all. */
 .activity-slot.slot-type-transport{
   background:var(--bg);
   border:0.5px dashed var(--border-med);
   box-shadow:none;
-  margin-top:6px;margin-bottom:6px;
+  margin:6px 18px;          /* inset L/R so it visually nests between stops */
+  border-radius:8px;
 }
-.activity-slot.slot-type-transport .slot-body{padding:8px 12px 10px 12px;}
-.activity-slot.slot-type-transport .slot-header{padding:8px 12px 4px 12px;}
+.activity-slot.slot-type-transport .slot-header{display:none!important;}
+.activity-slot.slot-type-transport .slot-body{padding:10px 14px;}
 .activity-slot.slot-type-transport .slot-title-wrap,
 .activity-slot.slot-type-transport .slot-row-address,
 .activity-slot.slot-type-transport .slot-row-duration,
 .activity-slot.slot-type-transport .img-upload-area,
 .activity-slot.slot-type-transport .img-previews{display:none!important;}
-/* Custom content panel injected by refreshTransportSlot(). Holds the
-   From → To header + Distance/Duration/Cost grid. */
-.transport-content{display:flex;flex-direction:column;gap:8px;margin:2px 0 6px 0;}
+.activity-slot.slot-type-transport .slot-notes-input{
+  min-height:0;height:auto;padding:6px 10px;font-size:12px;line-height:1.4;
+  background:transparent;border:0.5px dashed var(--border-med);
+}
+/* Custom content panel injected by refreshTransportSlot(). */
+.transport-content{display:flex;flex-direction:column;gap:6px;}
+.transport-head{
+  display:flex;align-items:center;gap:10px;
+  font-size:12px;
+}
+.transport-mode-select{
+  appearance:none;-webkit-appearance:none;
+  padding:4px 24px 4px 10px;
+  background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='%237a8779' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/></svg>") no-repeat right 8px center;
+  border:1px solid var(--border-med);border-radius:6px;
+  font-family:inherit;font-size:12px;color:var(--text);
+  cursor:pointer;
+}
+.transport-mode-select:hover{border-color:var(--green-mid);}
+.transport-time-range{
+  font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;
+}
+.transport-remove{
+  margin-left:auto;
+  background:transparent;border:0;color:var(--text-3);
+  font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:4px;
+}
+.transport-remove:hover{color:var(--text);background:rgba(0,0,0,0.04);}
 .transport-from-to{
-  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  font-size:13.5px;color:var(--text);font-weight:500;
+  font-size:13px;color:var(--green-dark,#1a7a5e);font-weight:600;
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
 }
 .transport-from-to .tft-arrow{color:var(--text-3);font-weight:400;}
 .transport-from-to .tft-blank{color:var(--text-3);font-style:italic;font-weight:400;}
-.transport-mode-chip{
-  display:inline-flex;align-items:center;gap:4px;
-  background:rgba(26,122,94,0.10);color:var(--green-dark,#1a7a5e);
-  padding:2px 8px;border-radius:999px;
-  font-size:11.5px;font-weight:600;
-}
 .transport-grid{
   display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
-  padding:8px 0;
+  padding:6px 0 2px 0;
   border-top:0.5px dashed var(--border-med);
-  border-bottom:0.5px dashed var(--border-med);
 }
 .transport-grid > div{padding:0 8px;border-right:0.5px dashed var(--border-med);}
 .transport-grid > div:last-child{border-right:none;}
-.tg-label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;}
-.tg-value{font-size:13px;color:var(--text);font-weight:500;}
+.tg-label{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:1px;}
+.tg-value{font-size:12.5px;color:var(--text);font-weight:500;}
 .tg-value.tg-blank{color:var(--text-3);font-weight:400;font-style:italic;}
 
 /* ── Closed-venue alternatives panel ──
@@ -14572,21 +14593,52 @@ function refreshTransportSlot(slot) {
   const costTxt = (est.costEur == null) ? '—'
                 : (est.costEur === 0) ? 'free'
                 : `~€${est.costEur}`
-  // Mode chip surfaces WHICH transport mode this is so the planner doesn't
-  // have to read the (now empty by default) notes textarea to tell. Falls
-  // back to a generic "Transport" label if dataset is missing.
-  const modeIcon  = _MODE_ICONS[mode] || '🚌'
-  const modeLabel = _MODE_LABELS[mode] || 'Transport'
-  const modeChip  = `<span class="transport-mode-chip">${modeIcon} ${escapeHtml(modeLabel)}</span>`
+  // Depart time comes from the (now hidden) slot-time-input that addSlot
+  // creates; arrive = depart + estimated duration. Both shown as a single
+  // range "4:00 pm → 4:22 pm" in the compact header.
+  const departHHMM = slot.querySelector('.slot-time-input')?.value || '09:00'
+  const arriveHHMM = _addMinutes(departHHMM, est.mins || 0)
+  const departLabel = formatTimeDisplay(departHHMM)
+  const arriveLabel = formatTimeDisplay(arriveHHMM)
+  // Mode picker — replaces the standard type dropdown. Each option shows
+  // its icon + label; onChange swaps the mode and re-renders.
+  const modeOptions = ['walk','taxi','transit','train','car','hsr','flight']
+    .map(k => `<option value="${k}"${k===mode?' selected':''}>${_MODE_ICONS[k]} ${_MODE_LABELS[k]}</option>`)
+    .join('')
   host.innerHTML = `
+    <div class="transport-head">
+      <select class="transport-mode-select" onchange="setTransportMode('${slot.id}', this.value)">${modeOptions}</select>
+      <span class="transport-time-range">${escapeHtml(departLabel)} → ${escapeHtml(arriveLabel)}</span>
+      <button type="button" class="transport-remove" onclick="removeSlot('${slot.id}')" title="Remove transport">×</button>
+    </div>
     <div class="transport-from-to">
-      ${modeChip}<span class="tft-arrow">·</span>${fromHtml}<span class="tft-arrow">→</span>${toHtml}
+      ${fromHtml}<span class="tft-arrow">→</span>${toHtml}
     </div>
     <div class="transport-grid">
       <div><div class="tg-label">Distance</div><div class="tg-value${km==null?' tg-blank':''}">${escapeHtml(kmTxt)}</div></div>
       <div><div class="tg-label">Duration</div><div class="tg-value${est.mins==null?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
       <div><div class="tg-label">Cost / pax</div><div class="tg-value${est.costEur==null?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
     </div>`
+}
+
+// Add minutes to a HH:MM string, return HH:MM. Clamps to 23:59.
+function _addMinutes(hhmm, mins) {
+  const [h, m] = String(hhmm || '09:00').split(':').map(Number)
+  let total = (h || 0) * 60 + (m || 0) + Number(mins || 0)
+  if (total < 0) total = 0
+  if (total > 23 * 60 + 59) total = 23 * 60 + 59
+  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+}
+
+// Mode picker change handler — stash the new mode + re-render the panel.
+// Doesn't touch the slot's underlying time-input (planner can still adjust
+// depart time separately if needed).
+function setTransportMode(slotId, mode) {
+  const slot = document.getElementById(slotId)
+  if (!slot) return
+  slot.dataset.transportMode = mode
+  refreshTransportSlot(slot)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 
 // ── Closed-venue smart alternatives (Phase 2 redux) ───────────────────────
