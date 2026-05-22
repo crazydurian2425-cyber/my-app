@@ -2153,6 +2153,12 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 }
 .transport-from-to .tft-arrow{color:var(--text-3);font-weight:400;}
 .transport-from-to .tft-blank{color:var(--text-3);font-style:italic;font-weight:400;}
+.transport-mode-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(26,122,94,0.10);color:var(--green-dark,#1a7a5e);
+  padding:2px 8px;border-radius:999px;
+  font-size:11.5px;font-weight:600;
+}
 .transport-grid{
   display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
   padding:8px 0;
@@ -14315,43 +14321,43 @@ function getSlotLatLng(slot) {
 // Pick the two best transport modes for a given crow-flies distance.
 // Primary = sensible default, alt = cheaper / different.  Returns:
 //   [{ key, icon, name, meta, primary }, ...]
+// Note: time/cost are calculated via _transportEstimates() so the helper
+// card preview MATCHES the transport block's grid (previously diverged
+// because pickTransportModes used crow-flies km and _transportEstimates
+// applied a 1.25× road-detour bump).
 function pickTransportModes(km) {
-  const round = (n) => Math.round(n)
   if (km < 1) return null   // walking-only zone, no card needed
+  // Suffixes that survived from the old per-mode descriptions; kept so the
+  // helper card still tells the planner WHY the alt is the alt.
+  const suffix = { taxi:'faster', transit:'cheaper', car:'door-to-door',
+                   hsr:'downtown-to-downtown', flight:'incl. airport buffer' }
+  const metaFor = (mode) => {
+    const est = _transportEstimates(mode, km)
+    const minPart = (est.mins != null) ? `~${est.mins} min` : ''
+    const tail = suffix[mode] ? ` · ${suffix[mode]}` : ''
+    return minPart + tail
+  }
   if (km < 3) {
-    // Short hop — walk vs taxi. Per planner's preference, both are valid;
-    // they should pick rather than us silently picking one.
-    const walkMin = Math.max(8, round(km * 13))
-    const taxiMin = Math.max(4, round(km * 3))
     return [
-      { key: 'walk', icon: '🚶', name: 'Walk',         meta: `~${walkMin} min`,           primary: true },
-      { key: 'taxi', icon: '🚗', name: 'Taxi / Grab',  meta: `~${taxiMin} min · faster` },
+      { key: 'walk', icon: '🚶', name: 'Walk',         meta: metaFor('walk'),    primary: true },
+      { key: 'taxi', icon: '🚗', name: 'Taxi / Grab',  meta: metaFor('taxi') },
     ]
   }
   if (km < 10) {
-    // City hop — taxi vs metro/bus
-    const taxiMin   = Math.max(8, round(km * 3))
-    const transitMin = Math.max(15, round(km * 5) + 5)
     return [
-      { key: 'taxi',    icon: '🚗', name: 'Taxi / Grab',     meta: `~${taxiMin} min`,    primary: true  },
-      { key: 'transit', icon: '🚇', name: 'Public transit',  meta: `~${transitMin} min · cheaper` },
+      { key: 'taxi',    icon: '🚗', name: 'Taxi / Grab',    meta: metaFor('taxi'),    primary: true },
+      { key: 'transit', icon: '🚇', name: 'Public transit', meta: metaFor('transit') },
     ]
   }
   if (km < 80) {
-    // Out-of-city — regional train vs car
-    const trainMin = round(km * 1.2) + 20
-    const carMin   = round(km * 1.5) + 10
     return [
-      { key: 'train', icon: '🚆', name: 'Regional train', meta: `~${trainMin} min`, primary: true },
-      { key: 'car',   icon: '🚗', name: 'Car / taxi',     meta: `~${carMin} min · door-to-door` },
+      { key: 'train', icon: '🚆', name: 'Regional train', meta: metaFor('train'), primary: true },
+      { key: 'car',   icon: '🚗', name: 'Car / taxi',     meta: metaFor('car') },
     ]
   }
-  // Inter-city — high-speed rail vs flight
-  const hsrMin    = round(km * 0.5) + 20
-  const flightMin = 90 + 60   // 90min airport overhead + ~60min cruise
   return [
-    { key: 'hsr',    icon: '🚄', name: 'High-speed train', meta: `~${hsrMin} min · downtown-to-downtown`, primary: true },
-    { key: 'flight', icon: '✈️', name: 'Flight',            meta: `~${flightMin} min incl. airport buffer` },
+    { key: 'hsr',    icon: '🚄', name: 'High-speed train', meta: metaFor('hsr'),    primary: true },
+    { key: 'flight', icon: '✈️', name: 'Flight',            meta: metaFor('flight') },
   ]
 }
 
@@ -14445,12 +14451,13 @@ function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon
   newSlot.dataset.transportMode = modeKey
   // Stash a backup title (kept in the hidden input for persistence) but the
   // transport-content panel built by refreshTransportSlot is what the
-  // planner actually sees. Notes still capture mode-specific tips.
+  // planner actually sees. Notes textarea is intentionally LEFT EMPTY so
+  // the planner can type real tips ("take RER B, not Line 14") — the grid
+  // already shows mode/distance/duration/cost, so duplicating that in the
+  // notes was redundant AND drifted when the formulas didn't match.
   const titleInput = newSlot.querySelector('.slot-title-input')
-  const noteInput  = newSlot.querySelector('.slot-notes-input')
   const nextName   = nextSlot.querySelector('.slot-title-input')?.value || nextSlot._placeData?.name || ''
   if (titleInput) titleInput.value = nextName ? `${modeName} to ${nextName}` : modeName
-  if (noteInput && !noteInput.value) noteInput.value = `${modeIcon} ${modeMeta}`
   // Sort by time so the new transport row lands between prev and next,
   // then refreshDayDistances re-renders the helper cards + transport
   // content (because slots.filter(...transport).forEach(refreshTransportSlot)
@@ -14511,6 +14518,9 @@ const _MODE_LABELS = {
   walk: 'Walk', taxi: 'Taxi / Grab', transit: 'Public transit',
   train: 'Regional train', car: 'Car / taxi', hsr: 'High-speed train', flight: 'Flight'
 }
+const _MODE_ICONS = {
+  walk: '🚶', taxi: '🚗', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
+}
 
 // Find the previous / next non-transport slot in the same day, walking
 // past consecutive transport slots if needed.
@@ -14562,9 +14572,15 @@ function refreshTransportSlot(slot) {
   const costTxt = (est.costEur == null) ? '—'
                 : (est.costEur === 0) ? 'free'
                 : `~€${est.costEur}`
+  // Mode chip surfaces WHICH transport mode this is so the planner doesn't
+  // have to read the (now empty by default) notes textarea to tell. Falls
+  // back to a generic "Transport" label if dataset is missing.
+  const modeIcon  = _MODE_ICONS[mode] || '🚌'
+  const modeLabel = _MODE_LABELS[mode] || 'Transport'
+  const modeChip  = `<span class="transport-mode-chip">${modeIcon} ${escapeHtml(modeLabel)}</span>`
   host.innerHTML = `
     <div class="transport-from-to">
-      ${fromHtml}<span class="tft-arrow">→</span>${toHtml}
+      ${modeChip}<span class="tft-arrow">·</span>${fromHtml}<span class="tft-arrow">→</span>${toHtml}
     </div>
     <div class="transport-grid">
       <div><div class="tg-label">Distance</div><div class="tg-value${km==null?' tg-blank':''}">${escapeHtml(kmTxt)}</div></div>
