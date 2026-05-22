@@ -14507,6 +14507,31 @@ function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon
 // Per-mode time/cost formulas. km is haversine (crow-flies) so we apply
 // a road-detour bump for ground modes. Cost is rough EUR estimate —
 // planners adjust if they know better.
+// Build a Google Maps directions URL the planner can open in a new tab.
+// Uses place_id when available (most accurate match against Google's
+// database) — falls back to the formatted address. Returns null when
+// either end lacks data (e.g. the planner hasn't linked a place yet).
+function buildGmapsDirUrl(fromSlot, toSlot, mode) {
+  const from = fromSlot?._placeData
+  const to   = toSlot?._placeData
+  if (!from || !to) return null
+  const fromArg = from.google_place_id
+    ? `place_id:${from.google_place_id}`
+    : (from.address || from.name || '')
+  const toArg   = to.google_place_id
+    ? `place_id:${to.google_place_id}`
+    : (to.address || to.name || '')
+  if (!fromArg || !toArg) return null
+  const travelmode = ({
+    walk:'walking', taxi:'driving', car:'driving',
+    transit:'transit', train:'transit', hsr:'transit', flight:'transit'
+  })[mode] || 'driving'
+  return 'https://www.google.com/maps/dir/?api=1'
+       + '&origin='      + encodeURIComponent(fromArg)
+       + '&destination=' + encodeURIComponent(toArg)
+       + '&travelmode='  + travelmode
+}
+
 function _transportEstimates(mode, km) {
   const round = (n) => Math.round(n)
   const kmRoad = km * 1.25   // crow-flies → road distance bump
@@ -14677,6 +14702,19 @@ function refreshTransportSlot(slot) {
          ⚠ ${km.toFixed(0)} km between the two venues — that's outside any normal day-trip range. Check that both stops are in the same trip area.
        </div>`
     : ''
+  // "View on Google Maps" — opens the full step-by-step directions panel
+  // in a new tab. Only shows when both neighbour slots have linked Places
+  // (otherwise we don't have enough info to build a useful URL).
+  const dirUrl = (!tooFar) ? buildGmapsDirUrl(prev, next, mode) : null
+  const directionsLink = dirUrl
+    ? `<a href="${dirUrl}" target="_blank" rel="noopener"
+          style="display:inline-flex;align-items:center;gap:4px;
+                 font-size:11.5px;color:var(--green-dark,#1a7a5e);
+                 text-decoration:none;margin-top:8px;align-self:flex-start;">
+         <i class="ti ti-external-link" aria-hidden="true" style="font-size:13px;"></i>
+         View step-by-step on Google Maps
+       </a>`
+    : ''
   host.innerHTML = `
     <div class="transport-head">
       <select class="transport-mode-select" onchange="setTransportMode('${slot.id}', this.value)"${tooFar?' disabled':''}>${modeOptions}</select>
@@ -14691,6 +14729,7 @@ function refreshTransportSlot(slot) {
       <div><div class="tg-label">Duration</div><div class="tg-value${(tooFar||est.mins==null)?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
       <div><div class="tg-label">Cost / pax</div><div class="tg-value${(tooFar||est.costEur==null)?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
     </div>
+    ${directionsLink}
     ${tooFarBanner}`
 }
 
