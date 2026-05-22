@@ -2325,6 +2325,27 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border:1px solid var(--border);background:var(--surface);
   text-transform:uppercase;letter-spacing:0.4px;font-weight:500;
 }
+/* "End day · back to hotel" action row — sits just above the end_of_day
+   anchor. Visible only when a real venue exists in the day AND no
+   transport is already wrapping it up. Click inserts the back-to-hotel
+   transport with smart-mode pick. */
+.end-day-row{
+  display:flex;justify-content:center;padding:6px 0;
+}
+.end-day-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 16px;border-radius:18px;
+  border:1px dashed var(--border-med);background:var(--surface);
+  color:var(--text-2);font-size:12.5px;font-weight:500;
+  cursor:pointer;transition:all .15s ease;
+}
+.end-day-btn:hover{
+  border-color:var(--green-dark,#1a7a5e);
+  color:var(--green-dark,#1a7a5e);
+  background:rgba(26,122,94,0.04);
+}
+.end-day-btn .edb-icon{font-size:14px;}
+.end-day-btn .edb-text{letter-spacing:0.02em;}
 .transport-from-to{
   font-size:13px;color:var(--green-dark,#1a7a5e);font-weight:600;
   display:flex;align-items:center;gap:6px;flex-wrap:wrap;
@@ -16190,9 +16211,12 @@ function refreshTransportSlot(slot) {
   // deletion is disabled, with a small "auto" badge in place of the ×.
   // Auto-detect from neighbors so the lock re-applies on reload (DB
   // doesn't persist DOM dataset attrs).
+  // Arrival → first-venue transport stays auto-locked (every itinerary
+  // needs that ride). Back-to-hotel transports are now added explicitly
+  // via the "End day" button and are FULLY editable (planner can change
+  // mode or delete + re-add at will), so we no longer force-lock them.
   const _isArrivalTransport     = prev && prev.classList?.contains('is-locked') && prev.dataset?.anchorType === 'arrival'
-  const _isBackToHotelTransport = next && next.classList?.contains('is-locked') && next.dataset?.anchorType === 'end_of_day'
-  if (_isArrivalTransport || _isBackToHotelTransport) {
+  if (_isArrivalTransport) {
     slot.dataset.isLocked = 'true'
   }
   const isLockedTransport = slot.dataset.isLocked === 'true'
@@ -17116,6 +17140,120 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
   // Insert: top at the start (before any stops), bottom at the end.
   if (topAnchor)    dayContainer.insertBefore(topAnchor, dayContainer.firstChild)
   if (bottomAnchor) dayContainer.appendChild(bottomAnchor)
+  // ── "End day · back to hotel" button ──
+  // Renders just above the end_of_day anchor. Hidden when (a) no real
+  // venue exists in the day yet, or (b) a transport already sits right
+  // before the anchor (back-to-hotel transport already added). Clicking
+  // it inserts a smart-mode transport from the last venue → hotel.
+  renderEndDayButton(dayContainer, dayNum, totalDays)
+}
+
+// Render or remove the "End day · back to hotel" action row. Pure DOM
+// op — call sites: end of renderDayBookends, plus any time a transport
+// is removed / added between the last venue and the bottom anchor.
+function renderEndDayButton(dayContainer, dayNum, totalDays) {
+  if (!dayContainer) return
+  // Remove any existing row — we re-create on every refresh.
+  dayContainer.querySelectorAll(':scope > .end-day-row').forEach(el => el.remove())
+  // Find the bottom anchor (end_of_day specifically — departure days
+  // already end with the departure anchor, no "back to hotel" needed).
+  const endAnchor = dayContainer.querySelector(
+    ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
+  )
+  if (!endAnchor) return
+  // Find the last real venue (non-transport, non-locked, has _placeData).
+  const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+    .filter(s => !s.classList.contains('slot-type-transport')
+              && !s.classList.contains('is-locked'))
+  if (!venues.length) return
+  // Skip if a transport already sits between the last venue and the
+  // bottom anchor — planner already wrapped this day.
+  let scan = endAnchor.previousElementSibling
+  while (scan && scan.classList?.contains('is-locked')) scan = scan.previousElementSibling
+  if (scan && scan.classList?.contains('slot-type-transport')) return
+  const row = document.createElement('div')
+  row.className = 'end-day-row'
+  row.innerHTML = `
+    <button type="button" class="end-day-btn" onclick="endDayBackToHotel('${dayContainer.id}')">
+      <span class="edb-icon">🌙</span>
+      <span class="edb-text">End day · back to hotel</span>
+    </button>
+  `
+  dayContainer.insertBefore(row, endAnchor)
+}
+
+// Click handler — inserts a transport from the last venue to the hotel
+// right above the end_of_day anchor, with smart mode pick (walk if
+// <1 km, taxi if >5 km or after 22:00, else metro). Fully editable —
+// planner can swap mode, edit notes, or delete + re-click this button.
+function endDayBackToHotel(dayContainerId) {
+  const dayContainer = document.getElementById(dayContainerId)
+  if (!dayContainer) return
+  const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10) || 1
+  const endAnchor = dayContainer.querySelector(
+    ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
+  )
+  if (!endAnchor) return
+  // Last real venue + the hotel coords.
+  const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+    .filter(s => !s.classList.contains('slot-type-transport')
+              && !s.classList.contains('is-locked'))
+  if (!venues.length) return
+  const lastVenue = venues[venues.length - 1]
+  const a = getSlotLatLng(lastVenue)
+  const hotel = (typeof _findItineraryHotel === 'function') ? _findItineraryHotel() : null
+  const b = hotel
+    ? { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) }
+    : null
+  const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
+  // Depart = last venue start + stay (with the usual type-based floors).
+  const startMin = parseSlotTime(lastVenue.querySelector('.slot-time-input')?.value || '')
+  let stay = parseInt(lastVenue.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+  const type = lastVenue.querySelector('.slot-type-select')?.value || 'activity'
+  if (type === 'accommodation') stay = Math.max(stay, 30)
+  else if (type === 'meal')     stay = Math.max(stay, 30)
+  if (stay <= 0) stay = 15
+  const departMin = (startMin != null)
+    ? Math.min(startMin + stay, 23 * 60 + 45)
+    : (21 * 60)
+  const departHHMM = minsToHHMM(departMin)
+  const departHour = parseInt(departHHMM.split(':')[0], 10)
+  const isNight = departHour >= 22 || departHour < 6
+  const mode = (km != null && km < 1) ? 'walk'
+             : (km != null && (km > 5 || isNight)) ? 'taxi'
+             : 'transit'
+  // Insert.
+  const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
+  addSlot(dayNum, { icon: 'transport', time: departHHMM })
+  const newT = [...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')]
+    .find(s => !transportSnap.has(s))
+  if (!newT) return
+  newT.dataset.transportMode = mode
+  // Prefill title — planner sees "Metro · ONYX → Hôtel ..." right away.
+  const titleInput = newT.querySelector('.slot-title-input')
+  if (titleInput) {
+    const aName = _venueNameOf(lastVenue) || 'last stop'
+    const bName = hotel?.name || window._currentHotelName || 'the hotel'
+    const modeName = mode === 'walk' ? 'Walk' : (mode === 'taxi' ? 'Taxi' : 'Metro')
+    titleInput.value = `${modeName} · ${aName} → ${bName}`
+  }
+  _applySlotTime(newT, departHHMM)
+  dayContainer.insertBefore(newT, endAnchor)
+  // Make sure the end_of_day anchor carries hotel _placeData so the
+  // refresh below can resolve toName + lat/lng.
+  if (hotel && !endAnchor._placeData) {
+    endAnchor._placeData = {
+      google_place_id: hotel.google_place_id,
+      name: hotel.name,
+      latitude: hotel.latitude,
+      longitude: hotel.longitude,
+    }
+  }
+  refreshTransportSlot(newT)
+  // Hide the button (transport now sits before the anchor).
+  renderEndDayButton(dayContainer, dayNum, (typeof dayCount === 'number') ? dayCount : null)
+  if (typeof refreshDaySummary === 'function') refreshDaySummary(dayContainer)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 
 function refreshDayDistances(dayContainer) {
@@ -17292,6 +17430,15 @@ function _gapFillTransportsForDay(dayContainer) {
       const bSlot = slots[i + 1]
       if (aSlot.classList.contains('slot-type-transport')) { console.log('  pair', i, 'skip: a=transport'); continue }
       if (bSlot.classList.contains('slot-type-transport')) { console.log('  pair', i, 'skip: b=transport'); continue }
+      // Skip the back-to-hotel pair (last venue → end_of_day anchor).
+      // This transport is now added explicitly via the "End day" button —
+      // see endDayBackToHotel() and the renderEndDayButton() row below
+      // the last venue. Keep auto-insert for arrival → first-venue and
+      // venue-to-venue pairs.
+      if (bSlot.classList.contains('is-locked') && bSlot.dataset.anchorType === 'end_of_day') {
+        console.log('  pair', i, 'skip: back-to-hotel (use End day button)')
+        continue
+      }
       const a = getSlotLatLng(aSlot)
       const b = getSlotLatLng(bSlot)
       if (!a) { console.log('  pair', i, 'skip: a no lat/lng', { aId: aSlot.id, aClass: aSlot.className, aHasPlaceData: !!aSlot._placeData }); continue }
@@ -17336,13 +17483,6 @@ function _gapFillTransportsForDay(dayContainer) {
         if (!newT) { console.warn('[gap-fill] new transport not found after addSlot'); continue }
         newT.dataset.transportMode = mode
         newT.dataset.autoInserted = 'true'
-        // Lock the back-to-hotel transport (b is the locked end-of-day
-        // anchor carrying hotel _placeData). Every day ends with this
-        // transport — planner shouldn't be able to delete the row, only
-        // swap modes if they want walk / metro instead of taxi.
-        if (bSlot.classList.contains('is-locked') && bSlot.dataset.anchorType === 'end_of_day') {
-          newT.dataset.isLocked = 'true'
-        }
         _applySlotTime(newT, departHHMM)
         const titleInput = newT.querySelector('.slot-title-input')
         if (titleInput) {
