@@ -6876,8 +6876,8 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
             </div>
             <div class="form-row">
               <div class="form-group"><label class="form-label" data-i18n="profile.acctType">Account type</label><select class="form-input" id="profile-account-type">
-                <option value="futsu" data-i18n="profile.acctType.futsu">Futsu (普通 · ordinary / savings)</option>
-                <option value="toza" data-i18n="profile.acctType.toza">Toza (当座 · checking)</option>
+                <option value="futsu" data-i18n="profile.acctType.futsu">Compte courant</option>
+                <option value="toza" data-i18n="profile.acctType.toza">Compte chèque</option>
               </select></div>
               <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.account">Account number</label><input class="form-input" id="profile-account" placeholder="Usually 7 digits" maxlength="10" inputmode="numeric" data-i18n-ph="profile.ph.account"></div>
             </div>
@@ -6913,7 +6913,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label" data-i18n="profile.cities">Cities you cover</label>
-            <input class="form-input" id="spec-cities" placeholder="例：東京、京都、大阪" data-i18n-ph="profile.ph.cities">
+            <input class="form-input" id="spec-cities" placeholder="ex : Paris, Lyon, Marseille" data-i18n-ph="profile.ph.cities">
             <div style="font-size:11.5px;color:var(--text-3);margin-top:5px;font-family:'Lora',serif;font-style:italic;" data-i18n="profile.cities.hint">Comma-separated list of cities within your region.</div>
           </div>
         </div></div>
@@ -7618,8 +7618,8 @@ const TM_I18N = {
     'profile.branch':'Branch name (shiten)',
     'profile.branchCode':'Branch code',
     'profile.acctType':'Account type',
-    'profile.acctType.futsu':'Futsu (普通 · ordinary / savings)',
-    'profile.acctType.toza':'Toza (当座 · checking)',
+    'profile.acctType.futsu':'Compte courant',
+    'profile.acctType.toza':'Compte chèque',
     'profile.ph.branch':'e.g. Shibuya Branch',
     'profile.ph.branchCode':'3 digits',
     'wallet.protection.badge':'Fraud & chargeback buffer',
@@ -8530,10 +8530,10 @@ const TM_I18N = {
     'toast.profileSaved':'Profil enregistré',
     'toast.planSubmitted':'Plan soumis pour revue',
     // Itinerary day builder
-    'day.header':'日目',
-    'day.headerN':'{n}日目',
-    'day.addActivity':'アクティビティを追加：',
-    'day.addActivityN':'{n}日目にアクティビティを追加',
+    'day.header':'Jour',
+    'day.headerN':'Jour {n}',
+    'day.addActivity':'Ajouter une activité :',
+    'day.addActivityN':'Ajouter une activité au Jour {n}',
     'day.metaOne':'1 activité',
     'day.metaN':'{n} activités',
     'guide.arrivalDay':'Jour d\'arrivée',
@@ -8885,6 +8885,17 @@ const TM_I18N = {
 // 'ja' (for legacy reasons) now contains French strings — keeping the key
 // minimises churn across the ~30 sites that check `=== 'ja'`. English ('en')
 // stays as a secondary toggle for planners who prefer it.
+//
+// Migration v2: an earlier force-fix wrote 'en' into localStorage for every
+// browser that loaded the dashboard. Wipe that once so French becomes the
+// new default; if the planner deliberately picks English afterwards it'll
+// stick (v2 flag prevents re-wiping on every reload).
+try {
+  if (!localStorage.getItem('jj_lang_resetv2')) {
+    localStorage.removeItem('jj_planner_lang')
+    localStorage.setItem('jj_lang_resetv2', '1')
+  }
+} catch (e) {}
 let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'ja')
 if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
 
@@ -8978,7 +8989,7 @@ function setLang(lang){
     const ov = document.createElement('div')
     ov.setAttribute('role','status')
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(245,244,240,0.85);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:\'DM Sans\',sans-serif;color:#1f1c16;font-size:13px;'
-    ov.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid rgba(26,122,94,0.18);border-top-color:#1a7a5e;border-radius:50%;animation:tm-lang-spin 0.7s linear infinite;"></div><div style="font-size:12.5px;color:#5a5a56;letter-spacing:0.02em;">' + (lang === 'ja' ? '言語を切り替え中…' : 'Switching language…') + '</div><style>@keyframes tm-lang-spin{to{transform:rotate(360deg)}}</style>'
+    ov.innerHTML = '<div style="width:28px;height:28px;border:2.5px solid rgba(26,122,94,0.18);border-top-color:#1a7a5e;border-radius:50%;animation:tm-lang-spin 0.7s linear infinite;"></div><div style="font-size:12.5px;color:#5a5a56;letter-spacing:0.02em;">' + (lang === 'ja' ? 'Changement de langue…' : 'Switching language…') + '</div><style>@keyframes tm-lang-spin{to{transform:rotate(360deg)}}</style>'
     document.body.appendChild(ov)
   } catch(e){}
   // Small delay so the spinner actually paints before reload kicks in
@@ -9143,16 +9154,16 @@ function localizeFree(val){
   const s = String(val).trim()
   const lower = s.toLowerCase()
   const map = {
-    'nothing specific':'特になし',
-    'none':'特になし',
-    'n/a':'特になし',
-    'moderate':'中程度',
-    'relaxed':'ゆったり',
-    'fast':'速いペース',
-    'fast-paced':'速いペース',
-    'packed':'詰め込み',
-    'structured':'きっちり型',
-    'balanced':'バランス型'
+    'nothing specific':'Rien de particulier',
+    'none':'Aucun',
+    'n/a':'N/A',
+    'moderate':'Modéré',
+    'relaxed':'Détendu',
+    'fast':'Rapide',
+    'fast-paced':'Rapide',
+    'packed':'Chargé',
+    'structured':'Structuré',
+    'balanced':'Équilibré'
   }
   if (map[lower]) return map[lower]
   return val
@@ -9296,7 +9307,7 @@ function refreshDay1RequiredBadges(){
     const badge = document.createElement('span')
     badge.className = 'day1-required-badge'
     badge.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;background:rgba(180,120,40,0.15);color:#8a5a18;border:1px solid rgba(180,120,40,0.40);border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;vertical-align:middle;'
-    badge.textContent = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? '必須 · 3件以上' : 'Required · 3+'
+    badge.textContent = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'Requis · 3+' : 'Required · 3+'
     d1Title.appendChild(badge)
   }
 }
@@ -9541,7 +9552,7 @@ function getPlannerPayoutMethod() {
   if (hasBank) {
     const parts = []
     if (planner?.bank_branch_name) parts.push(planner.bank_branch_name + (planner.bank_branch_code ? ' (' + planner.bank_branch_code + ')' : ''))
-    if (planner?.bank_account_type) parts.push(planner.bank_account_type === 'toza' ? '当座 · toza' : '普通 · futsu')
+    if (planner?.bank_account_type) parts.push(planner.bank_account_type === 'toza' ? 'Compte chèque' : 'Compte courant')
     if (bankAccount) parts.push(bankAccount)
     if (planner?.bank_holder) parts.push(planner.bank_holder)
     return {
@@ -10692,13 +10703,13 @@ function renderPaceBanner(set, plansList) {
   let daysLabel
   if (msLeft < 0) {
     const overdueDays = Math.ceil(Math.abs(msLeft) / 86400000)
-    daysLabel = (TM_LANG === 'ja') ? `· ${overdueDays}日超過` : `· ${overdueDays}D overdue`
+    daysLabel = (TM_LANG === 'ja') ? `· ${overdueDays}j de retard` : `· ${overdueDays}D overdue`
   } else if (hoursLeft <= 0) {
-    daysLabel = (TM_LANG === 'ja') ? '· 期限' : '· due now'
+    daysLabel = (TM_LANG === 'ja') ? '· échéance' : '· due now'
   } else if (hoursLeft <= 24) {
-    daysLabel = (TM_LANG === 'ja') ? `· あと${hoursLeft}時間` : `· ${hoursLeft}HR left`
+    daysLabel = (TM_LANG === 'ja') ? `· ${hoursLeft}h restantes` : `· ${hoursLeft}HR left`
   } else {
-    daysLabel = (TM_LANG === 'ja') ? `· あと${daysLeft}日` : `· ${daysLeft}D left`
+    daysLabel = (TM_LANG === 'ja') ? `· ${daysLeft}j restants` : `· ${daysLeft}D left`
   }
 
   banner.style.display = 'flex'
@@ -10739,7 +10750,7 @@ function requestExtension() {
   const rem = btn?.dataset.rem || '—'
   const daysLeft = btn?.dataset.daysLeft || '—'
   const prefill = (TM_LANG === 'ja')
-    ? `サポートへ、締切の延長をお願いいたします。\n\nセット：${setNum}\n現在の締切：${deadline}\n残りプラン数：${rem}\n残り日数：${daysLeft}\n\n理由： `
+    ? `Bonjour, je sollicite une extension d'échéance.\n\nLot : ${setNum}\nÉchéance actuelle : ${deadline}\nPlans restants : ${rem}\nJours restants : ${daysLeft}\n\nMotif : `
     : `Hi support, I'd like to request a deadline extension.\n\nSet: ${setNum}\nCurrent deadline: ${deadline}\nPlans remaining: ${rem}\nDays left: ${daysLeft}\n\nReason: `
   openSupportChat(prefill)
 }
@@ -10993,7 +11004,7 @@ function updateBriefCard(plan, trav) {
         <div style="margin-top:12px;border:1px solid var(--border);border-radius:12px;padding:14px 18px;background:var(--bg);">
           <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin-bottom:8px;">${t('bond.contactTitle','Questions? Contact us')}</div>
           <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
-            <a href="#" onclick="event.preventDefault(); if (typeof window.openSupportChat==='function') window.openSupportChat((localStorage.getItem('jj_planner_lang')==='ja') ? '保証金プランについて質問があります。' : 'I have a question about a bond plan.')" style="display:flex;align-items:center;gap:8px;color:var(--green);text-decoration:none;font-weight:500;cursor:pointer;">
+            <a href="#" onclick="event.preventDefault(); if (typeof window.openSupportChat==='function') window.openSupportChat((localStorage.getItem('jj_planner_lang')==='ja') ? &quot;J'ai une question sur un plan avec caution.&quot; : 'I have a question about a bond plan.')" style="display:flex;align-items:center;gap:8px;color:var(--green);text-decoration:none;font-weight:500;cursor:pointer;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               ${t('bond.contactChat','Open support chat')}
             </a>
@@ -11492,7 +11503,7 @@ function renderProfileCityOptions(lang){
   const sel = document.getElementById('profile-city')
   if (!sel) return
   const prev = sel.value
-  const placeholder = (lang === 'ja') ? '— 都市を選択 —' : '— Select your city —'
+  const placeholder = (lang === 'ja') ? '— Sélectionnez votre ville —' : '— Select your city —'
   const list = (typeof CITY_OPTIONS_PROFILE !== 'undefined' ? CITY_OPTIONS_PROFILE : CITY_OPTIONS_PROFILE_FALLBACK)[lang] || []
   sel.innerHTML = '<option value="">' + placeholder + '</option>' +
     list.map(c => `<option value="${c.value}">${c.label}</option>`).join('')
@@ -11523,33 +11534,33 @@ const PREFECTURES_PROFILE = [
 ]
 const CITY_OPTIONS_PROFILE_FALLBACK = {
   en: [...PREFECTURES_PROFILE.map(([en]) => ({value:en, label:en})), {value:'Other', label:'Other'}],
-  ja: [...PREFECTURES_PROFILE.map(([en,ja]) => ({value:en, label:`${ja} (${en})`})), {value:'Other', label:'その他 (Other)'}]
+  ja: [...PREFECTURES_PROFILE.map(([en,ja]) => ({value:en, label:`${ja} (${en})`})), {value:'Other', label:'Autre'}]
 }
 
 // Chip-cloud palettes
 const CHIPS_LANGS = [
-  {v:'English',  l:{en:'English',  ja:'英語'}},
-  {v:'Japanese', l:{en:'Japanese', ja:'日本語'}},
-  {v:'Mandarin', l:{en:'Mandarin', ja:'中国語'}},
-  {v:'Cantonese',l:{en:'Cantonese',ja:'広東語'}},
-  {v:'Korean',   l:{en:'Korean',   ja:'韓国語'}},
-  {v:'French',   l:{en:'French',   ja:'フランス語'}},
-  {v:'Spanish',  l:{en:'Spanish',  ja:'スペイン語'}},
-  {v:'German',   l:{en:'German',   ja:'ドイツ語'}},
+  {v:'French',   l:{en:'French',   ja:'Français'}},
+  {v:'English',  l:{en:'English',  ja:'Anglais'}},
+  {v:'Spanish',  l:{en:'Spanish',  ja:'Espagnol'}},
+  {v:'German',   l:{en:'German',   ja:'Allemand'}},
+  {v:'Italian',  l:{en:'Italian',  ja:'Italien'}},
+  {v:'Portuguese',l:{en:'Portuguese',ja:'Portugais'}},
+  {v:'Mandarin', l:{en:'Mandarin', ja:'Mandarin'}},
+  {v:'Arabic',   l:{en:'Arabic',   ja:'Arabe'}},
 ]
 const CHIPS_TYPES = [
-  {v:'Food',       l:{en:'🍜 Food & street',        ja:'🍜 グルメ・屋台'}},
-  {v:'Culture',    l:{en:'⛩️ Culture & heritage',    ja:'⛩️ 文化・歴史'}},
-  {v:'Nature',     l:{en:'🏞️ Nature & outdoors',     ja:'🏞️ 自然・アウトドア'}},
-  {v:'Adventure',  l:{en:'🧗 Adventure',             ja:'🧗 アドベンチャー'}},
-  {v:'Family',     l:{en:'👨‍👩‍👧 Family-friendly',       ja:'👨‍👩‍👧 家族向け'}},
-  {v:'Luxury',     l:{en:'✨ Luxury',                ja:'✨ ラグジュアリー'}},
-  {v:'Business',   l:{en:'💼 Business & corporate', ja:'💼 ビジネス・法人'}},
-  {v:'Shopping',   l:{en:'🛍️ Shopping',              ja:'🛍️ ショッピング'}},
-  {v:'Nightlife',  l:{en:'🌃 Nightlife',             ja:'🌃 ナイトライフ'}},
-  {v:'Photography',l:{en:'📸 Photography',           ja:'📸 フォトスポット'}},
-  {v:'Wellness',   l:{en:'🧘 Wellness & spa',        ja:'🧘 ウェルネス'}},
-  {v:'Solo',       l:{en:'🎒 Solo travelers',        ja:'🎒 一人旅'}},
+  {v:'Food',       l:{en:'🍷 Food & wine',           ja:'🍷 Gastronomie & vin'}},
+  {v:'Culture',    l:{en:'🏛️ Culture & heritage',    ja:'🏛️ Culture & patrimoine'}},
+  {v:'Nature',     l:{en:'🏞️ Nature & outdoors',     ja:'🏞️ Nature & plein air'}},
+  {v:'Adventure',  l:{en:'🧗 Adventure',             ja:'🧗 Aventure'}},
+  {v:'Family',     l:{en:'👨‍👩‍👧 Family-friendly',       ja:'👨‍👩‍👧 Famille'}},
+  {v:'Luxury',     l:{en:'✨ Luxury',                ja:'✨ Luxe'}},
+  {v:'Business',   l:{en:'💼 Business & corporate', ja:'💼 Affaires & entreprise'}},
+  {v:'Shopping',   l:{en:'🛍️ Shopping',              ja:'🛍️ Shopping'}},
+  {v:'Nightlife',  l:{en:'🌃 Nightlife',             ja:'🌃 Vie nocturne'}},
+  {v:'Photography',l:{en:'📸 Photography',           ja:'📸 Photographie'}},
+  {v:'Wellness',   l:{en:'🧘 Wellness & spa',        ja:'🧘 Bien-être & spa'}},
+  {v:'Solo',       l:{en:'🎒 Solo travelers',        ja:'🎒 Voyageurs solo'}},
 ]
 
 function renderSpecialtyChips(){
@@ -12613,7 +12624,7 @@ async function openPlanSummary(plan) {
     <div style="margin-top:12px;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:14px 18px;background:rgba(0,0,0,0.015);">
       <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(31,28,22,0.55);font-weight:600;margin-bottom:8px;">${tPrime('bond.contactTitle','Questions? Contact us')}</div>
       <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
-        <a href="#" onclick="event.preventDefault(); closeModal('modal-plan-summary'); if (typeof window.openSupportChat==='function') window.openSupportChat((localStorage.getItem('jj_planner_lang')==='ja') ? '保証金プランについて質問があります。' : 'I have a question about a bond plan.')" style="display:flex;align-items:center;gap:8px;color:#1a7a5e;text-decoration:none;font-weight:500;cursor:pointer;">
+        <a href="#" onclick="event.preventDefault(); closeModal('modal-plan-summary'); if (typeof window.openSupportChat==='function') window.openSupportChat((localStorage.getItem('jj_planner_lang')==='ja') ? &quot;J'ai une question sur un plan avec caution.&quot; : 'I have a question about a bond plan.')" style="display:flex;align-items:center;gap:8px;color:#1a7a5e;text-decoration:none;font-weight:500;cursor:pointer;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           ${tPrime('bond.contactChat','Open support chat')}
         </a>
@@ -13309,35 +13320,32 @@ function addDayBlock(dayNum, totalDays) {
 function formatTimeDisplay(val){
   const [h,m] = val.split(':').map(Number)
   const mm  = String(m).padStart(2,'0')
-  // JA: 午前9:00 / 午後12:30
+  // French uses 24-hour ("14h30"). English uses 12-hour ("2.30 pm").
   if (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') {
-    const ap = h >= 12 ? '午後' : '午前'
-    const h12 = ((h + 11) % 12) + 1
-    return `${ap}${h12}:${mm}`
+    return `${String(h).padStart(2,'0')}h${mm}`
   }
-  // EN default: 9.00 am / 12.30 pm
   const ap = h >= 12 ? 'pm' : 'am'
   const h12 = ((h + 11) % 12) + 1
   return `${h12}.${mm} ${ap}`
 }
 
-// Format a YYYY-MM-DD date string for the brief card. JA → 2026年5月10日,
-// EN → 2026-05-10 (keeps the ISO style for non-JA users).
+// Format a YYYY-MM-DD date string for the brief card. French shows
+// "10 mai 2026" using the fr-FR locale; EN shows the raw ISO string.
 function fmtBriefDate(dateStr) {
   if (!dateStr) return ''
   if (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') {
-    try { return new Date(dateStr).toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }) }
+    try { return new Date(dateStr).toLocaleDateString('fr-FR', { year:'numeric', month:'long', day:'numeric' }) }
     catch (_) { return dateStr }
   }
   return dateStr
 }
 
-// Localize duration like "3D2N" → "2泊3日" in JA, leave as-is in EN.
+// Localize duration: French "3D2N" → "3J/2N" (Jours/Nuits), EN leaves as-is.
 function fmtDuration(d) {
   if (!d) return ''
   if (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') {
     const m = String(d).match(/(\d+)D(\d+)N/i)
-    if (m) return `${m[2]}泊${m[1]}日`
+    if (m) return `${m[1]}J/${m[2]}N`
   }
   return d
 }
@@ -13746,6 +13754,32 @@ async function selectPlaceForSlot(slot, placeId) {
 
 function applyPlaceToSlot(slot, place) {
   if (!place || !place.id) return
+  // Sanity check: reject venues that are obviously in a different country
+  // from the trip destination. Without this the planner could (and did)
+  // accidentally pick a Malaysia café for a Paris itinerary, then the
+  // transport block computed "Taxi · 10425 km · 39097 min · €39100".
+  const lat = place.location?.latitude
+  const lng = place.location?.longitude
+  if (lat != null && lng != null) {
+    const dest = String(window._currentDestination || '').toLowerCase().split(/[\s,/]/)[0]
+    const destCenter = (typeof CITY_BIAS !== 'undefined') ? CITY_BIAS[dest] : null
+    if (destCenter) {
+      const km = haversineKm(destCenter.lat, destCenter.lng, lat, lng)
+      // 300 km cap matches typical day-trip range from any French city.
+      // Past that, the venue is almost certainly the wrong country/city.
+      if (km > 300) {
+        const name = place.displayName?.text || place.displayName || 'this place'
+        const msg = `"${name}" is ${km.toFixed(0)} km from ${window._currentDestination}. That's outside the trip area — please pick a venue near ${window._currentDestination}.`
+        if (typeof showToast === 'function') showToast(msg)
+        else alert(msg)
+        // Clear the dropdown + reset the title so the planner searches again.
+        hidePlacesDropdown(slot)
+        const tInput = slot.querySelector('.slot-title-input')
+        if (tInput) { tInput.value = ''; tInput.focus() }
+        return
+      }
+    }
+  }
   const titleInput = slot.querySelector('.slot-title-input')
   const addrInput  = slot.querySelector('.slot-address-input')
   const name = place.displayName?.text || place.displayName || ''
@@ -14531,12 +14565,20 @@ function refreshTransportSlot(slot) {
   const b = next ? getSlotLatLng(next) : null
   const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
   const mode = slot.dataset.transportMode || 'taxi'
-  const est = (km != null) ? _transportEstimates(mode, km) : { mins: null, costEur: null }
+  // Sanity cap — if one of the venues is in a totally different country
+  // (300 km is already past day-trip range, 1500 km is intercontinental),
+  // refuse to compute time/cost — the numbers would be misleading
+  // ("39097 min taxi" is not a real estimate). Show a clear error instead.
+  const tooFar = (km != null) && km > 1500
+  const est = (km != null && !tooFar) ? _transportEstimates(mode, km) : { mins: null, costEur: null }
   const fromHtml = fromName ? `<span>${escapeHtml(fromName)}</span>` : '<span class="tft-blank">previous stop</span>'
   const toHtml   = toName   ? `<span>${escapeHtml(toName)}</span>`   : '<span class="tft-blank">next stop</span>'
+  // For absurd distances, blank the grid + show a red warning row instead
+  // of "39097 min · €39100" which would look like real numbers.
   const kmTxt   = (km != null) ? `${km.toFixed(1)} km` : '—'
-  const minsTxt = (est.mins != null) ? `${est.mins} min` : '—'
-  const costTxt = (est.costEur == null) ? '—'
+  const minsTxt = (tooFar) ? '—' : ((est.mins != null) ? `${est.mins} min` : '—')
+  const costTxt = (tooFar) ? '—'
+                : (est.costEur == null) ? '—'
                 : (est.costEur === 0) ? 'free'
                 : `~€${est.costEur}`
   // Depart time recomputes from the PREVIOUS slot's start + its stay
@@ -14575,10 +14617,15 @@ function refreshTransportSlot(slot) {
   const modeOptions = visibleModes
     .map(k => `<option value="${k}"${k===mode?' selected':''}>${_MODE_ICONS[k]} ${_MODE_LABELS[k]}</option>`)
     .join('')
+  const tooFarBanner = tooFar
+    ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(184,74,62,0.08);border:1px solid rgba(184,74,62,0.30);border-radius:6px;color:#8a3329;font-size:11.5px;line-height:1.4;">
+         ⚠ ${km.toFixed(0)} km between the two venues — that's outside any normal day-trip range. Check that both stops are in the same trip area.
+       </div>`
+    : ''
   host.innerHTML = `
     <div class="transport-head">
-      <select class="transport-mode-select" onchange="setTransportMode('${slot.id}', this.value)">${modeOptions}</select>
-      <span class="transport-time-range">${escapeHtml(departLabel)} → ${escapeHtml(arriveLabel)}</span>
+      <select class="transport-mode-select" onchange="setTransportMode('${slot.id}', this.value)"${tooFar?' disabled':''}>${modeOptions}</select>
+      <span class="transport-time-range">${tooFar ? '—' : (escapeHtml(departLabel) + ' → ' + escapeHtml(arriveLabel))}</span>
       <button type="button" class="transport-remove" onclick="removeSlot('${slot.id}')" title="Remove transport">×</button>
     </div>
     <div class="transport-from-to">
@@ -14586,9 +14633,10 @@ function refreshTransportSlot(slot) {
     </div>
     <div class="transport-grid">
       <div><div class="tg-label">Distance</div><div class="tg-value${km==null?' tg-blank':''}">${escapeHtml(kmTxt)}</div></div>
-      <div><div class="tg-label">Duration</div><div class="tg-value${est.mins==null?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
-      <div><div class="tg-label">Cost / pax</div><div class="tg-value${est.costEur==null?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
-    </div>`
+      <div><div class="tg-label">Duration</div><div class="tg-value${(tooFar||est.mins==null)?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
+      <div><div class="tg-label">Cost / pax</div><div class="tg-value${(tooFar||est.costEur==null)?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
+    </div>
+    ${tooFarBanner}`
 }
 
 // Add minutes to a HH:MM string, return HH:MM. Clamps to 23:59.
