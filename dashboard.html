@@ -14559,20 +14559,28 @@ function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
 
 function _transportEstimates(mode, km) {
   const round = (n) => Math.round(n)
-  const kmRoad = km * 1.25   // crow-flies → road distance bump
+  // Walking takes direct pedestrian shortcuts (parks, plazas, alleys), so
+  // its detour factor is small. Cars/transit follow the road network and
+  // need a bigger bump.
+  const kmCar  = km * 1.25
+  const kmWalk = km * 1.10
   if (mode === 'walk') {
-    return { mins: Math.max(8, round(kmRoad * 13)), costEur: 0 }
+    // ~11 min/km matches Google walking pace (5.5 km/h) — was 13.
+    return { mins: Math.max(6, round(kmWalk * 11)), costEur: 0 }
   }
   if (mode === 'taxi') {
     // Generic city taxi/rideshare: ~€2.5 base + ~€3/km (Paris-ish surge level)
-    const mins = Math.max(4, round(kmRoad * 3))
-    const cost = round(2.5 + kmRoad * 3)
+    const mins = Math.max(4, round(kmCar * 3))
+    const cost = round(2.5 + kmCar * 3)
     return { mins, costEur: cost }
   }
   if (mode === 'transit') {
-    // Metro/bus flat fare-ish — Paris t+ €2.10, rounded to €3 to include transfers
-    const mins = Math.max(15, round(kmRoad * 5) + 5)
-    return { mins, costEur: 3 }
+    // Average urban transit (metro / RER / bus) ~24 km/h door-to-door
+    // including ~4 min wait + walks. RER A example: 2.7 km ≈ 11 min, real
+    // Google says 9 min. Previous formula (5 min/km + 5) gave 22 min —
+    // way too slow.
+    const mins = Math.max(8, round(km * 2.5) + 4)
+    return { mins, costEur: 3 }   // €3 covers t+ fare + transfer margin
   }
   if (mode === 'train') {
     const mins = round(km * 1.2) + 20
