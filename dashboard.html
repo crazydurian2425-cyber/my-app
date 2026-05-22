@@ -15513,9 +15513,23 @@ function refreshTransportSlot(slot) {
     const minStart = _snapUp30(arriveHHMM)
     const curMin = parseSlotTime(nextCurrent)
     const minMin = parseSlotTime(minStart)
+    console.log('[transport-sync]', {
+      slot: slot.id,
+      prevId: prev?.id,
+      nextId: next?.id,
+      departHHMM,
+      arriveHHMM,
+      minStart,
+      nextCurrent,
+      curMin,
+      minMin,
+      willPush: (curMin != null && minMin != null && curMin !== minMin),
+    })
     if (curMin != null && minMin != null && curMin !== minMin) {
       _applySlotTime(next, minStart)
     }
+  } else {
+    console.log('[transport-sync] no next venue', { slot: slot.id, prevId: prev?.id })
   }
   const departLabel = formatTimeDisplay(departHHMM)
   const arriveLabel = formatTimeDisplay(arriveHHMM)
