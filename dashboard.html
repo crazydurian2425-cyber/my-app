@@ -9180,6 +9180,32 @@ function tPace(val){
 }
 function jsEsc(s){ return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/</g,'\\x3c').replace(/>/g,'\\x3e').replace(/&/g,'\\x26').replace(/\r?\n/g,'\\n') }
 
+// Itinerary form scroll-lock — pins the modal-body scroll position for
+// a few frames so chip-mutating operations (clearLinkedPlace, autocomplete
+// selection, time picker, etc.) don't snap the planner back to the top.
+//
+// Synchronous restore alone wasn't enough — the browser still ran a
+// deferred scroll adjustment after our code returned. This restores
+// synchronously AND on the next two animation frames, which defeats any
+// post-layout reset the browser tries to do.
+function preserveItinScroll(fn) {
+  const body = document.querySelector('#modal-submit .modal-body')
+  if (!body) return fn ? fn() : undefined
+  const saved = body.scrollTop
+  let result
+  try { result = fn ? fn() : undefined }
+  finally {
+    body.scrollTop = saved
+    requestAnimationFrame(() => {
+      if (Math.abs(body.scrollTop - saved) > 1) body.scrollTop = saved
+      requestAnimationFrame(() => {
+        if (Math.abs(body.scrollTop - saved) > 1) body.scrollTop = saved
+      })
+    })
+  }
+  return result
+}
+
 // ── Count-up animation for metric values ──────────────────
 function animateCount(el, target, opts={}){
   if(!el) return;
@@ -13454,6 +13480,9 @@ function toggleTimeDD(btn, e){
   }
 }
 function selectTimeDD(btn, val){
+  return preserveItinScroll(() => _selectTimeDDImpl(btn, val))
+}
+function _selectTimeDDImpl(btn, val){
   const dd = btn.closest('.time-dd')
   dd.querySelector('.slot-time-input').value = val
   dd.querySelector('.time-dd-label').textContent = formatTimeDisplay(val)
@@ -13604,7 +13633,7 @@ function attachPlacesSearch(slot) {
   if (!titleInput || !dropdown) return
   let debounceTimer = null
   let blurTimer = null
-  titleInput.addEventListener('input', () => {
+  titleInput.addEventListener('input', () => preserveItinScroll(() => {
     const type = slot.querySelector('.slot-type-select')?.value || 'activity'
     if (!PLACES_ENABLED_TYPES.has(type)) { hidePlacesDropdown(slot); return }
     // Already linked? typing should unlink so the planner can search fresh.
@@ -13614,7 +13643,7 @@ function attachPlacesSearch(slot) {
     if (!slot.dataset.placesSessionToken) slot.dataset.placesSessionToken = uuidV4()
     clearTimeout(debounceTimer)
     debounceTimer = setTimeout(() => fetchPlacesPredictions(slot, query), 280)
-  })
+  }))
   titleInput.addEventListener('focus', () => {
     const type = slot.querySelector('.slot-type-select')?.value || 'activity'
     if (!PLACES_ENABLED_TYPES.has(type)) return
