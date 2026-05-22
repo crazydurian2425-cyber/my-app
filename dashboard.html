@@ -15777,6 +15777,19 @@ function applyRouteDataToSlot(slot, data) {
     if (dayContainer && typeof _enforceTimeChain === 'function') {
       _enforceTimeChain(dayContainer)
     }
+    // Re-render the bookend label too — the "Back at Hôtel" anchor's
+    // time comes from _computeActualDayEnd which reads the transport's
+    // depart + the duration cell in the grid. When the planner swaps
+    // modes (Uber → Metro) the grid updates but the bookend keeps the
+    // old arrive time until we re-render. _enforceTimeChain SKIPS
+    // pairs where either side is locked, so the back-to-hotel link
+    // (transport → end_of_day anchor) never gets its bookend refreshed
+    // by the chain pass alone.
+    if (dayContainer && typeof renderDayBookends === 'function') {
+      const _m = dayContainer.id.match(/slots-day-(\d+)/)
+      const _dayNum = _m ? parseInt(_m[1], 10) : 1
+      renderDayBookends(dayContainer, _dayNum, (typeof dayCount === 'number') ? dayCount : null)
+    }
   }
   // Step-by-step timeline — ONLY useful when the trip mixes transit with
   // walks (planner needs to know which line + station + walks between).
