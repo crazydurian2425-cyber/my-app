@@ -15520,8 +15520,9 @@ const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 // cache held traffic-unaware durations (~15 min for the 3.4 km Arc de
 // Triomphe → ONYX taxi) which kept showing up even after the code
 // change, because the cache key didn't include routing preference.
-// v2 entries always reflect the current TRAFFIC_AWARE behaviour.
-const ROUTES_CACHE_PREFIX = 'jj_route_v2_'
+// v3 entries use TRAFFIC_AWARE_OPTIMAL, which gets distance + duration
+// that lines up with what Google Maps shows in the iframe embed.
+const ROUTES_CACHE_PREFIX = 'jj_route_v3_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
@@ -15573,12 +15574,13 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       units: 'METRIC',
     }
     // DRIVE without routingPreference defaults to TRAFFIC_UNAWARE which
-    // ignores real-world congestion. The embed iframe always uses live
-    // traffic, so without this our number was always faster than what the
-    // map showed (planner sees 15 min in grid, then opens map and sees
-    // 19 min — looks broken). TRAFFIC_AWARE matches the embed.
+    // ignores real-world congestion. We use TRAFFIC_AWARE_OPTIMAL — it
+    // combines real-time + historical traffic data and picks the route
+    // Google Maps itself would recommend, so the grid distance / duration
+    // line up with the iframe embed instead of showing a shorter-distance
+    // alternative the iframe doesn't highlight.
     if (travelMode === 'DRIVE') {
-      body.routingPreference = 'TRAFFIC_AWARE'
+      body.routingPreference = 'TRAFFIC_AWARE_OPTIMAL'
       body.departureTime = new Date(Date.now() + 60_000).toISOString()
     }
     // Pull step-by-step transit details too — line names, station names,
