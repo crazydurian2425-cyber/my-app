@@ -13217,38 +13217,58 @@ function fillItineraryItems(items) {
   refreshAllDistances()
 }
 
-// One-shot auto-seed: if Day 1 is empty AND the traveler arrives after
-// 1 PM, drop in two stops — Taxi to hotel, then Hotel check-in. The taxi
-// closes the "from arrival anchor → hotel" gap so the day reads cleanly
-// (planner can still swap the mode to Metro / Walk / etc). Tracked per
-// plan-open so re-renders don't re-insert after a planner delete.
+// One-shot auto-seed for Day 1 afternoon arrivals (arrival_time hour ≥ 13).
+// Two scenarios handled:
+//
+//   (a) Day 1 is EMPTY (no non-locked stops yet)
+//       → drop in BOTH Taxi-to-hotel transport + Hotel check-in.
+//   (b) Day 1 already has stops (saved plan) but no transport sits
+//       between the arrival anchor and the first stop
+//       → only inject the Taxi-to-hotel transport.
+//
+// Either way the planner ends up with a station → hotel transport block
+// that shows km/duration/cost once both ends are linked.
+//
+// Tracked per (plan-open × planId) so re-renders don't re-insert after
+// a planner delete.
 function _autoSeedDay1HotelIfNeeded() {
   const arr = window._currentArrivalTime || ''
   const arrHour = parseInt(String(arr).split(':')[0], 10)
   if (!Number.isFinite(arrHour) || arrHour < 13) return
   const day1 = document.getElementById('slots-day-1')
   if (!day1) return
-  // Any non-locked stop already? Leave it alone — planner-curated wins.
-  const hasUserStops = [...day1.querySelectorAll(':scope > .activity-slot')]
-    .some(s => !s.classList.contains('is-locked'))
-  if (hasUserStops) return
-  // Only seed once per (plan-open × planId).
+  // Only consider this once per plan-open.
   window._day1AutoSeededPlanIds = window._day1AutoSeededPlanIds || new Set()
   if (currentPlanId && window._day1AutoSeededPlanIds.has(currentPlanId)) return
-  if (currentPlanId) window._day1AutoSeededPlanIds.add(currentPlanId)
-  // 1) Transport block at arrival_time. refreshTransportSlot leaves the
-  //    time alone when there's no `prev` venue, so the 14:00 anchor sticks.
-  addSlot(1, { icon: 'transport', time: arr })
-  const transportSlot = day1.querySelector(':scope > .activity-slot.slot-type-transport:last-of-type')
-  if (transportSlot) {
-    transportSlot.dataset.transportMode = 'taxi'
-    const titleInput = transportSlot.querySelector('.slot-title-input')
-    if (titleInput) titleInput.value = 'Taxi to hotel'
+  const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
+    .filter(s => !s.classList.contains('is-locked'))
+  const firstStop = userStops[0] || null
+  // Helper — append a taxi-to-hotel transport block.
+  const addTaxi = () => {
+    addSlot(1, { icon: 'transport', time: arr })
+    const t = day1.querySelector(':scope > .activity-slot.slot-type-transport:last-of-type')
+    if (t) {
+      t.dataset.transportMode = 'taxi'
+      const titleInput = t.querySelector('.slot-title-input')
+      if (titleInput) titleInput.value = 'Taxi to hotel'
+    }
   }
-  // 2) Hotel check-in seed — SEED_DEFAULTS.hotel (default 15:00, 30 min).
-  //    addSlot bumps the time forward when arrival is later than 14:30, so
-  //    the check-in lands AFTER the taxi block in every case.
-  addSlot(1, { icon: 'hotel' })
+  if (userStops.length === 0) {
+    // Empty Day 1 — seed transport + hotel.
+    if (currentPlanId) window._day1AutoSeededPlanIds.add(currentPlanId)
+    addTaxi()
+    addSlot(1, { icon: 'hotel' })
+    return
+  }
+  // Day 1 has stops already. If the FIRST stop isn't a transport block,
+  // inject one between the arrival anchor and the first venue.
+  if (!firstStop.classList.contains('slot-type-transport')) {
+    if (currentPlanId) window._day1AutoSeededPlanIds.add(currentPlanId)
+    addTaxi()
+    // Transport is appended at the bottom; _sortSlotsInPlace (called via
+    // refreshAllDistances downstream) will reorder it to before firstStop
+    // because its time === arrival_time which is earlier than firstStop's.
+  }
 }
 
 // Icons for guideline items + day types
@@ -15663,7 +15683,17 @@ function refreshTransportSlot(slot) {
     body.insertBefore(host, body.firstChild)
   }
   const { prev, next } = _findVenueNeighbors(slot)
-  const fromName = _venueNameOf(prev)
+  // "From" label — fall back to the unit's arrival location when the
+  // transport sits right after the Day 1 arrival anchor (locked rows are
+  // skipped by _findVenueNeighbors so prev is null in that position).
+  let fromName = _venueNameOf(prev)
+  if (!fromName && !prev) {
+    const isFirstNonLocked = !slot.previousElementSibling
+      || slot.previousElementSibling.classList.contains('is-locked')
+    if (isFirstNonLocked && window._currentArrivalLocation) {
+      fromName = window._currentArrivalLocation
+    }
+  }
   const toName   = _venueNameOf(next)
   const a = prev ? getSlotLatLng(prev) : null
   const b = next ? getSlotLatLng(next) : null
