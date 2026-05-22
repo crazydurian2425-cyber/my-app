@@ -13817,12 +13817,25 @@ const SEED_DEFAULTS = {
   attraction: { typeLabel:'Activity',      typeKey:'activity',      title:'',                titleKey:null,             time:null       },
   hotel:      { typeLabel:'Accommodation', typeKey:'accommodation', title:'Hotel check-in',  titleKey:'seed.hotelIn',   time:'15:00'    },
   checkout:   { typeLabel:'Accommodation', typeKey:'accommodation', title:'Hotel check-out', titleKey:'seed.hotelOut',  time:'11:00'    },
+  breakfast:  { typeLabel:'Meal',          typeKey:'meal',          title:'Breakfast',       titleKey:'seed.breakfast', time:'08:00'    },
   lunch:      { typeLabel:'Meal',          typeKey:'meal',          title:'Lunch',           titleKey:'seed.lunch',     time:'12:30'    },
-  dinner:     { typeLabel:'Meal',          typeKey:'meal',          title:'Dinner',          titleKey:'seed.dinner',    time:'19:00'    },
+  dinner:     { typeLabel:'Meal',          typeKey:'meal',          title:'Dinner',          titleKey:'seed.dinner',    time:'19:30'    },
   // Used by the long-distance helper's "Add transport" buttons. typeKey=transport
   // so the slot renders with transport icon + transport-specific layout. Time
   // is null — caller passes an explicit `seed.time`.
   transport:  { typeLabel:'Transport',     typeKey:'transport',     title:'',                titleKey:null,             time:null       },
+}
+
+// Ideal meal time-of-day windows. Used to warn the planner when a meal
+// slot is scheduled outside the expected window (e.g. dinner at 3 PM).
+// Defaults match what most travellers expect:
+//   Breakfast → 07:30 – 10:00 AM
+//   Lunch     → 12:00 – 02:00 PM
+//   Dinner    → 07:30 – 10:00 PM
+const MEAL_WINDOWS = {
+  breakfast: { startMin:  7 * 60 + 30, endMin: 10 * 60,         label: '7:30 AM – 10:00 AM' },
+  lunch:     { startMin: 12 * 60,      endMin: 14 * 60,         label: '12:00 PM – 2:00 PM' },
+  dinner:    { startMin: 19 * 60 + 30, endMin: 22 * 60,         label: '7:30 PM – 10:00 PM' },
 }
 
 // ─── Google Places autocomplete (per-slot) ──────────────────────────────
@@ -14441,6 +14454,27 @@ function renderLinkedChip(slot) {
         <div class="pl-time-warning-body">${msg}</div>
         ${fixBtn}
       </div>`
+  }
+  // ── Meal-window warning ─────────────────────────────────────────────
+  // Soft amber: planner scheduled a meal slot outside the expected
+  // time-of-day window for its seed icon (breakfast/lunch/dinner). Only
+  // fires when the slot is still inside its open hours — opening-hours
+  // conflicts already get their own (louder) red warning above.
+  if (!conflict) {
+    const seedIcon = slot.dataset.seedIcon || ''
+    const win = MEAL_WINDOWS[seedIcon]
+    if (win) {
+      const slotMin = parseSlotTime(slot.querySelector('.slot-time-input')?.value || '')
+      if (slotMin != null && (slotMin < win.startMin || slotMin >= win.endMin)) {
+        const friendlyTime = formatTimeDisplay(slot.querySelector('.slot-time-input').value)
+        const categoryLabel = seedIcon.charAt(0).toUpperCase() + seedIcon.slice(1)
+        conflictHtml = `
+          <div class="pl-time-warning is-amber">
+            <div class="pl-time-warning-head">⏰ <strong>${escapeHtml(categoryLabel)} timing</strong></div>
+            <div class="pl-time-warning-body">${escapeHtml(categoryLabel)} typically runs <strong>${escapeHtml(win.label)}</strong> — selected time <strong>${escapeHtml(friendlyTime)}</strong> is outside that window.</div>
+          </div>`
+      }
+    }
   }
   // Budget warning — compare estimated per-pax cost to the traveler's
   // daily budget. Severity scales with their splurge_willingness so a
@@ -16441,6 +16475,10 @@ function addSlot(dayNum, seed = null) {
   // planner changes the type from the dropdown.
   slot.className = `activity-slot slot-type-${seedTypeKey}`;
   slot.id = id;
+  // Stash the seed icon for the meal-window warning check. Only set for
+  // slots that were seeded from a guideline (breakfast/lunch/dinner/hotel);
+  // blank "+ Add activity" slots stay without the dataset attr.
+  if (seed?.icon) slot.dataset.seedIcon = seed.icon;
   slot.innerHTML = `
     <div class="slot-header">
       <div class="time-dd">
