@@ -363,13 +363,13 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
 
 <!-- Language toggle -->
 <div class="lang-toggle" role="group" aria-label="Language">
-  <button type="button" class="lang-btn active" data-lang="ja" onclick="setLang('ja')" aria-label="日本語" title="日本語">
+  <button type="button" class="lang-btn" data-lang="ja" onclick="setLang('ja')" aria-label="日本語" title="日本語">
     <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <rect width="60" height="30" fill="#fff"/>
       <circle cx="30" cy="15" r="9" fill="#BC002D"/>
     </svg>
   </button>
-  <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
+  <button type="button" class="lang-btn active" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
     <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <clipPath id="uk-b"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
       <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
@@ -795,8 +795,14 @@ function onChipChange(cb){
   cb.closest('.chip').classList.toggle('on', cb.checked)
 }
 
-let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'ja')
-if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
+try {
+  if (!localStorage.getItem('jj_lang_resetv1')) {
+    if (localStorage.getItem('jj_planner_lang') === 'ja') localStorage.removeItem('jj_planner_lang')
+    localStorage.setItem('jj_lang_resetv1', '1')
+  }
+} catch (e) {}
+let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'en')
+if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'en'
 
 function t(key, fb){
   const d = APPLY_I18N[TM_LANG] || APPLY_I18N.en

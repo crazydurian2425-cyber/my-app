@@ -6462,14 +6462,14 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
 
     <!-- Language toggle — sits above Sign out -->
     <div class="sb-lang" role="group" aria-label="Language">
-      <button type="button" class="sb-lang-btn active" data-lang="ja" onclick="setLang('ja')" aria-label="日本語 (Japanese)" title="日本語">
+      <button type="button" class="sb-lang-btn" data-lang="ja" onclick="setLang('ja')" aria-label="日本語 (Japanese)" title="日本語">
         <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="13">
           <rect width="60" height="30" fill="#fff"/>
           <circle cx="30" cy="15" r="9" fill="#BC002D"/>
         </svg>
         <span>日本語</span>
       </button>
-      <button type="button" class="sb-lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
+      <button type="button" class="sb-lang-btn active" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
         <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="13">
           <clipPath id="sb-uk"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
           <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
@@ -8909,8 +8909,19 @@ const TM_I18N = {
   }
 }
 
-let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'ja')
-if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
+// Default to English now that the platform serves France. Old planners
+// whose localStorage was set to 'ja' get reset on first load post-pivot.
+// The 'jj_lang_resetv1' flag prevents re-resetting on every load.
+try {
+  if (!localStorage.getItem('jj_lang_resetv1')) {
+    if (localStorage.getItem('jj_planner_lang') === 'ja') {
+      localStorage.removeItem('jj_planner_lang')
+    }
+    localStorage.setItem('jj_lang_resetv1', '1')
+  }
+} catch (e) {}
+let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'en')
+if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'en'
 
 // ── Theme (light / dark) ───────────────────────────────────────
 function applyPlannerTheme(theme){
