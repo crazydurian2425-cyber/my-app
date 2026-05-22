@@ -13760,6 +13760,11 @@ async function selectPlaceForSlot(slot, placeId) {
 
 function applyPlaceToSlot(slot, place) {
   if (!place || !place.id) return
+  // Preserve modal scroll across the whole "link a place" flow — chip
+  // innerHTML changes, slot type may flip, distance markers rebuild, all
+  // of which can drop the browser scroll anchor.
+  const modalBody = slot?.closest('.modal-body')
+  const savedScrollTop = modalBody ? modalBody.scrollTop : null
   // Sanity check: reject venues that are obviously in a different country
   // from the trip destination. Without this the planner could (and did)
   // accidentally pick a Malaysia café for a Paris itinerary, then the
@@ -13838,6 +13843,9 @@ function applyPlaceToSlot(slot, place) {
   // can now be computed (or updated if it had a different place before).
   refreshDayDistances(slot.closest('[id^="slots-day-"]'))
   autoSaveDraft()
+  // Restore modal scroll position last — every step above could have
+  // shifted layout and let the browser snap to top.
+  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
 }
 
 // Map Google place types → our slot type enum. Order matters: the first match
@@ -14038,6 +14046,11 @@ function formatOpeningStatus(oh, plannedDate) {
 function renderLinkedChip(slot) {
   const chip = slot.querySelector('.places-linked-chip')
   if (!chip || !slot._placeData) return
+  // Snapshot modal scroll before setting chip.innerHTML — the chip can
+  // grow from 0 → ~80px which shifts the slot layout and confuses the
+  // browser's scroll anchor.
+  const modalBody = slot.closest('.modal-body')
+  const savedScrollTop = modalBody ? modalBody.scrollTop : null
   const d = slot._placeData
   const photoName = Array.isArray(d.photo_refs) ? d.photo_refs[0] : null
   const photoUrl  = photoName ? googlePhotoUrl(photoName, 120) : ''
@@ -14141,6 +14154,8 @@ function renderLinkedChip(slot) {
     const panel = slot.querySelector(':scope > .slot-closed-alts, :scope > .slot-closed-alts-host')
     if (panel) panel.remove()
   }
+  // Restore modal scroll — the chip innerHTML swap above can drop the anchor.
+  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
 }
 
 // Toggle the per-day schedule list inside a place chip.
@@ -15066,6 +15081,12 @@ function clearLinkedPlaceById(slotId) {
 
 function clearLinkedPlace(slot, { keepTitle = false, clearInputs = false } = {}) {
   if (!slot) return
+  // Snapshot scroll BEFORE collapsing the chip — clearing chip.innerHTML
+  // removes ~80px of layout from the slot, which breaks the browser's
+  // scroll anchor. User was typing in the title input and the page kept
+  // jumping back to the top of Day 1.
+  const modalBody = slot.closest('.modal-body')
+  const savedScrollTop = modalBody ? modalBody.scrollTop : null
   slot.classList.remove('slot-place-linked')
   slot.classList.remove('slot-time-conflict')
   delete slot._placeData
@@ -15085,6 +15106,9 @@ function clearLinkedPlace(slot, { keepTitle = false, clearInputs = false } = {})
   // distance indicator that touched it is now stale.
   refreshDayDistances(slot.closest('[id^="slots-day-"]'))
   autoSaveDraft()
+  // Restore modal scroll position last — every step above could have
+  // collapsed layout and let the browser snap to top.
+  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
 }
 
 // Read place fields off a slot for save/autosave. Returns an object with the
