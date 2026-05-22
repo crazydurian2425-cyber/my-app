@@ -1946,6 +1946,11 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border:1px solid rgba(193,125,42,0.30);
   color:#8a5f1c;
 }
+.day-summary-warn-info{
+  background:var(--bg);
+  border:1px solid var(--border);
+  color:var(--text-2);
+}
 .day-summary-warn-red{
   background:rgba(184,74,62,0.10);
   border:1px solid rgba(184,74,62,0.35);
@@ -16910,12 +16915,34 @@ function computeDaySummary(dayContainer) {
   })
   const activeMin = (firstStartMin != null && lastEndMin != null)
     ? Math.max(0, lastEndMin - firstStartMin) : 0
-  // Walking distance + transport spend — recompute from neighbors using Haversine.
+  // Walking distance + transport spend — prefer the LIVE grid values that
+  // Routes API + the per-mode picker actually displayed (so flipping the
+  // mode to Uber and seeing "~€26" actually pushes €26 into this total).
+  // Falls back to the haversine heuristic only when the grid isn't filled.
   let walkingKm = 0, transportSpend = 0
   transports.forEach(s => {
     const mode = s.dataset.transportMode || ''
+    // 1. Prefer the live grid (Routes API or heuristic-rendered values).
+    const cells = s.querySelectorAll('.transport-grid .tg-value')
+    const distTxt = cells[0]?.textContent || ''
+    const costTxt = cells[2]?.textContent || ''
+    const distMatch = distTxt.match(/(\d+(?:\.\d+)?)\s*km/i)
+    const costMatch = costTxt.match(/€\s*~?\s*(\d+(?:\.\d+)?)/)
+    if (distMatch && (costMatch || /free/i.test(costTxt))) {
+      const liveKm = parseFloat(distMatch[1])
+      if (mode === 'walk') walkingKm += liveKm
+      transportSpend += costMatch ? parseFloat(costMatch[1]) : 0
+      return
+    }
+    // 2. Fallback to neighbors-based heuristic. Use the transport slot's
+    //    dataset.fromLat/Lng when prev is null (auto-seeded arrival taxi).
     const { prev, next } = _findVenueNeighbors(s)
-    const a = prev ? getSlotLatLng(prev) : null
+    let a = prev ? getSlotLatLng(prev) : null
+    if (!a) {
+      const fl = parseFloat(s.dataset.fromLat)
+      const fg = parseFloat(s.dataset.fromLng)
+      if (Number.isFinite(fl) && Number.isFinite(fg)) a = { lat: fl, lng: fg }
+    }
     const b = next ? getSlotLatLng(next) : null
     const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : 0
     if (mode === 'walk') walkingKm += km
@@ -16951,10 +16978,34 @@ function computeDaySummary(dayContainer) {
   if (activeMin > 12 * 60) {
     warnings.push({ level:'amber', text:`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.` })
   }
+  // ── Light-day / empty-day checks ──
+  // "Balanced" needs more than "no warnings" — a day with one stop isn't
+  // balanced, it's empty. Compute against the day's role + the traveler's
+  // pace so an arrival day with hotel-only doesn't get the same green
+  // checkmark as a properly-planned full day.
+  const dayNum2 = parseInt(dayContainer.id.replace('slots-day-', ''), 10)
+  const totalDays2 = (typeof dayCount === 'number') ? dayCount : null
+  const isArrivalDay  = dayNum2 === 1 && !!window._currentArrivalMethod
+  const isDepartureDay = totalDays2 && dayNum2 === totalDays2 && !!window._currentDepartureMethod
+  // Stop-count thresholds vary by pace.
+  const pace = String(window._currentPace || '').toLowerCase()
+  const minStops = (pace.includes('slow')   || pace.includes('relax'))  ? 2
+                 : (pace.includes('active') || pace.includes('packed')) ? 4
+                 :                                                        3
+  if (venues.length === 0) {
+    warnings.push({ level:'amber', text:`No stops yet — add at least ${minStops} for a coherent day.` })
+  } else if (venues.length === 1 && !isArrivalDay && !isDepartureDay) {
+    warnings.push({ level:'amber', text:`Only 1 stop — add at least ${minStops - 1} more so the day reads like a real day.` })
+  } else if (venues.length < minStops && !isArrivalDay && !isDepartureDay) {
+    warnings.push({ level:'info', text:`${venues.length} stop${venues.length === 1 ? '' : 's'} — typical day has ${minStops}+ for ${pace || 'moderate'} pace.` })
+  }
+  if (activeMin > 0 && activeMin < 60 && !isArrivalDay && !isDepartureDay) {
+    warnings.push({ level:'amber', text:`Active span is only ${activeMin} min — the day will feel rushed past the first stop.` })
+  }
   // Profile-match end-of-day comparison — same as what the end-of-day
   // anchor displays, surfaced here for the summary card.
-  const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10)
-  const totalDays = (typeof dayCount === 'number') ? dayCount : null
+  const dayNum = dayNum2
+  const totalDays = totalDays2
   const cmp = _dayEndProfileCompare(dayContainer, dayNum, totalDays)
   const profileEnd = cmp.state
     ? {
@@ -16979,9 +17030,19 @@ function _fmtActiveHours(mins) {
 
 function buildDaySummaryHtml(dayNum, summary) {
   const { stops, activeMin, walkingKm, spendEur, warnings, profileEnd } = summary
+  // "Looks balanced" only when:
+  //   - no warnings of any level
+  //   - at least 2 stops (otherwise it's an arrival/departure stub)
+  //   - active span ≥ 90 min (otherwise the day is too light to be a day)
+  const looksBalanced = warnings.length === 0 && stops >= 2 && activeMin >= 90
+  const okText = looksBalanced
+    ? `✓ Day ${dayNum} looks balanced.`
+    : (warnings.length === 0
+        ? `· Day ${dayNum} is light — fine for an arrival/departure day, add more stops for a regular day.`
+        : '')
   const warnsHtml = warnings.length
     ? warnings.map(w => `<div class="day-summary-warn day-summary-warn-${w.level}">${escapeHtml(w.text)}</div>`).join('')
-    : `<div class="day-summary-ok">✓ Day ${dayNum} looks balanced.</div>`
+    : `<div class="day-summary-ok">${escapeHtml(okText)}</div>`
   // Expected-vs-actual end-of-day row — only renders when the comparison
   // actually produced a state (planner has put at least one stop down).
   const profileHtml = (profileEnd && profileEnd.state)
