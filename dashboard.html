@@ -17158,7 +17158,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
 // existing transport sitting immediately above the end_of_day anchor
 // and inserts a fresh one with current data.
 function renderEndDayButton(dayContainer, dayNum, totalDays) {
-  if (!dayContainer) return
+  if (!dayContainer) { console.log('[end-day-btn] no container'); return }
   // Remove any existing row — we re-create on every refresh.
   dayContainer.querySelectorAll(':scope > .end-day-row').forEach(el => el.remove())
   // Find the bottom anchor (end_of_day specifically — departure days
@@ -17166,11 +17166,13 @@ function renderEndDayButton(dayContainer, dayNum, totalDays) {
   const endAnchor = dayContainer.querySelector(
     ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
   )
+  console.log('[end-day-btn]', dayContainer.id, '· endAnchor=', !!endAnchor)
   if (!endAnchor) return
   // Find the last real venue (non-transport, non-locked).
   const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('slot-type-transport')
               && !s.classList.contains('is-locked'))
+  console.log('[end-day-btn]', dayContainer.id, '· venues=', venues.length)
   if (!venues.length) return
   // Detect whether a transport already sits right above the anchor.
   // Used purely to tweak the button label so the action is obvious.
