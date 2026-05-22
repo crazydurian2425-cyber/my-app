@@ -17015,14 +17015,24 @@ function _gapFillTransportsForDay(dayContainer) {
         const arrMin = m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 14 * 60
         departHHMM = minsToHHMM(Math.min(arrMin + 10, 23 * 60 + 45))
       } else {
-        const startMin = parseSlotTime(aSlot.querySelector('.slot-time-input')?.value || '')
-        if (startMin == null) continue
-        const type = aSlot.querySelector('.slot-type-select')?.value || 'activity'
-        let stay = parseInt(aSlot.querySelector('.slot-duration-input')?.value || '0', 10) || 0
-        if (type === 'accommodation') stay = Math.max(stay, 30)
-        else if (type === 'meal')     stay = Math.max(stay, 30)
-        if (stay <= 0) stay = 15
-        departHHMM = minsToHHMM(Math.min(startMin + stay, 23 * 60 + 45))
+        const _rawTime = aSlot.querySelector('.slot-time-input')?.value || ''
+        const startMin = parseSlotTime(_rawTime)
+        console.log('  pair', i, '· a.time raw =', JSON.stringify(_rawTime), '· startMin =', startMin)
+        if (startMin == null) {
+          // Fallback: derive a sensible depart time so we don't lose the
+          // insert just because the raw time string doesn't parse. Use
+          // (i + 1) * 60 min after 09:00 as a safe default for venue slots
+          // that somehow have a non-HH:MM time stored.
+          console.log('  pair', i, 'WARN: startMin null, using fallback 12:00')
+          departHHMM = '12:00'
+        } else {
+          const type = aSlot.querySelector('.slot-type-select')?.value || 'activity'
+          let stay = parseInt(aSlot.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+          if (type === 'accommodation') stay = Math.max(stay, 30)
+          else if (type === 'meal')     stay = Math.max(stay, 30)
+          if (stay <= 0) stay = 15
+          departHHMM = minsToHHMM(Math.min(startMin + stay, 23 * 60 + 45))
+        }
       }
       const departHour = parseInt(departHHMM.split(':')[0], 10)
       const isNight = departHour >= 22 || departHour < 6
