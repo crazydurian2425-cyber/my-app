@@ -16030,15 +16030,27 @@ function refreshTransportSlot(slot) {
   // Auto-syncs back into the hidden time-input so save/sort see the
   // right value too.
   let departHHMM = slot.querySelector('.slot-time-input')?.value || '09:00'
-  // Only recompute depart from prev's start+stay if prev is a real venue.
-  // Locked anchors (now visible to _findVenueNeighbors when they carry
-  // _placeData) have no .slot-time-input / .slot-duration-input —
-  // _suggestTransportStart would fall back to '09:00' + 15 min and clobber
-  // the transport's actual depart time (which was set explicitly by
-  // _insertArrivalTaxi or by the planner).
-  if (prev && !prev.classList.contains('is-locked')) {
-    const corrected = _suggestTransportStart(prev, next)
-    if (corrected !== departHHMM) {
+  // Recompute depart based on what prev is:
+  //   - real venue → start + stay (with type-based floors).
+  //   - locked arrival anchor → arrival_time + 10 min disembark buffer.
+  //   - locked morning anchor → wake_time + 0 (planner starts day moving).
+  //   - other / no prev → keep existing depart.
+  if (prev) {
+    let corrected = null
+    if (!prev.classList.contains('is-locked')) {
+      corrected = _suggestTransportStart(prev, next)
+    } else if (prev.dataset.anchorType === 'arrival') {
+      const arrTime = prev.dataset.arrivalTime || window._currentArrivalTime || '14:00'
+      const m = String(arrTime).match(/^(\d{1,2}):(\d{2})$/)
+      const arrMin = m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 14 * 60
+      corrected = minsToHHMM(Math.min(arrMin + 10, 23 * 60 + 45))
+    } else if (prev.dataset.anchorType === 'morning') {
+      const wake = _wakeTimeForTiming(window._currentDailyTiming)
+      const m = String(wake).match(/^(\d{1,2}):(\d{2})$/)
+      const wakeMin = m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 8 * 60 + 30
+      corrected = minsToHHMM(Math.min(wakeMin, 23 * 60 + 45))
+    }
+    if (corrected && corrected !== departHHMM) {
       departHHMM = corrected
       _applySlotTime(slot, corrected)
     }
