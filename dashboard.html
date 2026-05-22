@@ -13397,6 +13397,9 @@ function _autoSeedDay1HotelIfNeeded() {
       console.log('[day1-seed] empty day → adding taxi + hotel')
       _insertArrivalTaxi(null)
       addSlot(1, { icon: 'hotel' })
+      // _insertArrivalTaxi already queues an autosave; the hotel addSlot
+      // doesn't, so kick it explicitly so both new rows persist.
+      if (typeof autoSaveDraft === 'function') autoSaveDraft()
       return
     }
     if (!firstStop.classList.contains('slot-type-transport')) {
@@ -13437,6 +13440,10 @@ function _insertArrivalTaxi(beforeEl) {
     _applySlotTime(t, arr)
     if (beforeEl && beforeEl.parentNode === day1) day1.insertBefore(t, beforeEl)
     console.log('[arrival-taxi] inserted', { id: t.id, time: arr, before: beforeEl?.id, cls: t.className })
+    // Trigger autosave so the inserted transport actually persists. Without
+    // this, opening + closing the plan loses the auto-seed because nothing
+    // fires an `input` event after our direct DOM writes.
+    if (typeof autoSaveDraft === 'function') autoSaveDraft()
     // Async: resolve the arrival station via Places textSearch + attach
     // its place_id / coords / display name to the transport.
     _lookupStationAndAttach(t)
@@ -17930,8 +17937,22 @@ async function _persistDraft(planId) {
     spend_breakdown: document.getElementById('spend-breakdown').value.trim(),
     local_tips: document.getElementById('local-tips').value.trim()
   }).eq('id', planId).select('id, itin_title')
-  console.log('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok' })
+  console.log('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
   if (planErr) { console.warn('plan update failed', planErr); return false }
+  // ── Data-loss guard ──
+  // If we built an empty items array but the form modal is OPEN and shows
+  // non-locked activity slots, something raced (likely an autosave fired
+  // mid-render before titles were set). DON'T wipe the DB — bail and let
+  // the next autosave with valid items handle persistence.
+  if (!items.length) {
+    const modalOpen = document.getElementById('modal-submit')?.classList.contains('is-open')
+                   || document.getElementById('modal-submit')?.style?.display !== 'none'
+    const visibleSlots = document.querySelectorAll('.activity-slot:not(.is-locked) .slot-title-input').length
+    if (modalOpen && visibleSlots > 0) {
+      console.warn('[autosave] BAIL: items empty but', visibleSlots, 'non-locked slots visible — refusing to wipe DB')
+      return true
+    }
+  }
   // Always re-sync itinerary_items — even if `items` is empty, so removing
   // every slot clears the saved draft instead of leaving stale rows behind.
   // Cascade on plan_id wipes item_images alongside.
