@@ -17246,9 +17246,38 @@ function _gapFillTransportsForDay(dayContainer) {
   // can't loop forever.
   let inserts = 0
   const MAX = 20
+  // Attach _placeData to locked bookend anchors so they count as venues for
+  // the (a, b) pair check below. Without this the back-to-hotel transport
+  // never gets inserted because the end_of_day anchor has no lat/lng even
+  // though we know the hotel coords from _findItineraryHotel().
+  const _attachAnchorPlaceData = (anchor) => {
+    if (!anchor || !anchor.classList?.contains('is-locked') || anchor._placeData) return
+    if (anchor.dataset.anchorType === 'end_of_day' || anchor.dataset.anchorType === 'morning') {
+      if (typeof _findItineraryHotel !== 'function') return
+      const h = _findItineraryHotel()
+      if (h) anchor._placeData = {
+        google_place_id: h.google_place_id,
+        name: h.name,
+        latitude: h.latitude,
+        longitude: h.longitude,
+      }
+    } else if (anchor.dataset.anchorType === 'arrival' && window._currentArrivalStationLatLng) {
+      anchor._placeData = {
+        google_place_id: window._currentArrivalStationPlaceId || null,
+        name: window._currentArrivalStationResolvedName || window._currentArrivalLocation || '',
+        latitude:  window._currentArrivalStationLatLng.lat,
+        longitude: window._currentArrivalStationLatLng.lng,
+      }
+    }
+  }
   while (inserts < MAX) {
     const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     console.log('[gap-fill] iteration', inserts, '· slots:', slots.length)
+    // Pre-pass: attach _placeData to every locked anchor BEFORE the pair
+    // check so getSlotLatLng can see hotel/station coords on the anchors.
+    slots.forEach(s => {
+      if (s.classList.contains('is-locked')) _attachAnchorPlaceData(s)
+    })
     let didInsert = false
     for (let i = 0; i < slots.length - 1; i++) {
       const aSlot = slots[i]
