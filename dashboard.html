@@ -14372,22 +14372,47 @@ function parseOpeningIntervals(dayLine) {
   // Strip the leading day name + colon if still present.
   const body = dayLine.replace(/^[A-Za-z]+:\s*/, '')
   for (const seg of body.split(',').map(s => s.trim())) {
-    // Accept en-dash, em-dash, or hyphen as the range separator.
-    const m = seg.match(/(\d{1,2}:\d{2}\s*[AP]M)\s*[–—-]\s*(\d{1,2}:\d{2}\s*[AP]M)/i)
+    // Google often writes ranges as "12:00 – 2:30 PM" where AM/PM appears
+    // ONLY on the closing side (both endpoints share the period). So the
+    // AM/PM marker is OPTIONAL per side. Accept en-dash, em-dash, hyphen.
+    const m = seg.match(/(\d{1,2}:\d{2}(?:\s*[AP]M)?)\s*[–—-]\s*(\d{1,2}:\d{2}(?:\s*[AP]M)?)/i)
     if (!m) continue
-    const o = parse12h(m[1])
-    const c = parse12h(m[2])
-    if (o != null && c != null) intervals.push({ open: o, close: c })
+    const startHas = /[AP]M$/i.test(m[1].trim())
+    const endHas   = /[AP]M$/i.test(m[2].trim())
+    // Determine the period to inherit when one side is missing it.
+    const fallback = endHas ? (m[2].match(/(AM|PM)$/i)[1])
+                   : startHas ? (m[1].match(/(AM|PM)$/i)[1])
+                   : 'PM'   // pure-numeric ranges default to PM (rare)
+    let o = parse12h(m[1], fallback)
+    let c = parse12h(m[2], fallback)
+    if (o == null || c == null) continue
+    // If the START side had no explicit period and inheriting put it
+    // AFTER the close, flip its period. Handles "10:00 – 2:00 PM" (=
+    // 10 AM to 2 PM, not 10 PM to 2 PM). Late-night ranges like
+    // "9:00 PM – 2:00 AM" stay as-is because both sides are explicit
+    // — the close-<-open case there indicates a midnight wrap which
+    // is handled downstream.
+    if (!startHas && o >= c) {
+      const alt = /PM/i.test(fallback) ? 'AM' : 'PM'
+      const o2 = parse12h(m[1], alt)
+      if (o2 != null) o = o2
+    }
+    intervals.push({ open: o, close: c })
   }
   return intervals
 }
-function parse12h(s) {
-  const m = s.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+// Parse a 12-hour clock string. The AM/PM suffix is optional — pass
+// `fallbackPeriod` ('AM' / 'PM') for the case where Google's hours line
+// omits the period on one side.
+function parse12h(s, fallbackPeriod) {
+  const m = String(s).match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i)
   if (!m) return null
   let h = parseInt(m[1], 10)
   const mins = parseInt(m[2], 10)
-  if (/PM/i.test(m[3]) && h < 12) h += 12
-  if (/AM/i.test(m[3]) && h === 12) h = 0
+  const period = m[3] || fallbackPeriod
+  if (!period) return null
+  if (/PM/i.test(period) && h < 12) h += 12
+  if (/AM/i.test(period) && h === 12) h = 0
   return h * 60 + mins
 }
 function parseSlotTime(s) {
