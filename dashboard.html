@@ -13212,56 +13212,9 @@ function fillItineraryItems(items) {
   // is "Hotel check-in" — drop the bags, freshen up, then go out. Skip if
   // the planner already has any non-locked stop on Day 1 (saved data wins).
   _autoSeedDay1HotelIfNeeded()
-  // Kick off the Places lookup for the arrival station so the universal
-  // gap-fill pass (in refreshDayDistances) can place a transport between
-  // the locked arrival anchor and the first venue. Fires async — caller
-  // doesn't wait.
-  _initArrivalStationLookup()
   // After every slot is populated we have lat/lng on each linked slot —
   // compute the between-stop distance indicators for every day at once.
   refreshAllDistances()
-}
-
-// Kick off the arrival-station Places lookup on plan-open, regardless of
-// whether _autoSeedDay1HotelIfNeeded ends up creating a new taxi block.
-// Caches the result globally so the arrival anchor + the universal gap-fill
-// pass both have the station coords available.
-async function _initArrivalStationLookup() {
-  if (window._currentArrivalStationLatLng) return    // already resolved
-  const rawLoc = (window._currentArrivalLocation || '').trim()
-  if (!rawLoc) return
-  const city = (window._currentDestination || '').trim()
-  const isIata = /^[A-Z]{3}$/.test(rawLoc)
-  const query = isIata
-    ? `${rawLoc} Airport`
-    : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
-      ? `${rawLoc}, ${city}`
-      : rawLoc
-  try {
-    const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
-    const bias = buildDestBias(city)
-    if (bias) body.locationBias = bias
-    const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
-      },
-      body: JSON.stringify(body),
-    })
-    if (!resp.ok) return
-    const data = await resp.json()
-    const p = data?.places?.[0]
-    if (!p?.id || !p?.location) return
-    window._currentArrivalStationResolvedName = p.displayName?.text || rawLoc
-    window._currentArrivalStationLatLng       = { lat: p.location.latitude, lng: p.location.longitude }
-    window._currentArrivalStationPlaceId      = p.id
-    // Re-render every day's bookends + gap-fill now that we have coords.
-    if (typeof refreshAllDistances === 'function') refreshAllDistances()
-  } catch (e) {
-    console.warn('[station-lookup] init threw', e)
-  }
 }
 
 // Look up the arrival station via Google Places textSearch, then stash
@@ -13325,45 +13278,91 @@ async function _lookupStationAndAttach(transportSlot) {
       return
     }
   }
-  // Expose resolved coords + name globally so the arrival anchor and the
-  // universal gap-fill pass can read them on every render.
-  window._currentArrivalStationResolvedName = resolved.name
-  window._currentArrivalStationLatLng       = { lat: resolved.lat, lng: resolved.lng }
-  window._currentArrivalStationPlaceId      = resolved.placeId
-  // Stash on the transport slot too — refreshTransportSlot reads these
-  // when prev is null to fill in distance/duration/Routes API call.
+  // Stash on the transport slot — refreshTransportSlot reads these next
+  // pass to fill in distance/duration/Routes API call.
   const live = document.getElementById(transportSlot.id)
   if (!live) return
   live.dataset.fromPlaceId = resolved.placeId
   live.dataset.fromName    = resolved.name
   live.dataset.fromLat     = String(resolved.lat)
   live.dataset.fromLng     = String(resolved.lng)
+  // Also expose the resolved name so the arrival anchor's title can show
+  // the real station ("Paris Gare Montparnasse") on the next render.
+  window._currentArrivalStationResolvedName = resolved.name
   // Trigger refreshes so both the transport panel AND the arrival anchor
-  // pick up the resolved data. refreshDayDistances re-runs the gap-fill
-  // pass so any "previously skipped because anchor had no lat/lng" pair
-  // now gets a transport block.
+  // pick up the resolved data.
+  if (typeof refreshTransportSlot === 'function') refreshTransportSlot(live)
   const dayContainer = live.closest('[id^="slots-day-"]')
-  if (dayContainer && typeof refreshDayDistances === 'function') {
-    refreshDayDistances(dayContainer)
-  } else if (typeof refreshTransportSlot === 'function') {
-    refreshTransportSlot(live)
+  if (dayContainer && typeof renderDayBookends === 'function') {
+    const m = dayContainer.id.match(/slots-day-(\d+)/)
+    const dayNum = m ? parseInt(m[1], 10) : 1
+    renderDayBookends(dayContainer, dayNum, (typeof dayCount === 'number') ? dayCount : null)
   }
 }
 
-// Auto-seed the Hotel check-in slot on empty Day 1 with afternoon arrival.
-// The TAXI between arrival anchor and hotel is now handled by the universal
-// gap-fill pass in refreshDayDistances — this function just ensures the
-// hotel exists for the planner to start from.
+// One-shot auto-seed for Day 1 afternoon arrivals (arrival_time hour ≥ 13).
+// Two scenarios handled:
+//
+//   (a) Day 1 is EMPTY (no non-locked stops yet)
+//       → drop in BOTH Taxi-to-hotel transport + Hotel check-in.
+//   (b) Day 1 already has stops (saved plan) but no transport sits
+//       between the arrival anchor and the first stop
+//       → only inject the Taxi-to-hotel transport.
+//
+// Either way the planner ends up with a station → hotel transport block
+// that shows km/duration/cost once both ends are linked.
+//
+// Tracked per (plan-open × planId) so re-renders don't re-insert after
+// a planner delete.
 function _autoSeedDay1HotelIfNeeded() {
   const arr = window._currentArrivalTime || ''
   const arrHour = parseInt(String(arr).split(':')[0], 10)
-  if (!Number.isFinite(arrHour) || arrHour < 13) return
+  console.log('[day1-seed]', { arr, arrHour, planId: currentPlanId, location: window._currentArrivalLocation })
+  if (!Number.isFinite(arrHour) || arrHour < 13) { console.log('[day1-seed] skip: no afternoon arrival'); return }
   const day1 = document.getElementById('slots-day-1')
-  if (!day1) return
-  const hasUserStops = [...day1.querySelectorAll(':scope > .activity-slot')]
-    .some(s => !s.classList.contains('is-locked'))
-  if (hasUserStops) return                  // saved data wins
-  addSlot(1, { icon: 'hotel' })
+  if (!day1) { console.log('[day1-seed] skip: no day-1 container'); return }
+  const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
+    .filter(s => !s.classList.contains('is-locked'))
+  const firstStop = userStops[0] || null
+  console.log('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
+  // Helper — append a taxi-to-hotel transport block. `beforeEl` (optional)
+  // moves the new slot ahead of an existing first stop so _findVenueNeighbors
+  // sees prev=null and refreshTransportSlot doesn't reset the time.
+  const addTaxi = (beforeEl) => {
+    addSlot(1, { icon: 'transport', time: arr })
+    const t = day1.querySelector(':scope > .activity-slot.slot-type-transport:last-of-type')
+    if (!t) return
+    t.dataset.transportMode = 'taxi'
+    const titleInput = t.querySelector('.slot-title-input')
+    if (titleInput) titleInput.value = 'Taxi to hotel'
+    // FORCE the time to arrival_time. addSlot's bumpAnd logic pushes the
+    // new slot to latestExisting+60 when seedFixedTime <= latestExisting,
+    // which would land the taxi AFTER the hotel and break the ordering.
+    _applySlotTime(t, arr)
+    if (beforeEl && beforeEl.parentNode === day1) {
+      day1.insertBefore(t, beforeEl)
+    }
+    // Async: resolve the arrival station via Places textSearch + attach
+    // its place_id / coords / display name to the transport so distance,
+    // duration, and Routes API light up automatically.
+    _lookupStationAndAttach(t)
+  }
+  if (userStops.length === 0) {
+    // Empty Day 1 — seed transport + hotel.
+    console.log('[day1-seed] empty day → adding taxi + hotel')
+    addTaxi(null)
+    addSlot(1, { icon: 'hotel' })
+    return
+  }
+  // Day 1 has stops already. If the FIRST stop isn't a transport block,
+  // inject one BEFORE the first venue so it sits between the arrival
+  // anchor and that venue in DOM order.
+  if (!firstStop.classList.contains('slot-type-transport')) {
+    console.log('[day1-seed] saved day, first stop is non-transport → injecting taxi before it')
+    addTaxi(firstStop)
+  } else {
+    console.log('[day1-seed] first stop already a transport — leaving as-is')
+  }
 }
 
 // Icons for guideline items + day types
@@ -16542,89 +16541,6 @@ function _buildLockedAnchor({ type, title, subtitle, method, badge, footer }) {
   return el
 }
 
-// ── UNIVERSAL gap-fill: between EVERY pair of consecutive activity-slots
-// (including locked anchors that carry _placeData), if distance > 500 m
-// AND there's no transport row sitting between them, drop in a taxi block.
-//
-// This is the load-bearing function for the "arrival anchor → hotel"
-// case, because the locked arrival anchor isn't a venue — but once it
-// has _placeData (set by renderDayBookends after the Places lookup),
-// this loop treats it identically to a venue for the gap-fill check.
-function _autoInsertTransportsForDay(dayContainer, dayNum) {
-  if (!dayContainer) return
-  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
-  for (let i = 0; i < slots.length - 1; i++) {
-    const a = slots[i]
-    const b = slots[i + 1]
-    // Skip if either side is already a transport block — that pair is
-    // already wired correctly.
-    if (a.classList.contains('slot-type-transport')) continue
-    if (b.classList.contains('slot-type-transport')) continue
-    const aLL = getSlotLatLng(a)
-    const bLL = getSlotLatLng(b)
-    if (!aLL || !bLL) continue
-    const km = haversineKm(aLL.lat, aLL.lng, bLL.lat, bLL.lng)
-    if (!Number.isFinite(km) || km < 0.5) continue   // walkable, no transport needed
-    // Build the depart time. If `a` is the locked arrival anchor, use its
-    // stamped arrival time + 10-min disembark buffer. Otherwise use a's
-    // start + stay duration (the time a "releases" the traveler).
-    let departHHMM
-    if (a.classList.contains('is-locked') && a.dataset.anchorType === 'arrival') {
-      const arr = a.dataset.arrivalTime || window._currentArrivalTime || '14:00'
-      const m = arr.match(/^(\d{1,2}):(\d{2})$/)
-      const arrMin = m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 14 * 60
-      departHHMM = minsToHHMM(Math.min(arrMin + 10, 23 * 60 + 45))
-    } else {
-      const startMin = parseSlotTime(a.querySelector('.slot-time-input')?.value || '')
-      const type = a.querySelector('.slot-type-select')?.value || 'activity'
-      let stay = parseInt(a.querySelector('.slot-duration-input')?.value || '0', 10) || 0
-      if (type === 'accommodation') stay = Math.max(stay, 30)
-      else if (type === 'meal')     stay = Math.max(stay, 30)
-      if (stay <= 0) stay = 15
-      if (startMin == null) continue
-      departHHMM = minsToHHMM(Math.min(startMin + stay, 23 * 60 + 45))
-    }
-    // Pick a default mode based on distance + time of day.
-    const departHour = parseInt(departHHMM.split(':')[0], 10)
-    const isNight = departHour >= 22 || departHour < 6
-    const mode = (km < 1)
-      ? 'walk'
-      : (km > 5 || isNight)
-        ? 'taxi'
-        : 'transit'
-    // Insert a transport slot between a and b.
-    addSlot(dayNum, { icon: 'transport', time: departHHMM })
-    const newSlot = dayContainer.querySelector(':scope > .activity-slot.slot-type-transport:last-of-type')
-    if (!newSlot) continue
-    newSlot.dataset.transportMode = mode
-    newSlot.dataset.autoInserted  = 'true'
-    const titleInput = newSlot.querySelector('.slot-title-input')
-    if (titleInput) {
-      const aName = _venueNameOf(a) || a.querySelector('.anchor-title')?.textContent || 'origin'
-      const bName = _venueNameOf(b) || 'destination'
-      titleInput.value = `${mode === 'walk' ? 'Walk' : (mode === 'taxi' ? 'Taxi' : 'Metro')} · ${aName} → ${bName}`
-    }
-    // Force the time (defeats addSlot's bumpAnd) and reposition the slot
-    // between a and b in DOM order.
-    _applySlotTime(newSlot, departHHMM)
-    dayContainer.insertBefore(newSlot, b)
-    // If `a` is the locked arrival anchor, stamp the transport's from-
-    // dataset with the anchor's _placeData so refreshTransportSlot can
-    // compute km and fire the Routes API without a "prev" venue.
-    if (a.classList.contains('is-locked') && a._placeData) {
-      newSlot.dataset.fromPlaceId = a._placeData.google_place_id || ''
-      newSlot.dataset.fromName    = a._placeData.name || ''
-      newSlot.dataset.fromLat     = String(a._placeData.latitude)
-      newSlot.dataset.fromLng     = String(a._placeData.longitude)
-    }
-    // Refresh THIS specific transport so its content panel renders + the
-    // Routes API kicks off without waiting for the next full refresh.
-    refreshTransportSlot(newSlot)
-    // Keep iterating — the inserted slot bumps subsequent indices but the
-    // snapshot `slots` array is fixed, so this is safe.
-  }
-}
-
 // Insert / replace the locked bookend rows on a single day. Called after
 // fillItineraryItems on load and at the top of refreshDayDistances on every
 // edit so the bookends stay in sync with the planner's current stop list.
@@ -16658,22 +16574,6 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
         title: `${formatTimeDisplay(arrTime)} · ${methodLabel} arrives${locBit}`,
         subtitle: arrFrom && arrFrom !== 'origin' ? `from ${arrFrom} · Day 1 begins on arrival` : `Day 1 begins on arrival`,
       })
-      // Hang the resolved station coords on the anchor so getSlotLatLng
-      // works for the universal "gap > 500m → auto-insert transport" pass
-      // downstream. Without this, the locked anchor has no lat/lng and the
-      // gap-fill skips the arrival → first-venue pair.
-      const stLL  = window._currentArrivalStationLatLng
-      const stPid = window._currentArrivalStationPlaceId
-      const stNm  = window._currentArrivalStationResolvedName || arrLoc
-      if (stLL && Number.isFinite(stLL.lat) && Number.isFinite(stLL.lng)) {
-        topAnchor._placeData = {
-          google_place_id: stPid || null,
-          name: stNm,
-          latitude: stLL.lat,
-          longitude: stLL.lng,
-        }
-        topAnchor.dataset.arrivalTime = arrTime
-      }
     }
   } else {
     const breakfastBit = window._currentHotelBreakfast
@@ -16836,13 +16736,6 @@ function refreshDayDistances(dayContainer) {
     const _m = dayContainer.id.match(/slots-day-(\d+)/)
     const _dayNum = _m ? parseInt(_m[1], 10) : 1
     renderDayBookends(dayContainer, _dayNum, (typeof dayCount === 'number') ? dayCount : null)
-    // Universal gap-fill: walk every consecutive pair of activity-slots
-    // (including locked anchors that now carry _placeData via the station
-    // lookup). If both ends have lat/lng AND distance > 500 m AND nothing
-    // transport-y sits between them, drop in a taxi block. Runs per-day,
-    // every refresh — idempotent because the same pair won't trigger
-    // twice (the inserted transport is now "between" them).
-    _autoInsertTransportsForDay(dayContainer, _dayNum)
   }
   // Recompute the day summary card (stops / active hours / walking /
   // spend + warnings) on every refresh so it stays in sync with edits.
