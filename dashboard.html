@@ -2192,37 +2192,65 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .tg-value{font-size:12.5px;color:var(--text);font-weight:500;}
 .tg-value.tg-blank{color:var(--text-3);font-weight:400;font-style:italic;}
 
-/* Step-by-step transit timeline — populated from Google Routes API */
+/* Step-by-step transit timeline — populated from Google Routes API.
+   Looks like a vertical journey timeline:
+     08:00   ●   Arc de Triomphe
+                 │
+             [A] RER A · 2 stops → Boissy-Saint-Léger
+                 │
+     08:02   ●   Auber
+                 │
+             🚶  Walk · 8 min · 383 m
+                 │
+     08:08   ●   ONYX                                       */
 .transport-steps{
-  display:flex;flex-direction:column;gap:4px;
-  padding:6px 0 2px 0;
+  display:grid;
+  grid-template-columns:auto auto 1fr;
+  column-gap:10px;
+  padding:8px 0 2px 0;
   border-top:0.5px dashed var(--border-med);
-}
-.transport-step{
-  display:flex;align-items:flex-start;gap:8px;
-  padding:4px 0;
   font-size:11.5px;line-height:1.35;
 }
-.transport-step .ts-icon{
-  flex-shrink:0;width:18px;text-align:center;
-  font-size:12px;color:var(--text-3);
+.transport-steps > *{padding:2px 0;}
+.ts-time{
+  color:var(--text-3);font-variant-numeric:tabular-nums;
+  font-size:11px;white-space:nowrap;align-self:start;
 }
-.transport-step .ts-body{flex:1;min-width:0;color:var(--text);}
-.transport-step-walk{color:var(--text-2);}
-.transport-step-transit .ts-line{
-  flex-shrink:0;
+.ts-marker{
+  align-self:stretch;display:flex;flex-direction:column;align-items:center;
+  position:relative;width:18px;
+}
+.ts-marker::before{
+  content:'';position:absolute;left:50%;top:0;bottom:0;
+  width:1px;background:var(--border-med);transform:translateX(-50%);
+}
+.ts-marker.is-endpoint .ts-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:var(--green-dark,#1a7a5e);margin-top:4px;
+  position:relative;z-index:1;
+}
+.ts-marker.is-endpoint-last::before{bottom:auto;height:12px;}
+.ts-marker.is-endpoint-first::before{top:12px;}
+.ts-marker .ts-line{
+  position:relative;z-index:1;margin-top:4px;
   display:inline-flex;align-items:center;justify-content:center;
-  min-width:24px;height:18px;
-  padding:0 6px;border-radius:3px;
-  font-size:10.5px;font-weight:700;letter-spacing:0.04em;
+  min-width:22px;height:18px;padding:0 6px;border-radius:3px;
+  font-size:10px;font-weight:700;letter-spacing:0.04em;
   font-family:'DM Sans',sans-serif;
+  box-shadow:0 0 0 2px #fff;     /* white halo cuts the connecting line cleanly */
 }
-.transport-step-transit .ts-head{font-weight:500;}
-.transport-step-transit .ts-headsign{color:var(--text-3);font-weight:400;}
-.transport-step-transit .ts-stations{
-  font-size:10.5px;color:var(--text-3);margin-top:1px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+.ts-marker .ts-walk-icon{
+  position:relative;z-index:1;margin-top:4px;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;color:var(--text-2);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;
 }
+.ts-content{align-self:start;color:var(--text);min-width:0;}
+.ts-content .ts-title{font-weight:500;}
+.ts-content .ts-sub{font-size:10.5px;color:var(--text-3);margin-top:1px;}
+.ts-content .ts-station-name{font-weight:500;}
+.ts-content.is-segment .ts-title{color:var(--text-2);}
 
 /* ── Closed-venue alternatives panel ──
    Renders OUTSIDE the linked chip (below the slot body) when the linked
@@ -14800,8 +14828,7 @@ function applyRouteDataToSlot(slot, data) {
       else if (grid) grid.parentNode.appendChild(stepsHost)
       else host.appendChild(stepsHost)
     }
-    // Collapse runs of consecutive walk sub-steps into one summary row,
-    // so a 6-min walk doesn't appear as five "Walk · 1 min" lines.
+    // Collapse runs of consecutive walk sub-steps into one summary row.
     const collapsed = []
     for (const s of data.steps) {
       const last = collapsed[collapsed.length - 1]
@@ -14812,35 +14839,81 @@ function applyRouteDataToSlot(slot, data) {
         collapsed.push({ ...s })
       }
     }
-    stepsHost.innerHTML = collapsed.map(s => {
+    // Build the journey timeline. Each transit step contributes TWO rows:
+    //   (a) station endpoint at departure  ●  Station name
+    //   (b) the line segment itself        [A] RER A · 2 stops → Headsign
+    // Each walk step is one segment row in between.
+    // We end with a final endpoint row for the destination venue.
+    const { prev: _prev, next: _next } = _findVenueNeighbors(slot)
+    const fromName = _venueNameOf(_prev)
+    const toName   = _venueNameOf(_next)
+    const departHHMM = slot.querySelector('.slot-time-input')?.value || '09:00'
+    let cursor = departHHMM
+    const rows = []
+    const fmtT = (hhmm) => formatTimeDisplay(hhmm)
+    // First endpoint — the origin venue.
+    rows.push({
+      kind: 'endpoint',
+      time: cursor,
+      name: fromName || 'Origin',
+      position: 'first',
+    })
+    collapsed.forEach((s, i) => {
+      const stepStart = cursor
+      cursor = _addMinutes(cursor, s.mins)
       if (s.kind === 'walk') {
         const distTxt = s.distanceM >= 1000
           ? `${(s.distanceM/1000).toFixed(1)} km`
           : `${s.distanceM} m`
+        rows.push({ kind: 'walk-segment', mins: s.mins, distTxt })
+      } else {
+        // Insert a transit endpoint (departure station) just before the
+        // segment row IF Google gave us a station name AND it's different
+        // from the previous endpoint (avoid duplicate dots).
+        if (s.from) {
+          rows.push({ kind: 'endpoint', time: stepStart, name: s.from, position: 'mid' })
+        }
+        rows.push({ kind: 'transit-segment', step: s })
+        if (s.to) {
+          rows.push({ kind: 'endpoint', time: cursor, name: s.to, position: 'mid' })
+        }
+      }
+    })
+    // Final endpoint — the destination venue.
+    rows.push({ kind: 'endpoint', time: cursor, name: toName || 'Destination', position: 'last' })
+
+    stepsHost.innerHTML = rows.map((r, idx) => {
+      if (r.kind === 'endpoint') {
+        const cls = ['ts-marker','is-endpoint',
+          r.position === 'first' ? 'is-endpoint-first' : '',
+          r.position === 'last'  ? 'is-endpoint-last'  : '',
+        ].filter(Boolean).join(' ')
         return `
-          <div class="transport-step transport-step-walk">
-            <span class="ts-icon" aria-hidden="true">🚶</span>
-            <span class="ts-body">Walk · ${s.mins} min · ${escapeHtml(distTxt)}</span>
+          <span class="ts-time">${escapeHtml(fmtT(r.time))}</span>
+          <span class="${cls}"><span class="ts-dot"></span></span>
+          <div class="ts-content"><div class="ts-title ts-station-name">${escapeHtml(r.name)}</div></div>`
+      }
+      if (r.kind === 'walk-segment') {
+        return `
+          <span class="ts-time"></span>
+          <span class="ts-marker"><span class="ts-walk-icon" aria-hidden="true">🚶</span></span>
+          <div class="ts-content is-segment">
+            <div class="ts-title">Walk · ${r.mins} min</div>
+            <div class="ts-sub">${escapeHtml(r.distTxt)}</div>
           </div>`
       }
-      // Transit
+      // transit-segment
+      const s = r.step
       const stopWord = (s.numStops === 1) ? 'stop' : 'stops'
       const stopBit = s.numStops ? ` · ${s.numStops} ${stopWord}` : ''
-      const headBit = s.headsign ? ` <span class="ts-headsign">→ ${escapeHtml(s.headsign)}</span>` : ''
-      const stations = (s.from && s.to)
-        ? `<div class="ts-stations">${escapeHtml(s.from)} → ${escapeHtml(s.to)}</div>`
-        : ''
-      const linePill = `
-        <span class="ts-line" style="background:${escapeHtml(s.lineColor)};color:${escapeHtml(s.textColor)};">
-          ${escapeHtml(s.lineName)}
-        </span>`
+      const head = s.headsign ? ` → ${escapeHtml(s.headsign)}` : ''
+      const linePill = `<span class="ts-line" style="background:${escapeHtml(s.lineColor)};color:${escapeHtml(s.textColor)};">${escapeHtml(s.lineName)}</span>`
       return `
-        <div class="transport-step transport-step-transit">
-          ${linePill}
-          <div class="ts-body">
-            <div class="ts-head">${s.mins} min${stopBit}${headBit}</div>
-            ${stations}
-          </div>
+        <span class="ts-time"></span>
+        <span class="ts-marker">${linePill}</span>
+        <div class="ts-content is-segment">
+          <div class="ts-title">${escapeHtml(s.lineName)} · ${s.mins} min${stopBit}</div>
+          <div class="ts-sub">${head ? 'Towards' + head : ''}</div>
         </div>`
     }).join('')
   } else {
