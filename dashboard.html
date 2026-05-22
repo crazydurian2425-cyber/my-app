@@ -15942,9 +15942,14 @@ function _sensibleModes(km) {
 // Find the previous / next non-transport slot in the same day, walking
 // past consecutive transport slots if needed.
 function _findVenueNeighbors(slot) {
+  // Locked anchors are normally skipped, BUT an anchor that carries
+  // _placeData (arrival anchor → station, end-of-day anchor → hotel,
+  // morning anchor → hotel) acts like a real venue endpoint. Allow those
+  // through so the back-to-hotel transport's `next` resolves to the
+  // hotel name + coords instead of falling back to "next stop".
   const isVenue = (el) => el && el.classList.contains('activity-slot')
                        && !el.classList.contains('slot-type-transport')
-                       && !el.classList.contains('is-locked')
+                       && (!el.classList.contains('is-locked') || el._placeData)
   let prev = slot.previousElementSibling
   while (prev && !isVenue(prev)) {
     prev = prev.previousElementSibling
