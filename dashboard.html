@@ -10910,6 +10910,7 @@ function renderGrid() {
 }
 
 function tileClick(planId, planNum, status) {
+  console.log('[tileClick]', { planId, planNum, status })
   // 1) Done/submitted plans: always allow view/edit, even if a bond is pending elsewhere
   if (['approved','submitted'].includes(status)) {
     openItineraryForm(planId)
@@ -12358,9 +12359,18 @@ async function openItineraryForm(planId) {
   }
 
   // Populate traveler brief block — rich, multi-section layout reading from
-  // travelers.meta (jsonb). Falls back gracefully when meta is empty (older
-  // travelers pre-meta still render the basic fields).
-  await renderTravelerBrief(plan, t, notes)
+  // travelers.meta (jsonb). Wrapped in try/catch so a render error doesn't
+  // black-hole the whole plan-open flow (modal still opens, planner can
+  // see the form even if the brief panel is broken). The error gets
+  // logged + a small inline note in the brief tells them to check console.
+  console.log('[plan-open]', planId, 'status=', status)
+  try {
+    await renderTravelerBrief(plan, t, notes)
+  } catch (e) {
+    console.error('[plan-open] renderTravelerBrief threw', e)
+    const box = document.getElementById('itin-brief')
+    if (box) box.innerHTML = `<div style="padding:14px;background:#fdf1f0;border:1px solid #b84a3e;border-radius:6px;font-size:12.5px;color:#8a3329;">⚠ Brief panel failed to render. The plan still opens — check DevTools console for the stack trace and tell Claude.</div>`
+  }
 
   // Deposit/bond banner
   const banner = document.getElementById('deposit-banner')
