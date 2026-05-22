@@ -1833,6 +1833,52 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .day-time-banner .dtb-body{flex:1;min-width:0;}
 .day-time-banner strong{color:#3a2410;font-weight:600;}
 
+/* Day summary footer card — auto-computed metrics + warnings per day */
+.day-summary{
+  margin:14px 0 12px 0;padding:12px 14px;
+  background:var(--bg);
+  border:0.5px solid var(--border-med);
+  border-radius:8px;
+  font-size:12px;
+}
+.day-summary-head{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:var(--text-3);
+  text-transform:uppercase;letter-spacing:0.06em;font-weight:600;
+  margin-bottom:10px;
+}
+.day-summary-head .ti{font-size:13px;color:var(--green-dark,#1a7a5e);}
+.day-summary-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+  margin-bottom:10px;
+}
+.day-summary-grid > div{padding:0 10px;border-right:0.5px dashed var(--border-med);}
+.day-summary-grid > div:first-child{padding-left:0;}
+.day-summary-grid > div:last-child{border-right:none;padding-right:0;}
+.dsg-label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;}
+.dsg-value{font-size:14px;color:var(--text);font-weight:500;}
+.day-summary-warn,
+.day-summary-ok{
+  margin-top:6px;padding:8px 10px;border-radius:6px;
+  font-size:11.5px;line-height:1.4;
+}
+.day-summary-warn-amber{
+  background:rgba(193,125,42,0.10);
+  border:1px solid rgba(193,125,42,0.30);
+  color:#8a5f1c;
+}
+.day-summary-warn-red{
+  background:rgba(184,74,62,0.10);
+  border:1px solid rgba(184,74,62,0.35);
+  color:#8a3329;
+  font-weight:500;
+}
+.day-summary-ok{
+  background:rgba(45,158,122,0.08);
+  border:1px solid rgba(45,158,122,0.28);
+  color:#1a7a5e;
+}
+
 /* Quick-chip rows above itinerary textareas — pre-written snippets to reduce typing fatigue */
 .quick-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
 .quick-chips-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);margin-right:4px;}
@@ -12389,6 +12435,9 @@ async function openItineraryForm(planId) {
   // splurge tolerance, and flag the right severity (RED / AMBER / none).
   window._currentDailyBudget         = Number(_tmeta.daily_spend_per_pax_eur) || null
   window._currentSplurgeWillingness  = _tmeta.splurge_willingness || null
+  // Pace drives the walking-distance warning in the day summary card.
+  // Maps to per-day km ceiling: slow=6, moderate/balanced=10, active/packed=14.
+  window._currentPace                = t.pace || _tmeta.pace || null
   // Expose the traveler's destination so the Places autocomplete can bias
   // search results to that city (much more relevant than unbiased global).
   window._currentDestination   = t.destination    || null
@@ -15841,12 +15890,140 @@ function refreshDayDistances(dayContainer) {
     card.innerHTML = buildDistHelperHtml({ ...desc, km, travelMin: Math.round(km * 3) }, slots[i].id, slots[i + 1].id, modes)
     dayContainer.insertBefore(card.firstElementChild, slots[i + 1])
   }
+  // Recompute the day summary card (stops / active hours / walking /
+  // spend + warnings) on every refresh so it stays in sync with edits.
+  refreshDaySummary(dayContainer)
   // Restore the modal's scroll position — see top of function for why.
   if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
 }
 // Helper to refresh every day's distances at once — used after bulk loads.
 function refreshAllDistances() {
   document.querySelectorAll('[id^="slots-day-"]').forEach(refreshDayDistances)
+}
+
+// ── Day Summary card ─────────────────────────────────────────────────────
+// Auto-computed footer for each day, showing stops/active-hours/walking/
+// estimated-spend plus smart warnings against the traveler's brief.
+
+function _slotIsVenue(slot) {
+  return slot.classList.contains('activity-slot')
+    && !slot.classList.contains('slot-type-transport')
+    && !slot.classList.contains('slot-type-freetime')
+}
+
+function computeDaySummary(dayContainer) {
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  const venues = slots.filter(_slotIsVenue)
+  const transports = slots.filter(s => s.classList.contains('slot-type-transport'))
+  // Active span: first venue start → last venue's start + its stay duration.
+  let firstStartMin = null, lastEndMin = null
+  venues.forEach(s => {
+    const t = s.querySelector('.slot-time-input')?.value
+    const dur = parseInt(s.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+    if (!t) return
+    const [h, m] = t.split(':').map(Number)
+    const start = (h || 0) * 60 + (m || 0)
+    if (firstStartMin == null || start < firstStartMin) firstStartMin = start
+    const end = start + dur
+    if (lastEndMin == null || end > lastEndMin) lastEndMin = end
+  })
+  const activeMin = (firstStartMin != null && lastEndMin != null)
+    ? Math.max(0, lastEndMin - firstStartMin) : 0
+  // Walking distance + transport spend — recompute from neighbors using Haversine.
+  let walkingKm = 0, transportSpend = 0
+  transports.forEach(s => {
+    const mode = s.dataset.transportMode || ''
+    const { prev, next } = _findVenueNeighbors(s)
+    const a = prev ? getSlotLatLng(prev) : null
+    const b = next ? getSlotLatLng(next) : null
+    const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : 0
+    if (mode === 'walk') walkingKm += km
+    const est = _transportEstimates(mode, km)
+    if (est?.costEur != null) transportSpend += est.costEur
+  })
+  // Stop spend — estimated per-pax cost for each linked venue.
+  let stopSpend = 0
+  venues.forEach(s => {
+    const c = estimatePerPaxCost(s._placeData)
+    if (c) stopSpend += c
+  })
+  const spendEur = Math.round(stopSpend + transportSpend)
+  // Warnings — tiered by traveler brief.
+  const warnings = []
+  const dailyBudget = Number(window._currentDailyBudget) || null
+  const paceMax = (() => {
+    const p = String(window._currentPace || '').toLowerCase()
+    if (p.includes('slow') || p.includes('relax'))   return 6
+    if (p.includes('active') || p.includes('packed')) return 14
+    return 10  // moderate / balanced default
+  })()
+  if (walkingKm > paceMax) {
+    warnings.push({ level:'amber', text:`${walkingKm.toFixed(1)} km walking — high for ${window._currentPace || 'moderate'} pace.` })
+  }
+  if (dailyBudget) {
+    if (spendEur > dailyBudget * 2) {
+      warnings.push({ level:'red', text:`Day spend ~€${spendEur} is over 2× the €${dailyBudget}/day budget — confirm splurge with traveler or rebalance.` })
+    } else if (spendEur > dailyBudget) {
+      warnings.push({ level:'amber', text:`Day over budget by €${spendEur - dailyBudget} (budget €${dailyBudget}/day · splurge may explain it).` })
+    }
+  }
+  if (activeMin > 12 * 60) {
+    warnings.push({ level:'amber', text:`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.` })
+  }
+  return { stops: venues.length, activeMin, walkingKm, spendEur, warnings }
+}
+
+function _fmtActiveHours(mins) {
+  if (!mins) return '—'
+  const h = Math.floor(mins / 60), m = mins % 60
+  if (m === 0) return `${h}h`
+  return `${h}h ${String(m).padStart(2,'0')}m`
+}
+
+function buildDaySummaryHtml(dayNum, summary) {
+  const { stops, activeMin, walkingKm, spendEur, warnings } = summary
+  const warnsHtml = warnings.length
+    ? warnings.map(w => `<div class="day-summary-warn day-summary-warn-${w.level}">${escapeHtml(w.text)}</div>`).join('')
+    : `<div class="day-summary-ok">✓ Day ${dayNum} looks balanced.</div>`
+  return `
+    <div class="day-summary" data-day-summary="${dayNum}">
+      <div class="day-summary-head">
+        <i class="ti ti-chart-bar" aria-hidden="true"></i>
+        <span>Day ${dayNum} summary · auto-computed</span>
+      </div>
+      <div class="day-summary-grid">
+        <div><div class="dsg-label">Stops</div><div class="dsg-value">${stops}</div></div>
+        <div><div class="dsg-label">Active hours</div><div class="dsg-value">${escapeHtml(_fmtActiveHours(activeMin))}</div></div>
+        <div><div class="dsg-label">Walking</div><div class="dsg-value">${walkingKm > 0 ? walkingKm.toFixed(1) + ' km' : '—'}</div></div>
+        <div><div class="dsg-label">Est. spend / pax</div><div class="dsg-value">${spendEur ? '€' + spendEur : '—'}</div></div>
+      </div>
+      ${warnsHtml}
+    </div>`
+}
+
+// Injects (or refreshes) the summary card at the bottom of a day section.
+// Called from refreshDayDistances so the card stays in sync with edits.
+function refreshDaySummary(dayContainer) {
+  if (!dayContainer) return
+  const daySection = dayContainer.closest('.day-section')
+  if (!daySection) return
+  const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10)
+  if (!Number.isFinite(dayNum)) return
+  const summary = computeDaySummary(dayContainer)
+  let card = daySection.querySelector('.day-summary')
+  const html = buildDaySummaryHtml(dayNum, summary)
+  if (!card) {
+    // First render — append after the slots container but before the
+    // "+ Add activity to Day N" button.
+    const wrap = document.createElement('div')
+    wrap.innerHTML = html.trim()
+    const node = wrap.firstElementChild
+    const addBtn = daySection.querySelector('.add-slot-btn-bottom')
+    if (addBtn && addBtn.parentNode) addBtn.parentNode.insertBefore(node, addBtn)
+    else daySection.appendChild(node)
+  } else {
+    card.outerHTML = html
+  }
 }
 
 // Inline handler for the "Change time to X" quick fix in the warning banner.
