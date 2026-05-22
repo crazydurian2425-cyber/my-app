@@ -2192,6 +2192,38 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .tg-value{font-size:12.5px;color:var(--text);font-weight:500;}
 .tg-value.tg-blank{color:var(--text-3);font-weight:400;font-style:italic;}
 
+/* Step-by-step transit timeline — populated from Google Routes API */
+.transport-steps{
+  display:flex;flex-direction:column;gap:4px;
+  padding:6px 0 2px 0;
+  border-top:0.5px dashed var(--border-med);
+}
+.transport-step{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:4px 0;
+  font-size:11.5px;line-height:1.35;
+}
+.transport-step .ts-icon{
+  flex-shrink:0;width:18px;text-align:center;
+  font-size:12px;color:var(--text-3);
+}
+.transport-step .ts-body{flex:1;min-width:0;color:var(--text);}
+.transport-step-walk{color:var(--text-2);}
+.transport-step-transit .ts-line{
+  flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:24px;height:18px;
+  padding:0 6px;border-radius:3px;
+  font-size:10.5px;font-weight:700;letter-spacing:0.04em;
+  font-family:'DM Sans',sans-serif;
+}
+.transport-step-transit .ts-head{font-weight:500;}
+.transport-step-transit .ts-headsign{color:var(--text-3);font-weight:400;}
+.transport-step-transit .ts-stations{
+  font-size:10.5px;color:var(--text-3);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
 /* ── Closed-venue alternatives panel ──
    Renders OUTSIDE the linked chip (below the slot body) when the linked
    place is closed on the planned day. Original venue's photo + name fade
@@ -14621,7 +14653,18 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       travelMode,
       units: 'METRIC',
     }
-    const fieldMask = 'routes.duration,routes.distanceMeters,routes.travelAdvisory.transitFare'
+    // Pull step-by-step transit details too — line names, station names,
+    // walking segments, headsign, stop count. Costs the same as the
+    // simpler call; the only price is bigger response payload.
+    const fieldMask = [
+      'routes.duration',
+      'routes.distanceMeters',
+      'routes.travelAdvisory.transitFare',
+      'routes.legs.steps.travelMode',
+      'routes.legs.steps.staticDuration',
+      'routes.legs.steps.distanceMeters',
+      'routes.legs.steps.transitDetails',
+    ].join(',')
     const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
       headers: {
@@ -14644,6 +14687,7 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       durationMin: Math.round(durSec / 60),
       distanceKm:  (route.distanceMeters || 0) / 1000,
       costEur:     null,
+      steps:       [],
     }
     const fare = route.travelAdvisory?.transitFare
     if (fare) {
@@ -14651,6 +14695,33 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       const nanos = (fare.nanos || 0) / 1e9
       result.costEur = Math.round((units + nanos) * 100) / 100
     }
+    // Walk + transit steps for the step-by-step preview in the slot.
+    ;(route.legs || []).forEach(leg => {
+      (leg.steps || []).forEach(step => {
+        const sec = parseInt(String(step.staticDuration || '0s').replace('s',''), 10) || 0
+        const mins = Math.max(1, Math.round(sec / 60))
+        const distM = step.distanceMeters || 0
+        if (step.travelMode === 'WALK') {
+          result.steps.push({ kind: 'walk', mins, distanceM: distM })
+        } else if (step.travelMode === 'TRANSIT') {
+          const td = step.transitDetails || {}
+          const line = td.transitLine || {}
+          const vehicle = line.vehicle || {}
+          result.steps.push({
+            kind:        'transit',
+            mins,
+            lineName:    line.nameShort || line.name || vehicle.name?.text || 'Transit',
+            lineColor:   line.color || '#1a7a5e',
+            textColor:   line.textColor || '#fff',
+            vehicleType: vehicle.type || '',
+            from:        td.stopDetails?.departureStop?.name || '',
+            to:          td.stopDetails?.arrivalStop?.name || '',
+            headsign:    td.headsign || '',
+            numStops:    td.stopCount || 0,
+          })
+        }
+      })
+    })
     try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: result })) } catch (e) {}
     _bumpRoutesDaily()
     console.log(`[routes] ${travelMode} ${fromId.slice(0,12)}…→${toId.slice(0,12)}… → ${result.durationMin} min · ${result.distanceKm.toFixed(1)} km`)
@@ -14680,6 +14751,50 @@ function applyRouteDataToSlot(slot, data) {
     const arrive = _addMinutes(departHHMM, data.durationMin)
     const range = host.querySelector('.transport-time-range')
     if (range) range.textContent = `${formatTimeDisplay(departHHMM)} → ${formatTimeDisplay(arrive)}`
+  }
+  // Step-by-step transit timeline. Lives between the grid and the
+  // "Show route map" / "Open in Google Maps" link row.
+  if (data.steps && data.steps.length) {
+    let stepsHost = host.querySelector('.transport-steps')
+    if (!stepsHost) {
+      stepsHost = document.createElement('div')
+      stepsHost.className = 'transport-steps'
+      const grid = host.querySelector('.transport-grid')
+      if (grid && grid.nextSibling) grid.parentNode.insertBefore(stepsHost, grid.nextSibling)
+      else if (grid) grid.parentNode.appendChild(stepsHost)
+      else host.appendChild(stepsHost)
+    }
+    stepsHost.innerHTML = data.steps.map(s => {
+      if (s.kind === 'walk') {
+        const distTxt = s.distanceM >= 1000
+          ? `${(s.distanceM/1000).toFixed(1)} km`
+          : `${s.distanceM} m`
+        return `
+          <div class="transport-step transport-step-walk">
+            <span class="ts-icon" aria-hidden="true">🚶</span>
+            <span class="ts-body">Walk · ${s.mins} min · ${escapeHtml(distTxt)}</span>
+          </div>`
+      }
+      // Transit
+      const stopWord = (s.numStops === 1) ? 'stop' : 'stops'
+      const stopBit = s.numStops ? ` · ${s.numStops} ${stopWord}` : ''
+      const headBit = s.headsign ? ` <span class="ts-headsign">→ ${escapeHtml(s.headsign)}</span>` : ''
+      const stations = (s.from && s.to)
+        ? `<div class="ts-stations">${escapeHtml(s.from)} → ${escapeHtml(s.to)}</div>`
+        : ''
+      const linePill = `
+        <span class="ts-line" style="background:${escapeHtml(s.lineColor)};color:${escapeHtml(s.textColor)};">
+          ${escapeHtml(s.lineName)}
+        </span>`
+      return `
+        <div class="transport-step transport-step-transit">
+          ${linePill}
+          <div class="ts-body">
+            <div class="ts-head">${s.mins} min${stopBit}${headBit}</div>
+            ${stations}
+          </div>
+        </div>`
+    }).join('')
   }
 }
 
