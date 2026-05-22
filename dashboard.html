@@ -16890,6 +16890,23 @@ function refreshDayDistances(dayContainer) {
   // Idempotent: the inserted transport breaks up the venue→venue adjacency,
   // so the next iteration won't insert another one. Sub-500 m hops still
   // get the small inline distance marker (walking is obvious).
+  //
+  // RE-ENTRANCY GUARD: addSlot's tail-call is refreshDayDistances, so calling
+  // addSlot from within this loop would recurse infinitely (loop → addSlot
+  // → refreshDayDistances → loop → ...). The first auto-insert always
+  // ends up in the recursive call; outer iteration is skipped entirely.
+  // Set a flag while the loop runs so any nested refreshDayDistances bails
+  // before re-entering the loop.
+  if (window._autoInsertInProgress) {
+    // Caller is the outer refreshDayDistances; let it own the inserts.
+    // Skip the loop AND the bookend re-render that follows so the outer
+    // call's state isn't clobbered (the outer one will re-render anyway).
+    _enforceTimeChain(dayContainer)
+    refreshDaySummary(dayContainer)
+    if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
+    return
+  }
+  window._autoInsertInProgress = true
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
   for (let i = 0; i < slots.length - 1; i++) {
     const aSlot = slots[i]
@@ -16969,6 +16986,8 @@ function refreshDayDistances(dayContainer) {
       console.warn('[auto-insert-transport] threw', e)
     }
   }
+  // Release the re-entrancy guard.
+  window._autoInsertInProgress = false
   // Final brute-force chain enforcement — catches any case where the
   // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
   // API races, mode swaps with cached results).
