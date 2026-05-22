@@ -14742,8 +14742,28 @@ function buildClosedAltsHtml(alternatives, plannedDate, slotId, originLat, origi
     </div>`
 }
 
-async function ensureClosedAlternatives(slot, plannedDate) {
-  if (!slot || !plannedDate) return
+// Normalize a planned-date input (Date object OR YYYY-MM-DD string) to a
+// YYYY-MM-DD string. getSlotPlannedDate() returns a Date; the rest of the
+// closed-alts pipeline expects a string. Previously this mismatch threw
+// inside _isOpenOn ("plannedDate.split is not a function"), the outer
+// catch swallowed it without patching the DOM, and the "Looking up…"
+// panel was stuck forever.
+function _plannedDateAsString(plannedDate) {
+  if (!plannedDate) return null
+  if (typeof plannedDate === 'string') return plannedDate
+  if (plannedDate instanceof Date) {
+    const y = plannedDate.getFullYear()
+    const m = String(plannedDate.getMonth() + 1).padStart(2, '0')
+    const d = String(plannedDate.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  return null
+}
+
+async function ensureClosedAlternatives(slot, plannedDateInput) {
+  if (!slot || !plannedDateInput) return
+  const plannedDate = _plannedDateAsString(plannedDateInput)
+  if (!plannedDate) return
   const d = slot._placeData
   if (!d || !d.google_place_id) return
   if (slot.dataset.altsState === 'dismissed') return
@@ -14754,42 +14774,44 @@ async function ensureClosedAlternatives(slot, plannedDate) {
   host.className = 'slot-closed-alts-host'
   host.innerHTML = `<div class="slot-closed-alts"><div class="slot-closed-alts-loading">Looking up nearby venues open on this day…</div></div>`
   slot.appendChild(host)
+  // Helper to swap the loading panel for an error/empty panel — used by
+  // every failure path so we never leave the spinner stranded.
+  const replacePanel = (innerHtml) => {
+    const live = document.getElementById(slot.id)
+    if (!live) return
+    const h = live.querySelector(':scope > .slot-closed-alts-host, :scope > .slot-closed-alts')
+    if (h) h.outerHTML = innerHtml
+  }
+  const errorPanel = (msg) => `<div class="slot-closed-alts">
+    <div class="slot-closed-alts-head">⚠ ${escapeHtml(msg)}</div>
+    <div class="slot-closed-alts-footer">
+      <a onclick="closedAltsAction('${slot.id}','manual')">Search manually</a>
+      <a onclick="closedAltsAction('${slot.id}','keep')">Keep anyway</a>
+    </div>
+  </div>`
   const cached = _readNearbyCache(d.google_place_id, plannedDate)
   if (cached) {
     const filtered = _filterAlternatives(cached, plannedDate, d.google_place_id)
-    host.outerHTML = buildClosedAltsHtml(filtered, plannedDate, slot.id, d.latitude, d.longitude)
+    replacePanel(buildClosedAltsHtml(filtered, plannedDate, slot.id, d.latitude, d.longitude))
     return
   }
-  if (!_canCallNearby()) {
-    host.outerHTML = `<div class="slot-closed-alts">
-      <div class="slot-closed-alts-head">Hit today's lookup limit (${PLACES_NEARBY_DAILY_CAP}/day).</div>
-      <div class="slot-closed-alts-footer">
-        <a onclick="closedAltsAction('${slot.id}','manual')">Search manually</a>
-        <a onclick="closedAltsAction('${slot.id}','keep')">Keep anyway</a>
-      </div>
-    </div>`
-    return
-  }
-  if (d.latitude == null || d.longitude == null) {
-    host.outerHTML = `<div class="slot-closed-alts"><div class="slot-closed-alts-empty">No coordinates — can't find alternatives.</div></div>`
-    return
-  }
+  if (!_canCallNearby()) { replacePanel(errorPanel(`Hit today's lookup limit (${PLACES_NEARBY_DAILY_CAP}/day).`)); return }
+  if (d.latitude == null || d.longitude == null) { replacePanel(errorPanel(`No coordinates — can't find alternatives.`)); return }
   slot.dataset.altsState = 'loading'
   try {
     const includedType = _nearbyTypeFor(d.place_types)
+    console.log(`[alts] fetching ${d.name} type=${includedType} for ${plannedDate}`)
     const candidates = await _fetchNearbyAlternatives(d.latitude, d.longitude, includedType)
     _bumpNearbyDailyCount()
     _writeNearbyCache(d.google_place_id, plannedDate, candidates)
-    const live = document.getElementById(slot.id)
-    if (!live) return
-    const liveHost = live.querySelector(':scope > .slot-closed-alts-host, :scope > .slot-closed-alts')
-    if (!liveHost) return
     const filtered = _filterAlternatives(candidates, plannedDate, d.google_place_id)
-    liveHost.outerHTML = buildClosedAltsHtml(filtered, plannedDate, live.id, d.latitude, d.longitude)
-    live.dataset.altsState = 'loaded'
+    console.log(`[alts] ${candidates.length} candidates → ${filtered.length} after filter`)
+    replacePanel(buildClosedAltsHtml(filtered, plannedDate, slot.id, d.latitude, d.longitude))
+    slot.dataset.altsState = 'loaded'
   } catch (e) {
     console.warn('[alts] pipeline failed', e)
     slot.dataset.altsState = ''
+    replacePanel(errorPanel(`Lookup failed: ${String(e?.message || e).slice(0, 80)}`))
   }
 }
 
