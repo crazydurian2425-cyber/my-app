@@ -201,7 +201,7 @@ async function handleCreatePlanner(request) {
   }
 
   // Step 2 — insert the planner row keyed by the auth user id.
-  // `city` is NOT NULL on planners; default to 'Tokyo' for direct-create
+  // `city` is NOT NULL on planners; default to 'Paris' for direct-create
   // accounts (admin can edit later via Manage planners → Edit).
   // `admin_created=true` flags this row so the admin UI can show a badge
   // distinguishing direct-create accounts from application-flow planners.
@@ -210,7 +210,7 @@ async function handleCreatePlanner(request) {
     name,
     email,
     phone: phone || null,
-    city: 'Tokyo',
+    city: 'Paris',
     admin_created: true,
     is_subaccount: !!is_subaccount
   }

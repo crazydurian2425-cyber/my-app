@@ -1088,10 +1088,10 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Group size (pax)</label><input class="form-input" id="nt-group-size" type="number" placeholder="e.g. 2" min="1"></div>
-            <div class="form-group"><label class="form-label">Daily budget per pax (¥)</label><input class="form-input" id="nt-budget" type="number" min="0" placeholder="e.g. 10500"></div>
+            <div class="form-group"><label class="form-label">Daily budget per pax (€)</label><input class="form-input" id="nt-budget" type="number" min="0" placeholder="e.g. 10500"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Hotel budget — per night per pax (¥)</label><input class="form-input" id="nt-hotel-budget" type="number" min="0" placeholder="e.g. 11000"></div>
+            <div class="form-group"><label class="form-label">Hotel budget — per night per pax (€)</label><input class="form-input" id="nt-hotel-budget" type="number" min="0" placeholder="e.g. 11000"></div>
             <div class="form-group"></div>
           </div>
 
@@ -1108,8 +1108,8 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
 
           <div class="s-div">Pricing & commitment</div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Price charged to traveler (¥)</label><input class="form-input" type="number" id="nt-price" min="0" placeholder="e.g. 18000" oninput="calcMargin()"></div>
-            <div class="form-group"><label class="form-label">Planner payout (¥) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· normal range ¥5,000–10,000</span></label><input class="form-input" type="number" id="nt-payout" min="0" placeholder="e.g. 7500" oninput="calcMargin()"></div>
+            <div class="form-group"><label class="form-label">Price charged to traveler (€)</label><input class="form-input" type="number" id="nt-price" min="0" placeholder="e.g. 18000" oninput="calcMargin()"></div>
+            <div class="form-group"><label class="form-label">Planner payout (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· normal range €5,000–10,000</span></label><input class="form-input" type="number" id="nt-payout" min="0" placeholder="e.g. 7500" oninput="calcMargin()"></div>
           </div>
 
           <div class="toggle-row">
@@ -1117,12 +1117,12 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
             <label class="toggle"><input type="checkbox" id="nt-bond" onchange="toggleBondField()"><span class="toggle-slider"></span></label>
           </div>
           <div id="bond-amount-wrap" style="display:none;padding-top:14px;">
-            <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount (¥)</label><input class="form-input" type="number" id="nt-bond-amount" min="0" placeholder="e.g. 6000 — forfeited if deadline missed"></div>
+            <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount (€)</label><input class="form-input" type="number" id="nt-bond-amount" min="0" placeholder="e.g. 6000 — forfeited if deadline missed"></div>
           </div>
 
           <div style="margin-top:20px;background:var(--cream);border-radius:var(--radius-sm);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
             <div style="font-size:13px;color:var(--ink-2)">Platform margin</div>
-            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green)" id="margin-display">¥—</div>
+            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green)" id="margin-display">€—</div>
           </div>
 
           <div class="btn-row" style="display:flex;gap:10px;margin-top:16px;">
@@ -1139,12 +1139,12 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div class="card-body">
             <div style="background:var(--cream);border-radius:var(--radius-sm);padding:14px;">
               <div id="prev-name" style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;">New traveler · Tokyo</div>
-              <div id="prev-meta" style="font-size:11.5px;color:var(--ink-3);margin-bottom:10px;">Solo · 3D2N · Budget ¥—/day</div>
+              <div id="prev-meta" style="font-size:11.5px;color:var(--ink-3);margin-bottom:10px;">Solo · 3D2N · Budget €—/day</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
                 <div style="background:var(--surface);border-radius:6px;padding:8px 10px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-4);margin-bottom:2px;">Interests</div><div id="prev-interests" style="font-size:12px;color:var(--ink)">—</div></div>
                 <div style="background:var(--surface);border-radius:6px;padding:8px 10px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-4);margin-bottom:2px;">Pace</div><div id="prev-pace" style="font-size:12px;color:var(--ink)">—</div></div>
                 <div style="background:var(--surface);border-radius:6px;padding:8px 10px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-4);margin-bottom:2px;">Must avoid</div><div id="prev-avoid" style="font-size:12px;color:var(--ink)">—</div></div>
-                <div style="background:var(--surface);border-radius:6px;padding:8px 10px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-4);margin-bottom:2px;">Planner payout</div><div id="prev-payout" style="font-size:12px;color:var(--green);font-weight:500;">¥—</div></div>
+                <div style="background:var(--surface);border-radius:6px;padding:8px 10px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-4);margin-bottom:2px;">Planner payout</div><div id="prev-payout" style="font-size:12px;color:var(--green);font-weight:500;">€—</div></div>
               </div>
               <div id="prev-notes" style="font-size:11.5px;color:var(--ink-3);padding:8px 10px;background:var(--surface);border-radius:6px;display:none;"></div>
             </div>
@@ -1185,19 +1185,19 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div style="margin-top:16px;background:var(--cream);border-radius:var(--radius-sm);padding:14px 16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
               <span style="font-size:12.5px;color:var(--ink-2)">Standard plans (<span id="std-count">10</span>)</span>
-              <span style="font-size:13px;font-weight:500;" id="std-total">¥0</span>
+              <span style="font-size:13px;font-weight:500;" id="std-total">€0</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;" id="bond-line">
               <span style="font-size:12.5px;color:var(--amber)">Bond plans (<span id="bond-count">0</span>) — commission</span>
-              <span style="font-size:13px;font-weight:500;color:var(--amber);" id="bond-total">¥0</span>
+              <span style="font-size:13px;font-weight:500;color:var(--amber);" id="bond-total">€0</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;" id="bond-held-line">
               <span style="font-size:11.5px;color:var(--amber);opacity:0.85;">↳ Bond held from payout <span style="font-size:10.5px;opacity:0.7;">(refundable on approval)</span></span>
-              <span style="font-size:12.5px;font-weight:500;color:var(--amber);" id="bond-held-total">¥0</span>
+              <span style="font-size:12.5px;font-weight:500;color:var(--amber);" id="bond-held-total">€0</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border);">
               <span style="font-size:12.5px;font-weight:500;color:var(--ink)">Total planner payout</span>
-              <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--ink);" id="grand-total">¥0</span>
+              <span style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--ink);" id="grand-total">€0</span>
             </div>
           </div>
 
@@ -1360,17 +1360,17 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     <div class="metrics compact" style="grid-template-columns:repeat(3,minmax(0,1fr));">
       <div class="metric-card">
         <div class="metric-label">Available to withdraw</div>
-        <div class="metric-val amber" id="pay-ready">¥0</div>
+        <div class="metric-val amber" id="pay-ready">€0</div>
         <div class="metric-note" id="pay-ready-note">across all planner wallets</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Paid out total</div>
-        <div class="metric-val green" id="pay-total">¥0</div>
+        <div class="metric-val green" id="pay-total">€0</div>
         <div class="metric-note" id="pay-total-note">all time · via wallet requests</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Bonds held</div>
-        <div class="metric-val" id="pay-bonds">¥0</div>
+        <div class="metric-val" id="pay-bonds">€0</div>
         <div class="metric-note">active bond plans in escrow</div>
       </div>
     </div>
@@ -1426,7 +1426,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.45;">Held on every withdrawal to cover post-approval adjustments. Set to <strong>0</strong> to disable. Currently disclosed in your <a href="terms.html" target="_blank" rel="noopener" style="color:var(--green);text-decoration:none;">Terms</a>.</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          <span style="font-size:13px;font-weight:600;color:var(--ink-3);">¥</span>
+          <span style="font-size:13px;font-weight:600;color:var(--ink-3);">€</span>
           <input type="number" id="set-retention-min" class="form-input" min="0" step="1" style="width:110px;text-align:right;font-family:'DM Sans',sans-serif;font-size:14px;" value="200">
           <button class="btn btn-primary btn-sm" onclick="saveRetentionSetting()" style="padding:8px 14px;">Save</button>
         </div>
@@ -1444,8 +1444,8 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div><div class="ph-title">Payout requests</div><div class="ph-sub">Planner-initiated withdrawals from their wallet</div></div>
     </div>
     <div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr));">
-      <div class="metric-card"><div class="metric-label">Pending</div><div class="metric-val amber" id="pr-count-pending">0</div><div class="metric-note" id="pr-sum-pending">¥0 requested</div></div>
-      <div class="metric-card"><div class="metric-label">Paid (last 30 days)</div><div class="metric-val green" id="pr-count-paid">0</div><div class="metric-note" id="pr-sum-paid">¥0 released</div></div>
+      <div class="metric-card"><div class="metric-label">Pending</div><div class="metric-val amber" id="pr-count-pending">0</div><div class="metric-note" id="pr-sum-pending">€0 requested</div></div>
+      <div class="metric-card"><div class="metric-label">Paid (last 30 days)</div><div class="metric-val green" id="pr-count-paid">0</div><div class="metric-note" id="pr-sum-paid">€0 released</div></div>
       <div class="metric-card"><div class="metric-label">Rejected</div><div class="metric-val" id="pr-count-rejected">0</div><div class="metric-note">all time</div></div>
     </div>
     <div class="card">
@@ -1466,7 +1466,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     <div class="ph">
       <div>
         <div class="ph-title">Weekly salary</div>
-        <div class="ph-sub">¥50,000 per rolling 7-day cycle if a planner completes ≥1 set · cycles anchored to each planner's first set completion</div>
+        <div class="ph-sub">€50,000 per rolling 7-day cycle if a planner completes ≥1 set · cycles anchored to each planner's first set completion</div>
       </div>
     </div>
     <div class="card" id="weekly-salaries-card">
@@ -1751,7 +1751,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <!-- Bond notice -->
       <div id="rev-bond-notice" style="display:none;background:var(--amber-light);border:1px solid rgba(184,115,51,0.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;">
         <div style="font-size:12.5px;font-weight:500;color:var(--amber);margin-bottom:3px;">Bond plan — commitment bond held</div>
-        <div style="font-size:12px;color:#854f0b;line-height:1.5;">If you approve this plan, the planner's commitment bond (¥50) will be returned as part of their payout. If you request revision and the deadline passes, the bond is forfeited.</div>
+        <div style="font-size:12px;color:#854f0b;line-height:1.5;">If you approve this plan, the planner's commitment bond (€50) will be returned as part of their payout. If you request revision and the deadline passes, the bond is forfeited.</div>
       </div>
 
       <!-- Itinerary preview (populated dynamically) -->
@@ -1893,11 +1893,11 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Group size</label><input class="form-input" type="number" id="et-group" min="1"></div>
-        <div class="form-group"><label class="form-label">Daily budget per pax (¥)</label><input class="form-input" type="number" id="et-budget" min="0"></div>
+        <div class="form-group"><label class="form-label">Daily budget per pax (€)</label><input class="form-input" type="number" id="et-budget" min="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Hotel budget — per night per pax (¥)</label><input class="form-input" type="number" id="et-hotel-budget" min="0"></div>
-        <div class="form-group"><label class="form-label">Traveler total — what they pay JJ (¥)</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
+        <div class="form-group"><label class="form-label">Hotel budget — per night per pax (€)</label><input class="form-input" type="number" id="et-hotel-budget" min="0"></div>
+        <div class="form-group"><label class="form-label">Traveler total — what they pay JJ (€)</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
       </div>
       <div class="form-group"><label class="form-label">Interests (English)</label><input class="form-input" id="et-interests"></div>
       <div class="form-group">
@@ -1939,10 +1939,10 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <label class="toggle"><input type="checkbox" id="et-bond" onchange="toggleEtBondField()"><span class="toggle-slider"></span></label>
       </div>
       <div id="et-bond-amount-wrap" style="display:none;padding-top:10px;">
-        <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount (¥) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· override platform formula</span></label><input class="form-input" type="number" id="et-bond-amount" min="0" placeholder="e.g. 10000"></div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· override platform formula</span></label><input class="form-input" type="number" id="et-bond-amount" min="0" placeholder="e.g. 10000"></div>
       </div>
 
-      <div class="form-group"><label class="form-label">Planner payout / commission (¥) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· auto-calculated from settings; override if needed</span></label><input class="form-input" type="number" id="et-payout" min="0"></div>
+      <div class="form-group"><label class="form-label">Planner payout / commission (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· auto-calculated from settings; override if needed</span></label><input class="form-input" type="number" id="et-payout" min="0"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-edit-traveler')">Cancel</button>
@@ -1989,18 +1989,18 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Active set</div>
         </div>
         <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px;text-align:center;">
-          <div id="mp-earned" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green);">¥0</div>
+          <div id="mp-earned" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green);">€0</div>
           <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Total earned</div>
         </div>
       </div>
       <!-- Wallet row — live balance + paid-out + adjust shortcut -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
         <div style="background:rgba(45,158,122,0.07);border:1px solid rgba(45,158,122,0.22);border-radius:var(--radius-sm);padding:12px;text-align:center;">
-          <div id="mp-wallet" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green-dark,#0f5240);">¥0</div>
+          <div id="mp-wallet" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--green-dark,#0f5240);">€0</div>
           <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Wallet balance · available</div>
         </div>
         <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px;text-align:center;">
-          <div id="mp-paidout" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--ink);">¥0</div>
+          <div id="mp-paidout" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--ink);">€0</div>
           <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Paid out · lifetime</div>
         </div>
         <button id="mp-adjust-btn" type="button" style="background:rgba(180,120,40,0.08);border:1px solid rgba(180,120,40,0.30);border-radius:var(--radius-sm);padding:12px;text-align:center;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--accent,#b47828);transition:background .15s;" onclick="openAdjustFromPlannerModal()">
@@ -2121,19 +2121,19 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
         <div style="padding:10px 12px;background:var(--cream);border:1px solid var(--border);border-radius:8px;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-3);font-weight:600;margin-bottom:4px;">Total owed</div>
-          <div style="font-size:15px;font-weight:700;color:var(--ink);" id="po-total">¥0</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);" id="po-total">€0</div>
         </div>
         <div style="padding:10px 12px;background:var(--green-light,#e8f5f0);border:1px solid rgba(45,158,122,0.28);border-radius:8px;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--green-dark,#0f5240);font-weight:600;margin-bottom:4px;">Already paid</div>
-          <div style="font-size:15px;font-weight:700;color:var(--green-dark,#0f5240);" id="po-paid">¥0</div>
+          <div style="font-size:15px;font-weight:700;color:var(--green-dark,#0f5240);" id="po-paid">€0</div>
         </div>
         <div style="padding:10px 12px;background:var(--amber-light,#fdf3e3);border:1px solid rgba(193,125,42,0.32);border-radius:8px;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--amber,#b87333);font-weight:600;margin-bottom:4px;">Remaining</div>
-          <div style="font-size:15px;font-weight:700;color:var(--amber,#b87333);" id="po-remaining">¥0</div>
+          <div style="font-size:15px;font-weight:700;color:var(--amber,#b87333);" id="po-remaining">€0</div>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Release amount (¥)</label>
+        <label class="form-label">Release amount (€)</label>
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="form-input" id="po-amount" type="number" step="1" min="0" placeholder="0" style="flex:1;">
           <button type="button" onclick="poSetFull()" class="btn btn-ghost btn-sm" style="flex-shrink:0;">Release full balance</button>
@@ -2171,7 +2171,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         </select>
       </div>
       <div class="form-group" style="margin-top:12px;">
-        <label class="form-label">Amount (¥) <span style="color:var(--red);">*</span></label>
+        <label class="form-label">Amount (€) <span style="color:var(--red);">*</span></label>
         <input class="form-input" id="bill-amount" type="number" step="1" min="1" placeholder="600000">
       </div>
       <div class="form-group" style="margin-top:12px;">
@@ -2219,7 +2219,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Amount (¥) <span style="color:var(--red);">*</span></label>
+        <label class="form-label">Amount (€) <span style="color:var(--red);">*</span></label>
         <input class="form-input" id="adj-amount" type="number" step="1" placeholder="e.g. 600000 to credit, -50000 to debit">
         <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Positive = credit (adds to wallet). Negative = debit (removes).</div>
       </div>
@@ -2228,7 +2228,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <label class="form-label" style="margin:0;">Reason <span style="color:var(--red);">*</span></label>
           <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('adj-reason','adj-reason-ja',this)">EN → JA</button>
         </div>
-        <input class="form-input" id="adj-reason" type="text" placeholder="e.g. Platform usage policy refund · ¥600,000 deposit returned" maxlength="200">
+        <input class="form-input" id="adj-reason" type="text" placeholder="e.g. Platform usage policy refund · €600,000 deposit returned" maxlength="200">
         <input class="form-input" id="adj-reason-ja" type="text" placeholder="日本語（例：プラットフォーム利用保証金の返金）" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
       </div>
       <div class="form-group" style="margin-top:12px;">
@@ -2466,7 +2466,7 @@ function formatFeedEvent(ev) {
   let dot = '', text = ''
   if (act.includes('approve') && act.includes('plan'))        { dot='approve'; text = `Approved plan for <strong>${meta.planner_name || who}</strong>` }
   else if (act.includes('revision') || act.includes('reject')){ dot='reject';  text = `Requested revision · <strong>${meta.planner_name || who}</strong>` }
-  else if (act.includes('payout') && act.includes('release')) { dot='payout';  text = `Released payout <strong>¥${meta.amount || '—'}</strong> to ${meta.planner_name || '—'}` }
+  else if (act.includes('payout') && act.includes('release')) { dot='payout';  text = `Released payout <strong>€${meta.amount || '—'}</strong> to ${meta.planner_name || '—'}` }
   else if (act.includes('payout') && act.includes('reject'))  { dot='reject';  text = `Rejected payout request · ${meta.planner_name || '—'}` }
   else if (act.includes('bond') && act.includes('approve'))   { dot='approve'; text = `Approved bond · <strong>${meta.planner_name || who}</strong>` }
   else if (act.includes('bond'))                              { dot='bond';    text = `Bond action · ${meta.planner_name || who}` }
@@ -2540,7 +2540,7 @@ async function loadOverview(btn) {
     : `all caught up`)
 
   const payoutSum = payoutRows.reduce((s,r) => s + Number(r.amount || 0), 0)
-  el('ov-a-payout-val', `¥${Math.round(payoutSum).toLocaleString('en-GB')}`)
+  el('ov-a-payout-val', `€${Math.round(payoutSum).toLocaleString('en-GB')}`)
   html('ov-a-payout-sub', payoutRows.length
     ? `${payoutRows.length} request${payoutRows.length===1?'':'s'} from planners`
     : `no requests pending`)
@@ -2554,7 +2554,7 @@ async function loadOverview(btn) {
     ? `<span class="warn">${nearDeadline} near deadline</span>`
     : `in progress`)
 
-  el('ov-a-revenue-val', `¥${Math.round(payoutReleased).toLocaleString('en-GB')}`)
+  el('ov-a-revenue-val', `€${Math.round(payoutReleased).toLocaleString('en-GB')}`)
   html('ov-a-revenue-sub', `released in last 30 days`)
 
   // ── Row 2 · At-risk strip ──────────────────────────────────
@@ -2603,7 +2603,7 @@ async function loadOverview(btn) {
 
   // ── Row 3 · Payout queue ───────────────────────────────────
   el('ov-payout-sub', payoutRows.length
-    ? `${payoutRows.length} planner${payoutRows.length===1?'':'s'} · ¥${Math.round(payoutSum).toLocaleString('en-GB')} total`
+    ? `${payoutRows.length} planner${payoutRows.length===1?'':'s'} · €${Math.round(payoutSum).toLocaleString('en-GB')} total`
     : `No pending requests`)
   html('ov-payout-list', !payoutRows.length
     ? `<div class="ov-queue-empty">No payout requests pending</div>`
@@ -2612,7 +2612,7 @@ async function loadOverview(btn) {
           <div class="ov-queue-name">${escapeHtml(r.planners?.name || 'Planner')}</div>
           <div class="ov-queue-meta">requested ${timeAgo(r.requested_at)}</div>
         </div>
-        <div class="ov-queue-amount">¥${Math.round(Number(r.amount)||0).toLocaleString('en-GB')}</div>
+        <div class="ov-queue-amount">€${Math.round(Number(r.amount)||0).toLocaleString('en-GB')}</div>
       </div>`).join(''))
 
   // ── Row 3 · Activity feed ──────────────────────────────────
@@ -2741,7 +2741,7 @@ function renderTravelers(travelers) {
     const setNum = t.plans?.[0]?.sets?.set_number
     const bondTag = t.requires_bond ? `<span class="bond-chip" style="font-size:9px;padding:1px 5px;">bond</span>` : ''
     return `<tr>
-      <td><div class="tbl-name">${escapeHtml(t.name)}</div><div class="tbl-meta">${escapeHtml(t.traveler_type)} · ¥${escapeHtml(t.budget_per_day ? Number(t.budget_per_day).toLocaleString('ja-JP') : '?')}/day ${bondTag}</div></td>
+      <td><div class="tbl-name">${escapeHtml(t.name)}</div><div class="tbl-meta">${escapeHtml(t.traveler_type)} · €${escapeHtml(t.budget_per_day ? Number(t.budget_per_day).toLocaleString('ja-JP') : '?')}/day ${bondTag}</div></td>
       <td>${escapeHtml(t.destination)}</td>
       <td><div style="font-size:12px">${escapeHtml(t.arrival_date)} · ${escapeHtml(t.duration)}${t.group_size>1?' · '+escapeHtml(t.group_size)+' pax':''}</div></td>
       <td><span class="status ${statusMap[t.status]||'s-gray'}"><span class="status-dot"></span>${escapeHtml(labelMap[t.status]||t.status)}</span></td>
@@ -3204,7 +3204,7 @@ function renderPlanSummary(plan){
       ${briefRow('Duration', trav.duration)}
       ${briefRow('Traveler type', typeLabel)}
       ${briefRow('Group size', trav.group_size ? `${trav.group_size} pax` : null)}
-      ${briefRow('Budget / day', trav.budget_per_day ? '¥'+Number(trav.budget_per_day).toLocaleString('ja-JP') : null)}
+      ${briefRow('Budget / day', trav.budget_per_day ? '€'+Number(trav.budget_per_day).toLocaleString('ja-JP') : null)}
       ${briefRow('Pace', trav.pace)}
       ${briefRow('Interests', trav.interests)}
       ${briefRow('Must avoid', trav.avoid)}
@@ -3523,7 +3523,7 @@ function renderRecentApprovals(){
     const statusPill = r.status === 'paid'
       ? '<span class="badge b-green">Paid</span>'
       : '<span class="badge b-amber">Awaiting payout</span>'
-    const earned     = `¥${Math.round(r._earned || 0).toLocaleString('en-GB')}`
+    const earned     = `€${Math.round(r._earned || 0).toLocaleString('en-GB')}`
     const expandId   = `recent-approved-expand-${r.set_id}-${r.planner_id}`
 
     // Stash the queue so the review modal's prev/next navigates this batch
@@ -3958,10 +3958,10 @@ async function loadPayments() {
   }
 
   const el=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v }
-  el('pay-ready', `¥${Math.round(platformAvailable).toLocaleString()}`)
+  el('pay-ready', `€${Math.round(platformAvailable).toLocaleString()}`)
   el('pay-ready-note', `across ${perPlanner.filter(p=>p.available>0).length} planner${perPlanner.filter(p=>p.available>0).length===1?'':'s'}`)
-  el('pay-total', `¥${Math.round(platformPaid).toLocaleString()}`)
-  el('pay-bonds', `¥${Math.round(bondsHeld).toLocaleString()}`)
+  el('pay-total', `€${Math.round(platformPaid).toLocaleString()}`)
+  el('pay-bonds', `€${Math.round(bondsHeld).toLocaleString()}`)
   const pb=document.getElementById('pay-ready-badge')
   if(pb) pb.textContent = `${perPlanner.filter(p=>p.available>0).length} with balance`
 
@@ -3983,11 +3983,11 @@ async function loadPayments() {
       const pr = nameById[p.id] || {}
       const ini = (pr.name || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
       const paidChip = p.paid > 0
-        ? `<span style="font-size:10.5px;color:var(--green-dark,#0f5240);margin-left:8px;">· ¥${Math.round(p.paid).toLocaleString()} paid</span>` : ''
+        ? `<span style="font-size:10.5px;color:var(--green-dark,#0f5240);margin-left:8px;">· €${Math.round(p.paid).toLocaleString()} paid</span>` : ''
       const pendingChip = p.pendingAmt > 0
-        ? `<span style="font-size:10.5px;color:var(--amber,#b87333);margin-left:8px;">· ¥${Math.round(p.pendingAmt).toLocaleString()} pending</span>` : ''
+        ? `<span style="font-size:10.5px;color:var(--amber,#b87333);margin-left:8px;">· €${Math.round(p.pendingAmt).toLocaleString()} pending</span>` : ''
       const retentionChip = p.retainHeld > 0
-        ? `<span style="font-size:10.5px;color:var(--ink-3);margin-left:8px;">· ¥${Math.round(p.retainHeld).toLocaleString()} retention</span>` : ''
+        ? `<span style="font-size:10.5px;color:var(--ink-3);margin-left:8px;">· €${Math.round(p.retainHeld).toLocaleString()} retention</span>` : ''
       return `<div class="pay-row">
         <div class="pay-av">${escapeHtml(ini)}</div>
         <div class="pay-info">
@@ -3995,7 +3995,7 @@ async function loadPayments() {
           <div class="pay-meta">${escapeHtml(pr.city || '—')} · ${escapeHtml(pr.bank_name || 'No bank')}${paidChip}${pendingChip}${retentionChip}</div>
         </div>
         <div style="text-align:right;">
-          <div class="pay-amount" style="color:var(--green-dark,#0f5240);">¥${Math.round(p.available).toLocaleString()}</div>
+          <div class="pay-amount" style="color:var(--green-dark,#0f5240);">€${Math.round(p.available).toLocaleString()}</div>
           <div style="font-size:10.5px;color:var(--ink-3);margin-top:2px;">available to withdraw</div>
         </div>
         <button class="btn-ghost" style="margin-left:12px;padding:7px 14px;font-size:12px;" onclick="openAdjustWalletModal('${jsEsc(p.id)}', '${jsEsc(pr.name || '—')}')">Adjust</button>
@@ -4003,7 +4003,7 @@ async function loadPayments() {
     }).join('')
 }
 
-// ── Weekly planner salaries (¥50k per rolling 7-day cycle) ───────
+// ── Weekly planner salaries (€50k per rolling 7-day cycle) ───────
 // Cycles are anchored to each planner's first-ever set completion. From that
 // timestamp, count 7-day windows: cycle 1 = [anchor, anchor+7d), cycle 2 =
 // [anchor+7d, anchor+14d), etc. Admin can pay a planner for cycle N only
@@ -4128,13 +4128,13 @@ async function loadWeeklySalaries(){
           <div class="ws-row-name">${escapeHtml(r.p.name || '—')}</div>
           <div class="ws-row-meta">${escapeHtml(r.p.email || '')} · Cycle ${r.prevCycleNumber} (${_fmtDayShort(r.prevStart)} – ${_fmtDayShort(r.prevEnd - 86400000)}) · ${r.setsInPrev} set${r.setsInPrev === 1 ? '' : 's'} completed</div>
         </div>
-        <button class="btn btn-green btn-sm" onclick="payWeeklySalary('${jsEsc(r.p.id)}', ${r.prevCycleNumber}, this)" data-planner-id="${escapeHtml(r.p.id)}" data-cycle="${r.prevCycleNumber}">Pay ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')}</button>
+        <button class="btn btn-green btn-sm" onclick="payWeeklySalary('${jsEsc(r.p.id)}', ${r.prevCycleNumber}, this)" data-planner-id="${escapeHtml(r.p.id)}" data-cycle="${r.prevCycleNumber}">Pay €${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')}</button>
       </div>
     `).join('')
     if (groups.ready.length > 1) {
       const total = groups.ready.length * WEEKLY_SALARY_AMOUNT
       html += `<div class="ws-row bulk">
-        <div class="ws-row-main"><div class="ws-row-meta">Pay all ${groups.ready.length} ready · ¥${total.toLocaleString('en-GB')} total</div></div>
+        <div class="ws-row-main"><div class="ws-row-meta">Pay all ${groups.ready.length} ready · €${total.toLocaleString('en-GB')} total</div></div>
         <button class="btn-main" style="padding:9px 16px;font-size:12.5px;" onclick="payAllWeeklySalaries(this)">Pay all ${groups.ready.length} eligible</button>
       </div>`
     }
@@ -4243,11 +4243,11 @@ async function payWeeklySalary(plannerId, cycleNumber, btn){
   })
   if (error) {
     showToast('Failed: ' + error.message)
-    if (btn) { btn.disabled = false; btn.textContent = `Pay ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')}` }
+    if (btn) { btn.disabled = false; btn.textContent = `Pay €${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')}` }
     return
   }
   auditLog('weekly_salary.award', 'planner', plannerId, { amount: WEEKLY_SALARY_AMOUNT, cycle: Number(cycleNumber) })
-  showToast(`¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} weekly salary paid (cycle ${cycleNumber})`)
+  showToast(`€${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} weekly salary paid (cycle ${cycleNumber})`)
   loadWeeklySalaries()
   if (typeof loadPayments === 'function') setTimeout(loadPayments, 300)
 }
@@ -4258,7 +4258,7 @@ async function payWeeklySalary(plannerId, cycleNumber, btn){
 async function payWeeklySalaryEarly(plannerId, cycleNumber, plannerName, btn){
   if (!plannerId || !Number.isFinite(Number(cycleNumber))) return
   const cycleN = Number(cycleNumber)
-  if (!confirm(`Pay ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} to ${plannerName || 'this planner'} for cycle ${cycleN} NOW, even though the 7-day cycle isn't over?\n\nThey'll move to "Recently paid" for cycle ${cycleN}. Use only when you trust them to keep completing sets — once paid, this cycle is locked and can't be paid again.`)) return
+  if (!confirm(`Pay €${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} to ${plannerName || 'this planner'} for cycle ${cycleN} NOW, even though the 7-day cycle isn't over?\n\nThey'll move to "Recently paid" for cycle ${cycleN}. Use only when you trust them to keep completing sets — once paid, this cycle is locked and can't be paid again.`)) return
   if (btn) { btn.disabled = true; btn.textContent = 'Paying…' }
   const notesKey = `weekly_salary_cycle_${cycleN}`
   const { data: existing } = await sb.from('wallet_adjustments')
@@ -4284,14 +4284,14 @@ async function payWeeklySalaryEarly(plannerId, cycleNumber, plannerName, btn){
     return
   }
   auditLog('weekly_salary.award_early', 'planner', plannerId, { amount: WEEKLY_SALARY_AMOUNT, cycle: cycleN })
-  showToast(`¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} paid early (cycle ${cycleN})`)
+  showToast(`€${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} paid early (cycle ${cycleN})`)
   loadWeeklySalaries()
   if (typeof loadPayments === 'function') setTimeout(loadPayments, 300)
 }
 
 async function revertWeeklySalary(adjustmentId, plannerId, plannerName, btn){
   if (!adjustmentId) return
-  if (!confirm(`Revert ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} weekly salary for ${plannerName || 'this planner'}?\n\nThe credit will be removed from their wallet and they'll appear in the Ready-to-pay list again. If they've already withdrawn the salary, the cash stays with them — only the wallet credit is reversed.`)) return
+  if (!confirm(`Revert €${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} weekly salary for ${plannerName || 'this planner'}?\n\nThe credit will be removed from their wallet and they'll appear in the Ready-to-pay list again. If they've already withdrawn the salary, the cash stays with them — only the wallet credit is reversed.`)) return
   if (btn) { btn.disabled = true; btn.textContent = 'Reverting…' }
   const { error } = await sb.from('wallet_adjustments').delete().eq('id', adjustmentId)
   if (error) {
@@ -4308,7 +4308,7 @@ async function revertWeeklySalary(adjustmentId, plannerId, plannerName, btn){
 async function payAllWeeklySalaries(btn){
   const btns = document.querySelectorAll('#weekly-salaries-list button[data-planner-id][data-cycle]')
   if (!btns.length) return
-  if (!confirm(`Pay ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} to ${btns.length} planner${btns.length === 1 ? '' : 's'}?`)) return
+  if (!confirm(`Pay €${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} to ${btns.length} planner${btns.length === 1 ? '' : 's'}?`)) return
   if (btn) { btn.disabled = true; btn.textContent = 'Paying…' }
   const actor = (window.currentAdmin?.email) || (sessionStorage.getItem('admin_email') || 'admin')
   let paid = 0, skipped = 0, failed = 0
@@ -4375,7 +4375,7 @@ async function loadBillsList(){
         <tr>
           <td>${escapeHtml(r.planners?.name || '—')}<div style="font-size:10.5px;color:var(--ink-3);">${escapeHtml(r.planners?.city || '')}</div></td>
           <td>${escapeHtml(r.reason || '')}${r.reason_ja ? ` <span style="font-size:10px;color:var(--ink-3);font-style:italic;">(${escapeHtml(r.reason_ja)})</span>` : ''}${r.description ? `<div style="font-size:10.5px;color:var(--ink-3);max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(r.description)}</div>` : ''}</td>
-          <td style="font-weight:700;">¥${Math.round(Number(r.amount||0)).toLocaleString()}</td>
+          <td style="font-weight:700;">€${Math.round(Number(r.amount||0)).toLocaleString()}</td>
           <td style="font-size:11.5px;">${fmtDate(r.due_at)}</td>
           <td style="font-size:11.5px;">${fmtDate(r.created_at)}</td>
           <td>${statusChip(r.status)}</td>
@@ -4452,7 +4452,7 @@ async function submitNewBill(){
     return
   }
   await auditLog('invoice_issued', 'planner', plannerId, { amount: amt, reason, due_at: due })
-  showToast(`Invoice issued — ¥${Math.round(amt).toLocaleString()}`)
+  showToast(`Invoice issued — €${Math.round(amt).toLocaleString()}`)
   closeModal('modal-bill-planner')
   loadBillsList()
 }
@@ -4463,14 +4463,14 @@ async function markBillPaid(id, plannerName, amount){
     .select('planner_id, reason, reason_ja').eq('id', id).maybeSingle()
   if (!bill) { showToast('Invoice not found'); return }
 
-  const reference = prompt(`Mark this invoice as paid?\n\nPlanner: ${plannerName}\nAmount: ¥${Math.round(amount).toLocaleString()}\n\nEnter the bank transfer reference (or leave blank):`)
+  const reference = prompt(`Mark this invoice as paid?\n\nPlanner: ${plannerName}\nAmount: €${Math.round(amount).toLocaleString()}\n\nEnter the bank transfer reference (or leave blank):`)
   if (reference === null) return
 
   // Ask whether to auto-credit the planner's wallet — yes for refundable deposits
-  // (e.g. ¥600K policy) so the money sits in their wallet for later refund;
+  // (e.g. €600K policy) so the money sits in their wallet for later refund;
   // no for fees/penalties/chargebacks where the money stays with the platform.
   const credit = confirm(
-    `Credit ¥${Math.round(amount).toLocaleString()} to ${plannerName}'s wallet?\n\n` +
+    `Credit €${Math.round(amount).toLocaleString()} to ${plannerName}'s wallet?\n\n` +
     `OK   → adds the amount to the wallet (refundable deposits, recoverable charges).\n` +
     `Cancel → skip the credit (one-way fees, penalties, chargebacks).`
   )
@@ -4505,7 +4505,7 @@ async function markBillPaid(id, plannerName, amount){
       await auditLog('wallet_adjustment', 'planner', bill.planner_id, {
         amount: Number(amount), reason: `Invoice paid: ${bill.reason}`, bypass_retention: true, source: 'invoice_paid', invoice_id: id
       })
-      showToast(`Marked paid · ¥${Math.round(amount).toLocaleString()} credited to wallet`)
+      showToast(`Marked paid · €${Math.round(amount).toLocaleString()} credited to wallet`)
     }
   } else {
     showToast('Marked paid (no wallet credit)')
@@ -4524,7 +4524,7 @@ async function creditPaidInvoice(id, plannerName, amount){
   if (bill.status !== 'paid')      { showToast('Invoice must be paid first'); return }
   if (bill.credited_at)            { showToast('Already credited'); return }
 
-  if (!confirm(`Credit ¥${Math.round(amount).toLocaleString()} to ${plannerName}'s wallet?\n\nThis is a retroactive credit for an invoice that was marked paid earlier.`)) return
+  if (!confirm(`Credit €${Math.round(amount).toLocaleString()} to ${plannerName}'s wallet?\n\nThis is a retroactive credit for an invoice that was marked paid earlier.`)) return
 
   const actor = (window.currentAdmin?.email) || (sessionStorage.getItem('admin_email') || 'admin')
   const { data: adjRow, error: adjErr } = await sb.from('wallet_adjustments').insert({
@@ -4544,7 +4544,7 @@ async function creditPaidInvoice(id, plannerName, amount){
   await auditLog('wallet_adjustment', 'planner', bill.planner_id, {
     amount: Number(amount), reason: `Invoice paid: ${bill.reason}`, bypass_retention: true, source: 'invoice_paid_retro', invoice_id: id
   })
-  showToast(`¥${Math.round(amount).toLocaleString()} credited to wallet`)
+  showToast(`€${Math.round(amount).toLocaleString()} credited to wallet`)
   loadBillsList()
   if (typeof loadPayments === 'function') loadPayments()
 }
@@ -4625,7 +4625,7 @@ async function loadAdjustmentHistory(plannerId){
   }
   const total = data.reduce((s, r) => s + Number(r.amount || 0), 0)
   wrap.innerHTML = `
-    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-3);font-weight:600;margin-bottom:8px;">Adjustment history · net ¥${Math.round(total).toLocaleString()}</div>
+    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-3);font-weight:600;margin-bottom:8px;">Adjustment history · net €${Math.round(total).toLocaleString()}</div>
     <div style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;">
       ${data.map(r => {
         const amt = Number(r.amount || 0)
@@ -4635,7 +4635,7 @@ async function loadAdjustmentHistory(plannerId){
         const tag = r.bypass_retention ? '<span style="font-size:9.5px;padding:1px 6px;background:var(--green-light,#e8f5f0);color:var(--green-dark,#0f5240);border-radius:99px;letter-spacing:0.04em;font-weight:600;text-transform:uppercase;">direct</span>'
                                        : '<span style="font-size:9.5px;padding:1px 6px;background:var(--amber-light,#fdf3e3);color:var(--amber,#b87333);border-radius:99px;letter-spacing:0.04em;font-weight:600;text-transform:uppercase;">earnings</span>'
         return `<div style="padding:8px 10px;background:var(--cream);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;gap:10px;font-size:12px;">
-          <div style="font-weight:700;color:${color};min-width:90px;">${sign}¥${Math.abs(Math.round(amt)).toLocaleString()}</div>
+          <div style="font-weight:700;color:${color};min-width:90px;">${sign}€${Math.abs(Math.round(amt)).toLocaleString()}</div>
           <div style="flex:1;min-width:0;">
             <div style="color:var(--ink);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(r.reason || '')}${r.reason_ja ? ` <span style="font-size:10px;color:var(--ink-3);font-style:italic;">(${escapeHtml(r.reason_ja)})</span>` : ''}</div>
             <div style="color:var(--ink-3);font-size:10.5px;margin-top:2px;">${when}${r.created_by ? ' · ' + escapeHtml(r.created_by) : ''}</div>
@@ -4658,7 +4658,7 @@ async function submitWalletAdjustment(){
   if (!Number.isFinite(amt) || amt === 0) { showToast('Enter a non-zero amount'); return }
   if (!reason) { showToast('Reason is required'); return }
   const sign = amt >= 0 ? 'credit' : 'debit'
-  if (!confirm(`${sign[0].toUpperCase()+sign.slice(1)} ¥${Math.abs(Math.round(amt)).toLocaleString()} ${sign === 'credit' ? 'to' : 'from'} ${plannerName}'s wallet?\n\nReason: ${reason}`)) return
+  if (!confirm(`${sign[0].toUpperCase()+sign.slice(1)} €${Math.abs(Math.round(amt)).toLocaleString()} ${sign === 'credit' ? 'to' : 'from'} ${plannerName}'s wallet?\n\nReason: ${reason}`)) return
 
   const btn = document.getElementById('adj-submit-btn')
   if (btn) { btn.disabled = true; btn.textContent = 'Applying…' }
@@ -4683,7 +4683,7 @@ async function submitWalletAdjustment(){
     amount: amt, reason, bypass_retention: bypass, planner_name: plannerName
   })
 
-  showToast(`${sign === 'credit' ? 'Credited' : 'Debited'} ¥${Math.abs(Math.round(amt)).toLocaleString()}`)
+  showToast(`${sign === 'credit' ? 'Credited' : 'Debited'} €${Math.abs(Math.round(amt)).toLocaleString()}`)
   closeModal('modal-wallet-adjust')
   loadPayments()  // refresh Finance balances
   // If the planner-view modal is still open in the background, refresh its
@@ -4728,7 +4728,7 @@ async function saveRetentionSetting(){
     .upsert({ key:'first_payout_retention_min', value_num: val, updated_by: actor }, { onConflict: 'key' })
   if (error) { showToast('Save failed: ' + error.message); return }
   if (typeof auditLog === 'function') auditLog('settings.update', 'platform_settings', 'first_payout_retention_min', { value: val })
-  showToast(`Retention updated · ¥${Number(val).toLocaleString('ja-JP')}`)
+  showToast(`Retention updated · €${Number(val).toLocaleString('ja-JP')}`)
   loadRetentionSetting()
 }
 
@@ -4748,9 +4748,9 @@ function openPayoutModal(assignmentId, plannerName, setLabel, total, paidSoFar) 
   _poCtx = { assignmentId, plannerName, setLabel, total: Number(total), paidSoFar: Number(paidSoFar || 0) }
   document.getElementById('po-title').textContent = paidSoFar > 0 ? 'Continue payout' : 'Release payout'
   document.getElementById('po-sub').textContent   = `${plannerName} · ${setLabel}`
-  document.getElementById('po-total').textContent     = `¥${Math.round(total).toLocaleString()}`
-  document.getElementById('po-paid').textContent      = `¥${Math.round(paidSoFar).toLocaleString()}`
-  document.getElementById('po-remaining').textContent = `¥${Math.round(remaining).toLocaleString()}`
+  document.getElementById('po-total').textContent     = `€${Math.round(total).toLocaleString()}`
+  document.getElementById('po-paid').textContent      = `€${Math.round(paidSoFar).toLocaleString()}`
+  document.getElementById('po-remaining').textContent = `€${Math.round(remaining).toLocaleString()}`
   const amtInput = document.getElementById('po-amount')
   amtInput.value = remaining.toFixed(2)
   amtInput.max   = remaining
@@ -4777,7 +4777,7 @@ async function submitPayout() {
   const remaining = Math.max(0, _poCtx.total - _poCtx.paidSoFar)
 
   if (!Number.isFinite(amount) || amount <= 0) { showToast('Enter a valid amount'); amtInput.focus(); return }
-  if (amount > remaining + 0.0001)            { showToast(`Amount cannot exceed remaining balance (¥${Number(remaining).toLocaleString('ja-JP')})`); amtInput.focus(); return }
+  if (amount > remaining + 0.0001)            { showToast(`Amount cannot exceed remaining balance (€${Number(remaining).toLocaleString('ja-JP')})`); amtInput.focus(); return }
   if (!reason)                                 { showToast('Please add a reason for this payout'); reasonEl.focus(); return }
 
   btn.disabled = true
@@ -4831,7 +4831,7 @@ async function submitPayout() {
     final_release: isFullNow
   })
 
-  showToast(isFullNow ? `¥${Math.round(amount)} released · fully paid` : `¥${Math.round(amount)} released · ¥${Math.round(_poCtx.total - newTotal)} balance remaining`)
+  showToast(isFullNow ? `€${Math.round(amount)} released · fully paid` : `€${Math.round(amount)} released · €${Math.round(_poCtx.total - newTotal)} balance remaining`)
   closeModal('modal-payout')
   loadOverview()
   setTimeout(loadPayments, 300)
@@ -4851,9 +4851,9 @@ async function loadPayoutRequests() {
 
   const el = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v }
   el('pr-count-pending',  pending.length)
-  el('pr-sum-pending',    `¥${Math.round(sum(pending))} requested`)
+  el('pr-sum-pending',    `€${Math.round(sum(pending))} requested`)
   el('pr-count-paid',     paid30.length)
-  el('pr-sum-paid',       `¥${Math.round(sum(paid30))} released`)
+  el('pr-sum-paid',       `€${Math.round(sum(paid30))} released`)
   el('pr-count-rejected', rejected.length)
   const badge = document.getElementById('pr-badge')
   if (badge) badge.textContent = `${pending.length} pending`
@@ -4897,7 +4897,7 @@ async function loadPayoutRequests() {
               ${noteLine}
             </div>
             <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-              <div class="pay-amount">¥${Math.round(Number(r.amount))}</div>
+              <div class="pay-amount">€${Math.round(Number(r.amount))}</div>
               <div style="display:flex;gap:6px;">
                 <button class="btn btn-ghost btn-sm" onclick="rejectPayoutRequest('${jsEsc(r.id)}')">Reject</button>
                 <button class="btn btn-green btn-sm" onclick="releasePayoutRequest('${jsEsc(r.id)}','${jsEsc(r.planners?.name||'')}',${r.amount})">Release</button>
@@ -4924,7 +4924,7 @@ async function loadPayoutRequests() {
           const statusCls = r.status === 'paid' ? 's-green' : r.status === 'rejected' ? 's-red' : 's-gray'
           const statusLabel = r.status.charAt(0).toUpperCase() + r.status.slice(1)
           return `<tr><td>${escapeHtml(r.planners?.name || '—')}</td>
-            <td>¥${Math.round(Number(r.amount))}</td>
+            <td>€${Math.round(Number(r.amount))}</td>
             <td style="font-size:11.5px;color:var(--ink-3);">${bankShort}</td>
             <td>${reqD}</td>
             <td>${resD}</td>
@@ -4935,7 +4935,7 @@ async function loadPayoutRequests() {
 }
 
 async function releasePayoutRequest(id, plannerName, amount) {
-  if (!confirm(`Release ¥${Math.round(Number(amount))} to ${plannerName}?\n\nMake sure the bank transfer is actually done first.`)) return
+  if (!confirm(`Release €${Math.round(Number(amount))} to ${plannerName}?\n\nMake sure the bank transfer is actually done first.`)) return
   const ref = prompt('Optional: payment reference (bank slip / transaction ID) — press OK to skip', '') || ''
   // Only flip pending → paid (prevents double-release on concurrent clicks)
   const { data: updated, error } = await sb.from('wallet_requests')
@@ -4957,7 +4957,7 @@ async function releasePayoutRequest(id, plannerName, amount) {
     }
   } catch (e) { console.warn('set_assignments cascade failed', e) }
   auditLog('wallet.release', 'wallet_request', id, { planner_id: updated.planner_id, amount: updated.amount, reference: ref || null })
-  showToast(`¥${Math.round(Number(amount))} released to ${plannerName}`)
+  showToast(`€${Math.round(Number(amount))} released to ${plannerName}`)
   loadPayoutRequests()
 }
 
@@ -5291,7 +5291,7 @@ async function viewPlanner(id) {
     // Fetch sets, plans count, and earnings (commission + bond refund) in
     // parallel. The earnings query now spans ALL approved plans for this
     // planner — earlier we only counted plans inside paid sets, which made
-    // "Total earned" show ¥0 for planners with completed-but-not-yet-paid
+    // "Total earned" show €0 for planners with completed-but-not-yet-paid
     // sets even though they had real commission on the books.
     const [allSetsRes, plansCountRes, earnedRes] = await Promise.all([
       sb.from('sets').select('id,set_number,city,deadline,status').in('id', allSetIds),
@@ -5329,12 +5329,12 @@ async function viewPlanner(id) {
   document.getElementById('mp-sets').textContent   = setsCount
   document.getElementById('mp-plans').textContent  = plansCount
   document.getElementById('mp-active').textContent = activeCount
-  document.getElementById('mp-earned').textContent = `¥${Math.round(totalEarned).toLocaleString()}`
+  document.getElementById('mp-earned').textContent = `€${Math.round(totalEarned).toLocaleString()}`
 
   // Wallet balance — same formula the planner sees on their own dashboard.
   // CRITICAL: `locked` counts ONLY pending + paid wallet_requests. Earlier
   // we summed ALL requests including cancelled ones, which over-locked the
-  // wallet and silently clamped balance to ¥0 via Math.max(0,…). Also
+  // wallet and silently clamped balance to €0 via Math.max(0,…). Also
   // include wallet_adjustments in the earned total so admin sees the same
   // "Earned total" number the planner sees (commission + bond refund +
   // admin adjustments, which can be negative for clawbacks/corrections).
@@ -5366,9 +5366,9 @@ async function viewPlanner(id) {
       const walletBal  = Math.max(0, totalAvail - retainHeld)
       // Overwrite the Total earned card with the net-of-adjustments figure
       // so admin's view matches the planner's "Earned total" exactly.
-      if (earnedEl) earnedEl.textContent = `¥${Math.round(earnedNet).toLocaleString()}`
-      if (walletEl) walletEl.textContent = `¥${Math.round(walletBal).toLocaleString()}`
-      if (paidEl)   paidEl.textContent   = `¥${Math.round(paid).toLocaleString()}`
+      if (earnedEl) earnedEl.textContent = `€${Math.round(earnedNet).toLocaleString()}`
+      if (walletEl) walletEl.textContent = `€${Math.round(walletBal).toLocaleString()}`
+      if (paidEl)   paidEl.textContent   = `€${Math.round(paid).toLocaleString()}`
     } catch (e) {
       const walletEl  = document.getElementById('mp-wallet')
       const paidEl    = document.getElementById('mp-paidout')
@@ -5460,17 +5460,17 @@ function renderEditPlansList(plans) {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div>
             <div style="font-size:13px;font-weight:600;color:var(--ink);">Plan ${p.plan_number} · ${escapeHtml(t.name || '—')} ${hasOverride ? '<span style=\"font-size:10px;color:var(--purple);background:var(--purple-light);padding:1px 7px;border-radius:99px;margin-left:4px;\">custom</span>' : ''}</div>
-            <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Default: ¥${t.planner_payout || 0} payout${t.requires_bond ? ' · Bond ¥' + (t.bond_amount || '?') : ''}</div>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:2px;">Default: €${t.planner_payout || 0} payout${t.requires_bond ? ' · Bond €' + (t.bond_amount || '?') : ''}</div>
           </div>
           ${statusBadge}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
           <div>
-            <div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">Commission (JPY)</div>
+            <div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">Commission (EUR)</div>
             <input id="ep-payout-${p.id}" type="number" min="0" step="1" value="${effPayout}" ${locked ? 'disabled' : ''} style="width:100%;padding:7px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;">
           </div>
           <div>
-            <div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">Bond amount (JPY)</div>
+            <div style="font-size:10px;color:var(--ink-3);margin-bottom:3px;">Bond amount (EUR)</div>
             <input id="ep-bond-${p.id}" type="number" min="0" step="1" value="${effBondAmt}" ${locked ? 'disabled' : ''} style="width:100%;padding:7px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;">
           </div>
           <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);white-space:nowrap;padding-bottom:7px;">
@@ -6002,7 +6002,7 @@ function renderUnassignedFromAPI() {
       <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);${rowTint}">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--blue);flex-shrink:0;">${escapeHtml(name.slice(0,2).toUpperCase())}</div>
         <div style="flex:1;">
-          <div style="font-size:13px;font-weight:500;color:var(--ink);">${escapeHtml(name)}${t.requires_bond?` <span class="bond-chip" style="font-size:9px;padding:1px 6px;">bond ¥${escapeHtml(t.bond_amount || 0)}</span>`:''}</div>
+          <div style="font-size:13px;font-weight:500;color:var(--ink);">${escapeHtml(name)}${t.requires_bond?` <span class="bond-chip" style="font-size:9px;padding:1px 6px;">bond €${escapeHtml(t.bond_amount || 0)}</span>`:''}</div>
           <div style="font-size:11.5px;color:var(--ink-3);">${escapeHtml(destination)} · ${escapeHtml(travelerType)} · ${escapeHtml(duration)} · ${escapeHtml(arrival)}</div>
         </div>
         ${action}
@@ -6090,12 +6090,12 @@ function calcMargin() {
   const price  = parseFloat(document.getElementById('nt-price')?.value)  || 0
   const payout = parseFloat(document.getElementById('nt-payout')?.value) || 0
   const el     = document.getElementById('margin-display')
-  if (el) el.textContent = price - payout > 0 ? `¥${Math.round(price - payout)}` : '¥—'
+  if (el) el.textContent = price - payout > 0 ? `€${Math.round(price - payout)}` : '€—'
   updatePreview()
 }
 
 function updatePreview() {
-  // Stable IDs, JPY currency
+  // Stable IDs, EUR currency
   const val = id => document.getElementById(id)?.value?.trim() || ''
   const name       = val('nt-name') || 'New traveler'
   const dest       = document.getElementById('nt-destination')?.value || 'Tokyo'
@@ -6119,11 +6119,11 @@ function updatePreview() {
   const pno = document.getElementById('prev-notes')
 
   if (pn) pn.textContent = `${name} · ${dest}`
-  if (pm) pm.textContent = `${typeCap} · ${duration}${budget ? ' · Budget ¥' + Number(budget).toLocaleString('ja-JP') + '/day' : ''}`
+  if (pm) pm.textContent = `${typeCap} · ${duration}${budget ? ' · Budget €' + Number(budget).toLocaleString('ja-JP') + '/day' : ''}`
   if (pi) pi.textContent = interests || '—'
   if (pp) pp.textContent = pace || '—'
   if (pa) pa.textContent = avoid || '—'
-  if (ppy) ppy.textContent = payout ? `¥${Number(payout).toLocaleString('ja-JP')}` : '¥—'
+  if (ppy) ppy.textContent = payout ? `€${Number(payout).toLocaleString('ja-JP')}` : '€—'
   if (pno) {
     if (notes) { pno.textContent = notes; pno.style.display = 'block' }
     else pno.style.display = 'none'
@@ -6568,7 +6568,7 @@ async function openEditSetModal(setId, setNum) {
       if (t.destination) detailLabels.push(`Destination: ${escapeHtml(t.destination)}`)
       if (t.arrival_date) detailLabels.push(`Arriving: ${escapeHtml(t.arrival_date)}`)
       if (t.duration) detailLabels.push(`Duration: ${escapeHtml(t.duration)}`)
-      if (t.budget_per_day) detailLabels.push(`Budget: ¥${escapeHtml(Number(t.budget_per_day).toLocaleString('ja-JP'))}/day`)
+      if (t.budget_per_day) detailLabels.push(`Budget: €${escapeHtml(Number(t.budget_per_day).toLocaleString('ja-JP'))}/day`)
       return `
         <div class="task-card${isBond ? ' bond' : ''}">
           <div class="task-card-header">
@@ -6576,7 +6576,7 @@ async function openEditSetModal(setId, setNum) {
               <div class="task-card-title">Plan ${p.plan_number}: ${escapeHtml(t.name || 'Unknown traveler')}</div>
               <div class="task-card-meta">${escapeHtml(t.traveler_type || '')}</div>
             </div>
-            ${isBond ? `<span class="bond-chip">Bond ¥${escapeHtml(t.bond_amount||'?')}</span>` : ''}
+            ${isBond ? `<span class="bond-chip">Bond €${escapeHtml(t.bond_amount||'?')}</span>` : ''}
           </div>
           <div class="task-card-detail">
             ${detailLabels.map(label => `<span>${label}</span>`).join('')}
@@ -6692,7 +6692,7 @@ async function loadBondPending() {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:${isNotified ? '#fffbf0' : 'var(--cream)'};border:1px solid ${isNotified ? 'rgba(184,115,51,0.4)' : 'var(--border)'};border-radius:var(--radius-sm);gap:12px;flex-wrap:wrap;">
         <div>
           <div style="font-size:13px;font-weight:600;color:var(--ink);">${escapeHtml(plannerName)} <span style="font-weight:400;color:var(--ink-3);">· Plan ${escapeHtml(String(p.plan_number||''))} · ${escapeHtml(travelerName)}</span></div>
-          <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${escapeHtml(setLabel)} · Bond ¥${escapeHtml(String(bondAmt))} · ${escapeHtml(plannerEmail)}</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${escapeHtml(setLabel)} · Bond €${escapeHtml(String(bondAmt))} · ${escapeHtml(plannerEmail)}</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
           ${isNotified ? `<span style="font-size:11px;font-weight:600;color:var(--amber);background:rgba(184,115,51,0.12);padding:3px 8px;border-radius:99px;">Payment sent</span>` : `<span style="font-size:11px;color:var(--ink-3);">Waiting payment</span>`}
@@ -6829,7 +6829,7 @@ async function loadBondHistory() {
               <div style="font-size:11.5px;color:var(--ink-3);">${escapeHtml(p.planners?.email || '')}</div>
             </td>
             <td style="padding:10px 8px;color:var(--ink-2);">${setLbl}</td>
-            <td style="padding:10px 8px;color:var(--ink);font-weight:500;">¥${bondAmt}</td>
+            <td style="padding:10px 8px;color:var(--ink);font-weight:500;">€${bondAmt}</td>
             <td style="padding:10px 8px;">${statusChipBond(p.status)}</td>
             <td style="padding:10px 8px;color:var(--ink-3);font-size:12px;">${at ? timeAgo(at) : '—'}${byCs ? ' <span style="font-size:10px;color:var(--ink-3);background:rgba(0,0,0,0.05);padding:1px 5px;border-radius:99px;margin-left:4px;">via CS</span>' : ''}</td>
             <td style="padding:10px 14px;text-align:right;">
@@ -7053,7 +7053,7 @@ function renderSlots() {
     if (isBond) {
       const chip = document.createElement('div');
       chip.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;';
-      chip.innerHTML = `<span class="bond-chip">bond</span><span style="font-size:10px;color:var(--amber);margin-top:3px;">¥${Number(traveler.bond||0).toLocaleString('en-GB')} held</span>`;
+      chip.innerHTML = `<span class="bond-chip">bond</span><span style="font-size:10px;color:var(--amber);margin-top:3px;">€${Number(traveler.bond||0).toLocaleString('en-GB')} held</span>`;
       row.appendChild(chip);
     }
 
@@ -7090,10 +7090,10 @@ function recalcPayout() {
   const el = id => document.getElementById(id)
   if (el('std-count'))      el('std-count').textContent      = stdCount
   if (el('bond-count'))     el('bond-count').textContent     = bondCount
-  if (el('std-total'))      el('std-total').textContent      = `¥${Math.round(stdTotal)}`
-  if (el('bond-total'))     el('bond-total').textContent     = `¥${Math.round(bondTotal)}`
-  if (el('bond-held-total'))el('bond-held-total').textContent= `¥${Math.round(bondHeld)}`
-  if (el('grand-total'))    el('grand-total').textContent    = `¥${Math.round(grand)}`
+  if (el('std-total'))      el('std-total').textContent      = `€${Math.round(stdTotal)}`
+  if (el('bond-total'))     el('bond-total').textContent     = `€${Math.round(bondTotal)}`
+  if (el('bond-held-total'))el('bond-held-total').textContent= `€${Math.round(bondHeld)}`
+  if (el('grand-total'))    el('grand-total').textContent    = `€${Math.round(grand)}`
   if (el('slots-filled'))   el('slots-filled').textContent   = `${filled} / 15`
   const bondLine = el('bond-line')
   const bondHeldLine = el('bond-held-line')

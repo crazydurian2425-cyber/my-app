@@ -479,14 +479,14 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
     <div class="info-label">Earnings snapshot</div>
     <div style="display:grid;gap:10px;">
       <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Total paid out</span><span style="font-weight:600;color:var(--green);" id="info-earned">¥0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Total paid out</span><span style="font-weight:600;color:var(--green);" id="info-earned">€0</span></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Pending payout</span><span style="font-weight:600;color:var(--amber);" id="info-pending">¥0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Pending payout</span><span style="font-weight:600;color:var(--amber);" id="info-pending">€0</span></div>
         <div class="mini-bar amber" id="bar-pending"><span style="width:0%;"></span></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Bond on hold</span><span style="font-weight:600;color:var(--amber);" id="info-bond-hold">¥0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Bond on hold</span><span style="font-weight:600;color:var(--amber);" id="info-bond-hold">€0</span></div>
         <div class="mini-bar amber" id="bar-bond"><span style="width:0%;"></span></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Sets completed</span><span style="font-weight:600;color:var(--ink);" id="info-sets-done">0</span></div>
@@ -1481,9 +1481,9 @@ async function loadPlannerContext(plannerId) {
       if (pl.travelers?.requires_bond && ['submitted','approved'].includes(pl.status) && !paidSetIds.has(pl.set_id)) bondHeld += bo(pl)
     }
   }
-  el('info-earned').textContent = `¥${Math.round(paidAmt).toLocaleString("ja-JP")}`
-  el('info-pending').textContent = `¥${Math.round(pendingAmt).toLocaleString("ja-JP")}`
-  el('info-bond-hold').textContent = `¥${Math.round(bondHeld).toLocaleString("ja-JP")}`
+  el('info-earned').textContent = `€${Math.round(paidAmt).toLocaleString("ja-JP")}`
+  el('info-pending').textContent = `€${Math.round(pendingAmt).toLocaleString("ja-JP")}`
+  el('info-bond-hold').textContent = `€${Math.round(bondHeld).toLocaleString("ja-JP")}`
   el('info-sets-done').textContent = paid.length
 
   // Mini progress bars — scaled against max(paidAmt, pendingAmt, bondHeld, 1)
@@ -1557,7 +1557,7 @@ async function renderInlineActions() {
     if (bondPending && bondPending.length) {
       const bp = bondPending[0]
       const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
-      bondChipText.textContent = `Bond pending · Plan ${bp.plan_number} · ¥${escapeHtml(amt)}`
+      bondChipText.textContent = `Bond pending · Plan ${bp.plan_number} · €${escapeHtml(amt)}`
       bondChip.style.display = 'inline-flex'
     } else {
       bondChip.style.display = 'none'
@@ -1573,7 +1573,7 @@ async function renderInlineActions() {
   for (const bp of (bondPending || [])) {
     const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
     const notified = bp.admin_notes === 'BOND_NOTIFIED' ? ' · sent' : ''
-    html += actionBtn(`Confirm bond · Plan ${bp.plan_number} (¥${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
+    html += actionBtn(`Confirm bond · Plan ${bp.plan_number} (€${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
   }
   // Revert button for recently-confirmed bond plans (safe window: no work started)
   for (const rc of (recentlyConfirmed || [])) {
@@ -1755,7 +1755,7 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🏦 Bond bank details', text: 'Hi {first_name}, here are the bond payment details:\n\nBank: [bank name]\nAccount: [account number]\nName: Journey Junction\nReference: BOND-{set_num}-{planner_short}\n\nOnce transferred, please share the screenshot here and we\'ll confirm shortly.' },
     { label: '💳 Verifying bond', text: 'Got it {first_name} — we\'ll verify your transfer shortly and confirm as soon as it clears (usually under 30 min during business hours).' },
     { label: '✅ Bond received', text: 'Bond payment confirmed — your plan is now unlocked. Happy planning!' },
-    { label: '💰 Payout update', text: 'Hi {first_name}, your payout of ¥{pending_amt} is queued for release. You\'ll receive it in your registered bank account within 24 hours.' },
+    { label: '💰 Payout update', text: 'Hi {first_name}, your payout of €{pending_amt} is queued for release. You\'ll receive it in your registered bank account within 24 hours.' },
     { label: '💰 Payout processed', text: 'Payout has been released to your bank account. Please allow 1-2 business days for it to reflect.' },
     { label: '📋 Checking sets', text: 'Hi {first_name}, let me check what\'s available in your city and I\'ll assign you a set shortly.' },
     { label: '⏰ How many days?', text: 'No problem {first_name} — how many extra days do you need, and could you share the reason briefly so we can log it?' },
@@ -1774,7 +1774,7 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🏦 保証金の振込先', text: '{first_name}さん、保証金のお振込先は以下の通りです：\n\n銀行：[銀行名]\n口座番号：[口座番号]\n口座名義：Journey Junction\n振込照会：BOND-{set_num}-{planner_short}\n\nお振込後、こちらに明細のスクリーンショットをお送りください。確認後すぐにご連絡いたします。' },
     { label: '💳 保証金の確認中', text: '{first_name}さん、承知いたしました。お振込の確認を進めております。営業時間内であれば通常30分以内に確認が完了し、ご連絡いたします。' },
     { label: '✅ 保証金受領済み', text: '保証金のお振込を確認いたしました。プランのロックを解除しました。引き続きよろしくお願いいたします。' },
-    { label: '💰 出金のご案内', text: '{first_name}さん、¥{pending_amt}の出金手続きを進めております。24時間以内にご登録の銀行口座に着金する予定です。' },
+    { label: '💰 出金のご案内', text: '{first_name}さん、€{pending_amt}の出金手続きを進めております。24時間以内にご登録の銀行口座に着金する予定です。' },
     { label: '💰 出金処理完了', text: '出金処理が完了しました。ご登録の銀行口座への反映には1〜2営業日ほどかかります。' },
     { label: '📋 セットの確認', text: '{first_name}さん、お住まいの都市で対応可能なセットを確認し、追ってアサインいたします。' },
     { label: '⏰ 延長日数の確認', text: '{first_name}さん、承知いたしました。何日間の延長をご希望でしょうか？理由も簡単に共有いただけるとログに記録できます。' },

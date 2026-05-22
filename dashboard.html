@@ -3286,7 +3286,7 @@ html[lang="ja"] .psb-hint{font-style:normal;font-family:'Noto Sans JP','Lora',sa
 .theme-editorial .metric-val{
   font-family:'Fraunces','DM Serif Display',Georgia,serif!important;
   /* Scales with card width — shrinks from 30px down to 18px when the
-     number gets long (e.g. "¥1,234,567"). Uses container query units so
+     number gets long (e.g. "€1,234,567"). Uses container query units so
      grid-column changes (5 → 3 → 2) auto-adapt too. */
   font-size:clamp(18px, 9cqi, 30px)!important;
   line-height:1!important;
@@ -5359,7 +5359,7 @@ body.theme-dark .settings-lang-btn:hover{border-color:rgba(255,255,255,0.20)!imp
 body.theme-dark .settings-lang-btn.active{
   background:rgba(94,123,110,0.20)!important;border-color:rgba(155,188,171,0.5)!important;color:#4FB891!important;
 }
-/* Static info chips (¥ JPY, Asia/Tokyo) */
+/* Static info chips (€ EUR, Europe/Paris) */
 body.theme-dark .settings-static-chip{background:#252A2E!important;border-color:rgba(255,255,255,0.10)!important;color:var(--text-2)!important;}
 
 /* ── Modals (Submit plan, Bond payment, Edit profile, etc.) ──
@@ -6510,7 +6510,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
     </div>
 
     <!-- PENDING PAYMENTS BANNER — populated by loadPendingPayments() when admin
-         has issued a bill (e.g. ¥600,000 platform usage policy deposit). -->
+         has issued a bill (e.g. €600,000 platform usage policy deposit). -->
     <div id="pending-payments-banner" style="display:none;"></div>
 
     <!-- SUB-ACCOUNT BANNER — shown only when the logged-in planner is a shared
@@ -6529,17 +6529,17 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
     <div class="metrics">
       <div class="metric-card">
         <div class="metric-label" data-i18n="dash.m.currentEarning">Current earning</div>
-        <div class="metric-val" id="m-current">¥0</div>
+        <div class="metric-val" id="m-current">€0</div>
         <div class="metric-note" data-i18n="dash.m.currentEarning.note">unpaid — current set</div>
       </div>
       <div class="metric-card">
         <div class="metric-label" data-i18n="dash.m.earned">Paid out</div>
-        <div class="metric-val green" id="m-earned">¥0</div>
+        <div class="metric-val green" id="m-earned">€0</div>
         <div class="metric-note" data-i18n="dash.m.earned.note">lifetime · to your bank</div>
       </div>
       <div class="metric-card">
         <div class="metric-label" data-i18n="dash.m.bond">Bond on hold</div>
-        <div class="metric-val" id="m-bond" style="color:var(--amber,#b87333);">¥0</div>
+        <div class="metric-val" id="m-bond" style="color:var(--amber,#b87333);">€0</div>
         <div class="metric-note" data-i18n="dash.m.bond.note">held until set complete</div>
       </div>
       <div class="metric-card">
@@ -6620,7 +6620,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <div class="t-avatar" id="brief-initials">—</div>
               <div>
                 <div class="t-name" id="brief-traveler-name">—</div>
-                <div class="t-meta" id="brief-traveler-meta">Solo · Arriving 18 May · Tokyo · 2D1N · Budget ¥30,000/day</div>
+                <div class="t-meta" id="brief-traveler-meta">Solo · Arriving 18 May · Paris · 2D1N · Budget €150/day</div>
               </div>
             </div>
 
@@ -6694,16 +6694,16 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <div class="card-body" style="padding-top:4px;">
             <div class="ws-available">
               <div class="ws-label" data-i18n="walletSnap.available">Available to withdraw</div>
-              <div class="ws-big" id="ws-available-amt">¥0</div>
+              <div class="ws-big" id="ws-available-amt">€0</div>
             </div>
             <div class="ws-rows">
               <div class="ws-row">
                 <span class="ws-row-label" data-i18n="walletSnap.locked">Awaiting approval</span>
-                <span class="ws-row-val" id="ws-locked-amt" style="color:var(--amber,#c17d2a);">¥0</span>
+                <span class="ws-row-val" id="ws-locked-amt" style="color:var(--amber,#c17d2a);">€0</span>
               </div>
               <div class="ws-row">
                 <span class="ws-row-label" data-i18n="walletSnap.lifetime">Paid out (lifetime)</span>
-                <span class="ws-row-val" id="ws-lifetime-amt">¥0</span>
+                <span class="ws-row-val" id="ws-lifetime-amt">€0</span>
               </div>
               <div class="ws-row">
                 <span class="ws-row-label" data-i18n="walletSnap.lastPayout">Last payout</span>
@@ -6716,7 +6716,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
             </div>
             <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:12px;background:rgba(45,158,122,0.07);border:1px solid rgba(45,158,122,0.22);border-radius:8px;font-size:11.5px;line-height:1.45;color:var(--text-2);">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px;color:var(--green-dark,#1f8466);"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              <span data-i18n-html="walletSnap.weeklyRule"><strong>¥50,000 weekly salary</strong> — paid each rolling 7-day cycle if you complete ≥1 set in that cycle.</span>
+              <span data-i18n-html="walletSnap.weeklyRule"><strong>€50,000 weekly salary</strong> — paid each rolling 7-day cycle if you complete ≥1 set in that cycle.</span>
             </div>
             <button class="btn-main ws-cta" onclick="showPage('wallet', document.querySelector('[onclick*=\'wallet\']'))">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M2 11h20"/><circle cx="17" cy="16" r="1.2" fill="currentColor"/></svg>
@@ -6741,9 +6741,9 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
   <div id="page-history" class="page">
     <div class="page-header"><div><div class="page-title"><span data-i18n="history.title.payout">Payout</span> <em data-i18n="history.title.history">history</em></div><div class="page-sub" data-i18n="history.sub">All completed payouts to your account</div></div></div>
     <div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr));">
-      <div class="metric-card"><div class="metric-label" data-i18n="history.totalEarned">Total earned</div><div class="metric-val green" id="hist-total">¥0</div><div class="metric-note" id="hist-total-note">0 completed sets</div></div>
-      <div class="metric-card"><div class="metric-label" data-i18n="history.avgPerSet">Avg per set</div><div class="metric-val" id="hist-avg">¥0</div><div class="metric-note" data-i18n="history.standardRate">standard rate</div></div>
-      <div class="metric-card"><div class="metric-label" data-i18n="history.pending">Pending</div><div class="metric-val" id="hist-pending">¥0</div><div class="metric-note" data-i18n="history.inProgress">in progress</div></div>
+      <div class="metric-card"><div class="metric-label" data-i18n="history.totalEarned">Total earned</div><div class="metric-val green" id="hist-total">€0</div><div class="metric-note" id="hist-total-note">0 completed sets</div></div>
+      <div class="metric-card"><div class="metric-label" data-i18n="history.avgPerSet">Avg per set</div><div class="metric-val" id="hist-avg">€0</div><div class="metric-note" data-i18n="history.standardRate">standard rate</div></div>
+      <div class="metric-card"><div class="metric-label" data-i18n="history.pending">Pending</div><div class="metric-val" id="hist-pending">€0</div><div class="metric-note" data-i18n="history.inProgress">in progress</div></div>
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title" data-i18n="history.transactionTitle">Transaction history</div></div>
@@ -6762,22 +6762,22 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
     <div class="metrics" style="grid-template-columns:repeat(4,minmax(0,1fr));">
       <div class="metric-card">
         <div class="metric-label" data-i18n="wallet.m.available">Available</div>
-        <div class="metric-val green" id="w-available">¥0</div>
+        <div class="metric-val green" id="w-available">€0</div>
         <div class="metric-note" id="w-earned-note">from 0 approved plans</div>
       </div>
       <div class="metric-card">
         <div class="metric-label" data-i18n="wallet.m.earnedTotal">Earned total</div>
-        <div class="metric-val" id="w-earned">¥0</div>
+        <div class="metric-val" id="w-earned">€0</div>
         <div class="metric-note" data-i18n="wallet.m.earnedTotal.note">lifetime commissions</div>
       </div>
       <div class="metric-card">
         <div class="metric-label" data-i18n="wallet.m.pending">Pending</div>
-        <div class="metric-val" id="w-pending" style="color:var(--e-amber,#c17d2a);">¥0</div>
+        <div class="metric-val" id="w-pending" style="color:var(--e-amber,#c17d2a);">€0</div>
         <div class="metric-note" data-i18n="wallet.m.pending.note">awaiting admin release</div>
       </div>
       <div class="metric-card">
         <div class="metric-label" data-i18n="wallet.m.paid">Paid out</div>
-        <div class="metric-val" id="w-paid" style="color:var(--e-ink-2,#554e3f);">¥0</div>
+        <div class="metric-val" id="w-paid" style="color:var(--e-ink-2,#554e3f);">€0</div>
         <div class="metric-note" data-i18n="wallet.m.paid.note">to your bank, lifetime</div>
       </div>
     </div>
@@ -6797,7 +6797,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           </div>
           <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;margin-bottom:14px;background:rgba(45,158,122,0.07);border:1px solid rgba(45,158,122,0.22);border-radius:8px;font-size:12.5px;line-height:1.45;color:var(--text-2);">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px;color:var(--green-dark,#1f8466);"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            <span data-i18n-html="walletSnap.weeklyRule"><strong>¥50,000 weekly salary</strong> — paid each rolling 7-day cycle if you complete ≥1 set in that cycle.</span>
+            <span data-i18n-html="walletSnap.weeklyRule"><strong>€50,000 weekly salary</strong> — paid each rolling 7-day cycle if you complete ≥1 set in that cycle.</span>
           </div>
           <div id="w-history"><div data-i18n="wallet.empty" style="font-size:13px;color:var(--text-3);padding:10px 0;font-family:'Lora',serif;font-style:italic;">No payout requests yet</div></div>
         </div>
@@ -6814,8 +6814,8 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--e-amber,#c17d2a);flex-shrink:0;"><path d="M10 1.5l7 3.5v5c0 4-3 7.5-7 9-4-1.5-7-5-7-9v-5l7-3.5z"/></svg>
               <div data-i18n="wallet.protection.badge" style="font-size:13.5px;font-weight:600;color:var(--e-ink,#1f1c16);">Fraud &amp; chargeback buffer</div>
             </div>
-            <p data-i18n-html="wallet.protection.body1" style="margin:0 0 10px;">On your <strong>first withdrawal</strong> we hold a one-time <strong><span id="w-protection-min">¥100,000</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. Once that first payout clears, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.</p>
-            <p data-i18n-html="wallet.protection.body2" style="margin:0;">Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>. After your first payout the buffer releases — anything earned then becomes fully withdrawable.</p>
+            <p data-i18n-html="wallet.protection.body1" style="margin:0 0 10px;">On your <strong>first withdrawal</strong> we hold a one-time <strong><span id="w-protection-min">€100,000</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. Once that first payout clears, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.</p>
+            <p data-i18n-html="wallet.protection.body2" style="margin:0;">Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. After your first payout the buffer releases — anything earned then becomes fully withdrawable.</p>
           </div>
         </div>
         <div class="card" style="margin-top:16px;">
@@ -6868,7 +6868,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <div style="border-top:1px dashed rgba(0,0,0,0.10);margin-top:20px;padding-top:14px;">
             <div style="font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:10px;" data-i18n="profile.bank.header">Bank transfer</div>
             <div class="form-group"><label class="form-label" data-i18n="profile.holder">Recipient's full name</label><input class="form-input" id="profile-holder" placeholder="As registered with the bank (romaji/English)" data-i18n-ph="profile.ph.holder"></div>
-            <div class="form-group"><label class="form-label" data-i18n="profile.bank">Bank name</label><input class="form-input" id="profile-bank" placeholder="e.g. MUFG, SMBC, Mizuho, Japan Post Bank (Yucho)" data-i18n-ph="profile.ph.bank"></div>
+            <div class="form-group"><label class="form-label" data-i18n="profile.bank">Bank name</label><input class="form-input" id="profile-bank" placeholder="e.g. BNP Paribas, Société Générale, Crédit Agricole, La Banque Postale" data-i18n-ph="profile.ph.bank"></div>
             <div class="form-row">
               <div class="form-group"><label class="form-label" data-i18n="profile.branch">Branch name (shiten)</label><input class="form-input" id="profile-branch-name" placeholder="e.g. Shibuya Branch" data-i18n-ph="profile.ph.branch"></div>
               <div class="form-group"><label class="form-label" data-i18n="profile.branchCode">Branch code</label><input class="form-input" id="profile-branch-code" placeholder="3 digits" maxlength="3" inputmode="numeric" data-i18n-ph="profile.ph.branchCode"></div>
@@ -7044,16 +7044,16 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <div class="settings-row">
             <div style="flex:1;min-width:0;">
               <div class="settings-row-label" data-i18n="settings.currency">Currency</div>
-              <div class="settings-row-sub" data-i18n="settings.currency.sub">All earnings in Japanese yen</div>
+              <div class="settings-row-sub" data-i18n="settings.currency.sub">All earnings in Euros</div>
             </div>
-            <div class="settings-static-chip">¥ JPY</div>
+            <div class="settings-static-chip">€ EUR</div>
           </div>
           <div class="settings-row">
             <div style="flex:1;min-width:0;">
               <div class="settings-row-label" data-i18n="settings.timezone">Timezone</div>
               <div class="settings-row-sub" data-i18n="settings.timezone.sub">Used for deadlines and activity times</div>
             </div>
-            <div class="settings-static-chip" id="settings-tz-chip" data-i18n="settings.tz.value">Japan Standard Time</div>
+            <div class="settings-static-chip" id="settings-tz-chip" data-i18n="settings.tz.value">Central European Time</div>
           </div>
         </div>
       </div>
@@ -7113,7 +7113,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20"/><path d="M12 2a15 15 0 0 0 0 20"/></svg>
           <span data-i18n="rules.what.title">What is Journey Junction</span>
         </summary>
-        <div class="rules-body" data-i18n-html="rules.what.body">Journey Junction is a curated marketplace connecting travelers across Japan with skilled local planners. You craft the itineraries, travelers enjoy the trip, and we handle the logistics behind the scenes.</div>
+        <div class="rules-body" data-i18n-html="rules.what.body">Journey Junction is a curated marketplace connecting travelers across France with skilled local planners. You craft the itineraries, travelers enjoy the trip, and we handle the logistics behind the scenes.</div>
       </details>
 
       <details class="rules-details">
@@ -7121,7 +7121,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/><path d="M18 8l2 2 4-4"/></svg>
           <span data-i18n="rules.role.title">Your role as a planner</span>
         </summary>
-        <div class="rules-body" data-i18n-html="rules.role.body">You'll design personalized itineraries based on each traveler's brief, their pace, preferences, and must-sees. Every plan you build shapes someone's real journey across Japan.</div>
+        <div class="rules-body" data-i18n-html="rules.role.body">You'll design personalized itineraries based on each traveler's brief, their pace, preferences, and must-sees. Every plan you build shapes someone's real journey across France.</div>
       </details>
 
       <details class="rules-details">
@@ -7272,12 +7272,12 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px dashed rgba(31,28,22,0.1);">
             <div data-i18n="spend.totalPerDay" style="font-size:11px;color:var(--text-3);">Total estimate / day</div>
             <div style="display:flex;align-items:center;gap:10px;">
-              <div id="spend-total" style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--e-green-d,#0f5240);">¥0</div>
+              <div id="spend-total" style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--e-green-d,#0f5240);">€0</div>
               <button type="button" class="quick-chip" onclick="applySpendBreakdown()"><span data-i18n="spend.addToNotes">↓ Add to notes</span></button>
             </div>
           </div>
         </div>
-        <textarea class="form-textarea autogrow" id="spend-breakdown" maxlength="400" placeholder="Food: ¥xx/day · Transport: ¥xx · Entrance fees: ¥xx · Total: ¥xx" oninput="autoGrow(this);updateCharCounter('spend-breakdown');autoSaveDraft()" data-i18n-ph="spend.bd.ph"></textarea>
+        <textarea class="form-textarea autogrow" id="spend-breakdown" maxlength="400" placeholder="Food: €xx/day · Transport: €xx · Entrance fees: €xx · Total: €xx" oninput="autoGrow(this);updateCharCounter('spend-breakdown');autoSaveDraft()" data-i18n-ph="spend.bd.ph"></textarea>
         <div class="char-counter" id="char-spend-breakdown" data-max="400">0 / 400</div>
       </div>
 
@@ -7366,15 +7366,15 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
         <div style="padding:10px 12px;background:var(--cream,#faf5ea);border:1px solid rgba(31,28,22,0.06);border-radius:10px;">
           <div data-i18n="pr.remaining" style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);font-weight:600;margin-bottom:4px;">Remaining</div>
-          <div id="pr-earned" style="font-size:14px;font-weight:700;color:var(--text);">¥0</div>
+          <div id="pr-earned" style="font-size:14px;font-weight:700;color:var(--text);">€0</div>
         </div>
         <div style="padding:10px 12px;background:rgba(193,125,42,0.08);border:1px solid rgba(193,125,42,0.22);border-radius:10px;">
           <div data-i18n="pr.locked" style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--e-amber,#c17d2a);font-weight:600;margin-bottom:4px;">Locked</div>
-          <div id="pr-locked" style="font-size:14px;font-weight:700;color:var(--e-amber,#c17d2a);">¥0</div>
+          <div id="pr-locked" style="font-size:14px;font-weight:700;color:var(--e-amber,#c17d2a);">€0</div>
         </div>
         <div style="padding:10px 12px;background:rgba(26,122,94,0.08);border:1px solid rgba(26,122,94,0.25);border-radius:10px;">
           <div data-i18n="pr.available" style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--e-green-d,#0f5240);font-weight:600;margin-bottom:4px;">Available</div>
-          <div id="pr-available" style="font-size:14px;font-weight:700;color:var(--e-green-d,#0f5240);">¥0</div>
+          <div id="pr-available" style="font-size:14px;font-weight:700;color:var(--e-green-d,#0f5240);">€0</div>
         </div>
       </div>
 
@@ -7599,7 +7599,7 @@ const TM_I18N = {
     'walletSnap.lifetime':'Paid out (lifetime)',
     'walletSnap.lastPayout':'Last payout',
     'walletSnap.payoutRule':'Payouts unlock only after all plans in your active set are approved by admin.',
-    'walletSnap.weeklyRule':'<strong>¥50,000 weekly salary</strong> — paid each rolling 7-day cycle if you complete ≥1 set in that cycle.',
+    'walletSnap.weeklyRule':'<strong>€50,000 weekly salary</strong> — paid each rolling 7-day cycle if you complete ≥1 set in that cycle.',
     'walletSnap.cta':'Open wallet',
     'wallet.m.available':'Available',
     'wallet.m.earnedTotal':'Earned total',
@@ -7622,8 +7622,8 @@ const TM_I18N = {
     'profile.ph.branch':'e.g. Shibuya Branch',
     'profile.ph.branchCode':'3 digits',
     'wallet.protection.badge':'Fraud & chargeback buffer',
-    'wallet.protection.body1':'On your <strong>first withdrawal</strong> we hold a one-time <strong><span id="w-protection-min">¥100,000</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. Once that first payout clears, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
-    'wallet.protection.body2':'Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>. After your first payout the buffer releases — anything earned then becomes fully withdrawable.',
+    'wallet.protection.body1':'On your <strong>first withdrawal</strong> we hold a one-time <strong><span id="w-protection-min">€100,000</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. Once that first payout clears, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
+    'wallet.protection.body2':'Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. After your first payout the buffer releases — anything earned then becomes fully withdrawable.',
     'wallet.bank.title':'Bank on file',
     'wallet.bank.label':'Bank',
     'wallet.account.label':'Account',
@@ -7668,7 +7668,7 @@ const TM_I18N = {
     'profile.ph.bank':'e.g. MUFG, SMBC, Mizuho',
     'profile.ph.account':'Account number',
     'profile.ph.holder':'Name as per bank account',
-    'profile.ph.cities':'e.g. Tokyo, Kyoto, Osaka',
+    'profile.ph.cities':'e.g. Paris, Lyon, Marseille',
     'profile.ph.types':'e.g. Street food tours, family trips, corporate events...',
     'profile.ph.phone':'+44 7xxx xxxxxx',
     'profile.ph.cityOther':'Type your city…',
@@ -7676,9 +7676,9 @@ const TM_I18N = {
     'rules.title':'Welcome to Journey Junction',
     'rules.sub':'A quick look at what you can do here.',
     'rules.what.title':'What is Journey Junction',
-    'rules.what.body':'Journey Junction is a curated marketplace connecting travelers across Japan with skilled local planners. You craft the itineraries, travelers enjoy the trip, and we handle the logistics behind the scenes.',
+    'rules.what.body':'Journey Junction is a curated marketplace connecting travelers across France with skilled local planners. You craft the itineraries, travelers enjoy the trip, and we handle the logistics behind the scenes.',
     'rules.role.title':'Your role as a planner',
-    'rules.role.body':'You\'ll design personalized itineraries based on each traveler\'s brief, their pace, preferences, and must-sees. Every plan you build shapes someone\'s real journey across Japan.',
+    'rules.role.body':'You\'ll design personalized itineraries based on each traveler\'s brief, their pace, preferences, and must-sees. Every plan you build shapes someone\'s real journey across France.',
     'rules.tools.title':'Tools you\'ll use',
     'rules.tools.body':'Everything lives in one dashboard. Claim new assignments, track your active sets, build day-by-day itineraries, chat with support, and monitor your wallet, all in one place.',
     'rules.support.title':'We\'ve got your back',
@@ -7688,7 +7688,7 @@ const TM_I18N = {
     'rules.btn.saving':'Saving…',
     'rules.err':'Failed to save — please try again',
     'profile.ph.bank':'e.g. MUFG, SMBC, Mizuho',
-    'profile.ph.cities':'e.g. Tokyo, Kyoto, Osaka',
+    'profile.ph.cities':'e.g. Paris, Lyon, Marseille',
     'profile.langs':'Languages you speak',
     'profile.travelTypes':'Travel types you cover',
     'profile.cities.hint':'Comma-separated list of cities within your region.',
@@ -7722,10 +7722,10 @@ const TM_I18N = {
     'settings.language':'Language',
     'settings.language.sub':'Changes the whole dashboard instantly',
     'settings.currency':'Currency',
-    'settings.currency.sub':'All earnings in Japanese yen',
+    'settings.currency.sub':'All earnings in Euros',
     'settings.timezone':'Timezone',
     'settings.timezone.sub':'Used for deadlines and activity times',
-    'settings.tz.value':'Japan Standard Time',
+    'settings.tz.value':'Central European Time',
     'settings.legal':'Legal',
     'settings.legal.sub':'The agreements you accepted when you joined',
     'settings.tos':'Terms of Service',
@@ -7797,7 +7797,7 @@ const TM_I18N = {
     'spend.misc':'Misc / day',
     'spend.totalPerDay':'Total estimate / day',
     'spend.addToNotes':'↓ Add to notes',
-    'spend.bd.ph':'Food: ¥xx/day · Transport: ¥xx · Entrance fees: ¥xx · Total: ¥xx',
+    'spend.bd.ph':'Food: €xx/day · Transport: €xx · Entrance fees: €xx · Total: €xx',
     // deposit banner
     'deposit.title':'Premium trip. Refundable bond required.',
     'deposit.text':'This traveler has made a significant up-front commitment. Their flights and travel dates are fixed, and they\'ve allocated a premium budget for the hotels and experiences you\'ll arrange on their behalf. To accept this plan, a refundable bond is held from your payout. If you deliver on time and the itinerary is approved, the bond is returned in full along with your higher commission. If you miss the deadline or fail to deliver, the bond is forfeited to protect the traveler from losing their fixed travel costs.',
@@ -7887,7 +7887,7 @@ const TM_I18N = {
     'slot.label.name.lunch':'Lunch (name of place)',
     'slot.label.name.dinner':'Dinner (name of place)',
     'slot.label.addr.default':'Address',
-    'slot.label.addr.transport':'From → To (e.g. Tokyo → Kyoto)',
+    'slot.label.addr.transport':'From → To (e.g. Paris → Lyon)',
     'slot.label.notes.activity':'What to do there (highlights, must-see, photo spots)',
     'slot.label.notes.meal':'What to order or recommended dishes',
     'slot.label.notes.accommodation':'Booking notes or room details',
@@ -8110,14 +8110,14 @@ const TM_I18N = {
     'wallet.btn.needMore':'Need {amt}+ above the buffer to withdraw',
     'wallet.btn.lockedUntilNext':'Locked until next set approved',
     'wallet.noFundsYet':'No funds available to withdraw yet',
-    'wallet.bufferLockedUntilNext':'No withdrawable balance — your current ¥{min} balance is fully held as retention buffer.',
+    'wallet.bufferLockedUntilNext':'No withdrawable balance — your current €{min} balance is fully held as retention buffer.',
     'wallet.needFirstBuffer':'First withdrawal needs at least {min} to remain in wallet. Balance: {bal}.',
     'pr.firstBufferHtml':'🛡️ First-payout buffer: <strong>{min}</strong> stays in your wallet to cover any disputes or plan adjustments. Max this round: <strong>{max}</strong>. Released once your next set is approved.',
     'pr.firstBufferShort':'🛡️ {amt} retention buffer — held on every payout to cover chargebacks, kept until you stop taking sets.',
     // ── Invoices owed to platform ────────────────────────────────
     'pp.banner.title.one':'Invoice due to platform',
     'pp.banner.title.many':'{n} invoices due to platform',
-    'pp.banner.amount':'¥{amt} total — see wallet for details',
+    'pp.banner.amount':'€{amt} total — see wallet for details',
     'pp.banner.cta':'View in wallet',
     'pp.card.title':'Invoices due to platform',
     'pp.card.sub':'Issued by Journey Junction · pay via your bank to clear',
@@ -8137,7 +8137,7 @@ const TM_I18N = {
     'chat.placeholder':'Type a message…',
     'chat.send':'Send',
     // Currency
-    'currency.symbol':'¥',
+    'currency.symbol':'€',
     // Support-chat prefills
     'chatPrefill.bondHelp':'Hi, I need help paying the bond for a plan.',
     'chatPrefill.bondPlan':'Hi, I need help with the bond payment for Plan {n}.',
@@ -8145,7 +8145,7 @@ const TM_I18N = {
     'chatPrefill.requestSet':"Hi support, I'm ready to take on a new set. Can you assign me one? Thanks!",
     'chatPrefill.requestNewSet':"Hi support, I've wrapped up my current set and would love to take on another one. Can you assign me a new set? Thanks!",
     'chatPrefill.payoutStatus':'Hi support, my batch for Set #{n} was approved. Any update on the payout? Thanks!',
-    'chatPrefill.invoicePay':'Hi support, I would like to pay invoice "{reason}" (¥{amt}). Could you share the bank transfer details and confirm the reference I should use? Thanks!',
+    'chatPrefill.invoicePay':'Hi support, I would like to pay invoice "{reason}" (€{amt}). Could you share the bank transfer details and confirm the reference I should use? Thanks!',
     // Assignment / idle state
     'assign.pending.short':'Our team will assign you a set based on your city and expertise.',
     'assign.btn.requestSet':'Request a set',
@@ -8307,7 +8307,7 @@ const TM_I18N = {
     'walletSnap.lifetime':'累計出金額',
     'walletSnap.lastPayout':'最終出金日',
     'walletSnap.payoutRule':'出金はアクティブセットのすべてのプランが管理者に承認された後にのみ可能になります。',
-    'walletSnap.weeklyRule':'<strong>週給¥50,000</strong> — ローリング7日サイクル中に1セット以上完成すると支給されます。',
+    'walletSnap.weeklyRule':'<strong>週給€50,000</strong> — ローリング7日サイクル中に1セット以上完成すると支給されます。',
     'walletSnap.cta':'ウォレットを開く',
     'wallet.m.available':'出金可能',
     'wallet.m.earnedTotal':'総収入',
@@ -8330,8 +8330,8 @@ const TM_I18N = {
     'profile.ph.branch':'例：渋谷支店',
     'profile.ph.branchCode':'3桁',
     'wallet.protection.badge':'不正・チャージバック予備金',
-    'wallet.protection.body1':'<strong>初回の出金時のみ</strong>、<strong><span id="w-protection-min">¥100,000</span></strong>を一時的な安全バッファとしてウォレットに保留します。承認後の調整（プランの紛争、保証金の修正、セット承認の取り消しなど）に備えるためです。初回の出金が完了するとバッファは<strong>恒久的に解除</strong>され、以降の出金はウォレットの残高をすべて引き出せます。',
-    'wallet.protection.body2':'現在出金可能な上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。初回出金後はバッファが解除され、獲得した分はすべて出金可能になります。',
+    'wallet.protection.body1':'<strong>初回の出金時のみ</strong>、<strong><span id="w-protection-min">€100,000</span></strong>を一時的な安全バッファとしてウォレットに保留します。承認後の調整（プランの紛争、保証金の修正、セット承認の取り消しなど）に備えるためです。初回の出金が完了するとバッファは<strong>恒久的に解除</strong>され、以降の出金はウォレットの残高をすべて引き出せます。',
+    'wallet.protection.body2':'現在出金可能な上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>。初回出金後はバッファが解除され、獲得した分はすべて出金可能になります。',
     'wallet.bank.title':'登録銀行口座',
     'wallet.bank.label':'銀行',
     'wallet.account.label':'口座',
@@ -8498,7 +8498,7 @@ const TM_I18N = {
     'spend.misc':'その他 / 日',
     'spend.totalPerDay':'1日あたりの概算',
     'spend.addToNotes':'↓ メモに追加',
-    'spend.bd.ph':'食事：¥xx/日 · 交通：¥xx · 入場料：¥xx · 合計：¥xx',
+    'spend.bd.ph':'食事：€xx/日 · 交通：€xx · 入場料：€xx · 合計：€xx',
     'deposit.title':'プレミアム旅行のため、払い戻し可能な保証金が必要です。',
     'deposit.text':'こちらのお客様は旅行に大きな先行投資をされています。航空券と旅行日程は既に確定しており、プランナーが手配するホテルや体験のためのプレミアム予算も用意されています。このプランを受けるには、支払いから払い戻し可能な保証金が保留されます。期限内に納品し旅程が承認されれば、保証金は全額返金され、より高い報酬と一緒に受け取れます。期限遅れや納品失敗の場合、お客様の確定済み旅行費用を守るため、保証金は没収されます。',
     'pr.title':'出金を申請',
@@ -8805,14 +8805,14 @@ const TM_I18N = {
     'wallet.btn.needMore':'出金にはバッファを超える{amt}以上の残高が必要',
     'wallet.btn.lockedUntilNext':'次のセット承認まで解除されません',
     'wallet.noFundsYet':'出金可能な資金がまだありません',
-    'wallet.bufferLockedUntilNext':'出金可能額がありません — 現在の¥{min}の残高は全額が留保金として保持されています。',
+    'wallet.bufferLockedUntilNext':'出金可能額がありません — 現在の€{min}の残高は全額が留保金として保持されています。',
     'wallet.needFirstBuffer':'初回出金時はウォレットに{min}以上を残す必要があります。残高：{bal}。',
     'pr.firstBufferHtml':'🛡️ 初回出金予備金：<strong>{min}</strong>は、紛争やプラン調整に備えてウォレットに保留されます。今回出金可能な上限：<strong>{max}</strong>。次のセットが承認された時点で解除されます。',
     'pr.firstBufferShort':'🛡️ {amt}は留保金 — チャージバック対応のため、毎回の出金時に保持され、セット受注を停止するまで返金されません。',
     // ── プラットフォームへの請求書 ─────────────────────────
     'pp.banner.title.one':'プラットフォームへの未払い請求書があります',
     'pp.banner.title.many':'{n}件の未払い請求書があります',
-    'pp.banner.amount':'合計 ¥{amt} — 詳細はウォレットで確認',
+    'pp.banner.amount':'合計 €{amt} — 詳細はウォレットで確認',
     'pp.banner.cta':'ウォレットで見る',
     'pp.card.title':'プラットフォームへの未払い請求書',
     'pp.card.sub':'Journey Junction発行 · 銀行振込でお支払いください',
@@ -8832,7 +8832,7 @@ const TM_I18N = {
     'chat.placeholder':'メッセージを入力…',
     'chat.send':'送信',
     // Currency
-    'currency.symbol':'¥',
+    'currency.symbol':'€',
     // Support-chat prefills
     'chatPrefill.bondHelp':'お世話になります。プランの保証金支払いについてサポートをお願いします。',
     'chatPrefill.bondPlan':'プラン{n}の保証金支払いについてサポートをお願いします。',
@@ -8840,7 +8840,7 @@ const TM_I18N = {
     'chatPrefill.requestSet':'新しいセットを引き受ける準備ができました。アサインをお願いします。',
     'chatPrefill.requestNewSet':'現在のセットを完了しました。次のセットをアサインしていただけますか？',
     'chatPrefill.payoutStatus':'セット#{n}のバッチが承認されました。支払いの状況を教えていただけますか？',
-    'chatPrefill.invoicePay':'お世話になります。請求書「{reason}」（¥{amt}）を支払いたいです。振込先と振込参照番号を教えていただけますでしょうか？',
+    'chatPrefill.invoicePay':'お世話になります。請求書「{reason}」（€{amt}）を支払いたいです。振込先と振込参照番号を教えていただけますでしょうか？',
     // Assignment
     'assign.pending.short':'運営チームがあなたの都市と専門性に合ったセットをアサインします。',
     'assign.btn.requestSet':'セットを依頼',
@@ -9183,17 +9183,17 @@ function applyDashHero(city){
 }
 
 // ═══════════════════════════════════════════════════════════
-// Currency: JPY (¥) everywhere. Stored values are treated as yen directly.
-// Both EN and JA locales render ¥ with Japanese digit grouping.
+// Currency: EUR (€) everywhere. Stored values are treated as euros directly.
+// Both EN and JA locales render € with en-GB digit grouping (comma thousands).
 // ═══════════════════════════════════════════════════════════
 function fmtMoney(amount){
   const n = Number(amount) || 0
-  return '¥' + Math.round(n).toLocaleString('ja-JP')
+  return '€' + Math.round(n).toLocaleString('en-GB')
 }
 // Short variant used where a raw currency string is needed without rounding noise
 function fmtMoneyRaw(amount){
   const n = Number(amount) || 0
-  return '¥' + n.toLocaleString('ja-JP')
+  return '€' + n.toLocaleString('en-GB')
 }
 
 // Apply on load (early, before main render)
@@ -9220,7 +9220,7 @@ function setItinDate(inputId, dateStr) {
   if (!display) return
   if (!dateStr) { display.textContent = '—'; return }
   try {
-    const locale = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+    const locale = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
     display.textContent = new Date(dateStr).toLocaleDateString(locale, { day:'numeric', month:'short', year:'numeric' })
   } catch (_) { display.textContent = dateStr }
 }
@@ -9286,7 +9286,7 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // Google Cloud (Places API New only, limited to our domains). Stealing the
 // key from page source is useless without a matching Referer header.
 const GOOGLE_PLACES_API_KEY = 'AIzaSyBZrklPTsOgJiRu8-OtJb-d3lU2P0JdWv4'
-// Slot types that get autocomplete. Transport ("Tokyo → Kyoto") and Free time
+// Slot types that get autocomplete. Transport ("Paris → Lyon") and Free time
 // ("Asakusa afternoon") don't map to a Google place, so they keep the manual
 // 3-input flow.
 const PLACES_ENABLED_TYPES = new Set(['activity','meal','accommodation'])
@@ -9482,7 +9482,7 @@ async function autoCreateMissingPlans(setId, plannerId) {
 // our cashflow. Once they've been paid once, the cap drops permanently.
 // Tune this or wire to a settings row later.
 // First-payout retention buffer — admin-editable via platform_settings table
-// (default ¥200, overridden once loadRetentionSetting() fetches from DB).
+// (default €200, overridden once loadRetentionSetting() fetches from DB).
 // Declared `let` so we can hot-swap it before loadWallet() recomputes caps.
 let FIRST_PAYOUT_RETENTION_MIN = 200
 
@@ -9528,7 +9528,7 @@ async function loadPendingPayments() {
   }
 
   const totalDue = rows.reduce((s, r) => s + Number(r.amount || 0), 0)
-  const dateLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+  const dateLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
   const fmtDate = d => d ? new Date(d).toLocaleDateString(dateLocale, { day:'numeric', month:'short', year:'numeric' }) : ''
 
   // Compact dashboard banner — just total + count + "view in wallet" link
@@ -9542,7 +9542,7 @@ async function loadPendingPayments() {
         <div style="flex:1;min-width:0;">
           <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:2px;" data-i18n="pp.banner.title">${rows.length === 1 ? t('pp.banner.title.one','Payment due to platform') : t('pp.banner.title.many','{n} payments due to platform').replace('{n}', rows.length)}</div>
           <div style="font-size:12px;color:var(--text-2);">
-            ${t('pp.banner.amount','¥{amt} total — see wallet for details').replace('{amt}', Math.round(totalDue).toLocaleString())}
+            ${t('pp.banner.amount','€{amt} total — see wallet for details').replace('{amt}', Math.round(totalDue).toLocaleString())}
           </div>
         </div>
         <button onclick="showPage('wallet', document.querySelector('[onclick*=\\'wallet\\']'))" style="flex-shrink:0;padding:8px 14px;background:#D4913D;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
@@ -9585,7 +9585,7 @@ async function loadPendingPayments() {
                   </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
-                  <span style="padding:7px 14px;background:rgba(212,145,61,0.16);border:1px solid rgba(212,145,61,0.32);color:#D4913D;font-size:13px;font-weight:700;letter-spacing:0.02em;border-radius:99px;font-variant-numeric:tabular-nums;">¥${amtFmt}</span>
+                  <span style="padding:7px 14px;background:rgba(212,145,61,0.16);border:1px solid rgba(212,145,61,0.32);color:#D4913D;font-size:13px;font-weight:700;letter-spacing:0.02em;border-radius:99px;font-variant-numeric:tabular-nums;">€${amtFmt}</span>
                   <button onclick="openSupportChat(t('chatPrefill.invoicePay').replace('{reason}','${reasonEsc}').replace('{amt}','${amtFmt}'))" style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;background:#D4913D;color:#fff;border:none;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 2px 8px -3px rgba(212,145,61,0.4);">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     ${t('pp.card.payNow','Pay now')}
@@ -9761,7 +9761,7 @@ async function loadWallet() {
   // Per-set breakdown for the request modal — the "Includes X bond + Y commission"
   // hint should describe the CURRENT unpaid set's earnings, not lifetime totals.
   // Lifetime cumulative cross-talk between sets makes the breakdown misleading
-  // (e.g. claiming ¥34,500 bond when this set is actually 12K bond + 22.5K comm).
+  // (e.g. claiming €34,500 bond when this set is actually 12K bond + 22.5K comm).
   let pendingBondRefund = 0, pendingCommission = 0
   try {
     const { data: comp } = await sb.from('set_assignments')
@@ -9795,7 +9795,7 @@ async function loadWallet() {
   // AVAILABLE shows what's actually withdrawable RIGHT NOW (effectiveMax),
   // i.e. earned − locked − retention buffer. Showing the gross `available`
   // here was misleading because the retention buffer is permanently held —
-  // the planner saw ¥15,000 "available" but the request-payout flow
+  // the planner saw €15,000 "available" but the request-payout flow
   // (correctly) refused to release any of it.
   set('w-available', fmtMoney(effectiveMax))
   set('w-earned',    fmtMoney(earned))
@@ -9814,7 +9814,7 @@ async function loadWallet() {
         .replace('{n}', _walletState.approvedPlansCount))
   }
 
-  // Dashboard RIGHT-COLUMN snapshot card (ws-* IDs) — was silently stuck on ¥0
+  // Dashboard RIGHT-COLUMN snapshot card (ws-* IDs) — was silently stuck on €0
   // because it was never populated. Mirror the key numbers here.
   // Use effectiveMax (not raw `available`) so the retention buffer is
   // visibly reflected — same fix as w-available on the Wallet page.
@@ -9825,7 +9825,7 @@ async function loadWallet() {
   const lpEl = document.getElementById('ws-last-payout')
   if (lpEl) {
     if (lastPaid) {
-      const wsLocale = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+      const wsLocale = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
       lpEl.textContent = new Date(lastPaid.resolved_at).toLocaleDateString(wsLocale, { day:'numeric', month:'short', year:'numeric' })
     } else {
       lpEl.textContent = '—'
@@ -9841,7 +9841,7 @@ async function loadWallet() {
 
   // Protection card — visible while the retention buffer is still in effect
   // (i.e. planner hasn't yet completed their SECOND set). Stays up after the
-  // first withdrawal to explain why ¥200 still appears locked.
+  // first withdrawal to explain why €200 still appears locked.
   const protectionCard = document.getElementById('w-protection-card')
   if (protectionCard) {
     if (!bufferReleased && (available > 0 || hasBeenPaid)) {
@@ -9854,7 +9854,7 @@ async function loadWallet() {
   }
 
   // Button state: disable when nothing is effectively withdrawable.
-  // After first withdrawal, the remaining ¥200 is held until the next set is
+  // After first withdrawal, the remaining €200 is held until the next set is
   // approved — so `available > 0` but `effectiveMax === 0` means "locked until
   // next set", not "need to top up".
   const btn = document.getElementById('w-request-btn')
@@ -9865,7 +9865,7 @@ async function loadWallet() {
       if (available <= 0) {
         btn.textContent = t('wallet.btn.noFunds','No funds yet')
       } else if (hasBeenPaid && !bufferReleased) {
-        // ¥200 buffer is sitting locked after first withdrawal
+        // €200 buffer is sitting locked after first withdrawal
         btn.textContent = t('wallet.btn.lockedUntilNext','Locked until next set approved')
       } else {
         btn.textContent = t('wallet.btn.needMore','Need {amt}+ to unlock first payout').replace('{amt}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN + 1))
@@ -9884,7 +9884,7 @@ async function loadWallet() {
     if (!recent.length) {
       hist.innerHTML = `<div style="font-size:13px;color:var(--text-3);padding:10px 0;font-family:'Lora',serif;font-style:italic;">${t('wallet.empty','No payout requests yet')}</div>`
     } else {
-      const wLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+      const wLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
       hist.innerHTML = recent.map(r => {
         const d = new Date(r.requested_at).toLocaleDateString(wLocale, { day:'numeric', month:'short', year:'numeric' })
         const badgeColor = { pending:'#c17d2a', paid:'#0f5240', rejected:'#c0392b', cancelled:'#9a9a94' }[r.status] || '#666'
@@ -9948,8 +9948,8 @@ function openPayoutRequestModal() {
   if (hint) {
     // Use the CURRENT unpaid set's per-set breakdown (computed in loadWallet)
     // rather than lifetime cumulative bondEarned/commissionEarned. Lifetime
-    // numbers cross-talk across sets and produce nonsense like "¥34,500 bond +
-    // ¥0 commission" when the current set is actually 22.5K commission + 12K bond.
+    // numbers cross-talk across sets and produce nonsense like "€34,500 bond +
+    // €0 commission" when the current set is actually 22.5K commission + 12K bond.
     const availMax       = Math.max(0, _walletState.effectiveMax || 0)
     let bondPart         = Math.max(0, Number(_walletState.pendingBondRefund) || 0)
     let commissionPart   = Math.max(0, Number(_walletState.pendingCommission) || 0)
@@ -10184,8 +10184,8 @@ async function initDashboard() {
   }
   // "Earned (payout)" / paid-out tile — show actual money that landed in the
   // planner's bank, not commission recognized. The retention buffer means the
-  // two diverge: a planner with ¥21k earned commission and ¥15k held buffer
-  // has only had ¥6k actually paid out. Sum wallet_requests with status='paid'.
+  // two diverge: a planner with €21k earned commission and €15k held buffer
+  // has only had €6k actually paid out. Sum wallet_requests with status='paid'.
   try {
     const { data: paidReqs } = await sb.from('wallet_requests')
       .select('amount').eq('planner_id', planner.id).eq('status', 'paid')
@@ -10209,7 +10209,7 @@ async function initDashboard() {
   const mCurrent = document.getElementById('m-current')
   const mBond = document.getElementById('m-bond')
   const mPendingPlans = document.getElementById('m-pending-plans')
-  const moneyPrefix = '¥'
+  const moneyPrefix = '€'
   const moneyMult   = 1
   if (mEarned) animateCount(mEarned, Math.round(earnings.total_earned * moneyMult), {prefix: moneyPrefix})
   if (mSets)   animateCount(mSets,   earnings.sets_completed)
@@ -10575,7 +10575,7 @@ function renderActiveSet(set) {
   if (statusBody) {
     const done = plans.filter(p => p.status === 'approved').length
     const total = plans.length || 15
-    const asLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+    const asLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
     const deadline = set.deadline ? new Date(set.deadline).toLocaleDateString(asLocale,{day:'numeric',month:'short',year:'numeric'}) : '—'
     const assignedDate = set.claimed_at ? new Date(set.claimed_at).toLocaleDateString(asLocale,{day:'numeric',month:'short',year:'numeric'}) : '—'
     statusBody.innerHTML = `
@@ -10774,7 +10774,7 @@ function renderPaceBanner(set, plansList) {
   const msLeft   = deadline - now
   const hoursLeft = Math.ceil(msLeft / 3600000)
   const daysLeft  = Math.ceil(msLeft / 86400000)
-  const paceLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+  const paceLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
   const deadlineStr = deadline.toLocaleDateString(paceLocale,{day:'numeric',month:'short',year:'numeric'})
 
   // Compact display: "5D left" → "18HR" → "2HR" → "0HR" → "2D overdue"
@@ -10824,7 +10824,7 @@ function notifyAdminReview(){
 function requestExtension() {
   const btn = document.getElementById('pace-extension-btn')
   const setNum = btn?.dataset.setNumber ? `#${String(btn.dataset.setNumber).padStart(3,'0')}` : ''
-  const deadline = btn?.dataset.deadline ? new Date(btn.dataset.deadline).toLocaleDateString((TM_LANG === 'ja') ? 'ja-JP' : 'en-GB',{day:'numeric',month:'short'}) : '—'
+  const deadline = btn?.dataset.deadline ? new Date(btn.dataset.deadline).toLocaleDateString((TM_LANG === 'ja') ? 'en-GB' : 'en-GB',{day:'numeric',month:'short'}) : '—'
   const rem = btn?.dataset.rem || '—'
   const daysLeft = btn?.dataset.daysLeft || '—'
   const prefill = (TM_LANG === 'ja')
@@ -11263,7 +11263,7 @@ async function loadMySets() {
                            .reduce((sum, p) => sum + _payoutOf(p), 0) || 0
     // Paid → full payout; otherwise current earning from work done so far
     const payout  = s.status === 'paid' ? sumAll : sumDone
-    const locale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+    const locale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
     return `<div class="set-row">
       <div class="set-info">
         <div class="set-name">Set #${String(s.set_number).padStart(3,'0')} · ${escapeHtml(s.city || '—')}</div>
@@ -11356,7 +11356,7 @@ async function loadHistory() {
     histList.innerHTML = `<div style="padding:24px;text-align:center;font-size:13px;color:var(--text-3);">${t('history.empty','No transactions yet')}</div>`
     return
   }
-  const histLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+  const histLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
   histList.innerHTML = paidSets.map(s => {
     const amt = paidPlans.filter(p => p.set_id === s.id).reduce((sum,p) => sum + payoutOf(p), 0) || 0
     return `<div class="hist-row">
@@ -11588,21 +11588,27 @@ function renderProfileCityOptions(lang){
   if (prev) sel.value = prev
 }
 
-// All 47 Japanese prefectures (in code order, north → south).
+// French régions (administrative top-level — 13 metropolitan + 5 overseas).
 // Profile city dropdown — kept in sync with apply.html / signup.html.
 const PREFECTURES_PROFILE = [
-  ['Hokkaido','北海道'],['Aomori','青森県'],['Iwate','岩手県'],['Miyagi','宮城県'],
-  ['Akita','秋田県'],['Yamagata','山形県'],['Fukushima','福島県'],['Ibaraki','茨城県'],
-  ['Tochigi','栃木県'],['Gunma','群馬県'],['Saitama','埼玉県'],['Chiba','千葉県'],
-  ['Tokyo','東京都'],['Kanagawa','神奈川県'],['Niigata','新潟県'],['Toyama','富山県'],
-  ['Ishikawa','石川県'],['Fukui','福井県'],['Yamanashi','山梨県'],['Nagano','長野県'],
-  ['Gifu','岐阜県'],['Shizuoka','静岡県'],['Aichi','愛知県'],['Mie','三重県'],
-  ['Shiga','滋賀県'],['Kyoto','京都府'],['Osaka','大阪府'],['Hyogo','兵庫県'],
-  ['Nara','奈良県'],['Wakayama','和歌山県'],['Tottori','鳥取県'],['Shimane','島根県'],
-  ['Okayama','岡山県'],['Hiroshima','広島県'],['Yamaguchi','山口県'],['Tokushima','徳島県'],
-  ['Kagawa','香川県'],['Ehime','愛媛県'],['Kochi','高知県'],['Fukuoka','福岡県'],
-  ['Saga','佐賀県'],['Nagasaki','長崎県'],['Kumamoto','熊本県'],['Oita','大分県'],
-  ['Miyazaki','宮崎県'],['Kagoshima','鹿児島県'],['Okinawa','沖縄県']
+  ['Île-de-France',              'Île-de-France'],
+  ['Auvergne-Rhône-Alpes',       'Auvergne-Rhône-Alpes'],
+  ['Bourgogne-Franche-Comté',    'Bourgogne-Franche-Comté'],
+  ['Bretagne',                   'Bretagne'],
+  ['Centre-Val de Loire',        'Centre-Val de Loire'],
+  ['Corse',                      'Corse'],
+  ['Grand Est',                  'Grand Est'],
+  ['Hauts-de-France',            'Hauts-de-France'],
+  ['Normandie',                  'Normandie'],
+  ['Nouvelle-Aquitaine',         'Nouvelle-Aquitaine'],
+  ['Occitanie',                  'Occitanie'],
+  ['Pays de la Loire',           'Pays de la Loire'],
+  [`Provence-Alpes-Côte d'Azur`, `Provence-Alpes-Côte d'Azur`],
+  ['Guadeloupe',                 'Guadeloupe'],
+  ['Martinique',                 'Martinique'],
+  ['Guyane',                     'Guyane'],
+  ['La Réunion',                 'La Réunion'],
+  ['Mayotte',                    'Mayotte'],
 ]
 const CITY_OPTIONS_PROFILE_FALLBACK = {
   en: [...PREFECTURES_PROFILE.map(([en]) => ({value:en, label:en})), {value:'Other', label:'Other'}],
@@ -12661,7 +12667,7 @@ async function openPlanSummary(plan) {
   const isBondLocked = plan.status === 'bond_pending'
   const approvedAt = plan.approved_at || plan.updated_at || null
   const submittedAt = plan.submitted_at || plan.updated_at || null
-  const metaLocale = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+  const metaLocale = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
   const dateStr = (isApproved ? approvedAt : submittedAt)
   const dateLabel = dateStr ? new Date(dateStr).toLocaleDateString(metaLocale, {day:'numeric',month:'short',year:'numeric'}) : null
 
@@ -13409,7 +13415,7 @@ function formatTimeDisplay(val){
 function fmtBriefDate(dateStr) {
   if (!dateStr) return ''
   if (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') {
-    try { return new Date(dateStr).toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' }) }
+    try { return new Date(dateStr).toLocaleDateString('en-GB', { year:'numeric', month:'long', day:'numeric' }) }
     catch (_) { return dateStr }
   }
   return dateStr
@@ -13592,7 +13598,7 @@ function getTitlePlaceholder(typeKey, seedIcon){
   }
 }
 function getAddressPlaceholder(typeKey){
-  if (typeKey === 'transport') return t('slot.label.addr.transport','From → To (e.g. Tokyo → Kyoto)')
+  if (typeKey === 'transport') return t('slot.label.addr.transport','From → To (e.g. Paris → Lyon)')
   return t('slot.label.addr.default','Address')
 }
 function getNotesPlaceholder(typeKey){
@@ -13749,18 +13755,24 @@ async function fetchPlacesPredictions(slot, query) {
 }
 
 // City-to-circle bias. Hand-picked centers for the cities Journey Junction
-// commonly serves; everything else falls back to unbiased.
+// commonly serves (France); everything else falls back to unbiased.
 const CITY_BIAS = {
-  tokyo:     { lat: 35.6762, lng: 139.6503, r: 30000 },
-  osaka:     { lat: 34.6937, lng: 135.5023, r: 25000 },
-  kyoto:     { lat: 35.0116, lng: 135.7681, r: 20000 },
-  hokkaido:  { lat: 43.0618, lng: 141.3545, r: 60000 }, // Sapporo center
-  sapporo:   { lat: 43.0618, lng: 141.3545, r: 30000 },
-  okinawa:   { lat: 26.2125, lng: 127.6809, r: 40000 },
-  fukuoka:   { lat: 33.5904, lng: 130.4017, r: 25000 },
-  nagoya:    { lat: 35.1815, lng: 136.9066, r: 25000 },
-  hiroshima: { lat: 34.3853, lng: 132.4553, r: 20000 },
-  nara:      { lat: 34.6851, lng: 135.8048, r: 15000 },
+  paris:      { lat: 48.8566, lng:  2.3522, r: 30000 },
+  lyon:       { lat: 45.7640, lng:  4.8357, r: 25000 },
+  marseille:  { lat: 43.2965, lng:  5.3698, r: 25000 },
+  nice:       { lat: 43.7102, lng:  7.2620, r: 20000 },
+  bordeaux:   { lat: 44.8378, lng: -0.5792, r: 25000 },
+  toulouse:   { lat: 43.6047, lng:  1.4442, r: 25000 },
+  strasbourg: { lat: 48.5734, lng:  7.7521, r: 20000 },
+  lille:      { lat: 50.6292, lng:  3.0573, r: 20000 },
+  nantes:     { lat: 47.2184, lng: -1.5536, r: 20000 },
+  avignon:    { lat: 43.9493, lng:  4.8055, r: 15000 },
+  rennes:     { lat: 48.1173, lng: -1.6778, r: 20000 },
+  reims:      { lat: 49.2583, lng:  4.0317, r: 15000 },
+  cannes:     { lat: 43.5528, lng:  7.0174, r: 12000 },
+  versailles: { lat: 48.8049, lng:  2.1204, r: 8000  },
+  'mont-saint-michel': { lat: 48.6361, lng: -1.5115, r: 6000  },
+  'saint-malo':        { lat: 48.6499, lng: -2.0260, r: 8000  },
 }
 function buildDestBias(dest) {
   if (!dest) return null
@@ -13953,8 +13965,8 @@ function googlePhotoUrl(photoName, maxWidthPx = 120) {
 // "Malaysia", "United Kingdom"). Fallback is "$" — better to show *some*
 // price tier than to fall back to nothing.
 const CURRENCY_BY_COUNTRY = {
-  'Japan':'¥','Malaysia':'RM','Singapore':'S$','Thailand':'฿','Indonesia':'Rp',
-  'Philippines':'₱','Vietnam':'₫','South Korea':'₩','Korea':'₩','China':'¥',
+  'Japan':'€','Malaysia':'RM','Singapore':'S$','Thailand':'฿','Indonesia':'Rp',
+  'Philippines':'₱','Vietnam':'₫','South Korea':'₩','Korea':'₩','China':'€',
   'Hong Kong':'HK$','Taiwan':'NT$','India':'₹',
   'United Kingdom':'£','UK':'£','Ireland':'€',
   'France':'€','Germany':'€','Italy':'€','Spain':'€','Netherlands':'€',
@@ -13978,8 +13990,8 @@ function currencyForAddress(addr) {
 // ISO currency code → display symbol. Used for priceRange where Google
 // returns the actual currency (e.g. "MYR"), not just the place address.
 const CURRENCY_BY_CODE = {
-  MYR:'RM', JPY:'¥', SGD:'S$', THB:'฿', IDR:'Rp', PHP:'₱', VND:'₫',
-  KRW:'₩', CNY:'¥', HKD:'HK$', TWD:'NT$', INR:'₹',
+  MYR:'RM', EUR:'€', SGD:'S$', THB:'฿', IDR:'Rp', PHP:'₱', VND:'₫',
+  KRW:'₩', CNY:'€', HKD:'HK$', TWD:'NT$', INR:'₹',
   EUR:'€', GBP:'£', USD:'$', CAD:'CA$', AUD:'A$', NZD:'NZ$',
   CHF:'CHF', NOK:'kr', SEK:'kr', DKK:'kr',
   PLN:'zł', CZK:'Kč', HUF:'Ft', TRY:'₺',
@@ -14001,7 +14013,7 @@ function formatPriceRange(pr) {
   return ''
 }
 // Pretty price level. Google returns 'PRICE_LEVEL_INEXPENSIVE' etc.; we
-// localise the symbol from the place's country (¥¥¥, RM RM RM, $$$, etc.).
+// localise the symbol from the place's country (€€€, RM RM RM, $$$, etc.).
 // Multi-char currencies get space-separated repeats so "RM RM RM" doesn't
 // collapse into an unreadable "RMRMRM".
 function formatPriceLevel(level, currency = '$') {
@@ -16102,13 +16114,13 @@ function loadSettings() {
     btn.classList.toggle('active', btn.dataset.lang === TM_LANG)
   })
 
-  // Timezone — locked to Japan Standard Time for everyone (Journey Junction
+  // Timezone — locked to Central European Time for everyone (Journey Junction
   // is Japan-only). We do NOT auto-detect because planners may be browsing
   // from other regions while working on Japan-based sets; dates/deadlines
-  // must always reflect Japan local time. The IANA zone is still Asia/Tokyo
+  // must always reflect Japan local time. The IANA zone is still Europe/Paris
   // under the hood — only the user-facing label was changed.
   const tzEl = document.getElementById('settings-tz-chip')
-  if (tzEl) tzEl.textContent = t('settings.tz.value','Japan Standard Time')
+  if (tzEl) tzEl.textContent = t('settings.tz.value','Central European Time')
 }
 
 function saveAvailability(value) {
@@ -16421,7 +16433,7 @@ function renderCsMessages() {
   box.innerHTML = csMessages.map(m => {
     const mine = m.sender_type === 'planner'
     const sys  = m.sender_type === 'system'
-    const time = new Date(m.created_at).toLocaleString((TM_LANG === 'ja') ? 'ja-JP' : 'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+    const time = new Date(m.created_at).toLocaleString((TM_LANG === 'ja') ? 'en-GB' : 'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
     if (sys) {
       return `<div style="align-self:center;padding:6px 12px;background:rgba(0,0,0,0.04);border-radius:99px;font-size:10.5px;color:var(--text-3);font-style:italic;">${esc(m.body)}</div>`
     }
