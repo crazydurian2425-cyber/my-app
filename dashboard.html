@@ -2013,14 +2013,26 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .places-linked-chip .pl-schedule[hidden]{display:none;}
 .places-linked-chip .pl-schedule-row{font-variant-numeric:tabular-nums;}
 /* Time-vs-hours conflict banner — red so it's impossible to miss. */
-.places-linked-chip .pl-time-warning{
+.places-linked-chip .pl-time-warning,
+.places-linked-chip .pl-budget-warning{
   margin-top:6px;padding:9px 11px;border-radius:8px;
   background:rgba(184,74,62,0.10);border:1px solid rgba(184,74,62,0.35);
   color:#8a3329;font-size:11.5px;line-height:1.45;
   display:flex;flex-direction:column;gap:4px;
 }
+/* Softer amber tone for late-arrival warnings + planned splurges —
+   they're cautions, not hard errors. */
+.places-linked-chip .pl-time-warning.is-amber,
+.places-linked-chip .pl-budget-warning.is-amber{
+  background:rgba(193,125,42,0.10);
+  border-color:rgba(193,125,42,0.35);
+  color:#8a5f1c;
+}
+.places-linked-chip .pl-time-warning.is-amber .pl-time-warning-body,
+.places-linked-chip .pl-budget-warning.is-amber .pl-time-warning-body{color:#8a5f1c;}
 .places-linked-chip .pl-time-warning-head{font-weight:600;font-size:12px;}
 .places-linked-chip .pl-time-warning-body{color:#8a3329;}
+.places-linked-chip .pl-budget-warning .pl-time-warning-body{color:#8a3329;}
 .places-linked-chip .pl-fix-time{
   align-self:flex-start;margin-top:4px;
   padding:5px 10px;font:inherit;font-size:11px;font-weight:500;
@@ -12372,6 +12384,11 @@ async function openItineraryForm(planId) {
   // Last-day cutoff = departure_time − buffer − 30 (cushion for last stop end).
   window._currentAirportBuffer = Number(_tmeta.airport_buffer_minutes)
     || (_tmeta.unit_departure_method === 'flight' ? 120 : 60)
+  // Expose budget context so the linked-chip render can compare each
+  // stop's estimated cost against the traveler's daily limit + their
+  // splurge tolerance, and flag the right severity (RED / AMBER / none).
+  window._currentDailyBudget         = Number(_tmeta.daily_spend_per_pax_eur) || null
+  window._currentSplurgeWillingness  = _tmeta.splurge_willingness || null
   // Expose the traveler's destination so the Places autocomplete can bias
   // search results to that city (much more relevant than unbiased global).
   window._currentDestination   = t.destination    || null
@@ -14249,12 +14266,19 @@ function renderLinkedChip(slot) {
     const slotTimeFriendly = formatTimeDisplay(conflict.slotTime)
     const dayBit = conflict.dayName ? ` ${conflict.dayName}` : ''
     let msg = ''
+    let head = '⚠️ <strong>Time conflict</strong>'
+    let tone = ''   // '' = red (default), ' is-amber' for soft warnings
     if (conflict.kind === 'before_open' && conflict.openHoursLabel) {
       msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is before this place opens (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`
     } else if (conflict.kind === 'after_close' && conflict.openHoursLabel) {
       msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is after this place closes (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`
     } else if (conflict.kind === 'between_shifts') {
       msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> falls between shifts on${escapeHtml(dayBit)}`
+    } else if (conflict.kind === 'late_arrival') {
+      head = '⏰ <strong>Late arrival</strong>'
+      tone = ' is-amber'
+      const noun = conflict.isMeal ? 'kitchen' : 'venue'
+      msg = `Arriving at <strong>${escapeHtml(slotTimeFriendly)}</strong> — closes at <strong>${escapeHtml(conflict.closeTime)}</strong>. Most ${noun}s stop ${conflict.bufferMin} min before close (orders / last entry).`
     } else {
       msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`
     }
@@ -14262,10 +14286,32 @@ function renderLinkedChip(slot) {
       ? `<button type="button" class="pl-fix-time" onclick="applyTimeFix('${slot.id}','${conflict.suggestedTime}')">→ Change time to ${escapeHtml(formatTimeDisplay(conflict.suggestedTime))}</button>`
       : ''
     conflictHtml = `
-      <div class="pl-time-warning">
-        <div class="pl-time-warning-head">⚠️ <strong>Time conflict</strong></div>
+      <div class="pl-time-warning${tone}">
+        <div class="pl-time-warning-head">${head}</div>
         <div class="pl-time-warning-body">${msg}</div>
         ${fixBtn}
+      </div>`
+  }
+  // Budget warning — compare estimated per-pax cost to the traveler's
+  // daily budget. Severity scales with their splurge_willingness so a
+  // luxury-trip planner doesn't see red warnings on every premium stop.
+  let budgetHtml = ''
+  const stopCost = estimatePerPaxCost(d)
+  const budgetTier = budgetTierForCost(stopCost)
+  if (budgetTier) {
+    const dailyTxt = fmtEur(budgetTier.budget)
+    const costTxt  = fmtEur(budgetTier.cost)
+    const isRed = budgetTier.level === 'red'
+    const head = isRed
+      ? `🚨 <strong>Over budget</strong>`
+      : `⚠️ <strong>Splurge pick</strong>`
+    const body = isRed
+      ? `Avg ~${costTxt}/pax — daily budget is ${dailyTxt}/pax. Confirm with the traveler or pick somewhere cheaper.`
+      : `Avg ~${costTxt}/pax vs ${dailyTxt}/pax daily budget. Counts as one of the traveler's planned splurge moments.`
+    budgetHtml = `
+      <div class="pl-budget-warning${isRed ? '' : ' is-amber'}">
+        <div class="pl-time-warning-head">${head}</div>
+        <div class="pl-time-warning-body">${body}</div>
       </div>`
   }
 
@@ -14279,6 +14325,7 @@ function renderLinkedChip(slot) {
       ${row2Html ? `<div class="pl-row-2">${row2Html}</div>` : ''}
       ${plannedRow}
       ${conflictHtml}
+      ${budgetHtml}
       ${scheduleHtml}
       ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">View on Google Maps ↗</a>` : ''}
     </div>
@@ -14362,6 +14409,48 @@ function minsToHHMM(mins) {
 //     suggestedTime: '13:30',    // 24h — best next-open time, or null
 //     openHoursLabel: '1:30 PM' // friendly text for the warning line
 //   }
+// ── Budget warning helpers ─────────────────────────────────────────────────
+// Estimate the per-pax cost for a linked Google Place. Prefer Google's
+// "From €X" priceRange when present (multiplied by 1.8 to approximate the
+// real average meal/visit spend), fall back to the discrete price_level
+// enum, return null if neither is set.
+function estimatePerPaxCost(placeData) {
+  if (!placeData) return null
+  const pr = placeData.price_range_json
+  if (pr?.startPrice) {
+    const units = parseInt(pr.startPrice.units || '0', 10) || 0
+    const nanos = (pr.startPrice.nanos || 0) / 1e9
+    const start = units + nanos
+    if (start > 0) return Math.round(start * 1.8)
+  }
+  const lvl = String(placeData.price_level || '')
+  if (lvl === 'PRICE_LEVEL_INEXPENSIVE')    return 15
+  if (lvl === 'PRICE_LEVEL_MODERATE')       return 40
+  if (lvl === 'PRICE_LEVEL_EXPENSIVE')      return 100
+  if (lvl === 'PRICE_LEVEL_VERY_EXPENSIVE') return 200
+  return null
+}
+
+// Given the slot's estimated cost, return the budget-warning tier or null.
+//   over budget + strict-splurge planner       → red
+//   over budget + 1-2-splurges-OK planner      → amber ("SPLURGE")
+//   over budget + frequent/luxury planner      → null (within their style)
+//   under budget                                → null
+function budgetTierForCost(cost) {
+  if (cost == null || cost <= 0) return null
+  const budget = Number(window._currentDailyBudget) || null
+  if (!budget) return null
+  if (cost <= budget) return null
+  const splurge = String(window._currentSplurgeWillingness || '').toLowerCase()
+  if (/frequent|luxury/.test(splurge)) return null
+  // "1-2 splurges OK" / "1_2_splurges" / "1 2 splurges" — all mean
+  // "occasional splurges are part of the brief".
+  if (/1\s*[-_]?\s*2\s*splurge/.test(splurge) || /\bsplurges_ok\b/.test(splurge)) {
+    return { level: 'amber', label: 'SPLURGE', cost, budget }
+  }
+  return { level: 'red', label: 'OVER BUDGET', cost, budget }
+}
+
 function checkTimeAgainstHours(slot, oh, plannedDate) {
   if (!oh || !plannedDate) return null
   const weekly = Array.isArray(oh.weekdayDescriptions) && oh.weekdayDescriptions.length === 7
@@ -14404,6 +14493,39 @@ function checkTimeAgainstHours(slot, oh, plannedDate) {
   for (let i = 0; i < intervals.length - 1; i++) {
     if (slotMin >= intervals[i].close && slotMin < intervals[i + 1].open) {
       return { kind: 'between_shifts', dayName, slotTime: slotTimeStr, suggestedTime: minsToHHMM(intervals[i + 1].open), openHoursLabel: '' }
+    }
+  }
+  // Late arrival — planner is within a buffer of last close. Restaurants
+  // stop taking orders 30-60 min before closing; museums stop entry too.
+  // Buffer is 60 min for meals, 30 for everything else. We only flag the
+  // CURRENT open interval the slot falls inside — split-shift gaps are
+  // already handled above.
+  const slotType = slot.querySelector('.slot-type-select')?.value || 'activity'
+  const isMeal = (slotType === 'meal')
+  const lateBuffer = isMeal ? 60 : 30
+  const slotDuration = parseInt(slot.querySelector('.slot-duration-input')?.value || '0', 10) || 30
+  // Find the open interval containing slotMin so we use ITS close, not
+  // necessarily the last interval (matters for split-shift restaurants).
+  let activeClose = lastClose
+  for (const iv of intervals) {
+    if (iv.close < iv.open) {
+      if (slotMin >= iv.open || slotMin < iv.close) { activeClose = iv.close; break }
+    } else {
+      if (slotMin >= iv.open && slotMin < iv.close) { activeClose = iv.close; break }
+    }
+  }
+  if (slotMin > activeClose - lateBuffer) {
+    // Suggest moving back so slot + duration ends `lateBuffer` before close.
+    const suggested = activeClose - slotDuration - lateBuffer
+    const suggestedTime = (suggested >= firstOpen) ? minsToHHMM(suggested) : null
+    return {
+      kind: 'late_arrival',
+      dayName,
+      slotTime: slotTimeStr,
+      suggestedTime,
+      closeTime: minsToHHMM(activeClose),
+      bufferMin: lateBuffer,
+      isMeal,
     }
   }
   return null
