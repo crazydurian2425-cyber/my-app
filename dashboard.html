@@ -14541,6 +14541,21 @@ const _MODE_LABELS = {
 const _MODE_ICONS = {
   walk: '🚶', taxi: '🚕', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
 }
+// Sensible modes per distance bucket — used to filter the dropdown so a
+// 1.7 km walk doesn't offer "Bullet train" / "Flight" / etc. The current
+// mode is always included even if it falls outside the bucket, so the
+// planner never loses a deliberate choice.
+function _sensibleModes(km) {
+  if (km == null)    return ['walk','taxi','transit','train','car','hsr','flight']
+  if (km < 1)        return ['walk','taxi']
+  if (km < 3)        return ['walk','taxi','transit']
+  if (km < 10)       return ['taxi','transit']
+  if (km < 30)       return ['taxi','transit','train','car']
+  if (km < 80)       return ['train','car']
+  if (km < 500)      return ['train','car','hsr']
+  if (km < 1500)     return ['hsr','flight']
+  return ['flight']
+}
 
 // Find the previous / next non-transport slot in the same day, walking
 // past consecutive transport slots if needed.
@@ -14599,9 +14614,13 @@ function refreshTransportSlot(slot) {
   const arriveHHMM = _addMinutes(departHHMM, est.mins || 0)
   const departLabel = formatTimeDisplay(departHHMM)
   const arriveLabel = formatTimeDisplay(arriveHHMM)
-  // Mode picker — replaces the standard type dropdown. Each option shows
-  // its icon + label; onChange swaps the mode and re-renders.
-  const modeOptions = ['walk','taxi','transit','train','car','hsr','flight']
+  // Mode picker — only modes that make sense for THIS distance show up,
+  // so a 1.7 km hop doesn't offer Flight / Bullet train. The current mode
+  // is always included even if it'd otherwise be filtered out, so the
+  // planner can't lose their deliberate choice on a re-render.
+  const sensible = _sensibleModes(km)
+  const visibleModes = sensible.includes(mode) ? sensible : [mode, ...sensible]
+  const modeOptions = visibleModes
     .map(k => `<option value="${k}"${k===mode?' selected':''}>${_MODE_ICONS[k]} ${_MODE_LABELS[k]}</option>`)
     .join('')
   host.innerHTML = `
