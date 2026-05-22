@@ -13464,12 +13464,21 @@ function selectTimeDD(btn, val){
   // or later than its neighbours, physically reorder the DOM siblings.
   const slot = dd.closest('.activity-slot')
   if (slot) {
+    // Snapshot neighbours BEFORE resort — only follow the slot with a
+    // scroll if its DOM position actually changed. Previously the page
+    // scrolled to the slot every time the planner picked a new time, even
+    // when the slot stayed in the same position (e.g. picking 7:00 → 7:30
+    // when both fall between the same two neighbours). That was annoying.
+    const prevSibBefore = slot.previousElementSibling
+    const nextSibBefore = slot.nextElementSibling
     resortSlots(slot.closest('[id^="slots-day-"]'))
-    // After the reorder, follow the slot so the planner doesn't lose it.
-    // Brief highlight ring fades out so it's obvious where the slot landed.
-    slot.classList.add('slot-just-moved')
-    slot.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setTimeout(() => slot.classList.remove('slot-just-moved'), 1200)
+    const positionChanged = (slot.previousElementSibling !== prevSibBefore)
+                         || (slot.nextElementSibling !== nextSibBefore)
+    if (positionChanged) {
+      slot.classList.add('slot-just-moved')
+      slot.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setTimeout(() => slot.classList.remove('slot-just-moved'), 1200)
+    }
     // If a place is linked, the time-vs-hours warning may need to appear or
     // disappear — re-render the chip to refresh it.
     if (slot._placeData) renderLinkedChip(slot)
