@@ -14792,6 +14792,21 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
   }
 }
 
+// Cost from REAL road distance (Routes API returns road km, no need to
+// multiply by the 1.25 detour factor we use for Haversine).
+//   Uber / Paris taxi:  €2.5 base + €2.8/km
+//   Rental car:         €0.30/km fuel + tolls + €8 base
+//   Train / HSR:        already returned by Routes API for TRANSIT mode
+// Walk → free; Flight → no realistic estimate (Routes doesn't support it).
+function _costFromRealKm(mode, km) {
+  if (mode === 'walk') return 0
+  if (mode === 'taxi') return Math.round(2.5 + km * 2.8)
+  if (mode === 'car')  return Math.round(8   + km * 0.30)
+  if (mode === 'train') return Math.round(15 + km * 0.40)
+  if (mode === 'hsr')   return Math.round(30 + km * 0.25)
+  return null
+}
+
 // Patches the transport-content grid in-place with the Google Routes result.
 // Called from refreshTransportSlot once the async fetch resolves.
 function applyRouteDataToSlot(slot, data) {
@@ -14801,9 +14816,22 @@ function applyRouteDataToSlot(slot, data) {
   const cells = host.querySelectorAll('.transport-grid .tg-value')
   if (cells[0]) { cells[0].textContent = `${data.distanceKm.toFixed(1)} km`; cells[0].classList.remove('tg-blank') }
   if (cells[1]) { cells[1].textContent = `${data.durationMin} min`;          cells[1].classList.remove('tg-blank') }
-  if (cells[2] && data.costEur != null) {
-    cells[2].textContent = `~€${data.costEur}`
-    cells[2].classList.remove('tg-blank')
+  // Cost: if Routes API gave us a fare (transit only), use that. Otherwise
+  // recompute from the REAL road km the API returned — previously we were
+  // showing the Haversine-based heuristic cost which lagged behind the
+  // (correctly updated) road distance.
+  if (cells[2]) {
+    if (data.costEur != null) {
+      cells[2].textContent = `~€${data.costEur}`
+      cells[2].classList.remove('tg-blank')
+    } else {
+      const mode = slot.dataset.transportMode || 'taxi'
+      const cost = _costFromRealKm(mode, data.distanceKm)
+      if (cost != null) {
+        cells[2].textContent = (cost === 0) ? 'free' : `~€${cost}`
+        cells[2].classList.remove('tg-blank')
+      }
+    }
   }
   // Refresh the depart→arrive time range with the real duration.
   const departHHMM = slot.querySelector('.slot-time-input')?.value
@@ -14980,8 +15008,11 @@ function _transportEstimates(mode, km) {
 //   car     — RENTAL car: planner drives themselves, road-trip style.
 //   hsr     — bullet train / TGV / Shinkansen.
 //   flight  — domestic or international flight.
+// 'taxi' key kept for backward compat with stored slot data, but the
+// display label is "Uber" — more recognisable than generic "Taxi" for
+// French urban rides where Uber is the dominant ride-hail.
 const _MODE_LABELS = {
-  walk: 'Walk', taxi: 'Taxi', transit: 'Metro / Bus',
+  walk: 'Walk', taxi: 'Uber', transit: 'Metro / Bus',
   train: 'Train', car: 'Rental car', hsr: 'Bullet train', flight: 'Flight'
 }
 const _MODE_ICONS = {
