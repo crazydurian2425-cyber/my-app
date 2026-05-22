@@ -13217,6 +13217,79 @@ function fillItineraryItems(items) {
   refreshAllDistances()
 }
 
+// Look up the arrival station via Google Places textSearch, then stash
+// the resolved place_id + coords + display name on the transport slot's
+// dataset. refreshTransportSlot reads those when prev is null (the locked
+// arrival anchor doesn't carry _placeData), which gives the auto-seeded
+// Day-1 transport a real "Paris Gare Montparnasse → Hotel" line with km
+// + duration + Routes-API timing — instead of the "previous stop" blank.
+async function _lookupStationAndAttach(transportSlot) {
+  if (!transportSlot) return
+  const rawLoc = (window._currentArrivalLocation || '').trim()
+  if (!rawLoc) return
+  // Build a sensible query. Bias toward the destination city so a generic
+  // string like "Paris Station" resolves to a real Paris gare rather than
+  // a same-named place in another country.
+  const city = (window._currentDestination || '').trim()
+  const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  const query = isIata
+    ? `${rawLoc} Airport`
+    : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
+      ? `${rawLoc}, ${city}`
+      : rawLoc
+  // Cache resolved stations per-session to avoid redundant Places billing.
+  window._stationLookupCache = window._stationLookupCache || new Map()
+  let resolved = window._stationLookupCache.get(query)
+  if (!resolved) {
+    try {
+      const body = {
+        textQuery: query,
+        maxResultCount: 1,
+        languageCode: 'en',
+      }
+      const bias = buildDestBias(city)
+      if (bias) body.locationBias = bias
+      const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
+        },
+        body: JSON.stringify(body),
+      })
+      if (!resp.ok) {
+        console.warn('[station-lookup] searchText failed', resp.status, await resp.text().catch(() => ''))
+        return
+      }
+      const data = await resp.json()
+      const p = data?.places?.[0]
+      if (!p?.id || !p?.location) return
+      resolved = {
+        placeId: p.id,
+        name:    p.displayName?.text || rawLoc,
+        address: p.formattedAddress || '',
+        lat:     p.location.latitude,
+        lng:     p.location.longitude,
+      }
+      window._stationLookupCache.set(query, resolved)
+    } catch (e) {
+      console.warn('[station-lookup] threw', e)
+      return
+    }
+  }
+  // Stash on the transport slot — refreshTransportSlot reads these next
+  // pass to fill in distance/duration/Routes API call.
+  const live = document.getElementById(transportSlot.id)
+  if (!live) return
+  live.dataset.fromPlaceId = resolved.placeId
+  live.dataset.fromName    = resolved.name
+  live.dataset.fromLat     = String(resolved.lat)
+  live.dataset.fromLng     = String(resolved.lng)
+  // Trigger a refresh so the resolved data lights up in the transport panel.
+  if (typeof refreshTransportSlot === 'function') refreshTransportSlot(live)
+}
+
 // One-shot auto-seed for Day 1 afternoon arrivals (arrival_time hour ≥ 13).
 // Two scenarios handled:
 //
@@ -13256,6 +13329,10 @@ function _autoSeedDay1HotelIfNeeded() {
     if (beforeEl && beforeEl.parentNode === day1) {
       day1.insertBefore(t, beforeEl)
     }
+    // Async: resolve the arrival station via Places textSearch + attach
+    // its place_id / coords / display name to the transport so distance,
+    // duration, and Routes API light up automatically.
+    _lookupStationAndAttach(t)
   }
   if (userStops.length === 0) {
     // Empty Day 1 — seed transport + hotel.
@@ -15688,16 +15765,23 @@ function refreshTransportSlot(slot) {
   // "From" label — fall back to the unit's arrival location when the
   // transport sits right after the Day 1 arrival anchor (locked rows are
   // skipped by _findVenueNeighbors so prev is null in that position).
+  // "From" — fall back to the auto-resolved arrival station (set by the
+  // _lookupStationAndAttach Places search) or to the meta location string.
   let fromName = _venueNameOf(prev)
-  if (!fromName && !prev) {
-    const isFirstNonLocked = !slot.previousElementSibling
-      || slot.previousElementSibling.classList.contains('is-locked')
-    if (isFirstNonLocked && window._currentArrivalLocation) {
-      fromName = window._currentArrivalLocation
-    }
+  const isFirstNonLocked = !slot.previousElementSibling
+    || slot.previousElementSibling.classList.contains('is-locked')
+  if (!fromName && !prev && isFirstNonLocked) {
+    fromName = slot.dataset.fromName || window._currentArrivalLocation || ''
   }
   const toName   = _venueNameOf(next)
-  const a = prev ? getSlotLatLng(prev) : null
+  // Lat/lng: prev's _placeData first; otherwise the transport's own
+  // dataset.fromLat/Lng (populated by _lookupStationAndAttach).
+  let a = prev ? getSlotLatLng(prev) : null
+  if (!a) {
+    const fl = parseFloat(slot.dataset.fromLat)
+    const fg = parseFloat(slot.dataset.fromLng)
+    if (Number.isFinite(fl) && Number.isFinite(fg)) a = { lat: fl, lng: fg }
+  }
   const b = next ? getSlotLatLng(next) : null
   const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
   const mode = slot.dataset.transportMode || 'taxi'
@@ -15820,8 +15904,12 @@ function refreshTransportSlot(slot) {
   // then patch the grid + time range in place. Heuristic numbers show
   // until this resolves (~200 ms typically). Cached per place_id+mode
   // so a re-render is instant.
-  if (!tooFar && prev?._placeData?.google_place_id && next?._placeData?.google_place_id) {
-    fetchRouteData(prev, next, mode).then(result => {
+  // Routes API origin: prefer prev's linked place, else the auto-resolved
+  // station place_id on the transport slot's dataset.
+  const fromPlaceId = prev?._placeData?.google_place_id || slot.dataset.fromPlaceId || null
+  if (!tooFar && fromPlaceId && next?._placeData?.google_place_id) {
+    const originSlot = prev || { _placeData: { google_place_id: fromPlaceId } }
+    fetchRouteData(originSlot, next, mode).then(result => {
       if (!result) return
       const live = document.getElementById(slot.id)
       if (live) applyRouteDataToSlot(live, result)
