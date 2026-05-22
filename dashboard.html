@@ -14580,10 +14580,21 @@ function buildGmapsDirUrl(fromSlot, toSlot, mode) {
 // unlimited use as long as the key has it enabled in Google Cloud
 // Console (alongside Places API New). Mode values match the Embed API
 // spec — note that "flying" is supported (it's "flight" in our enum).
+//
+// Embed API USES the inline "place_id:XYZ" format (different from the
+// directions URL scheme, which wants separate origin_place_id param).
+// Keep the colon literal — encoding it as %3A breaks the request.
+function _embedPlaceParam(placeData) {
+  if (!placeData) return ''
+  if (placeData.google_place_id) {
+    return 'place_id:' + placeData.google_place_id   // colon NOT encoded
+  }
+  return encodeURIComponent(placeData.address || placeData.name || '')
+}
 function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
   if (!GOOGLE_PLACES_API_KEY) return null
-  const fromArg = _mapsDirParam(fromSlot?._placeData)
-  const toArg   = _mapsDirParam(toSlot?._placeData)
+  const fromArg = _embedPlaceParam(fromSlot?._placeData)
+  const toArg   = _embedPlaceParam(toSlot?._placeData)
   if (!fromArg || !toArg) return null
   const embedMode = ({
     walk:'walking', taxi:'driving', car:'driving',
