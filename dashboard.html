@@ -1766,6 +1766,45 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 
 /* ACTIVITY SLOT */
 .activity-slot{border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;background:var(--surface);}
+
+/* LOCKED ANCHOR ROWS — bookends for each day (arrival / morning / end-of-day /
+   departure). Compact, faded, no edit affordances. Shares .activity-slot for
+   layout but everything inside is read-only. */
+.activity-slot.is-locked{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;background:var(--bg);opacity:0.95;
+  border:0.5px solid var(--border);box-shadow:none;
+  cursor:default;
+}
+.activity-slot.is-locked .anchor-icon{
+  width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+.activity-slot.is-locked.anchor-morning  .anchor-icon{color:#c98a2b;}
+.activity-slot.is-locked.anchor-end-of-day  .anchor-icon{color:#5b6e8a;}
+.activity-slot.is-locked.anchor-arrival   .anchor-icon{color:#2d7a5e;}
+.activity-slot.is-locked.anchor-departure .anchor-icon{color:#8a3329;}
+.activity-slot.is-locked .anchor-body{flex:1;min-width:0;}
+.activity-slot.is-locked .anchor-title{
+  font-size:12px;font-weight:500;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.activity-slot.is-locked .anchor-sub{
+  font-size:10.5px;color:var(--text-3);margin-top:1px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.activity-slot.is-locked .anchor-lock{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;color:var(--text-3);padding:2px 6px;
+  border:1px solid var(--border);border-radius:10px;background:var(--surface);
+  flex-shrink:0;text-transform:uppercase;letter-spacing:0.4px;
+}
+.activity-slot.is-locked .anchor-lock-icon{font-size:11px;line-height:1;}
+/* Suppress all the editable slot machinery on locked rows. */
+.activity-slot.is-locked .slot-header,
+.activity-slot.is-locked .slot-body,
+.activity-slot.is-locked .slot-remove{display:none!important;}
+
 .slot-header{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg);border-bottom:1px solid var(--border);}
 /* Custom time dropdown */
 .time-dd{position:relative;width:140px;flex-shrink:0;}
@@ -12450,6 +12489,24 @@ async function openItineraryForm(planId) {
   // date for each day's slots — used to show planned-day opening hours and
   // flag places closed on that weekday.
   window._currentTripStartDate = plan.start_date || t.arrival_date || null
+  // Per-plan hotel anchor — drives the morning/end-of-day locked rows.
+  // Falls back to a meta hint if the planner hasn't picked a hotel yet.
+  window._currentHotelName     = plan.hotel_name     || _tmeta.unit_hotel_name     || null
+  window._currentHotelAddress  = plan.hotel_address  || _tmeta.unit_hotel_address  || null
+  window._currentHotelPlaceId  = plan.hotel_place_id || null
+  // daily_timing now lives on the traveler row as a normalised enum
+  // (early / standard / late). Falls back to the legacy free-text meta value
+  // for travelers that pre-date the migration.
+  window._currentDailyTiming   = t.daily_timing
+    || (function (s) { s = String(s || '').toLowerCase()
+        if (s.startsWith('early'))    return 'early'
+        if (s.startsWith('late'))     return 'late'
+        if (s.startsWith('standard')) return 'standard'
+        return null }(_tmeta.daily_timing))
+    || 'standard'
+  window._currentHotelBreakfast = !!t.hotel_includes_breakfast
+  window._currentUnitOrder      = parseInt(_tmeta.unit_order, 10) || 1
+  window._currentUnitTotal      = parseInt(_tmeta.unit_total, 10) || 1
   const travType = t.traveler_type || plan.type || ''
   const duration = t.duration     || plan.duration || '3D2N'
   const isBond   = t.requires_bond || plan.deposit || false
@@ -15476,12 +15533,15 @@ function _sensibleModes(km) {
 // Find the previous / next non-transport slot in the same day, walking
 // past consecutive transport slots if needed.
 function _findVenueNeighbors(slot) {
+  const isVenue = (el) => el && el.classList.contains('activity-slot')
+                       && !el.classList.contains('slot-type-transport')
+                       && !el.classList.contains('is-locked')
   let prev = slot.previousElementSibling
-  while (prev && (!prev.classList.contains('activity-slot') || prev.classList.contains('slot-type-transport'))) {
+  while (prev && !isVenue(prev)) {
     prev = prev.previousElementSibling
   }
   let next = slot.nextElementSibling
-  while (next && (!next.classList.contains('activity-slot') || next.classList.contains('slot-type-transport'))) {
+  while (next && !isVenue(next)) {
     next = next.nextElementSibling
   }
   return { prev, next }
@@ -15689,6 +15749,10 @@ function _enforceTimeChain(dayContainer) {
   let pushed = false
   for (let i = 0; i < slots.length - 1; i++) {
     const a = slots[i], b = slots[i + 1]
+    // Locked bookends (arrival / morning / end-of-day / departure) sit at
+    // top + bottom of the day and don't participate in the time chain.
+    if (a.classList.contains('is-locked')) continue
+    if (b.classList.contains('is-locked')) continue
     // Compute when `a` releases the traveler.
     let aReleaseMin
     if (a.classList.contains('slot-type-transport')) {
@@ -16097,6 +16161,109 @@ function closedAltsAction(slotId, action) {
   }
 }
 
+// ─── Day bookends — locked anchor rows ──────────────────────────────────
+// Each day in a plan/unit is framed by locked anchor rows:
+//   • Day 1 (first day of unit)     → arrival anchor at top
+//   • Day 2..N-1 (middle days)      → morning-at-hotel anchor at top
+//   • Day N (last day of unit)      → departure anchor at bottom
+//   • Days 1..N-1                   → end-of-day anchor at bottom
+// Read-only — no edit / delete affordances. Recomputed on every render.
+
+// Map daily_timing enum onto a wake time.
+function _wakeTimeForTiming(timing) {
+  if (timing === 'early') return '07:00'
+  if (timing === 'late')  return '09:30'
+  return '08:30'                              // standard
+}
+
+// Icon mark — emoji works without an extra icon font dependency. The CSS
+// .anchor-icon block colours the row tint by anchor type.
+function _anchorIconFor(type, method) {
+  if (type === 'arrival')    return method === 'flight' ? '🛬' : '🚆'
+  if (type === 'departure')  return method === 'flight' ? '🛫' : '🚆'
+  if (type === 'morning')    return '🌅'
+  if (type === 'end_of_day') return '🌙'
+  return '·'
+}
+
+function _buildLockedAnchor({ type, title, subtitle, method }) {
+  const el = document.createElement('div')
+  el.className = `activity-slot is-locked anchor-${type.replace(/_/g,'-')}`
+  el.dataset.anchorType = type
+  el.innerHTML = `
+    <span class="anchor-icon">${_anchorIconFor(type, method)}</span>
+    <div class="anchor-body">
+      <div class="anchor-title">${escapeHtml(title)}</div>
+      ${subtitle ? `<div class="anchor-sub">${escapeHtml(subtitle)}</div>` : ''}
+    </div>
+    <span class="anchor-lock"><span class="anchor-lock-icon">🔒</span>auto</span>`
+  return el
+}
+
+// Insert / replace the locked bookend rows on a single day. Called after
+// fillItineraryItems on load and at the top of refreshDayDistances on every
+// edit so the bookends stay in sync with the planner's current stop list.
+function renderDayBookends(dayContainer, dayNum, totalDays) {
+  if (!dayContainer) return
+  // Wipe any previous bookends — anchors are recomputed every refresh.
+  dayContainer.querySelectorAll(':scope > .activity-slot.is-locked')
+    .forEach(el => el.remove())
+  const isFirstDay  = (dayNum === 1)
+  const isLastDay   = (totalDays && dayNum === totalDays)
+  const hotelName   = window._currentHotelName || 'the hotel'
+  const wakeTime    = _wakeTimeForTiming(window._currentDailyTiming)
+  // ── Top anchor ───────────────────────────────────────────────
+  let topAnchor = null
+  if (isFirstDay) {
+    const method = window._currentArrivalMethod
+    if (method) {
+      const arrTime = window._currentArrivalTime || '14:00'
+      const arrFrom = window._currentArrivalFrom || 'origin'
+      const methodLabel = method === 'flight' ? 'Flight' : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
+      topAnchor = _buildLockedAnchor({
+        type: 'arrival',
+        method,
+        title: `${formatTimeDisplay(arrTime)} · ${methodLabel} from ${arrFrom}`,
+        subtitle: `Day 1 begins on arrival`,
+      })
+    }
+  } else {
+    const breakfastBit = window._currentHotelBreakfast
+      ? 'Breakfast at hotel (45 min included)'
+      : 'Breakfast on the way'
+    topAnchor = _buildLockedAnchor({
+      type: 'morning',
+      title: `${formatTimeDisplay(wakeTime)} · Morning at ${hotelName}`,
+      subtitle: `Day ${dayNum} starts here · ${breakfastBit}`,
+    })
+  }
+  // ── Bottom anchor ────────────────────────────────────────────
+  let bottomAnchor = null
+  if (isLastDay) {
+    const method = window._currentDepartureMethod
+    if (method) {
+      const depTime = window._currentDepartureTime || '17:00'
+      const depTo   = window._currentDepartureTo   || 'next stop'
+      const methodLabel = method === 'flight' ? 'Flight' : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
+      bottomAnchor = _buildLockedAnchor({
+        type: 'departure',
+        method,
+        title: `${formatTimeDisplay(depTime)} · ${methodLabel} to ${depTo}`,
+        subtitle: `Day ${dayNum} ends with departure`,
+      })
+    }
+  } else {
+    bottomAnchor = _buildLockedAnchor({
+      type: 'end_of_day',
+      title: `Back at ${hotelName}`,
+      subtitle: `Day ${dayNum} ends here`,
+    })
+  }
+  // Insert: top at the start (before any stops), bottom at the end.
+  if (topAnchor)    dayContainer.insertBefore(topAnchor, dayContainer.firstChild)
+  if (bottomAnchor) dayContainer.appendChild(bottomAnchor)
+}
+
 function refreshDayDistances(dayContainer) {
   if (!dayContainer) return
   // Same scroll-preservation trick as resortSlots — internal _sortSlotsInPlace
@@ -16104,6 +16271,9 @@ function refreshDayDistances(dayContainer) {
   // this, picking a new venue snaps the modal back to its top.
   const modalBody = dayContainer.closest('.modal-body')
   const savedScrollTop = modalBody ? modalBody.scrollTop : null
+  // Strip any existing locked bookends BEFORE the sort/helper passes — we
+  // re-render them at the end so they always sit cleanly at the top/bottom.
+  dayContainer.querySelectorAll(':scope > .activity-slot.is-locked').forEach(el => el.remove())
   // Remove any previously-injected distance rows AND helper cards.
   dayContainer.querySelectorAll(':scope > .slot-distance, :scope > .slot-dist-helper').forEach(el => el.remove())
   // First pass: refresh transport blocks. Each one may push the NEXT
@@ -16183,6 +16353,14 @@ function refreshDayDistances(dayContainer) {
   // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
   // API races, mode swaps with cached results).
   _enforceTimeChain(dayContainer)
+  // ── Locked day bookends ──
+  // Re-render at the very end so they always live at top/bottom and don't
+  // get reshuffled by _sortSlotsInPlace or helper-card injection.
+  {
+    const _m = dayContainer.id.match(/slots-day-(\d+)/)
+    const _dayNum = _m ? parseInt(_m[1], 10) : 1
+    renderDayBookends(dayContainer, _dayNum, (typeof dayCount === 'number') ? dayCount : null)
+  }
   // Recompute the day summary card (stops / active hours / walking /
   // spend + warnings) on every refresh so it stays in sync with edits.
   refreshDaySummary(dayContainer)
