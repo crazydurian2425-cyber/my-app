@@ -14540,33 +14540,30 @@ function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon
 // a road-detour bump for ground modes. Cost is rough EUR estimate —
 // planners adjust if they know better.
 // Build a Google Maps directions URL the planner can open in a new tab.
-// Uses place_id when available (most accurate match against Google's
-// database) — falls back to the formatted address. Returns null when
-// either end lacks data.
-//
-// IMPORTANT: when using "place_id:XYZ" Google expects the colon to stay
-// LITERAL. encodeURIComponent turns it into %3A and Google fails to
-// parse the param. So we encode the value separately and stitch the
-// "place_id:" prefix back on unescaped.
-function _mapsDirParam(placeData) {
-  if (!placeData) return ''
-  if (placeData.google_place_id) {
-    return 'place_id:' + placeData.google_place_id   // colon NOT encoded
-  }
-  return encodeURIComponent(placeData.address || placeData.name || '')
-}
+// Google's documented URL scheme uses SEPARATE params:
+//   origin=<friendly name>          + origin_place_id=<place_id>
+//   destination=<friendly name>     + destination_place_id=<place_id>
+// The `place_id:CHIJ...` inline syntax was undocumented and didn't work
+// reliably — clicking the link sometimes just opened a search page.
+// https://developers.google.com/maps/documentation/urls/get-started#directions-action
 function buildGmapsDirUrl(fromSlot, toSlot, mode) {
-  const fromArg = _mapsDirParam(fromSlot?._placeData)
-  const toArg   = _mapsDirParam(toSlot?._placeData)
-  if (!fromArg || !toArg) return null
+  const from = fromSlot?._placeData
+  const to   = toSlot?._placeData
+  if (!from || !to) return null
+  const fromName = from.name || from.address || ''
+  const toName   = to.name   || to.address   || ''
+  if (!fromName || !toName) return null
   const travelmode = ({
     walk:'walking', taxi:'driving', car:'driving',
     transit:'transit', train:'transit', hsr:'transit', flight:'transit'
   })[mode] || 'driving'
-  return 'https://www.google.com/maps/dir/?api=1'
-       + '&origin='      + fromArg
-       + '&destination=' + toArg
-       + '&travelmode='  + travelmode
+  let url = 'https://www.google.com/maps/dir/?api=1'
+  url += '&origin='      + encodeURIComponent(fromName)
+  if (from.google_place_id) url += '&origin_place_id=' + encodeURIComponent(from.google_place_id)
+  url += '&destination=' + encodeURIComponent(toName)
+  if (to.google_place_id)   url += '&destination_place_id=' + encodeURIComponent(to.google_place_id)
+  url += '&travelmode='  + travelmode
+  return url
 }
 
 // Build a Maps Embed API URL for inline display. Embed API is FREE for
