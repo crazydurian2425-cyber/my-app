@@ -13243,31 +13243,33 @@ function _autoSeedDay1HotelIfNeeded() {
   const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('is-locked'))
   const firstStop = userStops[0] || null
-  // Helper — append a taxi-to-hotel transport block.
-  const addTaxi = () => {
+  // Helper — append a taxi-to-hotel transport block. `beforeEl` (optional)
+  // moves the new slot ahead of an existing first stop so _findVenueNeighbors
+  // sees prev=null and refreshTransportSlot doesn't reset the time.
+  const addTaxi = (beforeEl) => {
     addSlot(1, { icon: 'transport', time: arr })
     const t = day1.querySelector(':scope > .activity-slot.slot-type-transport:last-of-type')
-    if (t) {
-      t.dataset.transportMode = 'taxi'
-      const titleInput = t.querySelector('.slot-title-input')
-      if (titleInput) titleInput.value = 'Taxi to hotel'
+    if (!t) return
+    t.dataset.transportMode = 'taxi'
+    const titleInput = t.querySelector('.slot-title-input')
+    if (titleInput) titleInput.value = 'Taxi to hotel'
+    if (beforeEl && beforeEl.parentNode === day1) {
+      day1.insertBefore(t, beforeEl)
     }
   }
   if (userStops.length === 0) {
     // Empty Day 1 — seed transport + hotel.
     if (currentPlanId) window._day1AutoSeededPlanIds.add(currentPlanId)
-    addTaxi()
+    addTaxi(null)
     addSlot(1, { icon: 'hotel' })
     return
   }
   // Day 1 has stops already. If the FIRST stop isn't a transport block,
-  // inject one between the arrival anchor and the first venue.
+  // inject one BEFORE the first venue so it sits between the arrival
+  // anchor and that venue in DOM order.
   if (!firstStop.classList.contains('slot-type-transport')) {
     if (currentPlanId) window._day1AutoSeededPlanIds.add(currentPlanId)
-    addTaxi()
-    // Transport is appended at the bottom; _sortSlotsInPlace (called via
-    // refreshAllDistances downstream) will reorder it to before firstStop
-    // because its time === arrival_time which is earlier than firstStop's.
+    addTaxi(firstStop)
   }
 }
 
