@@ -15520,9 +15520,9 @@ const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 // cache held traffic-unaware durations (~15 min for the 3.4 km Arc de
 // Triomphe → ONYX taxi) which kept showing up even after the code
 // change, because the cache key didn't include routing preference.
-// v3 entries use TRAFFIC_AWARE_OPTIMAL, which gets distance + duration
-// that lines up with what Google Maps shows in the iframe embed.
-const ROUTES_CACHE_PREFIX = 'jj_route_v3_'
+// v4 entries are TRAFFIC_AWARE_OPTIMAL + alternatives, with the
+// shortest-duration route picked — matches the embed iframe's choice.
+const ROUTES_CACHE_PREFIX = 'jj_route_v4_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
@@ -15572,13 +15572,12 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       destination: { placeId: toId },
       travelMode,
       units: 'METRIC',
+      // Ask Google for alternative routes too. The Routes API's default
+      // "best" pick sometimes prefers shorter-distance routes, while the
+      // Embed iframe (and most planners' intuition for ride-hail) prefers
+      // FASTEST. We pick by min duration below to match the embed.
+      computeAlternativeRoutes: true,
     }
-    // DRIVE without routingPreference defaults to TRAFFIC_UNAWARE which
-    // ignores real-world congestion. We use TRAFFIC_AWARE_OPTIMAL — it
-    // combines real-time + historical traffic data and picks the route
-    // Google Maps itself would recommend, so the grid distance / duration
-    // line up with the iframe embed instead of showing a shorter-distance
-    // alternative the iframe doesn't highlight.
     if (travelMode === 'DRIVE') {
       body.routingPreference = 'TRAFFIC_AWARE_OPTIMAL'
       body.departureTime = new Date(Date.now() + 60_000).toISOString()
@@ -15610,9 +15609,15 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       return null
     }
     const data = await resp.json()
-    const route = data.routes?.[0]
-    if (!route) return null
-    const durSec = parseInt(String(route.duration || '0s').replace('s',''), 10) || 0
+    // Routes API returns alternatives in `routes[]`. The first is Google's
+    // "best" pick (its blended cost), but the embed iframe shows the
+    // fastest-duration one. Pick by min duration so the grid value lines
+    // up with what the planner sees on the map.
+    const allRoutes = Array.isArray(data.routes) ? data.routes : []
+    if (!allRoutes.length) return null
+    const _durSec = (r) => parseInt(String(r?.duration || '0s').replace('s',''), 10) || Infinity
+    const route = allRoutes.reduce((best, r) => _durSec(r) < _durSec(best) ? r : best, allRoutes[0])
+    const durSec = _durSec(route)
     const result = {
       durationMin: Math.round(durSec / 60),
       distanceKm:  (route.distanceMeters || 0) / 1000,
