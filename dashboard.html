@@ -14358,28 +14358,17 @@ function pickTransportModes(km) {
     const tail = suffix[mode] ? ` · ${suffix[mode]}` : ''
     return minPart + tail
   }
-  if (km < 3) {
-    return [
-      { key: 'walk', icon: '🚶', name: 'Walk',         meta: metaFor('walk'),    primary: true },
-      { key: 'taxi', icon: '🚗', name: 'Taxi / Grab',  meta: metaFor('taxi') },
-    ]
-  }
-  if (km < 10) {
-    return [
-      { key: 'taxi',    icon: '🚗', name: 'Taxi / Grab',    meta: metaFor('taxi'),    primary: true },
-      { key: 'transit', icon: '🚇', name: 'Public transit', meta: metaFor('transit') },
-    ]
-  }
-  if (km < 80) {
-    return [
-      { key: 'train', icon: '🚆', name: 'Regional train', meta: metaFor('train'), primary: true },
-      { key: 'car',   icon: '🚗', name: 'Car / taxi',     meta: metaFor('car') },
-    ]
-  }
-  return [
-    { key: 'hsr',    icon: '🚄', name: 'High-speed train', meta: metaFor('hsr'),    primary: true },
-    { key: 'flight', icon: '✈️', name: 'Flight',            meta: metaFor('flight') },
-  ]
+  // Build one option from a key — pulls label + icon from the shared
+  // _MODE_LABELS / _MODE_ICONS tables so the helper card and the
+  // transport block can NEVER disagree.
+  const opt = (key, primary) => ({
+    key, icon: _MODE_ICONS[key], name: _MODE_LABELS[key], meta: metaFor(key),
+    ...(primary ? { primary: true } : {})
+  })
+  if (km < 3)  return [ opt('walk', true),  opt('taxi') ]
+  if (km < 10) return [ opt('taxi', true),  opt('transit') ]
+  if (km < 80) return [ opt('train', true), opt('car') ]
+  return        [ opt('hsr', true),  opt('flight') ]
 }
 
 // Compute the time to start the transport: previous stop's time + 15min.
@@ -14535,12 +14524,22 @@ function _transportEstimates(mode, km) {
   return { mins: null, costEur: null }
 }
 
+// Each mode has ONE clear meaning so the planner doesn't have to guess
+// the difference between "Taxi / Grab" and "Car / taxi" (which was the
+// same overlap from user feedback).
+//   walk    — short walk
+//   taxi    — ride-hail (Uber / Grab / regular taxi). Hire-and-go.
+//   transit — public transport (metro / bus / tram).
+//   train   — regional / intercity train you sit on for hours.
+//   car     — RENTAL car: planner drives themselves, road-trip style.
+//   hsr     — bullet train / TGV / Shinkansen.
+//   flight  — domestic or international flight.
 const _MODE_LABELS = {
-  walk: 'Walk', taxi: 'Taxi / Grab', transit: 'Public transit',
-  train: 'Regional train', car: 'Car / taxi', hsr: 'High-speed train', flight: 'Flight'
+  walk: 'Walk', taxi: 'Taxi', transit: 'Metro / Bus',
+  train: 'Train', car: 'Rental car', hsr: 'Bullet train', flight: 'Flight'
 }
 const _MODE_ICONS = {
-  walk: '🚶', taxi: '🚗', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
+  walk: '🚶', taxi: '🚕', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
 }
 
 // Find the previous / next non-transport slot in the same day, walking
