@@ -2387,9 +2387,14 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .duration-dd-option.is-selected{background:var(--green-light);color:var(--text);font-weight:600;}
 
 /* Per-type field visibility. Default: everything visible.
-   freetime hides Address. activity is the only type that shows Duration. */
+   freetime hides Address. activity + meal + accommodation all show
+   the duration row so the planner can see "30 min check-in" / "60 min
+   dinner" / etc. — and so transport blocks downstream can compute
+   their depart time correctly. */
 .activity-slot .slot-row-duration{display:none;}
-.activity-slot.slot-type-activity .slot-row-duration{display:flex;align-items:center;gap:10px;}
+.activity-slot.slot-type-activity .slot-row-duration,
+.activity-slot.slot-type-meal .slot-row-duration,
+.activity-slot.slot-type-accommodation .slot-row-duration{display:flex;align-items:center;gap:10px;}
 .activity-slot.slot-type-freetime .slot-row-address{display:none;}
 .slot-row-duration .slot-row-label{font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;}
 
@@ -14764,9 +14769,19 @@ function pickTransportModes(km) {
 function _suggestTransportStart(prevSlot, nextSlot) {
   const timeHidden = prevSlot?.querySelector('.slot-time-input')
   const durHidden  = prevSlot?.querySelector('.slot-duration-input')
+  const typeHidden = prevSlot?.querySelector('.slot-type-select')
   const base = timeHidden?.value || '09:00'
   let stayMin = parseInt(durHidden?.value || '0', 10) || 0
-  if (stayMin <= 0) stayMin = 15        // brief default — most stops don't have an explicit stay
+  if (stayMin <= 0) {
+    // Default by slot type when the planner hasn't picked a "how long to stay".
+    //   accommodation (hotel check-in)  → 30 min
+    //   meal                             → 60 min
+    //   anything else                    → 15 min brief gap
+    const type = typeHidden?.value || 'activity'
+    if (type === 'accommodation') stayMin = 30
+    else if (type === 'meal')     stayMin = 60
+    else                          stayMin = 15
+  }
   const [h, m] = base.split(':').map(Number)
   const baseMin = h * 60 + m
   let total = baseMin + stayMin
