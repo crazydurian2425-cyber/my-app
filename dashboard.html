@@ -16742,6 +16742,23 @@ function closedAltsAction(slotId, action) {
 // Read-only — no edit / delete affordances. Recomputed on every render.
 
 // Map daily_timing enum onto a wake time.
+// Find the itinerary's hotel by scanning every day for the first
+// .slot-type-accommodation with a linked Google Place. Per planner spec
+// there's ONE hotel per itinerary, used as the "back at hotel" target on
+// every day's end-of-day anchor.
+function _findItineraryHotel() {
+  const slots = document.querySelectorAll(
+    '[id^="slots-day-"] > .activity-slot.slot-type-accommodation:not(.is-locked)'
+  )
+  for (const s of slots) {
+    const d = s._placeData
+    if (d && Number.isFinite(parseFloat(d.latitude)) && Number.isFinite(parseFloat(d.longitude))) {
+      return d
+    }
+  }
+  return null
+}
+
 function _wakeTimeForTiming(timing) {
   if (timing === 'early') return '07:00'
   if (timing === 'late')  return '09:30'
@@ -16927,11 +16944,24 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     const breakfastBit = window._currentHotelBreakfast
       ? 'Breakfast at hotel (45 min included)'
       : 'Breakfast on the way'
+    // Use the itinerary's hotel name (one per trip) — same as end-of-day.
+    const morningHotel = _findItineraryHotel()
+    const morningHotelName = morningHotel?.name || hotelName
     topAnchor = _buildLockedAnchor({
       type: 'morning',
-      title: `${formatTimeDisplay(wakeTime)} · Morning at ${hotelName}`,
+      title: `${formatTimeDisplay(wakeTime)} · Morning at ${morningHotelName}`,
       subtitle: `Day ${dayNum} starts here · ${breakfastBit}`,
     })
+    // Attach hotel _placeData so the gap-fill can compute the first
+    // transport's distance from this anchor on Day 2+ if needed.
+    if (morningHotel) {
+      topAnchor._placeData = {
+        google_place_id: morningHotel.google_place_id,
+        name: morningHotel.name,
+        latitude: morningHotel.latitude,
+        longitude: morningHotel.longitude,
+      }
+    }
   }
   // ── Bottom anchor ────────────────────────────────────────────
   let bottomAnchor = null
@@ -16953,26 +16983,31 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     // traveler's daily_timing + pace + caps say it should be.
     const cmp = _dayEndProfileCompare(dayContainer, dayNum, totalDays)
     const firstName = window._currentFirstName || 'the traveler'
+    // Use the ITINERARY hotel (one per trip) as the back-to-hotel target.
+    // Falls back to generic hotelName when the planner hasn't linked an
+    // accommodation slot yet.
+    const itinHotel = _findItineraryHotel()
+    const hotelDisplayName = itinHotel?.name || hotelName
     let badge = null
     let footer = null
-    let titleStr = `Back at ${hotelName}`
+    let titleStr = `Back at ${hotelDisplayName}`
     if (cmp.state === 'on_profile') {
-      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
       badge  = { state: 'on_profile', label: '✓ on profile' }
       footer = `${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`
     } else if (cmp.state === 'late') {
-      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
       badge  = { state: 'late', label: '⚠ late' }
       footer = `${firstName}'s profile suggests ${cmp.expectedStr}. Confirm ${firstName} wants a late night.`
     } else if (cmp.state === 'early') {
-      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
       const roomHours = Math.max(0, Math.round((-cmp.gapMin) / 60 * 10) / 10)
       badge  = { state: 'early', label: 'ℹ early' }
       footer = `${firstName}'s profile suggests ${cmp.expectedStr}. You have ~${roomHours} hours of room for an evening activity.`
     } else if (cmp.actualStr) {
       // Neutral zone (gap 30-60 min in either direction) — show the time but
       // skip the badge / footer so the planner isn't nagged on edge cases.
-      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
     }
     bottomAnchor = _buildLockedAnchor({
       type: 'end_of_day',
@@ -16982,6 +17017,17 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       footer,
     })
     if (cmp.state) bottomAnchor.classList.add(`anchor-state-${cmp.state}`)
+    // Attach the hotel's _placeData so the universal gap-fill sees the
+    // end-of-day anchor as a real destination — it'll auto-insert a
+    // transport from the last venue → hotel before this anchor.
+    if (itinHotel) {
+      bottomAnchor._placeData = {
+        google_place_id: itinHotel.google_place_id,
+        name: itinHotel.name,
+        latitude: itinHotel.latitude,
+        longitude: itinHotel.longitude,
+      }
+    }
   }
   // Insert: top at the start (before any stops), bottom at the end.
   if (topAnchor)    dayContainer.insertBefore(topAnchor, dayContainer.firstChild)
