@@ -15981,6 +15981,43 @@ function refreshDayDistances(dayContainer) {
   // in-place. _sortSlotsInPlace doesn't call refreshDayDistances back
   // (resortSlots does, which would recurse).
   _sortSlotsInPlace(dayContainer)
+  // ── Auto-snap pass for VENUE → VENUE pairs with no transport between ──
+  // refreshTransportSlot's auto-sync already handles pairs that have a
+  // transport block between them. But when the planner hasn't added a
+  // transport yet (helper card is showing instead), changing prev's stay
+  // duration would leave next stuck at its old time. Push it forward to
+  // prev.start + prev.stay + travelMin (taxi pace) so the day stays
+  // coherent: Hotel 2:30 + 2h + 14min drive → Eiffel auto-shifts to 4:45.
+  {
+    const snapPass = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+    let pushedAny = false
+    for (let i = 0; i < snapPass.length - 1; i++) {
+      const a = snapPass[i], b = snapPass[i + 1]
+      if (a.classList.contains('slot-type-transport')) continue
+      if (b.classList.contains('slot-type-transport')) continue
+      const aLL = getSlotLatLng(a), bLL = getSlotLatLng(b)
+      if (!aLL || !bLL) continue
+      const km = haversineKm(aLL.lat, aLL.lng, bLL.lat, bLL.lng)
+      if (!Number.isFinite(km)) continue
+      const prevType = a.querySelector('.slot-type-select')?.value || 'activity'
+      const prevTime = a.querySelector('.slot-time-input')?.value || '09:00'
+      let prevStay = parseInt(a.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+      if (prevType === 'accommodation') prevStay = Math.max(prevStay, 30)
+      else if (prevType === 'meal')     prevStay = Math.max(prevStay, 30)
+      if (prevStay <= 0) prevStay = 15
+      const travelMin = Math.max(5, Math.round(km * 3))
+      const baseMin = parseSlotTime(prevTime)
+      if (baseMin == null) continue
+      const expectedMin = Math.min(baseMin + prevStay + travelMin, 23 * 60 + 45)
+      const snapped = _snapUp30(minsToHHMM(expectedMin))
+      const curVal = b.querySelector('.slot-time-input')?.value
+      if (curVal !== snapped) {
+        _applySlotTime(b, snapped)
+        pushedAny = true
+      }
+    }
+    if (pushedAny) _sortSlotsInPlace(dayContainer)
+  }
   // Re-grab slots in the new chronological order before computing distance markers.
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
   for (let i = 0; i < slots.length - 1; i++) {
