@@ -15277,6 +15277,16 @@ function setTransportMode(slotId, mode) {
   const slot = document.getElementById(slotId)
   if (!slot) return
   slot.dataset.transportMode = mode
+  // Clear any stale auto-fill in the notes textarea. Older versions of
+  // addTransportBetween prefilled "🚶 ~22 min" / "🚕 ~15 min · faster"
+  // — that text shouldn't persist when the planner switches modes. We
+  // only clear the auto-fill PATTERN (icon + ~N min), so real planner
+  // notes ("take RER B, not Line 14") are preserved.
+  const noteInput = slot.querySelector('.slot-notes-input')
+  const autoFillPattern = /^[\u{1F6B6}\u{1F695}\u{1F687}\u{1F686}\u{1F697}\u{1F684}\u{2708}]️?\s*~?\d+\s*min(\s*[·\.,\-]\s*.*)?$/u
+  if (noteInput && autoFillPattern.test(noteInput.value.trim())) {
+    noteInput.value = ''
+  }
   refreshTransportSlot(slot)
   if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
