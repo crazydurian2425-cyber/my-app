@@ -15229,6 +15229,12 @@ function applyRouteDataToSlot(slot, data) {
         _applySlotTime(next, minStart)
       }
     }
+    // Routes-API push only handles ONE link of the chain. Re-run the full
+    // brute-force enforcement so downstream slots cascade properly.
+    const dayContainer = slot.closest('[id^="slots-day-"]')
+    if (dayContainer && typeof _enforceTimeChain === 'function') {
+      _enforceTimeChain(dayContainer)
+    }
   }
   // Step-by-step timeline — ONLY useful when the trip mixes transit with
   // walks (planner needs to know which line + station + walks between).
@@ -15597,6 +15603,68 @@ function _addMinutes(hhmm, mins) {
   if (total < 0) total = 0
   if (total > 23 * 60 + 59) total = 23 * 60 + 59
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+}
+
+// Brute-force enforcement pass. Iterates every consecutive (a, b) pair in
+// DOM order; if b.start is past a's effective end (start + stay/travel),
+// snap b forward — and if b is past a's end by more than 15 min, snap b
+// BACKWARD too (matches the planner's "next stop should start at the
+// nearest available time" mental model). Catches edge cases where the
+// per-transport auto-sync didn't fire cleanly: stale DOM order, Routes
+// API races, mode swaps with cached results, etc.
+function _enforceTimeChain(dayContainer) {
+  if (!dayContainer) return
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  // Read transport heuristic durations from the visible grid cell so this
+  // works whether the Routes API has resolved or not.
+  const _transportArrivalMin = (slot) => {
+    const dep = parseSlotTime(slot.querySelector('.slot-time-input')?.value || '')
+    if (dep == null) return null
+    // Routes-API patched cells: [distance, duration, cost]. Index 1 = duration.
+    const cells = slot.querySelectorAll('.transport-grid .tg-value')
+    const txt = cells[1]?.textContent || ''
+    const m = txt.match(/(\d+)\s*min/i)
+    if (m) return dep + parseInt(m[1], 10)
+    // Fallback heuristic: re-compute from haversine + mode.
+    const { prev, next } = _findVenueNeighbors(slot)
+    if (!prev || !next) return dep
+    const a = getSlotLatLng(prev), b = getSlotLatLng(next)
+    if (!a || !b) return dep
+    const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
+    const mode = slot.dataset.transportMode || 'taxi'
+    const est = _transportEstimates(mode, km)
+    return dep + (est?.mins || 0)
+  }
+  const _venueEffectiveDur = (slot) => {
+    const type = slot.querySelector('.slot-type-select')?.value || 'activity'
+    let stay = parseInt(slot.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+    if (type === 'accommodation') stay = Math.max(stay, 30)
+    else if (type === 'meal')     stay = Math.max(stay, 30)
+    if (stay <= 0) stay = 15
+    return stay
+  }
+  let pushed = false
+  for (let i = 0; i < slots.length - 1; i++) {
+    const a = slots[i], b = slots[i + 1]
+    // Compute when `a` releases the traveler.
+    let aReleaseMin
+    if (a.classList.contains('slot-type-transport')) {
+      aReleaseMin = _transportArrivalMin(a)
+    } else {
+      const aStart = parseSlotTime(a.querySelector('.slot-time-input')?.value || '')
+      if (aStart == null) continue
+      aReleaseMin = aStart + _venueEffectiveDur(a)
+    }
+    if (aReleaseMin == null) continue
+    // Snap b's expected start to the 15-min grid.
+    const expectedB = _snapUp30(minsToHHMM(Math.min(aReleaseMin, 23 * 60 + 45)))
+    const curB = b.querySelector('.slot-time-input')?.value || ''
+    if (curB !== expectedB) {
+      _applySlotTime(b, expectedB)
+      pushed = true
+    }
+  }
+  if (pushed) _sortSlotsInPlace(dayContainer)
 }
 
 // Snap a HH:MM up to the 15-min picker grid (so the value lands on a
@@ -16068,6 +16136,10 @@ function refreshDayDistances(dayContainer) {
     card.innerHTML = buildDistHelperHtml({ ...desc, km, travelMin: Math.round(km * 3) }, slots[i].id, slots[i + 1].id, modes)
     dayContainer.insertBefore(card.firstElementChild, slots[i + 1])
   }
+  // Final brute-force chain enforcement — catches any case where the
+  // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
+  // API races, mode swaps with cached results).
+  _enforceTimeChain(dayContainer)
   // Recompute the day summary card (stops / active hours / walking /
   // spend + warnings) on every refresh so it stays in sync with edits.
   refreshDaySummary(dayContainer)
