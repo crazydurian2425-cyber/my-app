@@ -16901,13 +16901,17 @@ function refreshDayDistances(dayContainer) {
     // Caller is the outer refreshDayDistances; let it own the inserts.
     // Skip the loop AND the bookend re-render that follows so the outer
     // call's state isn't clobbered (the outer one will re-render anyway).
+    console.log('[auto-insert] nested call, bailing')
     _enforceTimeChain(dayContainer)
     refreshDaySummary(dayContainer)
     if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
     return
   }
+  console.log('[auto-insert] outer call starting, flag was', window._autoInsertInProgress)
   window._autoInsertInProgress = true
+  try {
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  console.log('[auto-insert] iterating', slots.length, 'slots')
   for (let i = 0; i < slots.length - 1; i++) {
     const aSlot = slots[i]
     const bSlot = slots[i + 1]
@@ -16982,12 +16986,20 @@ function refreshDayDistances(dayContainer) {
       dayContainer.insertBefore(newT, bSlot)
       refreshTransportSlot(newT)
       if (typeof autoSaveDraft === 'function') autoSaveDraft()
+      console.log('[auto-insert] inserted transport', { id: newT.id, mode, departHHMM, between: [aSlot.id || '(anchor)', bSlot.id] })
     } catch (e) {
       console.warn('[auto-insert-transport] threw', e)
     }
   }
-  // Release the re-entrancy guard.
-  window._autoInsertInProgress = false
+  } finally {
+    // ALWAYS release the re-entrancy guard. Without try/finally, an
+    // unhandled error in the loop body (or in code after addSlot returns)
+    // would leave the flag stuck true forever — every subsequent
+    // refreshDayDistances call would bail at the guard and never insert
+    // any transports. THAT was the "auto-insert silently never fires"
+    // bug across sessions.
+    window._autoInsertInProgress = false
+  }
   // Final brute-force chain enforcement — catches any case where the
   // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
   // API races, mode swaps with cached results).
