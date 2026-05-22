@@ -2126,6 +2126,102 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.slot-type-freetime  .places-dropdown,
 .activity-slot.slot-type-transport .places-linked-chip,
 .activity-slot.slot-type-freetime  .places-linked-chip{display:none!important;}
+
+/* ── Transport slot polish ──
+   Visually secondary so it reads as a CONNECTOR between stops, not as
+   another destination card. Dashed border, secondary bg, smaller padding,
+   irrelevant fields hidden (title/photo/duration/address). */
+.activity-slot.slot-type-transport{
+  background:var(--bg);
+  border:0.5px dashed var(--border-med);
+  box-shadow:none;
+  margin-top:6px;margin-bottom:6px;
+}
+.activity-slot.slot-type-transport .slot-body{padding:8px 12px 10px 12px;}
+.activity-slot.slot-type-transport .slot-header{padding:8px 12px 4px 12px;}
+.activity-slot.slot-type-transport .slot-title-wrap,
+.activity-slot.slot-type-transport .slot-row-address,
+.activity-slot.slot-type-transport .slot-row-duration,
+.activity-slot.slot-type-transport .img-upload-area,
+.activity-slot.slot-type-transport .img-previews{display:none!important;}
+/* Custom content panel injected by refreshTransportSlot(). Holds the
+   From → To header + Distance/Duration/Cost grid. */
+.transport-content{display:flex;flex-direction:column;gap:8px;margin:2px 0 6px 0;}
+.transport-from-to{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:13.5px;color:var(--text);font-weight:500;
+}
+.transport-from-to .tft-arrow{color:var(--text-3);font-weight:400;}
+.transport-from-to .tft-blank{color:var(--text-3);font-style:italic;font-weight:400;}
+.transport-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
+  padding:8px 0;
+  border-top:0.5px dashed var(--border-med);
+  border-bottom:0.5px dashed var(--border-med);
+}
+.transport-grid > div{padding:0 8px;border-right:0.5px dashed var(--border-med);}
+.transport-grid > div:last-child{border-right:none;}
+.tg-label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;}
+.tg-value{font-size:13px;color:var(--text);font-weight:500;}
+.tg-value.tg-blank{color:var(--text-3);font-weight:400;font-style:italic;}
+
+/* ── Closed-venue alternatives panel ──
+   Renders OUTSIDE the linked chip (below the slot body) when the linked
+   place is closed on the planned day. Original venue's photo + name fade
+   to signal "this is broken; pick another". */
+.activity-slot.slot-closed-day .places-linked-chip .pl-thumb,
+.activity-slot.slot-closed-day .places-linked-chip .pl-body{opacity:0.55;}
+.activity-slot.slot-closed-day .places-linked-chip .pl-planned-closed{opacity:1;}
+.slot-closed-alts{
+  margin:8px 0 0 0;padding:12px 14px;
+  background:rgba(184,74,62,0.06);
+  border:1px solid rgba(184,74,62,0.30);
+  border-left:3px solid #b84a3e;
+  border-radius:6px;
+  font-size:12.5px;color:var(--text);
+}
+.slot-closed-alts-head{
+  display:flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:600;color:#b84a3e;margin-bottom:2px;
+}
+.slot-closed-alts-sub{font-size:12px;color:#8a3329;margin-bottom:10px;}
+.slot-closed-alts-loading,.slot-closed-alts-empty{
+  font-size:12px;color:var(--text-3);font-style:italic;padding:6px 0;
+}
+.slot-closed-alt{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;margin-bottom:6px;
+  background:#fff;border:1px solid var(--border-med);border-radius:6px;
+}
+.slot-closed-alt:last-of-type{margin-bottom:0;}
+.slot-closed-alt-body{flex:1;min-width:0;}
+.slot-closed-alt-row-1{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  font-size:12.5px;color:var(--text);margin-bottom:1px;
+}
+.slot-closed-alt-row-1 strong{font-weight:600;}
+.slot-closed-alt-dist{color:var(--text-3);font-weight:400;}
+.slot-closed-alt-open{
+  background:rgba(45,158,122,0.15);color:#1a7a5e;
+  padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:500;
+}
+.slot-closed-alt-row-2{font-size:11px;color:var(--text-3);}
+.slot-closed-alt-swap{
+  flex-shrink:0;
+  background:var(--green-dark,#1a7a5e);color:#fff;
+  border:0;padding:5px 14px;border-radius:5px;
+  font-size:11.5px;font-weight:500;font-family:inherit;cursor:pointer;
+  transition:background 0.12s;
+}
+.slot-closed-alt-swap:hover{background:#155f48;}
+.slot-closed-alt-swap:disabled{background:var(--text-3);cursor:default;}
+.slot-closed-alts-footer{
+  display:flex;gap:14px;margin-top:8px;
+  padding-top:8px;border-top:1px dashed rgba(184,74,62,0.20);
+  font-size:11.5px;
+}
+.slot-closed-alts-footer a{color:#8a3329;text-decoration:underline;cursor:pointer;}
+.slot-closed-alts-footer a:hover{color:#5d201a;}
 /* .activity-slot has overflow:hidden for its rounded corners — that clips the
    absolutely-positioned dropdown. Override only while a dropdown is showing
    (modern :has() support — Chrome 105+, Safari 15.4+, Firefox 121+). */
@@ -14044,6 +14140,17 @@ function renderLinkedChip(slot) {
       ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">View on Google Maps ↗</a>` : ''}
     </div>
   `
+  // Closed on the planned day? Fade the chip's photo + body via CSS class
+  // and kick off the nearby-alternatives lookup (renders below the slot).
+  const wasClosed = slot.classList.contains('slot-closed-day')
+  if (open.status === 'closed' && plannedDate) {
+    slot.classList.add('slot-closed-day')
+    ensureClosedAlternatives(slot, plannedDate)
+  } else if (wasClosed) {
+    slot.classList.remove('slot-closed-day')
+    const panel = slot.querySelector(':scope > .slot-closed-alts, :scope > .slot-closed-alts-host')
+    if (panel) panel.remove()
+  }
 }
 
 // Toggle the per-day schedule list inside a place chip.
@@ -14329,20 +14436,404 @@ function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon
   const timeLabel = newSlot.querySelector('.time-dd-label')
   if (timeInput) timeInput.value = startTime
   if (timeLabel) timeLabel.textContent = formatTimeDisplay(startTime)
-  // Sync the dropdown's selected option to the forced time.
   newSlot.querySelectorAll('.time-dd-option').forEach(opt => {
     opt.classList.toggle('is-selected', !!opt.getAttribute('onclick')?.includes(`'${startTime}'`))
   })
-  // Prefill title + notes.
+  // Stash the mode key so refreshTransportSlot() knows which formula to use
+  // for the Distance/Duration/Cost grid (and so a later "change mode"
+  // affordance can read it back).
+  newSlot.dataset.transportMode = modeKey
+  // Stash a backup title (kept in the hidden input for persistence) but the
+  // transport-content panel built by refreshTransportSlot is what the
+  // planner actually sees. Notes still capture mode-specific tips.
   const titleInput = newSlot.querySelector('.slot-title-input')
   const noteInput  = newSlot.querySelector('.slot-notes-input')
-  const nextName   = nextSlot.querySelector('.slot-title-input')?.value || ''
+  const nextName   = nextSlot.querySelector('.slot-title-input')?.value || nextSlot._placeData?.name || ''
   if (titleInput) titleInput.value = nextName ? `${modeName} to ${nextName}` : modeName
-  if (noteInput) noteInput.value = `${modeIcon} ${modeMeta}`
-  // Sort by time so the new transport row lands between prev and next.
+  if (noteInput && !noteInput.value) noteInput.value = `${modeIcon} ${modeMeta}`
+  // Sort by time so the new transport row lands between prev and next,
+  // then refreshDayDistances re-renders the helper cards + transport
+  // content (because slots.filter(...transport).forEach(refreshTransportSlot)
+  // runs at the top of refreshDayDistances).
   if (typeof resortSlots === 'function') resortSlots(dayContainer)
   refreshDayDistances(dayContainer)
   if (typeof autoSaveDraft === 'function') autoSaveDraft()
+}
+
+// ── Transport block enrichment ────────────────────────────────────────────
+// Transport slots get a custom content panel showing From → To +
+// Distance / Duration / Cost grid, computed from the neighbor slots.
+// addTransportBetween stashes the mode key + meta on slot.dataset so we
+// can re-render correctly on resort / neighbor change.
+
+// Per-mode time/cost formulas. km is haversine (crow-flies) so we apply
+// a road-detour bump for ground modes. Cost is rough EUR estimate —
+// planners adjust if they know better.
+function _transportEstimates(mode, km) {
+  const round = (n) => Math.round(n)
+  const kmRoad = km * 1.25   // crow-flies → road distance bump
+  if (mode === 'walk') {
+    return { mins: Math.max(8, round(kmRoad * 13)), costEur: 0 }
+  }
+  if (mode === 'taxi') {
+    // Generic city taxi/rideshare: ~€2.5 base + ~€3/km (Paris-ish surge level)
+    const mins = Math.max(4, round(kmRoad * 3))
+    const cost = round(2.5 + kmRoad * 3)
+    return { mins, costEur: cost }
+  }
+  if (mode === 'transit') {
+    // Metro/bus flat fare-ish — Paris t+ €2.10, rounded to €3 to include transfers
+    const mins = Math.max(15, round(kmRoad * 5) + 5)
+    return { mins, costEur: 3 }
+  }
+  if (mode === 'train') {
+    const mins = round(km * 1.2) + 20
+    const cost = round(15 + km * 0.4)   // regional train rough
+    return { mins, costEur: cost }
+  }
+  if (mode === 'car') {
+    const mins = round(km * 1.5) + 10
+    const cost = round(km * 0.6 + 10)   // fuel + tolls rough
+    return { mins, costEur: cost }
+  }
+  if (mode === 'hsr') {
+    const mins = round(km * 0.5) + 20
+    const cost = round(30 + km * 0.25)
+    return { mins, costEur: cost }
+  }
+  if (mode === 'flight') {
+    return { mins: 150, costEur: null }   // varies — leave blank
+  }
+  return { mins: null, costEur: null }
+}
+
+const _MODE_LABELS = {
+  walk: 'Walk', taxi: 'Taxi / Grab', transit: 'Public transit',
+  train: 'Regional train', car: 'Car / taxi', hsr: 'High-speed train', flight: 'Flight'
+}
+
+// Find the previous / next non-transport slot in the same day, walking
+// past consecutive transport slots if needed.
+function _findVenueNeighbors(slot) {
+  let prev = slot.previousElementSibling
+  while (prev && (!prev.classList.contains('activity-slot') || prev.classList.contains('slot-type-transport'))) {
+    prev = prev.previousElementSibling
+  }
+  let next = slot.nextElementSibling
+  while (next && (!next.classList.contains('activity-slot') || next.classList.contains('slot-type-transport'))) {
+    next = next.nextElementSibling
+  }
+  return { prev, next }
+}
+
+function _venueNameOf(slot) {
+  if (!slot) return ''
+  return slot._placeData?.name
+      || slot.querySelector('.slot-title-input')?.value
+      || ''
+}
+
+// Inject (or update) the transport content panel inside a transport slot.
+// Idempotent — safe to call after every resort / link change.
+function refreshTransportSlot(slot) {
+  if (!slot || !slot.classList.contains('slot-type-transport')) return
+  const body = slot.querySelector('.slot-body')
+  if (!body) return
+  // Make sure a content host exists.
+  let host = slot.querySelector('.transport-content')
+  if (!host) {
+    host = document.createElement('div')
+    host.className = 'transport-content'
+    // Insert at the top of slot-body so it appears above the notes textarea.
+    body.insertBefore(host, body.firstChild)
+  }
+  const { prev, next } = _findVenueNeighbors(slot)
+  const fromName = _venueNameOf(prev)
+  const toName   = _venueNameOf(next)
+  const a = prev ? getSlotLatLng(prev) : null
+  const b = next ? getSlotLatLng(next) : null
+  const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
+  const mode = slot.dataset.transportMode || 'taxi'
+  const est = (km != null) ? _transportEstimates(mode, km) : { mins: null, costEur: null }
+  const fromHtml = fromName ? `<span>${escapeHtml(fromName)}</span>` : '<span class="tft-blank">previous stop</span>'
+  const toHtml   = toName   ? `<span>${escapeHtml(toName)}</span>`   : '<span class="tft-blank">next stop</span>'
+  const kmTxt   = (km != null) ? `${km.toFixed(1)} km` : '—'
+  const minsTxt = (est.mins != null) ? `${est.mins} min` : '—'
+  const costTxt = (est.costEur == null) ? '—'
+                : (est.costEur === 0) ? 'free'
+                : `~€${est.costEur}`
+  host.innerHTML = `
+    <div class="transport-from-to">
+      ${fromHtml}<span class="tft-arrow">→</span>${toHtml}
+    </div>
+    <div class="transport-grid">
+      <div><div class="tg-label">Distance</div><div class="tg-value${km==null?' tg-blank':''}">${escapeHtml(kmTxt)}</div></div>
+      <div><div class="tg-label">Duration</div><div class="tg-value${est.mins==null?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
+      <div><div class="tg-label">Cost / pax</div><div class="tg-value${est.costEur==null?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
+    </div>`
+}
+
+// ── Closed-venue smart alternatives (Phase 2 redux) ───────────────────────
+// Same idea as before but with the polished design: the warning + 3
+// alternatives card render OUTSIDE the linked chip (below the slot body),
+// and the original chip's photo + body fade to 55% so the planner sees
+// at a glance that the current pick is broken.
+const PLACES_NEARBY_DAILY_CAP = 50
+const PLACES_NEARBY_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+const PLACES_NEARBY_CACHE_PREFIX = 'jj_nearby_v3_'
+
+function _todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function _readNearbyDailyCount(){try{const r=localStorage.getItem('jj_nearby_daily_count');if(!r)return 0;const o=JSON.parse(r);return o.date===_todayKey()?(Number(o.count)||0):0}catch(e){return 0}}
+function _bumpNearbyDailyCount(){try{const c=_readNearbyDailyCount()+1;localStorage.setItem('jj_nearby_daily_count',JSON.stringify({date:_todayKey(),count:c}));return c}catch(e){return 0}}
+function _canCallNearby(){return _readNearbyDailyCount()<PLACES_NEARBY_DAILY_CAP}
+function _cacheKeyForNearby(placeId,plannedDate){return `${PLACES_NEARBY_CACHE_PREFIX}${placeId}_${plannedDate||'noday'}`}
+function _readNearbyCache(placeId,plannedDate){try{const r=localStorage.getItem(_cacheKeyForNearby(placeId,plannedDate));if(!r)return null;const o=JSON.parse(r);if(!o.t||Date.now()-o.t>PLACES_NEARBY_CACHE_TTL_MS)return null;return o.results||null}catch(e){return null}}
+function _writeNearbyCache(placeId,plannedDate,results){try{localStorage.setItem(_cacheKeyForNearby(placeId,plannedDate),JSON.stringify({t:Date.now(),results}))}catch(e){}}
+
+function _nearbyTypeFor(placeTypes) {
+  if (!Array.isArray(placeTypes) || !placeTypes.length) return 'tourist_attraction'
+  const set = new Set(placeTypes.map(t => String(t).toLowerCase()))
+  if (set.has('restaurant')) return 'restaurant'
+  if (set.has('cafe')) return 'cafe'
+  if (set.has('bakery')) return 'bakery'
+  if (set.has('bar')) return 'bar'
+  if (set.has('meal_takeaway')) return 'meal_takeaway'
+  if (set.has('museum')) return 'museum'
+  if (set.has('art_gallery')) return 'art_gallery'
+  if (set.has('park')) return 'park'
+  if (set.has('zoo')) return 'zoo'
+  if (set.has('aquarium')) return 'aquarium'
+  if (set.has('amusement_park')) return 'amusement_park'
+  if (set.has('shopping_mall') || set.has('market') || set.has('store') || set.has('supermarket')) return 'shopping_mall'
+  if (set.has('night_club')) return 'night_club'
+  if (set.has('movie_theater')) return 'movie_theater'
+  if (set.has('lodging') || set.has('hotel')) return 'lodging'
+  return 'tourist_attraction'
+}
+function _isOpenOn(openingHoursJson, plannedDate) {
+  if (!openingHoursJson || !plannedDate) return false
+  const wk = openingHoursJson.weekdayDescriptions
+  if (!Array.isArray(wk) || wk.length < 7) return false
+  const [yr, mo, da] = plannedDate.split('-').map(Number)
+  const d = new Date(yr, mo - 1, da)
+  const jsDow = d.getDay()
+  const idx = jsDow === 0 ? 6 : jsDow - 1
+  const line = wk[idx] || ''
+  if (/closed/i.test(line)) return false
+  return /\d/.test(line)
+}
+function _openOnDayLabel(openingHoursJson, plannedDate) {
+  if (!openingHoursJson || !plannedDate) return ''
+  const [yr, mo, da] = plannedDate.split('-').map(Number)
+  const d = new Date(yr, mo - 1, da)
+  const jsDow = d.getDay()
+  const idx = jsDow === 0 ? 6 : jsDow - 1
+  const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][idx]
+  return `Open ${dayName}`
+}
+
+async function _fetchNearbyAlternatives(centerLat, centerLng, includedType) {
+  const fields = [
+    'places.id','places.displayName','places.formattedAddress','places.location',
+    'places.rating','places.userRatingCount','places.priceLevel','places.priceRange',
+    'places.regularOpeningHours','places.types','places.photos','places.editorialSummary'
+  ].join(',')
+  const body = {
+    includedTypes: [includedType],
+    locationRestriction: { circle: { center: { latitude: centerLat, longitude: centerLng }, radius: 1500 } },
+    maxResultCount: 20,
+    rankPreference: 'POPULARITY',
+  }
+  try {
+    const resp = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields },
+      body: JSON.stringify(body),
+    })
+    if (!resp.ok) {
+      const errTxt = await resp.text().catch(() => '')
+      console.warn('[places] nearbySearch failed', resp.status, errTxt)
+      return []
+    }
+    const data = await resp.json().catch(() => null)
+    return Array.isArray(data?.places) ? data.places : []
+  } catch (e) {
+    console.warn('[places] nearbySearch threw', e)
+    return []
+  }
+}
+
+function _filterAlternatives(candidates, plannedDate, excludeId) {
+  return candidates
+    .filter(p => p.id && p.id !== excludeId)
+    .filter(p => _isOpenOn(p.regularOpeningHours, plannedDate))
+    .filter(p => (typeof p.rating !== 'number') || p.rating >= 4.0)
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 3)
+}
+
+function _altCategoryLine(p) {
+  // Prefer editorialSummary if Google has one (it's the natural-language
+  // description like "Fashion-crowd brasserie"). Fall back to first
+  // recognizable place_type.
+  const summary = p.editorialSummary?.text || ''
+  if (summary) return summary
+  const t = Array.isArray(p.types) ? p.types : []
+  const human = t.map(s => String(s).replace(/_/g, ' ')).find(s =>
+    !['point_of_interest','establishment','food','place'].includes(s.replace(/ /g,'_')))
+  return human || ''
+}
+
+function _altPriceLine(p) {
+  return formatPriceRange(p.priceRange) || formatPriceLevel(p.priceLevel, currencyForAddress(p.formattedAddress)) || ''
+}
+
+function buildClosedAltsHtml(alternatives, plannedDate, slotId, originLat, originLng) {
+  const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][(() => {
+    const [yr, mo, da] = plannedDate.split('-').map(Number)
+    const d = new Date(yr, mo - 1, da)
+    const dow = d.getDay()
+    return dow === 0 ? 6 : dow - 1
+  })()]
+  if (!alternatives || !alternatives.length) {
+    return `
+      <div class="slot-closed-alts">
+        <div class="slot-closed-alts-head">⚠ Closed on ${escapeHtml(dayName)}</div>
+        <div class="slot-closed-alts-empty">No good open alternatives within 1.5 km. Try a wider search.</div>
+        <div class="slot-closed-alts-footer">
+          <a onclick="closedAltsAction('${slotId}','manual')">Search manually</a>
+          <a onclick="closedAltsAction('${slotId}','keep')">Keep anyway</a>
+        </div>
+      </div>`
+  }
+  const items = alternatives.map(p => {
+    const name = (p.displayName?.text || p.displayName || 'Unnamed')
+    const lat = p.location?.latitude, lng = p.location?.longitude
+    const dKm = (lat != null && lng != null && originLat != null && originLng != null)
+      ? haversineKm(originLat, originLng, lat, lng).toFixed(1) + ' km'
+      : ''
+    const rating = (typeof p.rating === 'number') ? `★ ${p.rating.toFixed(1)}` : ''
+    const cat = _altCategoryLine(p)
+    const price = _altPriceLine(p)
+    const row2 = [rating, cat, price].filter(Boolean).join(' · ')
+    return `
+      <div class="slot-closed-alt">
+        <div class="slot-closed-alt-body">
+          <div class="slot-closed-alt-row-1">
+            <strong>${escapeHtml(name)}</strong>
+            ${dKm ? `<span class="slot-closed-alt-dist">· ${escapeHtml(dKm)}</span>` : ''}
+            <span class="slot-closed-alt-open">● Open ${escapeHtml(dayName)}</span>
+          </div>
+          <div class="slot-closed-alt-row-2">${escapeHtml(row2)}</div>
+        </div>
+        <button type="button" class="slot-closed-alt-swap"
+          onclick="closedAltsSwap('${slotId}','${escapeHtml(p.id)}')">Swap</button>
+      </div>`
+  }).join('')
+  return `
+    <div class="slot-closed-alts">
+      <div class="slot-closed-alts-head">⚠ Closed on ${escapeHtml(dayName)}</div>
+      <div class="slot-closed-alts-sub">Try one of these alternatives nearby:</div>
+      ${items}
+      <div class="slot-closed-alts-footer">
+        <a onclick="closedAltsAction('${slotId}','manual')">Search manually</a>
+        <a onclick="closedAltsAction('${slotId}','keep')">Keep anyway</a>
+      </div>
+    </div>`
+}
+
+async function ensureClosedAlternatives(slot, plannedDate) {
+  if (!slot || !plannedDate) return
+  const d = slot._placeData
+  if (!d || !d.google_place_id) return
+  if (slot.dataset.altsState === 'dismissed') return
+  // Replace any stale panel from a previous render.
+  const existing = slot.querySelector(':scope > .slot-closed-alts-host, :scope > .slot-closed-alts')
+  if (existing) existing.remove()
+  const host = document.createElement('div')
+  host.className = 'slot-closed-alts-host'
+  host.innerHTML = `<div class="slot-closed-alts"><div class="slot-closed-alts-loading">Looking up nearby venues open on this day…</div></div>`
+  slot.appendChild(host)
+  const cached = _readNearbyCache(d.google_place_id, plannedDate)
+  if (cached) {
+    const filtered = _filterAlternatives(cached, plannedDate, d.google_place_id)
+    host.outerHTML = buildClosedAltsHtml(filtered, plannedDate, slot.id, d.latitude, d.longitude)
+    return
+  }
+  if (!_canCallNearby()) {
+    host.outerHTML = `<div class="slot-closed-alts">
+      <div class="slot-closed-alts-head">Hit today's lookup limit (${PLACES_NEARBY_DAILY_CAP}/day).</div>
+      <div class="slot-closed-alts-footer">
+        <a onclick="closedAltsAction('${slot.id}','manual')">Search manually</a>
+        <a onclick="closedAltsAction('${slot.id}','keep')">Keep anyway</a>
+      </div>
+    </div>`
+    return
+  }
+  if (d.latitude == null || d.longitude == null) {
+    host.outerHTML = `<div class="slot-closed-alts"><div class="slot-closed-alts-empty">No coordinates — can't find alternatives.</div></div>`
+    return
+  }
+  slot.dataset.altsState = 'loading'
+  try {
+    const includedType = _nearbyTypeFor(d.place_types)
+    const candidates = await _fetchNearbyAlternatives(d.latitude, d.longitude, includedType)
+    _bumpNearbyDailyCount()
+    _writeNearbyCache(d.google_place_id, plannedDate, candidates)
+    const live = document.getElementById(slot.id)
+    if (!live) return
+    const liveHost = live.querySelector(':scope > .slot-closed-alts-host, :scope > .slot-closed-alts')
+    if (!liveHost) return
+    const filtered = _filterAlternatives(candidates, plannedDate, d.google_place_id)
+    liveHost.outerHTML = buildClosedAltsHtml(filtered, plannedDate, live.id, d.latitude, d.longitude)
+    live.dataset.altsState = 'loaded'
+  } catch (e) {
+    console.warn('[alts] pipeline failed', e)
+    slot.dataset.altsState = ''
+  }
+}
+
+async function closedAltsSwap(slotId, placeId) {
+  const slot = document.getElementById(slotId)
+  if (!slot || !placeId) return
+  const btn = slot.querySelector(`.slot-closed-alt-swap[onclick*="${placeId}"]`)
+  if (btn) { btn.disabled = true; btn.textContent = 'Swapping…' }
+  const savedType = slot.querySelector('.slot-type-select')?.value || null
+  const savedTime = slot.querySelector('.slot-time-input')?.value || null
+  const savedNotes = slot.querySelector('.slot-notes-input')?.value || null
+  await selectPlaceForSlot(slot, placeId)
+  if (savedType) {
+    const typeInput = slot.querySelector('.slot-type-select')
+    if (typeInput && typeInput.value !== savedType) applySlotTypeChange(slot, savedType)
+  }
+  if (savedTime) {
+    const timeInput = slot.querySelector('.slot-time-input')
+    if (timeInput) timeInput.value = savedTime
+    const label = slot.querySelector('.time-dd-label')
+    if (label) label.textContent = formatTimeDisplay(savedTime)
+  }
+  if (savedNotes) {
+    const noteInput = slot.querySelector('.slot-notes-input')
+    if (noteInput) noteInput.value = savedNotes
+  }
+}
+
+function closedAltsAction(slotId, action) {
+  const slot = document.getElementById(slotId)
+  if (!slot) return
+  if (action === 'manual') {
+    clearLinkedPlaceById(slotId)
+    const titleInput = slot.querySelector('.slot-title-input')
+    if (titleInput) { titleInput.focus(); titleInput.select() }
+    return
+  }
+  if (action === 'keep') {
+    slot.dataset.altsState = 'dismissed'
+    const panel = slot.querySelector(':scope > .slot-closed-alts, :scope > .slot-closed-alts-host')
+    if (panel) panel.remove()
+    slot.classList.remove('slot-closed-day')
+    return
+  }
 }
 
 function refreshDayDistances(dayContainer) {
@@ -14350,6 +14841,8 @@ function refreshDayDistances(dayContainer) {
   // Remove any previously-injected distance rows AND helper cards.
   dayContainer.querySelectorAll(':scope > .slot-distance, :scope > .slot-dist-helper').forEach(el => el.remove())
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  // Refresh transport blocks (now their neighbors are stable post-resort).
+  slots.filter(s => s.classList.contains('slot-type-transport')).forEach(refreshTransportSlot)
   for (let i = 0; i < slots.length - 1; i++) {
     const a = getSlotLatLng(slots[i])
     const b = getSlotLatLng(slots[i + 1])
