@@ -16263,13 +16263,30 @@ function _applySlotTime(slot, hhmm) {
 // In-place sort of slots by time-input value — same logic as resortSlots
 // but DOESN'T call refreshDayDistances at the end, so refreshDayDistances
 // can use it internally without recursion.
+//
+// Locked bookend anchors are EXCLUDED from the sort because they have no
+// .slot-time-input (so they'd get the '00:00' fallback and end up at the
+// top of the day). renderDayBookends positions them manually. We remove
+// them before the appendChild loop and put them back at top/bottom after
+// so this function is safe to call even when bookends are in the DOM
+// (e.g. when applyRouteDataToSlot → _enforceTimeChain runs async after
+// the initial refresh has already inserted the anchors).
 function _sortSlotsInPlace(container) {
   if (!container) return
-  const slots = [...container.querySelectorAll('.activity-slot')]
+  const lockedAnchors = [...container.querySelectorAll(':scope > .activity-slot.is-locked')]
+  const isTopAnchor = (a) => a.dataset.anchorType === 'arrival' || a.dataset.anchorType === 'morning'
+  const isBottomAnchor = (a) => a.dataset.anchorType === 'end_of_day' || a.dataset.anchorType === 'departure'
+  const topLocked    = lockedAnchors.filter(isTopAnchor)
+  const bottomLocked = lockedAnchors.filter(isBottomAnchor)
+  lockedAnchors.forEach(a => a.remove())
+  const slots = [...container.querySelectorAll(':scope > .activity-slot')]
   slots
     .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00' }))
     .sort((a, b) => a.t.localeCompare(b.t))
     .forEach(({ el }) => container.appendChild(el))
+  // Put the locked anchors back at the right ends.
+  topLocked.forEach(a => container.insertBefore(a, container.firstChild))
+  bottomLocked.forEach(a => container.appendChild(a))
 }
 
 // ── Maps JavaScript API loader (lazy, once per page) ──
