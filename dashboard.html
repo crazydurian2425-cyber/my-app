@@ -14557,6 +14557,132 @@ function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
        + '&mode='        + embedMode
 }
 
+// ── Google Routes API integration ─────────────────────────────────────────
+// Returns the REAL distance / duration / fare for a leg between two linked
+// places. Heuristics stay as instant placeholders; Routes API result is
+// patched into the grid when it resolves.
+//
+// Cost: ~$5/1000 calls. Aggressive cache (24h, keyed by place_id + mode)
+// means each unique leg costs the API once per day. Daily cap of 200
+// calls/browser stops runaway spending if the cache breaks.
+//
+// Requires "Routes API" enabled on the Google Cloud project AND added to
+// the API key's allowed-APIs list (same key as Places).
+const ROUTES_DAILY_CAP = 200
+const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+const ROUTES_CACHE_PREFIX = 'jj_route_v1_'
+
+function _routesModeFor(mode) {
+  if (mode === 'walk') return 'WALK'
+  if (mode === 'taxi' || mode === 'car') return 'DRIVE'
+  if (mode === 'transit' || mode === 'train' || mode === 'hsr') return 'TRANSIT'
+  return null   // flight isn't supported by Routes — keep heuristic
+}
+function _readRoutesDaily() {
+  try {
+    const r = localStorage.getItem('jj_routes_daily_count')
+    if (!r) return 0
+    const o = JSON.parse(r)
+    return (o.date === _todayKey()) ? (Number(o.count) || 0) : 0
+  } catch (e) { return 0 }
+}
+function _bumpRoutesDaily() {
+  try {
+    const c = _readRoutesDaily() + 1
+    localStorage.setItem('jj_routes_daily_count', JSON.stringify({ date: _todayKey(), count: c }))
+    return c
+  } catch (e) { return 0 }
+}
+
+async function fetchRouteData(fromSlot, toSlot, mode) {
+  const fromId = fromSlot?._placeData?.google_place_id
+  const toId   = toSlot?._placeData?.google_place_id
+  if (!fromId || !toId) return null
+  const travelMode = _routesModeFor(mode)
+  if (!travelMode) return null
+  // Cache hit?
+  const key = `${ROUTES_CACHE_PREFIX}${fromId}_${toId}_${travelMode}`
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw) {
+      const o = JSON.parse(raw)
+      if (o.t && Date.now() - o.t < ROUTES_CACHE_TTL_MS) return o.data
+    }
+  } catch (e) {}
+  // Daily cap
+  if (_readRoutesDaily() >= ROUTES_DAILY_CAP) {
+    console.warn('[routes] hit daily cap')
+    return null
+  }
+  try {
+    const body = {
+      origin:      { placeId: fromId },
+      destination: { placeId: toId },
+      travelMode,
+      units: 'METRIC',
+    }
+    const fieldMask = 'routes.duration,routes.distanceMeters,routes.travelAdvisory.transitFare'
+    const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': fieldMask,
+      },
+      body: JSON.stringify(body),
+    })
+    if (!resp.ok) {
+      const errTxt = await resp.text().catch(() => '')
+      console.warn('[routes] failed', resp.status, errTxt)
+      return null
+    }
+    const data = await resp.json()
+    const route = data.routes?.[0]
+    if (!route) return null
+    const durSec = parseInt(String(route.duration || '0s').replace('s',''), 10) || 0
+    const result = {
+      durationMin: Math.round(durSec / 60),
+      distanceKm:  (route.distanceMeters || 0) / 1000,
+      costEur:     null,
+    }
+    const fare = route.travelAdvisory?.transitFare
+    if (fare) {
+      const units = parseInt(fare.units || '0', 10) || 0
+      const nanos = (fare.nanos || 0) / 1e9
+      result.costEur = Math.round((units + nanos) * 100) / 100
+    }
+    try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: result })) } catch (e) {}
+    _bumpRoutesDaily()
+    console.log(`[routes] ${travelMode} ${fromId.slice(0,12)}…→${toId.slice(0,12)}… → ${result.durationMin} min · ${result.distanceKm.toFixed(1)} km`)
+    return result
+  } catch (e) {
+    console.warn('[routes] threw', e)
+    return null
+  }
+}
+
+// Patches the transport-content grid in-place with the Google Routes result.
+// Called from refreshTransportSlot once the async fetch resolves.
+function applyRouteDataToSlot(slot, data) {
+  if (!slot || !data) return
+  const host = slot.querySelector('.transport-content')
+  if (!host) return
+  const cells = host.querySelectorAll('.transport-grid .tg-value')
+  if (cells[0]) { cells[0].textContent = `${data.distanceKm.toFixed(1)} km`; cells[0].classList.remove('tg-blank') }
+  if (cells[1]) { cells[1].textContent = `${data.durationMin} min`;          cells[1].classList.remove('tg-blank') }
+  if (cells[2] && data.costEur != null) {
+    cells[2].textContent = `~€${data.costEur}`
+    cells[2].classList.remove('tg-blank')
+  }
+  // Refresh the depart→arrive time range with the real duration.
+  const departHHMM = slot.querySelector('.slot-time-input')?.value
+  if (departHHMM) {
+    const arrive = _addMinutes(departHHMM, data.durationMin)
+    const range = host.querySelector('.transport-time-range')
+    if (range) range.textContent = `${formatTimeDisplay(departHHMM)} → ${formatTimeDisplay(arrive)}`
+  }
+}
+
 function _transportEstimates(mode, km) {
   const round = (n) => Math.round(n)
   // Walking takes direct pedestrian shortcuts (parks, plazas, alleys), so
@@ -14779,6 +14905,17 @@ function refreshTransportSlot(slot) {
     </div>
     ${directionsLink}
     ${tooFarBanner}`
+  // Async: ask Google Routes API for the real distance/duration/fare,
+  // then patch the grid + time range in place. Heuristic numbers show
+  // until this resolves (~200 ms typically). Cached per place_id+mode
+  // so a re-render is instant.
+  if (!tooFar && prev?._placeData?.google_place_id && next?._placeData?.google_place_id) {
+    fetchRouteData(prev, next, mode).then(result => {
+      if (!result) return
+      const live = document.getElementById(slot.id)
+      if (live) applyRouteDataToSlot(live, result)
+    })
+  }
 }
 
 // Add minutes to a HH:MM string, return HH:MM. Clamps to 23:59.
