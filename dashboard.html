@@ -16030,7 +16030,13 @@ function refreshTransportSlot(slot) {
   // Auto-syncs back into the hidden time-input so save/sort see the
   // right value too.
   let departHHMM = slot.querySelector('.slot-time-input')?.value || '09:00'
-  if (prev) {
+  // Only recompute depart from prev's start+stay if prev is a real venue.
+  // Locked anchors (now visible to _findVenueNeighbors when they carry
+  // _placeData) have no .slot-time-input / .slot-duration-input —
+  // _suggestTransportStart would fall back to '09:00' + 15 min and clobber
+  // the transport's actual depart time (which was set explicitly by
+  // _insertArrivalTaxi or by the planner).
+  if (prev && !prev.classList.contains('is-locked')) {
     const corrected = _suggestTransportStart(prev, next)
     if (corrected !== departHHMM) {
       departHHMM = corrected
