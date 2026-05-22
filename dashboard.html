@@ -1771,11 +1771,12 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
    departure). Compact, faded, no edit affordances. Shares .activity-slot for
    layout but everything inside is read-only. */
 .activity-slot.is-locked{
-  display:flex;align-items:center;gap:10px;
+  display:block;
   padding:8px 12px;background:var(--bg);opacity:0.95;
   border:0.5px solid var(--border);box-shadow:none;
   cursor:default;
 }
+.activity-slot.is-locked .anchor-row{display:flex;align-items:center;gap:10px;}
 .activity-slot.is-locked .anchor-icon{
   width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
   font-size:14px;flex-shrink:0;
@@ -1800,6 +1801,29 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   flex-shrink:0;text-transform:uppercase;letter-spacing:0.4px;
 }
 .activity-slot.is-locked .anchor-lock-icon{font-size:11px;line-height:1;}
+/* Profile-match badge on the end-of-day anchor. State drives the color tint. */
+.activity-slot.is-locked .anchor-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:10.5px;font-weight:500;padding:3px 8px;border-radius:11px;
+  border:1px solid;flex-shrink:0;letter-spacing:0.2px;
+}
+.activity-slot.is-locked .anchor-badge-on_profile{
+  color:#1a7a5e;border-color:rgba(26,122,94,0.35);background:rgba(26,122,94,0.10);
+}
+.activity-slot.is-locked .anchor-badge-late{
+  color:#8a6b1a;border-color:rgba(184,128,30,0.40);background:rgba(220,158,45,0.15);
+}
+.activity-slot.is-locked .anchor-badge-early{
+  color:var(--text-2);border-color:var(--border);background:var(--surface);
+}
+/* Soft 1-line explanation under the end-of-day row. */
+.activity-slot.is-locked .anchor-footer{
+  margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);
+  font-size:11px;color:var(--text-2);line-height:1.45;
+}
+.activity-slot.is-locked.anchor-end-of-day.anchor-state-late  .anchor-footer{color:#8a6b1a;}
+.activity-slot.is-locked.anchor-end-of-day.anchor-state-early .anchor-footer{color:var(--text-3);}
+.activity-slot.is-locked.anchor-end-of-day.anchor-state-on_profile .anchor-footer{color:#1a7a5e;}
 /* Suppress all the editable slot machinery on locked rows. */
 .activity-slot.is-locked .slot-header,
 .activity-slot.is-locked .slot-body,
@@ -1896,6 +1920,22 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .day-summary-grid > div:last-child{border-right:none;padding-right:0;}
 .dsg-label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;}
 .dsg-value{font-size:14px;color:var(--text);font-weight:500;}
+/* Expected-vs-actual end row in the Day Summary card. */
+.day-summary-profile{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-top:6px;padding:6px 10px;border-radius:6px;
+  font-size:11.5px;line-height:1.4;background:var(--bg);
+}
+.day-summary-profile .dsp-label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;}
+.day-summary-profile .dsp-val{font-weight:600;color:var(--text);}
+.day-summary-profile .dsp-sep{color:var(--text-3);}
+.day-summary-profile .dsp-tag{
+  margin-left:auto;font-size:10.5px;font-weight:500;
+  padding:2px 8px;border-radius:10px;border:1px solid var(--border);
+}
+.day-summary-profile-on_profile .dsp-tag{color:#1a7a5e;border-color:rgba(26,122,94,0.35);background:rgba(26,122,94,0.10);}
+.day-summary-profile-late       .dsp-tag{color:#8a6b1a;border-color:rgba(184,128,30,0.40);background:rgba(220,158,45,0.15);}
+.day-summary-profile-early      .dsp-tag{color:var(--text-2);}
 .day-summary-warn,
 .day-summary-ok{
   margin-top:6px;padding:8px 10px;border-radius:6px;
@@ -12507,6 +12547,21 @@ async function openItineraryForm(planId) {
   window._currentHotelBreakfast = !!t.hotel_includes_breakfast
   window._currentUnitOrder      = parseInt(_tmeta.unit_order, 10) || 1
   window._currentUnitTotal      = parseInt(_tmeta.unit_total, 10) || 1
+  // ── Context for the day-end profile comparison ──
+  // First name only — keep it casual, "Sofía's profile suggests…". Falls
+  // back to a neutral pronoun if the traveler row carries no name.
+  window._currentFirstName    = (t.name || '').trim().split(/\s+/)[0] || 'the traveler'
+  // ages[] and occasion drive the kid/senior caps + the honeymoon minimum.
+  window._currentAges         = Array.isArray(_tmeta.ages) ? _tmeta.ages.slice() : []
+  window._currentOccasion     = (_tmeta.occasion || '').toLowerCase()
+  // Departure time on the LAST day controls the day-before-early-flight
+  // adjustment (-60 min if the flight leaves before 09:00).
+  window._currentDepartureHourInt = (function () {
+    const s = window._currentDepartureTime
+    if (!s) return null
+    const m = String(s).match(/^(\d{1,2}):(\d{2})$/)
+    return m ? parseInt(m[1], 10) : null
+  }())
   const travType = t.traveler_type || plan.type || ''
   const duration = t.duration     || plan.duration || '3D2N'
   const isBond   = t.requires_bond || plan.deposit || false
@@ -16176,6 +16231,103 @@ function _wakeTimeForTiming(timing) {
   return '08:30'                              // standard
 }
 
+// ── Expected day-end time (minutes since midnight) ──
+// Compute the time the traveler "should" be back at the hotel based on
+// their profile. Pure function — no DOM, no globals other than read-only
+// _current* context exposed at plan open.
+//
+//   1. Baseline from daily_timing:
+//        early → 21:00 · standard → 22:30 · late → 23:30
+//   2. Pace adjust:
+//        slow → -30 · moderate → 0 · active → +30 · packed → +60
+//   3. Group caps (UPPER bounds — never go later than):
+//        any kid <  7  → 21:00
+//        any kid 7-12  → 21:30
+//        any senior 70+ → 22:00
+//   4. Honeymoon MINIMUM (never go earlier than): 22:30
+//   5. Day-type adjustment:
+//        day 1 (arrival)                          → -60 (jet lag)
+//        last day before early-AM flight (<09:00) → -60
+function _computeExpectedDayEnd(dayNum, totalDays) {
+  const timing = window._currentDailyTiming || 'standard'
+  let base = (timing === 'early')  ? 21 * 60
+           : (timing === 'late')   ? 23 * 60 + 30
+           :                          22 * 60 + 30
+  const pace = String(window._currentPace || '').toLowerCase()
+  if (pace === 'slow')        base -= 30
+  else if (pace === 'active') base += 30
+  else if (pace === 'packed') base += 60
+  // Group caps (upper bound).
+  const ages = Array.isArray(window._currentAges) ? window._currentAges : []
+  let cap = null
+  for (const age of ages) {
+    const a = Number(age); if (!Number.isFinite(a)) continue
+    if (a < 7)         cap = Math.min(cap ?? Infinity, 21 * 60)
+    else if (a <= 12)  cap = Math.min(cap ?? Infinity, 21 * 60 + 30)
+    else if (a >= 70)  cap = Math.min(cap ?? Infinity, 22 * 60)
+  }
+  if (cap != null) base = Math.min(base, cap)
+  // Honeymoon minimum.
+  const occ = String(window._currentOccasion || '').toLowerCase()
+  if (occ === 'honeymoon' || occ === 'anniversary') {
+    base = Math.max(base, 22 * 60 + 30)
+  }
+  // Day-type adjustments.
+  if (dayNum === 1) base -= 60     // arrival jet lag
+  if (totalDays && dayNum === totalDays
+      && window._currentDepartureHourInt != null
+      && window._currentDepartureHourInt < 9) {
+    base -= 60                      // day before an early-AM flight
+  }
+  // Clamp into valid display range.
+  if (base < 17 * 60)         base = 17 * 60
+  if (base > 23 * 60 + 45)    base = 23 * 60 + 45
+  return base
+}
+
+// Actual day-end time (minutes since midnight) — last venue's effective
+// end + 20-min back-to-hotel buffer. Returns null when the day has no
+// non-locked venues yet (planner hasn't started filling it).
+function _computeActualDayEnd(dayContainer) {
+  if (!dayContainer) return null
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+    .filter(s => !s.classList.contains('is-locked'))
+  if (!slots.length) return null
+  const last = slots[slots.length - 1]
+  const startMin = parseSlotTime(last.querySelector('.slot-time-input')?.value || '')
+  if (startMin == null) return null
+  if (last.classList.contains('slot-type-transport')) {
+    // Transport already includes the journey time — its arrival IS the end.
+    const cells = last.querySelectorAll('.transport-grid .tg-value')
+    const m = (cells[1]?.textContent || '').match(/(\d+)\s*min/i)
+    return startMin + (m ? parseInt(m[1], 10) : 0)
+  }
+  // Venue: end = start + stay + 20-min back-to-hotel buffer.
+  const type = last.querySelector('.slot-type-select')?.value || 'activity'
+  let stay = parseInt(last.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+  if (type === 'accommodation') stay = Math.max(stay, 30)
+  else if (type === 'meal')     stay = Math.max(stay, 30)
+  if (stay <= 0) stay = 15
+  return startMin + stay + 20
+}
+
+// Compare actual vs expected end-of-day. Returns:
+//   { state: 'on_profile' | 'late' | 'early' | 'neutral',
+//     expected, actual, expectedStr, actualStr,
+//     gapMin (positive when actual is later than expected) }
+function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
+  const expected = _computeExpectedDayEnd(dayNum, totalDays)
+  const actual   = _computeActualDayEnd(dayContainer)
+  const expectedStr = formatTimeDisplay(minsToHHMM(expected))
+  if (actual == null) return { state: null, expected, actual: null, expectedStr, actualStr: null, gapMin: null }
+  const gap = actual - expected   // +ve = late, -ve = early
+  let state = 'neutral'
+  if (Math.abs(gap) <= 30)        state = 'on_profile'
+  else if (gap > 60)              state = 'late'
+  else if (gap < -60)             state = 'early'
+  return { state, expected, actual, expectedStr, actualStr: formatTimeDisplay(minsToHHMM(actual)), gapMin: gap }
+}
+
 // Icon mark — emoji works without an extra icon font dependency. The CSS
 // .anchor-icon block colours the row tint by anchor type.
 function _anchorIconFor(type, method) {
@@ -16186,17 +16338,24 @@ function _anchorIconFor(type, method) {
   return '·'
 }
 
-function _buildLockedAnchor({ type, title, subtitle, method }) {
+function _buildLockedAnchor({ type, title, subtitle, method, badge, footer }) {
   const el = document.createElement('div')
   el.className = `activity-slot is-locked anchor-${type.replace(/_/g,'-')}`
   el.dataset.anchorType = type
+  // Right-side: profile-match badge (only on end-of-day) OR the "auto" pill.
+  const rightHtml = badge
+    ? `<span class="anchor-badge anchor-badge-${badge.state}">${escapeHtml(badge.label)}</span>`
+    : `<span class="anchor-lock"><span class="anchor-lock-icon">🔒</span>auto</span>`
   el.innerHTML = `
-    <span class="anchor-icon">${_anchorIconFor(type, method)}</span>
-    <div class="anchor-body">
-      <div class="anchor-title">${escapeHtml(title)}</div>
-      ${subtitle ? `<div class="anchor-sub">${escapeHtml(subtitle)}</div>` : ''}
+    <div class="anchor-row">
+      <span class="anchor-icon">${_anchorIconFor(type, method)}</span>
+      <div class="anchor-body">
+        <div class="anchor-title">${escapeHtml(title)}</div>
+        ${subtitle ? `<div class="anchor-sub">${escapeHtml(subtitle)}</div>` : ''}
+      </div>
+      ${rightHtml}
     </div>
-    <span class="anchor-lock"><span class="anchor-lock-icon">🔒</span>auto</span>`
+    ${footer ? `<div class="anchor-footer">${escapeHtml(footer)}</div>` : ''}`
   return el
 }
 
@@ -16253,11 +16412,39 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       })
     }
   } else {
+    // Profile-match check — compare actual end-of-day to what the
+    // traveler's daily_timing + pace + caps say it should be.
+    const cmp = _dayEndProfileCompare(dayContainer, dayNum, totalDays)
+    const firstName = window._currentFirstName || 'the traveler'
+    let badge = null
+    let footer = null
+    let titleStr = `Back at ${hotelName}`
+    if (cmp.state === 'on_profile') {
+      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+      badge  = { state: 'on_profile', label: '✓ on profile' }
+      footer = `${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`
+    } else if (cmp.state === 'late') {
+      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+      badge  = { state: 'late', label: '⚠ late' }
+      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. Confirm ${firstName} wants a late night.`
+    } else if (cmp.state === 'early') {
+      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+      const roomHours = Math.max(0, Math.round((-cmp.gapMin) / 60 * 10) / 10)
+      badge  = { state: 'early', label: 'ℹ early' }
+      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. You have ~${roomHours} hours of room for an evening activity.`
+    } else if (cmp.actualStr) {
+      // Neutral zone (gap 30-60 min in either direction) — show the time but
+      // skip the badge / footer so the planner isn't nagged on edge cases.
+      titleStr = `${cmp.actualStr} · Back at ${hotelName}`
+    }
     bottomAnchor = _buildLockedAnchor({
       type: 'end_of_day',
-      title: `Back at ${hotelName}`,
+      title: titleStr,
       subtitle: `Day ${dayNum} ends here`,
+      badge,
+      footer,
     })
+    if (cmp.state) bottomAnchor.classList.add(`anchor-state-${cmp.state}`)
   }
   // Insert: top at the start (before any stops), bottom at the end.
   if (topAnchor)    dayContainer.insertBefore(topAnchor, dayContainer.firstChild)
@@ -16441,7 +16628,23 @@ function computeDaySummary(dayContainer) {
   if (activeMin > 12 * 60) {
     warnings.push({ level:'amber', text:`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.` })
   }
-  return { stops: venues.length, activeMin, walkingKm, spendEur, warnings }
+  // Profile-match end-of-day comparison — same as what the end-of-day
+  // anchor displays, surfaced here for the summary card.
+  const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10)
+  const totalDays = (typeof dayCount === 'number') ? dayCount : null
+  const cmp = _dayEndProfileCompare(dayContainer, dayNum, totalDays)
+  const profileEnd = cmp.state
+    ? {
+        state: cmp.state,
+        expectedStr: cmp.expectedStr,
+        actualStr: cmp.actualStr,
+        tagLabel: cmp.state === 'on_profile' ? '✓ on profile'
+               : cmp.state === 'late'        ? '⚠ late'
+               : cmp.state === 'early'       ? 'ℹ early'
+               :                                '',
+      }
+    : null
+  return { stops: venues.length, activeMin, walkingKm, spendEur, warnings, profileEnd }
 }
 
 function _fmtActiveHours(mins) {
@@ -16452,10 +16655,22 @@ function _fmtActiveHours(mins) {
 }
 
 function buildDaySummaryHtml(dayNum, summary) {
-  const { stops, activeMin, walkingKm, spendEur, warnings } = summary
+  const { stops, activeMin, walkingKm, spendEur, warnings, profileEnd } = summary
   const warnsHtml = warnings.length
     ? warnings.map(w => `<div class="day-summary-warn day-summary-warn-${w.level}">${escapeHtml(w.text)}</div>`).join('')
     : `<div class="day-summary-ok">✓ Day ${dayNum} looks balanced.</div>`
+  // Expected-vs-actual end-of-day row — only renders when the comparison
+  // actually produced a state (planner has put at least one stop down).
+  const profileHtml = (profileEnd && profileEnd.state)
+    ? `<div class="day-summary-profile day-summary-profile-${profileEnd.state}">
+         <span class="dsp-label">Profile end</span>
+         <span class="dsp-val">${escapeHtml(profileEnd.expectedStr)}</span>
+         <span class="dsp-sep">·</span>
+         <span class="dsp-label">Actual</span>
+         <span class="dsp-val">${escapeHtml(profileEnd.actualStr || '—')}</span>
+         <span class="dsp-tag">${escapeHtml(profileEnd.tagLabel)}</span>
+       </div>`
+    : ''
   return `
     <div class="day-summary" data-day-summary="${dayNum}">
       <div class="day-summary-head">
@@ -16468,6 +16683,7 @@ function buildDaySummaryHtml(dayNum, summary) {
         <div><div class="dsg-label">Walking</div><div class="dsg-value">${walkingKm > 0 ? walkingKm.toFixed(1) + ' km' : '—'}</div></div>
         <div><div class="dsg-label">Est. spend / pax</div><div class="dsg-value">${spendEur ? '€' + spendEur : '—'}</div></div>
       </div>
+      ${profileHtml}
       ${warnsHtml}
     </div>`
 }
