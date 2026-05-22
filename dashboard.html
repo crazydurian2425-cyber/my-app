@@ -14033,14 +14033,16 @@ function applyPlaceToSlot(slot, place) {
   if (detectedType && currentTypeInput && currentTypeInput.value !== detectedType) {
     applySlotTypeChange(slot, detectedType)
   }
-  // Auto-suggest a duration when the detected type is `activity` AND duration
-  // hasn't been picked yet. Doesn't overwrite an explicit planner choice.
-  if ((detectedType === 'activity' || (!detectedType && currentTypeInput?.value === 'activity'))) {
-    const durHidden = slot.querySelector('.slot-duration-input')
-    if (durHidden && !durHidden.value) {
-      const suggested = suggestDurationMinutes(placeTypes)
-      if (suggested) applyDurationSuggestion(slot, suggested)
-    }
+  // Auto-suggest a stay duration whenever the slot doesn't already have
+  // one set. Works for ANY slot type — meals get the time-of-day-aware
+  // breakfast/lunch/dinner default (45/60/60 min), cafes get 30 min,
+  // museums 240, hotels 30, etc. See suggestStayDuration() for the rules.
+  const durHidden = slot.querySelector('.slot-duration-input')
+  if (durHidden && !durHidden.value) {
+    const slotType = currentTypeInput?.value || detectedType || 'activity'
+    const startTime = slot.querySelector('.slot-time-input')?.value || null
+    const suggested = suggestStayDuration({ slotType, placeTypes, startTime })
+    if (suggested) applyDurationSuggestion(slot, suggested)
   }
   renderLinkedChip(slot)
   slot.classList.add('slot-place-linked')
@@ -14081,6 +14083,69 @@ function suggestDurationMinutes(types) {
   if (set.has('park') || set.has('shopping_mall') || set.has('night_club') || set.has('stadium')) return 120
   if (set.has('tourist_attraction') || set.has('landmark') || set.has('movie_theater')) return 120
   if (set.has('place_of_worship') || set.has('temple') || set.has('shrine') || set.has('church')) return 60
+  return null
+}
+
+// Richer stay-duration picker — uses slot type, place types, and time of
+// day. Used when the planner links a place (or when a slot is seeded
+// via the day guideline). Returns null when nothing matches confidently.
+//
+//   Breakfast (cafe/bakery + 7-11am, or seed='breakfast')  → 45 min
+//   Lunch (restaurant + 11-3pm, or seed='lunch')           → 60 min
+//   Dinner (restaurant + 5pm+, or seed='dinner')           → 60 min
+//   Coffee/snack (cafe / bakery any time)                   → 30 min
+//   Bar / night club                                        → 90 min
+//   Hotel check-in (lodging + seed='hotel')                → 30 min
+//   Hotel check-out (seed='checkout')                       → 15 min
+//   Museum / gallery / aquarium / zoo                       → 240 min (kept)
+//   Theme park                                              → 480 min
+//   Park / shopping / nightclub / stadium / attraction      → 120 min
+//   Place of worship                                        → 60 min
+function suggestStayDuration({ slotType, seedIcon, placeTypes, startTime }) {
+  // 1) Seed icon — explicit intent from the day guideline.
+  if (seedIcon === 'breakfast') return 45
+  if (seedIcon === 'lunch')     return 60
+  if (seedIcon === 'dinner')    return 60
+  if (seedIcon === 'snack' || seedIcon === 'coffee') return 30
+  if (seedIcon === 'hotel')     return 30
+  if (seedIcon === 'checkout')  return 15
+  // 2) Place types from Google.
+  if (Array.isArray(placeTypes) && placeTypes.length) {
+    const set = new Set(placeTypes.map(s => String(s).toLowerCase()))
+    if (set.has('cafe'))                          return 30
+    if (set.has('bakery'))                        return 30
+    if (set.has('meal_takeaway') || set.has('ice_cream_shop')) return 30
+    if (set.has('bar') || set.has('night_club'))  return 90
+    if (set.has('restaurant') || set.has('food')) {
+      const h = startTime ? parseInt(startTime.split(':')[0], 10) : null
+      if (h != null) {
+        if (h >= 6  && h < 11) return 45   // breakfast window
+        if (h >= 11 && h < 15) return 60   // lunch window
+        if (h >= 17)           return 60   // dinner window
+      }
+      return 60
+    }
+    if (set.has('lodging') || set.has('hotel') || set.has('resort_hotel') ||
+        set.has('bed_and_breakfast')) return 30
+    if (set.has('museum') || set.has('art_gallery') ||
+        set.has('aquarium') || set.has('zoo'))    return 240
+    if (set.has('amusement_park') || set.has('theme_park')) return 480
+    if (set.has('park') || set.has('shopping_mall') ||
+        set.has('stadium')) return 120
+    if (set.has('tourist_attraction') || set.has('landmark') ||
+        set.has('movie_theater')) return 120
+    if (set.has('place_of_worship') || set.has('temple') ||
+        set.has('shrine') || set.has('church') ||
+        set.has('mosque') || set.has('synagogue')) return 60
+  }
+  // 3) Fallback: slot type alone + time of day for meals.
+  if (slotType === 'meal' && startTime) {
+    const h = parseInt(startTime.split(':')[0], 10)
+    if (h >= 6  && h < 11) return 45
+    if (h >= 11 && h < 15) return 60
+    if (h >= 17)           return 60
+  }
+  if (slotType === 'accommodation') return 30
   return null
 }
 
@@ -16252,6 +16317,19 @@ function addSlot(dayNum, seed = null) {
     </div>`;
   container.appendChild(slot);
   attachPlacesSearch(slot);
+  // Auto-suggest a default stay duration based on the seed (lunch/dinner/
+  // hotel/etc.) or the slot type. Won't overwrite a duration that was
+  // already filled in (e.g. when restoring saved draft data).
+  const _initialDurHidden = slot.querySelector('.slot-duration-input')
+  if (_initialDurHidden && !_initialDurHidden.value) {
+    const _suggestedStay = suggestStayDuration({
+      slotType: seedTypeKey,
+      seedIcon: seed?.icon || null,
+      placeTypes: null,
+      startTime: defTime,
+    })
+    if (_suggestedStay) applyDurationSuggestion(slot, _suggestedStay)
+  }
   updateDayMeta(dayNum);
   refreshDayDistances(container);
 }
