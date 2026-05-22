@@ -15520,9 +15520,9 @@ const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 // cache held traffic-unaware durations (~15 min for the 3.4 km Arc de
 // Triomphe → ONYX taxi) which kept showing up even after the code
 // change, because the cache key didn't include routing preference.
-// v4 entries are TRAFFIC_AWARE_OPTIMAL + alternatives, with the
-// shortest-duration route picked — matches the embed iframe's choice.
-const ROUTES_CACHE_PREFIX = 'jj_route_v4_'
+// v5 entries also carry routes.polyline.encodedPolyline so our own
+// Maps JS render shows the SAME route as the grid distance/duration.
+const ROUTES_CACHE_PREFIX = 'jj_route_v5_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
@@ -15588,6 +15588,7 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
     const fieldMask = [
       'routes.duration',
       'routes.distanceMeters',
+      'routes.polyline.encodedPolyline',
       'routes.travelAdvisory.transitFare',
       'routes.legs.steps.travelMode',
       'routes.legs.steps.staticDuration',
@@ -15618,10 +15619,14 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
     const _durSec = (r) => parseInt(String(r?.duration || '0s').replace('s',''), 10) || Infinity
     const route = allRoutes.reduce((best, r) => _durSec(r) < _durSec(best) ? r : best, allRoutes[0])
     const durSec = _durSec(route)
+    // Encoded polyline so we can render OUR own map with the same route
+    // data the grid shows — no more grid-vs-iframe distance mismatch.
+    const polyline = route.polyline?.encodedPolyline || null
     const result = {
       durationMin: Math.round(durSec / 60),
       distanceKm:  (route.distanceMeters || 0) / 1000,
       costEur:     null,
+      polyline,
       steps:       [],
     }
     const fare = route.travelAdvisory?.transitFare
@@ -15688,6 +15693,9 @@ function applyRouteDataToSlot(slot, data) {
   if (!slot || !data) return
   const host = slot.querySelector('.transport-content')
   if (!host) return
+  // Stash the route data (incl. polyline) on the slot so toggleTransportMap
+  // can render OUR own Maps JS map using the SAME route the grid displays.
+  slot._routeData = data
   const cells = host.querySelectorAll('.transport-grid .tg-value')
   if (cells[0]) { cells[0].textContent = `${data.distanceKm.toFixed(1)} km`; cells[0].classList.remove('tg-blank') }
   if (cells[1]) { cells[1].textContent = `${data.durationMin} min`;          cells[1].classList.remove('tg-blank') }
@@ -16264,11 +16272,73 @@ function _sortSlotsInPlace(container) {
     .forEach(({ el }) => container.appendChild(el))
 }
 
-// Toggle the inline Google Maps Embed iframe for a transport slot.
-// Lazily creates the iframe on first expand so we don't load a map for
-// every transport block up front (slow + uses bandwidth). The Embed API
-// itself is free for unlimited use, but the iframe still costs ~350 KB
-// of network + ~30 MB of memory each, so we only load on demand.
+// ── Maps JavaScript API loader (lazy, once per page) ──
+// Loaded on first toggleTransportMap call so the page doesn't pay the
+// Maps JS cost up-front. `libraries=geometry` gives us encoding.decodePath
+// which turns Routes API's encodedPolyline into lat/lng pairs.
+let _mapsJsPromise = null
+function loadMapsJs() {
+  if (window.google?.maps?.geometry?.encoding) return Promise.resolve()
+  if (_mapsJsPromise) return _mapsJsPromise
+  _mapsJsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&libraries=geometry&v=weekly&loading=async`
+    s.async = true
+    s.defer = true
+    s.onload = () => resolve()
+    s.onerror = () => reject(new Error('Maps JS failed to load'))
+    document.head.appendChild(s)
+  })
+  return _mapsJsPromise
+}
+
+// Render our OWN map with the polyline from Routes API — guarantees the
+// grid distance/duration and the visible route are the SAME route.
+function _renderRouteMapInto(host, slot) {
+  const data = slot?._routeData
+  if (!data?.polyline) return false
+  loadMapsJs().then(() => {
+    const path = google.maps.geometry.encoding.decodePath(data.polyline)
+    if (!path.length) return
+    host.innerHTML = ''
+    const mapDiv = document.createElement('div')
+    mapDiv.style.cssText = 'width:100%;height:320px;border-radius:6px;overflow:hidden;'
+    host.appendChild(mapDiv)
+    const map = new google.maps.Map(mapDiv, {
+      center: path[Math.floor(path.length / 2)],
+      zoom: 13,
+      gestureHandling: 'cooperative',
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    })
+    new google.maps.Polyline({
+      path,
+      map,
+      strokeColor: '#1a7a5e',
+      strokeOpacity: 0.9,
+      strokeWeight: 5,
+    })
+    new google.maps.Marker({ position: path[0], map, label: 'A' })
+    new google.maps.Marker({ position: path[path.length - 1], map, label: 'B' })
+    const bounds = new google.maps.LatLngBounds()
+    path.forEach(p => bounds.extend(p))
+    map.fitBounds(bounds, 50)
+    const note = document.createElement('div')
+    note.className = 'transport-map-note'
+    note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:var(--text-3);line-height:1.4;border-left:2px solid var(--border);'
+    note.textContent = `${data.distanceKm.toFixed(1)} km · ${data.durationMin} min · route shown matches the grid above (Google Routes API).`
+    host.appendChild(note)
+  }).catch(err => {
+    console.warn('[map] render failed', err)
+  })
+  return true
+}
+
+// Toggle the route-map preview for a transport slot. Renders a Maps JS
+// map using the Routes API polyline when available (grid + map agree).
+// Falls back to the Embed iframe when the Routes API hasn't resolved yet
+// (e.g. one endpoint isn't linked).
 function toggleTransportMap(slotId, btn) {
   const slot = document.getElementById(slotId)
   if (!slot) return
@@ -16281,28 +16351,29 @@ function toggleTransportMap(slotId, btn) {
     if (label) label.textContent = 'Show route map'
     return
   }
-  // First-time expand → mount the iframe + the route-mismatch caption.
-  if (!host.querySelector('iframe')) {
-    const url = host.dataset.embedUrl
-    if (url) {
-      const iframe = document.createElement('iframe')
-      iframe.src = url
-      iframe.width = '100%'
-      iframe.height = '320'
-      iframe.style.border = '0'
-      iframe.loading = 'lazy'
-      iframe.referrerPolicy = 'no-referrer-when-downgrade'
-      iframe.allowFullscreen = true
-      host.appendChild(iframe)
-      // Caption — the embed iframe and our Routes API call can pick
-      // different alternative routes (same drive time, different roads).
-      // The grid shows the Routes-API choice; the map below may show the
-      // Embed-API choice. Both are valid; planner just needs to know.
-      const note = document.createElement('div')
-      note.className = 'transport-map-note'
-      note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:var(--text-3);line-height:1.4;border-left:2px solid var(--border);'
-      note.textContent = 'Best route by current traffic. Google Maps may show an alternative route with the same duration via a different road.'
-      host.appendChild(note)
+  // First-time expand → prefer the Routes API polyline map, fall back to
+  // the Embed iframe if we don't have route data yet.
+  if (!host.querySelector('div, iframe')) {
+    const drewOurMap = _renderRouteMapInto(host, slot)
+    if (!drewOurMap) {
+      // Fallback: embed iframe (mismatch may apply).
+      const url = host.dataset.embedUrl
+      if (url) {
+        const iframe = document.createElement('iframe')
+        iframe.src = url
+        iframe.width = '100%'
+        iframe.height = '320'
+        iframe.style.border = '0'
+        iframe.loading = 'lazy'
+        iframe.referrerPolicy = 'no-referrer-when-downgrade'
+        iframe.allowFullscreen = true
+        host.appendChild(iframe)
+        const note = document.createElement('div')
+        note.className = 'transport-map-note'
+        note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:var(--text-3);line-height:1.4;border-left:2px solid var(--border);'
+        note.textContent = 'Loading custom map… showing Google Maps preview meanwhile.'
+        host.appendChild(note)
+      }
     }
   }
   host.hidden = false
