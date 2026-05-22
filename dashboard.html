@@ -16294,12 +16294,21 @@ function loadMapsJs() {
 
 // Render our OWN map with the polyline from Routes API — guarantees the
 // grid distance/duration and the visible route are the SAME route.
+// Returns true if it kicked off rendering (sync or async); false if it
+// can't even try (no polyline yet) — caller should fall back to embed.
 function _renderRouteMapInto(host, slot) {
   const data = slot?._routeData
   if (!data?.polyline) return false
   loadMapsJs().then(() => {
+    // Maps JS loaded its script tag, but Maps JavaScript API may still
+    // be DISABLED in the Cloud Console. In that case google.maps exists
+    // but google.maps.geometry doesn't (and an `ApiNotActivatedMapError`
+    // fires). Detect and fall back to the embed iframe.
+    if (!window.google?.maps?.geometry?.encoding) {
+      throw new Error('Maps JS geometry library unavailable (Maps JavaScript API may not be enabled in Google Cloud Console)')
+    }
     const path = google.maps.geometry.encoding.decodePath(data.polyline)
-    if (!path.length) return
+    if (!path.length) throw new Error('Empty polyline path')
     host.innerHTML = ''
     const mapDiv = document.createElement('div')
     mapDiv.style.cssText = 'width:100%;height:320px;border-radius:6px;overflow:hidden;'
@@ -16330,7 +16339,28 @@ function _renderRouteMapInto(host, slot) {
     note.textContent = `${data.distanceKm.toFixed(1)} km · ${data.durationMin} min · route shown matches the grid above (Google Routes API).`
     host.appendChild(note)
   }).catch(err => {
-    console.warn('[map] render failed', err)
+    console.warn('[map] render failed —', err.message, '— falling back to embed iframe')
+    // Fallback: blow away the broken Maps JS attempt and load the embed.
+    host.innerHTML = ''
+    const url = host.dataset.embedUrl
+    if (url) {
+      const iframe = document.createElement('iframe')
+      iframe.src = url
+      iframe.width = '100%'
+      iframe.height = '320'
+      iframe.style.border = '0'
+      iframe.loading = 'lazy'
+      iframe.referrerPolicy = 'no-referrer-when-downgrade'
+      iframe.allowFullscreen = true
+      host.appendChild(iframe)
+      const note = document.createElement('div')
+      note.className = 'transport-map-note'
+      note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:#8a5f1c;line-height:1.4;background:rgba(193,125,42,0.08);border-left:2px solid rgba(193,125,42,0.45);'
+      note.textContent = '⚠ Showing fallback Google Maps preview. Enable "Maps JavaScript API" in your Google Cloud Console to use the synced custom map (grid + map will then show the SAME route).'
+      host.appendChild(note)
+    } else {
+      host.innerHTML = '<div style="padding:14px;color:var(--text-3);font-size:12px;">Map unavailable — link both ends as Google Places to render a route.</div>'
+    }
   })
   return true
 }
