@@ -13038,14 +13038,23 @@ function fillItineraryItems(items) {
         slot.classList.add('slot-place-linked')
         renderLinkedChip(slot)
       }
-      // Duration (new field — Activity-only, null on other types and on legacy rows)
+      // Duration (new field — null on legacy rows). Enforce TYPE MINIMUMS
+      // on load so a legacy 15-min hotel slot upgrades to 30 min
+      // automatically — same rule _suggestTransportStart uses downstream.
+      // Without this the visible "How long to stay" picker shows 15 min,
+      // the planner trusts it, and the transport's depart-time math feels
+      // inconsistent.
       const durHidden = slot.querySelector('.slot-duration-input')
       const durLabel  = slot.querySelector('.duration-dd-label')
       const storedDur = parseInt(it.duration_minutes, 10)
+      const typeFloor = (iconKey === 'accommodation') ? 30
+                      : (iconKey === 'meal')          ? 30
+                      : 0
       if (durHidden && Number.isFinite(storedDur) && storedDur > 0) {
-        durHidden.value = String(storedDur)
+        const effective = Math.max(storedDur, typeFloor)
+        durHidden.value = String(effective)
         if (durLabel) {
-          durLabel.textContent = formatDurationLabel(storedDur) || t('slot.duration.choose','Choose…')
+          durLabel.textContent = formatDurationLabel(effective) || t('slot.duration.choose','Choose…')
           durLabel.classList.remove('is-empty')
         }
       } else if (durHidden && !durHidden.value) {
