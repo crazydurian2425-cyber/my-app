@@ -14371,14 +14371,23 @@ function pickTransportModes(km) {
   return        [ opt('hsr', true),  opt('flight') ]
 }
 
-// Compute the time to start the transport: previous stop's time + 15min.
-// Snaps to the 30-min picker grid so the resulting time matches a real option.
+// Compute the time the transport should depart: previous stop's start
+// PLUS its "how long to stay" duration. Falls back to a 60-min default
+// when the planner hasn't set a duration yet (matches the assumption
+// addSlot uses elsewhere). Snaps UP to the 30-min picker grid.
+//
+// Why this matters: prev was sitting at "3:30pm · 2 hours" and the
+// transport was departing at 4:00pm. Impossible — the traveler is still
+// at the previous stop. Now depart = 3:30 + 120 min = 5:30pm.
 function _suggestTransportStart(prevSlot) {
-  const hidden = prevSlot?.querySelector('.slot-time-input')
-  const base = hidden?.value || '09:00'
+  const timeHidden = prevSlot?.querySelector('.slot-time-input')
+  const durHidden  = prevSlot?.querySelector('.slot-duration-input')
+  const base = timeHidden?.value || '09:00'
+  let stayMin = parseInt(durHidden?.value || '0', 10) || 0
+  if (stayMin <= 0) stayMin = 60   // safe default when duration not set
   const [h, m] = base.split(':').map(Number)
-  let total = h * 60 + m + 15
-  total = Math.ceil(total / 30) * 30  // snap up to the next :00 or :30
+  let total = h * 60 + m + stayMin
+  total = Math.ceil(total / 30) * 30   // snap UP to next :00 or :30
   if (total > 23 * 60 + 30) total = 23 * 60 + 30
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
 }
@@ -14607,10 +14616,27 @@ function refreshTransportSlot(slot) {
   const costTxt = (est.costEur == null) ? '—'
                 : (est.costEur === 0) ? 'free'
                 : `~€${est.costEur}`
-  // Depart time comes from the (now hidden) slot-time-input that addSlot
-  // creates; arrive = depart + estimated duration. Both shown as a single
-  // range "4:00 pm → 4:22 pm" in the compact header.
-  const departHHMM = slot.querySelector('.slot-time-input')?.value || '09:00'
+  // Depart time recomputes from the PREVIOUS slot's start + its stay
+  // duration so a "2 hour" prev stay → transport leaves 2 hours later
+  // (not 15 min later, which used to give wrong results like "Eiffel
+  // 3:30 pm · 2h" + "Taxi at 4:00 pm"). Auto-syncs back into the slot's
+  // hidden time-input so save/sort logic see the right value too.
+  let departHHMM = slot.querySelector('.slot-time-input')?.value || '09:00'
+  if (prev) {
+    const corrected = _suggestTransportStart(prev)
+    if (corrected !== departHHMM) {
+      departHHMM = corrected
+      const ti = slot.querySelector('.slot-time-input')
+      if (ti) ti.value = corrected
+      // Keep the legacy time-dd dropdown in sync (it's hidden but still
+      // backs the picker if planner ever switches type back to activity).
+      const lbl = slot.querySelector('.time-dd-label')
+      if (lbl) lbl.textContent = formatTimeDisplay(corrected)
+      slot.querySelectorAll('.time-dd-option').forEach(opt => {
+        opt.classList.toggle('is-selected', !!opt.getAttribute('onclick')?.includes(`'${corrected}'`))
+      })
+    }
+  }
   const arriveHHMM = _addMinutes(departHHMM, est.mins || 0)
   const departLabel = formatTimeDisplay(departHHMM)
   const arriveLabel = formatTimeDisplay(arriveHHMM)
