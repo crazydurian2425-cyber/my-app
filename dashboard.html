@@ -13800,6 +13800,16 @@ function selectDurationDD(btn, mins, label){
   dd.querySelectorAll('.duration-dd-option').forEach(o => o.classList.remove('is-selected'))
   btn.classList.add('is-selected')
   dd.classList.remove('open')
+  // Changing "how long to stay" shifts every downstream transport block's
+  // depart time. Trigger a day-wide refresh so the chain stays consistent
+  // (Hotel 2:30 + 30 = transport 3:00 → planner picks 45 min → transport
+  // auto-shifts to 3:15). Auto-push of the next venue's start time is
+  // handled inside refreshTransportSlot.
+  const slot = btn.closest('.activity-slot')
+  const dayContainer = slot?.closest('[id^="slots-day-"]')
+  if (dayContainer && typeof refreshDayDistances === 'function') {
+    refreshDayDistances(dayContainer)
+  }
   autoSaveDraft()
 }
 
