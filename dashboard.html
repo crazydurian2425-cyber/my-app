@@ -7956,9 +7956,13 @@ const TM_I18N = {
     'slot.label.notes.freetime':'Suggested activities for free time',
     'slot.duration.label':'How long to stay',
     'slot.duration.choose':'Choose…',
+    'slot.duration.15':'15 min',
     'slot.duration.30':'30 min',
+    'slot.duration.45':'45 min',
     'slot.duration.60':'1 hour',
+    'slot.duration.90':'1.5 hours',
     'slot.duration.120':'2 hours',
+    'slot.duration.180':'3 hours',
     'slot.duration.240':'Half day',
     'slot.duration.480':'Full day',
     'plan.submit.imgWarning':'{n} slot(s) have no photo — add a photo to each, or click Submit again to submit anyway.',
@@ -8651,9 +8655,13 @@ const TM_I18N = {
     'slot.label.notes.freetime':'Suggestions pour le temps libre',
     'slot.duration.label':'Durée sur place',
     'slot.duration.choose':'Choisir…',
+    'slot.duration.15':'15 min',
     'slot.duration.30':'30 min',
+    'slot.duration.45':'45 min',
     'slot.duration.60':'1 heure',
+    'slot.duration.90':'1 h 30',
     'slot.duration.120':'2 heures',
+    'slot.duration.180':'3 heures',
     'slot.duration.240':'Demi-journée',
     'slot.duration.480':'Journée',
     'plan.submit.imgWarning':'{n} étapes sans photo — ajoutez une image à chaque étape, ou cliquez à nouveau sur « Soumettre le plan » pour soumettre tel quel.',
@@ -13259,23 +13267,23 @@ function dayTimeWindow(dayNum, totalDays) {
   const arr = window._currentArrivalTime || null
   const dep = window._currentDepartureTime || null
   const buf = Number(window._currentAirportBuffer) || 0
-  // Snap a HH:MM string to the picker's 30-min grid
+  // Snap a HH:MM string to the picker's 15-min grid
   const snap30 = (hhmm) => {
     if (!hhmm) return null
     const [h, m] = hhmm.split(':').map(Number)
     let total = h * 60 + m
-    total = Math.round(total / 30) * 30
+    total = Math.round(total / 15) * 15
     if (total < 0) total = 0
-    if (total > 23 * 60 + 30) total = 23 * 60 + 30
+    if (total > 23 * 60 + 45) total = 23 * 60 + 45
     return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
   }
-  // Default first-stop bump = arrival + 30 min, snapped to grid
+  // Default first-stop bump = arrival + N min, snapped UP to the 15-min grid.
   const bump = (hhmm, mins) => {
     if (!hhmm) return null
     const [h, m] = hhmm.split(':').map(Number)
     let total = h * 60 + m + mins
-    total = Math.ceil(total / 30) * 30
-    if (total > 23 * 60 + 30) total = 23 * 60 + 30
+    total = Math.ceil(total / 15) * 15
+    if (total > 23 * 60 + 45) total = 23 * 60 + 45
     return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
   }
   if (dayNum === 1 && totalDays >= 1 && arr) {
@@ -13448,14 +13456,15 @@ function fmtDuration(d) {
 function buildTimeOptions(selected = '09:00', opts = {}) {
   // opts.minTime: disable options strictly before this HH:MM (arrival-day floor)
   // opts.maxTime: disable options at-or-after this HH:MM (departure-day cap)
-  // Disabled options stay visible (grayed out) so planner sees WHY they can't
-  // pick them, with a clear reason on the tooltip.
+  // 15-min granularity per user feedback — was 30 min, but planners
+  // doing tight Paris itineraries wanted to slot a 30-min coffee at
+  // 10:15 or a 45-min lunch at 12:45.
   const minTime = opts.minTime || null
   const maxTime = opts.maxTime || null
   const reason  = opts.reason  || ''
   let html = ''
   for (let h = 0; h <= 23; h++) {
-    for (const m of [0, 30]) {
+    for (const m of [0, 15, 30, 45]) {
       const hh = String(h).padStart(2,'0')
       const mm = String(m).padStart(2,'0')
       const val = `${hh}:${mm}`
@@ -13649,9 +13658,13 @@ function updateSlotFieldLabels(slot, typeKey){
 // Duration label for a stored minutes value.
 function formatDurationLabel(mins){
   const m = parseInt(mins, 10)
+  if (m === 15)  return t('slot.duration.15',  '15 min')
   if (m === 30)  return t('slot.duration.30',  '30 min')
+  if (m === 45)  return t('slot.duration.45',  '45 min')
   if (m === 60)  return t('slot.duration.60',  '1 hour')
+  if (m === 90)  return t('slot.duration.90',  '1.5 hours')
   if (m === 120) return t('slot.duration.120', '2 hours')
+  if (m === 180) return t('slot.duration.180', '3 hours')
   if (m === 240) return t('slot.duration.240', 'Half day')
   if (m === 480) return t('slot.duration.480', 'Full day')
   return ''
@@ -14469,8 +14482,8 @@ function _suggestTransportStart(prevSlot) {
   if (stayMin <= 0) stayMin = 60   // safe default when duration not set
   const [h, m] = base.split(':').map(Number)
   let total = h * 60 + m + stayMin
-  total = Math.ceil(total / 30) * 30   // snap UP to next :00 or :30
-  if (total > 23 * 60 + 30) total = 23 * 60 + 30
+  total = Math.ceil(total / 15) * 15   // snap UP to next 15-min grid slot
+  if (total > 23 * 60 + 45) total = 23 * 60 + 45
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
 }
 
@@ -15199,12 +15212,14 @@ function _addMinutes(hhmm, mins) {
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
 }
 
-// Snap a HH:MM up to the 30-min picker grid (so the value lands on a
-// real option in the time dropdown). Used by the auto-push logic.
+// Snap a HH:MM up to the 15-min picker grid (so the value lands on a
+// real option in the time dropdown). Used by the auto-push logic. Name
+// stays _snapUp30 for backward call-site compatibility, but the granularity
+// is now 15 minutes per planner request.
 function _snapUp30(hhmm) {
   const [h, m] = String(hhmm || '09:00').split(':').map(Number)
-  let total = Math.ceil(((h || 0) * 60 + (m || 0)) / 30) * 30
-  if (total > 23 * 60 + 30) total = 23 * 60 + 30
+  let total = Math.ceil(((h || 0) * 60 + (m || 0)) / 15) * 15
+  if (total > 23 * 60 + 45) total = 23 * 60 + 45
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
 }
 
@@ -15738,16 +15753,16 @@ function addSlot(dayNum, seed = null) {
   //  - Day >1, first slot → 09:00 (fresh morning start)
   //  - Any subsequent slot → previous slot + 60min (capped 22:30)
   const existing = container ? container.querySelectorAll('.slot-time-input') : []
-  const MAX_MIN = 23 * 60 + 30    // 23:30 is the latest picker option
+  const MAX_MIN = 23 * 60 + 45    // 23:45 is the latest picker option (15-min grid)
   const bumpAnd = (base) => {
     const [h, m] = (base || '09:00').split(':').map(Number)
     const baseMin = h * 60 + m
     let totalMin = baseMin + 60
-    // Snap to nearest :00 or :30 so we hit valid picker options
-    totalMin = Math.round(totalMin / 30) * 30
+    // Snap to nearest 15-min step so we hit valid picker options
+    totalMin = Math.round(totalMin / 15) * 15
     if (totalMin > MAX_MIN) totalMin = MAX_MIN
     // Guarantee strictly later than base (never earlier due to clamping)
-    if (totalMin <= baseMin) totalMin = Math.min(baseMin + 30, MAX_MIN)
+    if (totalMin <= baseMin) totalMin = Math.min(baseMin + 15, MAX_MIN)
     const nh = Math.floor(totalMin / 60), nm = totalMin % 60
     return `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}`
   }
@@ -15840,9 +15855,13 @@ function addSlot(dayNum, seed = null) {
             <svg class="duration-dd-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 6 8 9 5"/></svg>
           </button>
           <div class="duration-dd-menu">
+            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 15,  '${t('slot.duration.15','15 min').replace(/'/g,"\\'")}')">${t('slot.duration.15','15 min')}</button>
             <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 30,  '${t('slot.duration.30','30 min').replace(/'/g,"\\'")}')">${t('slot.duration.30','30 min')}</button>
+            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 45,  '${t('slot.duration.45','45 min').replace(/'/g,"\\'")}')">${t('slot.duration.45','45 min')}</button>
             <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 60,  '${t('slot.duration.60','1 hour').replace(/'/g,"\\'")}')">${t('slot.duration.60','1 hour')}</button>
+            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 90,  '${t('slot.duration.90','1.5 hours').replace(/'/g,"\\'")}')">${t('slot.duration.90','1.5 hours')}</button>
             <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 120, '${t('slot.duration.120','2 hours').replace(/'/g,"\\'")}')">${t('slot.duration.120','2 hours')}</button>
+            <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 180, '${t('slot.duration.180','3 hours').replace(/'/g,"\\'")}')">${t('slot.duration.180','3 hours')}</button>
             <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 240, '${t('slot.duration.240','Half day').replace(/'/g,"\\'")}')">${t('slot.duration.240','Half day')}</button>
             <button type="button" class="duration-dd-option" onclick="selectDurationDD(this, 480, '${t('slot.duration.480','Full day').replace(/'/g,"\\'")}')">${t('slot.duration.480','Full day')}</button>
           </div>
