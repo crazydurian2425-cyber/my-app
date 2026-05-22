@@ -17162,24 +17162,23 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
   if (bottomAnchor && bottomAnchor.dataset.anchorType === 'end_of_day') {
     // Wipe any prior row from a previous refresh.
     dayContainer.querySelectorAll(':scope > .end-day-row').forEach(el => el.remove())
-    // Detect whether a transport already sits right above the anchor
-    // (purely to switch the button label so the action is obvious).
+    // Skip the button if a transport already sits right above the
+    // anchor — the day is already wrapped up. Planner can delete that
+    // transport with its × button to bring the End-day pill back.
     let _scan = bottomAnchor.previousElementSibling
     while (_scan && _scan.classList?.contains('is-locked')) _scan = _scan.previousElementSibling
     const _hasExisting = !!(_scan && _scan.classList?.contains('slot-type-transport'))
-    const _label = _hasExisting
-      ? 'Refresh back-to-hotel transport'
-      : 'End day · back to hotel'
-    const _row = document.createElement('div')
-    _row.className = 'end-day-row'
-    _row.innerHTML = `
-      <button type="button" class="end-day-btn" onclick="endDayBackToHotel('${dayContainer.id}')">
-        <span class="edb-icon">🌙</span>
-        <span class="edb-text">${_label}</span>
-      </button>
-    `
-    dayContainer.insertBefore(_row, bottomAnchor)
-    console.log('[end-day-btn] rendered for', dayContainer.id, '· hasExisting=', _hasExisting)
+    if (!_hasExisting) {
+      const _row = document.createElement('div')
+      _row.className = 'end-day-row'
+      _row.innerHTML = `
+        <button type="button" class="end-day-btn" onclick="endDayBackToHotel('${dayContainer.id}')">
+          <span class="edb-icon">🌙</span>
+          <span class="edb-text">End day · back to hotel</span>
+        </button>
+      `
+      dayContainer.insertBefore(_row, bottomAnchor)
+    }
   }
 }
 
