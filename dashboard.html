@@ -15473,16 +15473,27 @@ function refreshTransportSlot(slot) {
     }
   }
   const arriveHHMM = _addMinutes(departHHMM, est.mins || 0)
-  // ── Auto-push next venue's start time when transport now arrives later ──
-  // Snapped UP to the 30-min picker grid since the venue's time picker
-  // only accepts those values. Example: Eiffel 3:30 + 2h = 5:30, taxi
-  // arrives 5:36 → next venue gets pushed to 6:00 (snap-up of 5:36).
+  // ── Auto-sync next venue's start time to the transport's arrival ──
+  // Two cases, both snap to _snapUp30(arrive):
+  //   (a) Next is TOO EARLY  — transport arrives after next's current
+  //       time → push next forward (otherwise traveler-can't-be-there).
+  //   (b) Next is WAY LATE   — gap > 60 min between arrival and next's
+  //       current start → pull next back. Example: Uber arrives 8:05,
+  //       ONYX was set to 10:00 (115 min gap) → snap to 8:15. Saves
+  //       the planner manually re-setting the next time after they
+  //       just added a transport block.
+  // Smaller gaps (≤ 60 min) are left alone so a planner who deliberately
+  // wants "arrive 8:05, walk around 30 min, sit down at 8:45" can do that.
   if (next) {
     const nextHidden = next.querySelector('.slot-time-input')
     const nextCurrent = nextHidden?.value || '23:59'
     const minStart = _snapUp30(arriveHHMM)
-    if (minStart > nextCurrent) {
-      _applySlotTime(next, minStart)
+    const curMin = parseSlotTime(nextCurrent)
+    const minMin = parseSlotTime(minStart)
+    if (curMin != null && minMin != null) {
+      const tooEarly = minMin > curMin
+      const wayLate  = (curMin - minMin) > 60
+      if (tooEarly || wayLate) _applySlotTime(next, minStart)
     }
   }
   const departLabel = formatTimeDisplay(departHHMM)
