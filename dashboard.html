@@ -2330,21 +2330,24 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
    transport is already wrapping it up. Click inserts the back-to-hotel
    transport with smart-mode pick. */
 .end-day-row{
-  display:flex;justify-content:center;padding:6px 0;
+  display:flex;justify-content:center;padding:10px 0;margin:4px 0;
 }
 .end-day-btn{
   display:inline-flex;align-items:center;gap:8px;
-  padding:8px 16px;border-radius:18px;
-  border:1px dashed var(--border-med);background:var(--surface);
-  color:var(--text-2);font-size:12.5px;font-weight:500;
+  padding:10px 22px;border-radius:22px;
+  border:1.5px solid var(--green-dark,#1a7a5e);
+  background:rgba(26,122,94,0.06);
+  color:var(--green-dark,#1a7a5e);
+  font-size:13.5px;font-weight:600;
   cursor:pointer;transition:all .15s ease;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
 }
 .end-day-btn:hover{
-  border-color:var(--green-dark,#1a7a5e);
-  color:var(--green-dark,#1a7a5e);
-  background:rgba(26,122,94,0.04);
+  background:rgba(26,122,94,0.12);
+  box-shadow:0 2px 6px rgba(0,0,0,0.10);
+  transform:translateY(-1px);
 }
-.end-day-btn .edb-icon{font-size:14px;}
+.end-day-btn .edb-icon{font-size:16px;}
 .end-day-btn .edb-text{letter-spacing:0.02em;}
 .transport-from-to{
   font-size:13px;color:var(--green-dark,#1a7a5e);font-weight:600;
@@ -17141,11 +17144,32 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
   if (topAnchor)    dayContainer.insertBefore(topAnchor, dayContainer.firstChild)
   if (bottomAnchor) dayContainer.appendChild(bottomAnchor)
   // ── "End day · back to hotel" button ──
-  // Renders just above the end_of_day anchor. Hidden when (a) no real
-  // venue exists in the day yet, or (b) a transport already sits right
-  // before the anchor (back-to-hotel transport already added). Clicking
-  // it inserts a smart-mode transport from the last venue → hotel.
-  renderEndDayButton(dayContainer, dayNum, totalDays)
+  // ALWAYS render (when there's an end_of_day anchor). The button is
+  // idempotent: click it to insert a back-to-hotel transport, or to
+  // sweep + refresh an existing one. Inlined here directly instead of
+  // calling a helper so any deploy/cache issue can't hide it.
+  if (bottomAnchor && bottomAnchor.dataset.anchorType === 'end_of_day') {
+    // Wipe any prior row from a previous refresh.
+    dayContainer.querySelectorAll(':scope > .end-day-row').forEach(el => el.remove())
+    // Detect whether a transport already sits right above the anchor
+    // (purely to switch the button label so the action is obvious).
+    let _scan = bottomAnchor.previousElementSibling
+    while (_scan && _scan.classList?.contains('is-locked')) _scan = _scan.previousElementSibling
+    const _hasExisting = !!(_scan && _scan.classList?.contains('slot-type-transport'))
+    const _label = _hasExisting
+      ? 'Refresh back-to-hotel transport'
+      : 'End day · back to hotel'
+    const _row = document.createElement('div')
+    _row.className = 'end-day-row'
+    _row.innerHTML = `
+      <button type="button" class="end-day-btn" onclick="endDayBackToHotel('${dayContainer.id}')">
+        <span class="edb-icon">🌙</span>
+        <span class="edb-text">${_label}</span>
+      </button>
+    `
+    dayContainer.insertBefore(_row, bottomAnchor)
+    console.log('[end-day-btn] rendered for', dayContainer.id, '· hasExisting=', _hasExisting)
+  }
 }
 
 // Render the "End day · back to hotel" action row. Pure DOM op — call
