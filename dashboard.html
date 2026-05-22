@@ -13286,8 +13286,18 @@ async function _lookupStationAndAttach(transportSlot) {
   live.dataset.fromName    = resolved.name
   live.dataset.fromLat     = String(resolved.lat)
   live.dataset.fromLng     = String(resolved.lng)
-  // Trigger a refresh so the resolved data lights up in the transport panel.
+  // Also expose the resolved name so the arrival anchor's title can show
+  // the real station ("Paris Gare Montparnasse") on the next render.
+  window._currentArrivalStationResolvedName = resolved.name
+  // Trigger refreshes so both the transport panel AND the arrival anchor
+  // pick up the resolved data.
   if (typeof refreshTransportSlot === 'function') refreshTransportSlot(live)
+  const dayContainer = live.closest('[id^="slots-day-"]')
+  if (dayContainer && typeof renderDayBookends === 'function') {
+    const m = dayContainer.id.match(/slots-day-(\d+)/)
+    const dayNum = m ? parseInt(m[1], 10) : 1
+    renderDayBookends(dayContainer, dayNum, (typeof dayCount === 'number') ? dayCount : null)
+  }
 }
 
 // One-shot auto-seed for Day 1 afternoon arrivals (arrival_time hour ≥ 13).
@@ -13307,15 +13317,14 @@ async function _lookupStationAndAttach(transportSlot) {
 function _autoSeedDay1HotelIfNeeded() {
   const arr = window._currentArrivalTime || ''
   const arrHour = parseInt(String(arr).split(':')[0], 10)
-  if (!Number.isFinite(arrHour) || arrHour < 13) return
+  console.log('[day1-seed]', { arr, arrHour, planId: currentPlanId, location: window._currentArrivalLocation })
+  if (!Number.isFinite(arrHour) || arrHour < 13) { console.log('[day1-seed] skip: no afternoon arrival'); return }
   const day1 = document.getElementById('slots-day-1')
-  if (!day1) return
-  // Only consider this once per plan-open.
-  window._day1AutoSeededPlanIds = window._day1AutoSeededPlanIds || new Set()
-  if (currentPlanId && window._day1AutoSeededPlanIds.has(currentPlanId)) return
+  if (!day1) { console.log('[day1-seed] skip: no day-1 container'); return }
   const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('is-locked'))
   const firstStop = userStops[0] || null
+  console.log('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
   // Helper — append a taxi-to-hotel transport block. `beforeEl` (optional)
   // moves the new slot ahead of an existing first stop so _findVenueNeighbors
   // sees prev=null and refreshTransportSlot doesn't reset the time.
@@ -13336,7 +13345,7 @@ function _autoSeedDay1HotelIfNeeded() {
   }
   if (userStops.length === 0) {
     // Empty Day 1 — seed transport + hotel.
-    if (currentPlanId) window._day1AutoSeededPlanIds.add(currentPlanId)
+    console.log('[day1-seed] empty day → adding taxi + hotel')
     addTaxi(null)
     addSlot(1, { icon: 'hotel' })
     return
@@ -13345,8 +13354,10 @@ function _autoSeedDay1HotelIfNeeded() {
   // inject one BEFORE the first venue so it sits between the arrival
   // anchor and that venue in DOM order.
   if (!firstStop.classList.contains('slot-type-transport')) {
-    if (currentPlanId) window._day1AutoSeededPlanIds.add(currentPlanId)
+    console.log('[day1-seed] saved day, first stop is non-transport → injecting taxi before it')
     addTaxi(firstStop)
+  } else {
+    console.log('[day1-seed] first stop already a transport — leaving as-is')
   }
 }
 
@@ -16545,12 +16556,19 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     if (method) {
       const arrTime = window._currentArrivalTime || '14:00'
       const arrFrom = window._currentArrivalFrom || 'origin'
+      // Prefer the resolved station name (from Places lookup) over the
+      // generic meta string. Falls back to "Paris Station" / "CDG" etc.
+      // when the lookup hasn't run yet.
+      const arrLoc = window._currentArrivalStationResolvedName
+                  || window._currentArrivalLocation
+                  || ''
       const methodLabel = method === 'flight' ? 'Flight' : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
+      const locBit = arrLoc ? ` at ${arrLoc}` : ''
       topAnchor = _buildLockedAnchor({
         type: 'arrival',
         method,
-        title: `${formatTimeDisplay(arrTime)} · ${methodLabel} from ${arrFrom}`,
-        subtitle: `Day 1 begins on arrival`,
+        title: `${formatTimeDisplay(arrTime)} · ${methodLabel} arrives${locBit}`,
+        subtitle: arrFrom && arrFrom !== 'origin' ? `from ${arrFrom} · Day 1 begins on arrival` : `Day 1 begins on arrival`,
       })
     }
   } else {
