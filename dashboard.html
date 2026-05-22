@@ -15991,38 +15991,42 @@ function refreshTransportSlot(slot) {
     // Insert at the top of slot-body so it appears above the notes textarea.
     body.insertBefore(host, body.firstChild)
   }
+  // ── Safety re-attach _placeData on locked anchors BEFORE neighbor lookup ──
+  // _findVenueNeighbors skips locked anchors that don't carry _placeData.
+  // During fillItineraryItems the hotel's _placeData isn't set yet on the
+  // early addSlot calls, so the end-of-day anchor built mid-iteration ends
+  // up WITHOUT _placeData → _findVenueNeighbors walks past it → `next` is
+  // null → the on-demand attach guard (which checked `next`) never fires.
+  // Walk siblings DIRECTLY to attach _placeData first, then resolve.
+  const _attachAnchorPlaceData = (anchor) => {
+    if (!anchor || !anchor.classList?.contains('is-locked') || anchor._placeData) return
+    if (anchor.dataset.anchorType === 'end_of_day' && typeof _findItineraryHotel === 'function') {
+      const h = _findItineraryHotel()
+      if (h) anchor._placeData = {
+        google_place_id: h.google_place_id,
+        name: h.name,
+        latitude: h.latitude,
+        longitude: h.longitude,
+      }
+    } else if (anchor.dataset.anchorType === 'arrival' && window._currentArrivalStationLatLng) {
+      anchor._placeData = {
+        google_place_id: window._currentArrivalStationPlaceId || null,
+        name: window._currentArrivalStationResolvedName || window._currentArrivalLocation || '',
+        latitude:  window._currentArrivalStationLatLng.lat,
+        longitude: window._currentArrivalStationLatLng.lng,
+      }
+    }
+  }
+  // Walk forward + backward through immediate locked-anchor siblings.
+  let _scan = slot.nextElementSibling
+  while (_scan && _scan.classList?.contains('is-locked')) {
+    _attachAnchorPlaceData(_scan); _scan = _scan.nextElementSibling
+  }
+  _scan = slot.previousElementSibling
+  while (_scan && _scan.classList?.contains('is-locked')) {
+    _attachAnchorPlaceData(_scan); _scan = _scan.previousElementSibling
+  }
   const { prev, next } = _findVenueNeighbors(slot)
-  // ── Safety re-attach _placeData on locked anchors ──
-  // renderDayBookends attaches _placeData when _findItineraryHotel() returns
-  // the hotel — but during fillItineraryItems the hotel's _placeData isn't
-  // set yet on the early addSlot calls, so the bookend anchors built mid-
-  // iteration end up WITHOUT _placeData. By the time refreshTransportSlot
-  // runs, the hotel slot has its data but the anchor doesn't. Re-attach
-  // on-demand so destination resolves to the real hotel name (not the
-  // "next stop" placeholder).
-  if (next && next.classList?.contains('is-locked')
-      && next.dataset.anchorType === 'end_of_day'
-      && !next._placeData
-      && typeof _findItineraryHotel === 'function') {
-    const _h = _findItineraryHotel()
-    if (_h) next._placeData = {
-      google_place_id: _h.google_place_id,
-      name: _h.name,
-      latitude: _h.latitude,
-      longitude: _h.longitude,
-    }
-  }
-  if (prev && prev.classList?.contains('is-locked')
-      && prev.dataset.anchorType === 'arrival'
-      && !prev._placeData
-      && window._currentArrivalStationLatLng) {
-    prev._placeData = {
-      google_place_id: window._currentArrivalStationPlaceId || null,
-      name: window._currentArrivalStationResolvedName || window._currentArrivalLocation || '',
-      latitude:  window._currentArrivalStationLatLng.lat,
-      longitude: window._currentArrivalStationLatLng.lng,
-    }
-  }
   // "From" label — fall back to the unit's arrival location when the
   // transport sits right after the Day 1 arrival anchor (locked rows are
   // skipped by _findVenueNeighbors so prev is null in that position).
