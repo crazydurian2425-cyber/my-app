@@ -13300,16 +13300,26 @@ function fillItineraryItems(items) {
       if (it.is_locked === true) {
         slot.dataset.isLocked = 'true'
       }
-      // A locked taxi loaded on Day 1 is the auto-seeded arrival taxi —
-      // we don't store the autoSeededArrivalTaxi flag in the DB, but the
-      // combination (transport + mode=taxi + Day 1 + is_locked) is
-      // unambiguous. Restoring it keeps the orphan-sweep exemption +
-      // refreshTransportSlot's lock detection consistent across reload.
+      // Detect the auto-seeded Day-1 "Taxi to hotel" so the AUTO badge
+      // + orphan-sweep exemption persist across reload. Two ways to
+      // recognise it:
+      //   1. is_locked=true in the DB (saved by recent autosaves after
+      //      the is_locked round-trip went in).
+      //   2. Legacy fallback by title — _insertArrivalTaxi has always
+      //      stamped slot-title-input.value = 'Taxi to hotel'. Older
+      //      saves predate the is_locked persistence, so they still
+      //      need this catch.
+      // Either way we set BOTH flags so subsequent autosaves persist
+      // the lock correctly going forward.
       if (iconKey === 'transport'
           && (it.transport_mode || '') === 'taxi'
-          && it.is_locked === true
-          && (parseInt(day, 10) || 1) === 1) {
+          && (parseInt(day, 10) || 1) === 1
+          && (
+            it.is_locked === true
+            || /^taxi to hotel\b/i.test((it.title || '').trim())
+          )) {
         slot.dataset.autoSeededArrivalTaxi = 'true'
+        slot.dataset.isLocked = 'true'
       }
       // Hotel check-in / check-out: re-evaluate the time-window warning so
       // a row stored with an out-of-window time shows the warning right
