@@ -13174,6 +13174,12 @@ function fillItineraryItems(items) {
       // Address (new field — null for legacy rows, just leaves the input blank)
       const addrInput = slot.querySelector('.slot-address-input')
       if (addrInput) addrInput.value = it.address || ''
+      // Restore the planner's chosen transport mode (Uber / Metro / Walk
+      // / ...). Without this, refreshTransportSlot's default kicks in and
+      // every transport reverts to 'taxi' on close + reopen.
+      if (iconKey === 'transport' && it.transport_mode) {
+        slot.dataset.transportMode = it.transport_mode
+      }
       // Restore Google-Place linkage if the row carries a place_id. We rebuild
       // _placeData from the persisted columns so submit/autosave round-trips
       // the same metadata back without a redundant API call.
@@ -18691,6 +18697,12 @@ async function _persistDraft(planId) {
       const slotType  = slot.querySelector('.slot-type-select')?.value?.toLowerCase() || 'activity'
       const durRaw    = slot.querySelector('.slot-duration-input')?.value?.trim() || ''
       const durMins   = durRaw ? parseInt(durRaw, 10) : null
+      // Persist transport mode for transport-type slots so close+reopen
+      // restores the planner's pick (Metro / Walk / Train / ...) instead
+      // of resetting to the 'taxi' fallback.
+      const transportMode = (slotType === 'transport')
+        ? (slot.dataset.transportMode || null)
+        : null
       items.push({
         day_number: dayNum,
         time:       slot.querySelector('.slot-time-input')?.value || null,
@@ -18699,6 +18711,7 @@ async function _persistDraft(planId) {
         address:    slot.querySelector('.slot-address-input')?.value?.trim() || null,
         duration_minutes: (slotType === 'activity' && Number.isFinite(durMins)) ? durMins : null,
         notes:      slot.querySelector('.slot-notes-input')?.value?.trim() || '',
+        transport_mode: transportMode,
         sort_order: sortOrder,
         ...getPlaceFieldsForSlot(slot)
       })
