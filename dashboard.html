@@ -12373,11 +12373,15 @@ async function renderTravelerBrief(plan, t, notes) {
   // planner sees exactly when every Day 2+ morning anchor will start.
   // Same _wakeTimeForTiming mapping the day-form uses: early → 7:00 am,
   // standard → 8:30 am, late → 9:30 am.
+  // Legacy seed values stored long-form strings like "Standard (9-10am)";
+  // strip the parenthetical so the cell reads just "Standard · 8:30 am".
   const dailyTimingTxt = (() => {
     if (!meta.daily_timing) return ''
-    const label = titleCaseEnum(meta.daily_timing)
+    const raw  = String(meta.daily_timing).replace(/\s*\(.*?\)\s*/g, '').trim()
+    const enumKey = raw.toLowerCase().split(/\s+/)[0]   // "standard" / "early" / "late"
+    const label = titleCaseEnum(enumKey)
     const wake = (typeof _wakeTimeForTiming === 'function')
-      ? _wakeTimeForTiming(String(meta.daily_timing).toLowerCase())
+      ? _wakeTimeForTiming(enumKey)
       : null
     const wakeDisplay = wake ? (typeof formatTimeDisplay === 'function' ? formatTimeDisplay(wake) : wake) : ''
     return wakeDisplay ? `${label} · ${wakeDisplay}` : label
