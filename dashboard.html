@@ -13727,6 +13727,24 @@ function _autoSeedDay1HotelIfNeeded() {
     } else {
       console.log('[day1-seed] first stop already a transport — leaving as-is')
     }
+    // Universal-logic rule: Day 1 ALWAYS has a Hotel check-in row. If
+    // the planner previously deleted it (e.g. before the locked-slot
+    // change shipped), re-add it. Insert just after the auto-seeded
+    // taxi so the sequence stays consistent:
+    //   arrival anchor → taxi → hotel_checkin → planner's stops
+    const hasHotelCheckin = day1.querySelector(':scope > .activity-slot.slot-type-hotel_checkin')
+    if (!hasHotelCheckin) {
+      console.log('[day1-seed] no hotel_checkin found — auto-seeding one')
+      const _beforeAdd = new Set([...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')])
+      addSlot(1, { icon: 'hotel' })
+      const newHotel = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')]
+        .find(s => !_beforeAdd.has(s))
+      if (newHotel) {
+        newHotel.dataset.isLocked = 'true'
+        newHotel.dataset.autoSeededHotelCheckin = 'true'
+      }
+      if (typeof autoSaveDraft === 'function') autoSaveDraft()
+    }
   } catch (e) {
     console.warn('[day1-seed] threw', e)
   }
@@ -16844,8 +16862,22 @@ function refreshTransportSlot(slot) {
       longitude:       parseFloat(slot.dataset.fromLng),
     }
   } : null)
-  const dirUrl   = (!tooFar) ? buildGmapsDirUrl(_gmapsOrigin, next, mode) : null
-  const embedUrl = (!tooFar) ? buildGmapsEmbedUrl(_gmapsOrigin, next, mode) : null
+  // Same synthesis for the destination side. The End-trip-to-airport
+  // transport has next=null because the locked departure anchor isn't
+  // a venue, but endTripToAirport / _initDepartureStationLookup stash
+  // the resolved airport place_id + lat/lng on the transport's
+  // dataset.to* fields. Without this fallback the route-map button and
+  // the Google Maps deep link disappear on the airport row.
+  const _gmapsDest = next || ((slot.dataset.toPlaceId || slot.dataset.toLat) ? {
+    _placeData: {
+      google_place_id: slot.dataset.toPlaceId || null,
+      name:            slot.dataset.toName || toName || '',
+      latitude:        parseFloat(slot.dataset.toLat),
+      longitude:       parseFloat(slot.dataset.toLng),
+    }
+  } : null)
+  const dirUrl   = (!tooFar) ? buildGmapsDirUrl(_gmapsOrigin, _gmapsDest, mode) : null
+  const embedUrl = (!tooFar) ? buildGmapsEmbedUrl(_gmapsOrigin, _gmapsDest, mode) : null
   const directionsLink = dirUrl
     ? `<div style="display:flex;align-items:center;gap:14px;margin-top:8px;font-size:11.5px;">
          ${embedUrl ? `<button type="button" class="transport-map-toggle"
