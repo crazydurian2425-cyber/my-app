@@ -12609,6 +12609,31 @@ async function openItineraryForm(planId) {
     plan = realPlan || demoPlan
   }
   if (!plan) { showToast('No active plan found'); return }
+  // ── Fresh-fetch from DB ──
+  // The in-memory `plans` array can be stale if admin reassigned the set
+  // (plans deleted + recreated with new IDs, hotel_* nulled, etc.) while
+  // the planner's dashboard tab was open. Pull the latest row before
+  // rendering so the form reflects the current DB state — even if that
+  // means we discover the plan no longer exists for this planner.
+  try {
+    const { data: fresh, error: freshErr } = await sb.from('plans')
+      .select('*, travelers(*)').eq('id', plan.id).maybeSingle()
+    if (freshErr) {
+      console.warn('[plan-open] fresh fetch failed, using in-memory copy', freshErr)
+    } else if (!fresh) {
+      // Plan row vanished — almost certainly an admin reassign that
+      // deleted + recreated the plans for this set. The planner's
+      // in-memory `plans` array has stale IDs. Force a dashboard
+      // refresh so the tile list re-renders with the new plan IDs.
+      console.log('[plan-open] plan id no longer exists in DB — refreshing dashboard')
+      showToast('Plan was reassigned — refreshing your dashboard')
+      closeModal('modal-submit')
+      if (typeof initDashboard === 'function') setTimeout(() => initDashboard(), 200)
+      return
+    } else {
+      plan = fresh
+    }
+  } catch (e) { console.warn('[plan-open] fresh fetch threw', e) }
 
   currentPlanId = plan.id
   // ── Fresh-assignment auto-reset ──
