@@ -12619,10 +12619,15 @@ async function openItineraryForm(planId) {
   window._currentDepartureMethod   = _tmeta.unit_departure_method   || null
   window._currentDepartureLocation = _tmeta.unit_departure_location || null
   window._currentDepartureTo       = _tmeta.unit_departure_to       || null
-  // Airport buffer in minutes (intl flight 120 / domestic 90 / train 60).
-  // Last-day cutoff = departure_time − buffer − 30 (cushion for last stop end).
+  // Airport buffer in minutes — represents the WHOLE time the traveler
+  // needs between their last activity ending and the flight/train doors
+  // (airport travel + check-in + security + boarding gate).
+  // Defaults: flight 240 (4 h, intercontinental from Paris is standard),
+  // non-flight 90 (train/bus). Override via traveler meta airport_buffer_minutes.
+  // Last-day cutoff = departure_time − buffer (no extra cushion — the
+  // buffer itself is already padding).
   window._currentAirportBuffer = Number(_tmeta.airport_buffer_minutes)
-    || (_tmeta.unit_departure_method === 'flight' ? 120 : 60)
+    || (_tmeta.unit_departure_method === 'flight' ? 240 : 90)
   // Expose budget context so the linked-chip render can compare each
   // stop's estimated cost against the traveler's daily limit + their
   // splurge tolerance, and flag the right severity (RED / AMBER / none).
@@ -13992,14 +13997,19 @@ function dayTimeWindow(dayNum, totalDays) {
   }
   if (dayNum === totalDays && totalDays >= 1 && dep) {
     // Cutoff: last stop must end before transit-to-airport begins.
-    //   cutoff = departure − airport_buffer − 30 min cushion
+    //   cutoff = departure − airport_buffer
+    // No extra cushion — the buffer itself already accounts for airport
+    // travel + check-in + security + gate. Sofia (5 PM flight, 240 min
+    // buffer) → last activity ends by 1 PM, matching the planner's
+    // mental model of "4 hours before flight".
     const [h, m] = dep.split(':').map(Number)
-    let total = h * 60 + m - buf - 30
+    let total = h * 60 + m - buf
     if (total < 0) total = 0
     // Snap DOWN so cutoff aligns to the grid (planner can't pick 14:30 if cutoff is 14:30)
     total = Math.floor(total / 30) * 30
     out.maxTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
-    const why = `${buf} min ${window._currentDepartureMethod === 'flight' ? 'airport' : 'station'} buffer + 30 min cushion`
+    const hours = (buf / 60).toFixed(buf % 60 === 0 ? 0 : 1)
+    const why = `${hours} h ${window._currentDepartureMethod === 'flight' ? 'airport' : 'station'} buffer`
     out.reason = (out.reason ? out.reason + ' · ' : '') +
                  `Departs ${dep} — last stop must end by ${out.maxTime} (${why})`
   }
@@ -17660,6 +17670,33 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       dayContainer.insertBefore(_row, bottomAnchor)
     }
   }
+  // ── "End trip · transport to airport" button ──
+  // Symmetric to the end-of-day button but for the LAST day's departure
+  // anchor. Inserts a transport from the last venue to the departure
+  // station/airport. Hides once that transport exists; deletion via the
+  // transport's × button brings the button back.
+  if (bottomAnchor && bottomAnchor.dataset.anchorType === 'departure') {
+    dayContainer.querySelectorAll(':scope > .end-day-row').forEach(el => el.remove())
+    // Has the planner already added a transport-to-airport row?
+    let _scan = bottomAnchor.previousElementSibling
+    while (_scan && _scan.classList?.contains('is-locked')) _scan = _scan.previousElementSibling
+    const _hasExisting = !!(_scan && _scan.classList?.contains('slot-type-transport'))
+    // Only render when at least one real venue exists for the day —
+    // otherwise the transport's `from` would be null.
+    const _hasVenue = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+      .some(s => !s.classList.contains('slot-type-transport') && !s.classList.contains('is-locked'))
+    if (!_hasExisting && _hasVenue) {
+      const _row = document.createElement('div')
+      _row.className = 'end-day-row'
+      _row.innerHTML = `
+        <button type="button" class="end-day-btn" onclick="endTripToAirport('${dayContainer.id}')">
+          <span class="edb-icon">🛫</span>
+          <span class="edb-text">End trip · transport to airport</span>
+        </button>
+      `
+      dayContainer.insertBefore(_row, bottomAnchor)
+    }
+  }
 }
 
 // Render the "End day · back to hotel" action row. Pure DOM op — call
@@ -17795,6 +17832,83 @@ function endDayBackToHotel(dayContainerId) {
   // Without this, just calling refreshTransportSlot leaves the bookend's
   // _computeActualDayEnd stale (it was computed BEFORE the transport
   // existed).
+  if (typeof refreshDayDistances === 'function') refreshDayDistances(dayContainer)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
+}
+
+// Last-day equivalent of endDayBackToHotel — inserts a transport from
+// the last venue to the departure station/airport. Defaults to taxi
+// (airport runs are almost always taxi/ride-share) and the depart time
+// is computed as last_venue.start + last_venue.stay, with the existing
+// time-window cap on the planner's pick keeping things sane.
+function endTripToAirport(dayContainerId) {
+  const dayContainer = document.getElementById(dayContainerId)
+  if (!dayContainer) return
+  const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10) || 1
+  const depAnchor = dayContainer.querySelector(
+    ':scope > .activity-slot.is-locked[data-anchor-type="departure"]'
+  )
+  if (!depAnchor) return
+  // Idempotent — clear any existing transport between the last venue
+  // and the locked departure anchor (covers re-clicks and leftovers
+  // from a previous session).
+  let scan = depAnchor.previousElementSibling
+  while (scan) {
+    const prev = scan.previousElementSibling
+    if (scan.classList?.contains('slot-type-transport')) {
+      scan.remove(); scan = prev; continue
+    }
+    if (scan.classList?.contains('is-locked')) { scan = prev; continue }
+    break
+  }
+  const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+    .filter(s => !s.classList.contains('slot-type-transport')
+              && !s.classList.contains('is-locked'))
+  if (!venues.length) return
+  const lastVenue = venues[venues.length - 1]
+  // Depart time = last venue start + (type-floored) stay.
+  const startMin = parseSlotTime(lastVenue.querySelector('.slot-time-input')?.value || '')
+  let stay = parseInt(lastVenue.querySelector('.slot-duration-input')?.value || '0', 10) || 0
+  const type = lastVenue.querySelector('.slot-type-select')?.value || 'activity'
+  if (type === 'accommodation')       stay = Math.max(stay, 30)
+  else if (type === 'meal')           stay = Math.max(stay, 30)
+  else if (type === 'hotel_checkin')  stay = Math.max(stay, 60)
+  else if (type === 'hotel_checkout') stay = Math.max(stay, 15)
+  if (stay <= 0) stay = 15
+  const depMin = (startMin != null)
+    ? Math.min(startMin + stay, 23 * 60 + 45)
+    : (12 * 60)
+  const departHHMM = minsToHHMM(depMin)
+  // Airport runs default to taxi — direct, predictable timing for the
+  // pre-flight cutoff, no transit transfers to second-guess.
+  const mode = 'taxi'
+  const departureTo  = window._currentDepartureLocation
+                    || window._currentDepartureTo
+                    || 'the airport'
+  // Build the transport.
+  const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
+  addSlot(dayNum, { icon: 'transport', time: departHHMM })
+  const newT = [...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')]
+    .find(s => !transportSnap.has(s))
+  if (!newT) return
+  newT.dataset.transportMode = mode
+  const titleInput = newT.querySelector('.slot-title-input')
+  if (titleInput) {
+    const aName = _venueNameOf(lastVenue) || 'last stop'
+    titleInput.value = `Taxi · ${aName} → ${departureTo}`
+  }
+  _applySlotTime(newT, departHHMM)
+  dayContainer.insertBefore(newT, depAnchor)
+  // If we previously resolved the arrival station via Places lookup, the
+  // same place may be the departure point — copy the lat/lng onto the
+  // transport's dataset so refreshTransportSlot can compute km/min from
+  // a known endpoint even without a Place link.
+  const stLL = window._currentArrivalStationLatLng
+  if (stLL && Number.isFinite(stLL.lat) && Number.isFinite(stLL.lng)) {
+    newT.dataset.toLat = String(stLL.lat)
+    newT.dataset.toLng = String(stLL.lng)
+    newT.dataset.toName = window._currentArrivalStationResolvedName || departureTo
+  }
   if (typeof refreshDayDistances === 'function') refreshDayDistances(dayContainer)
   if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
