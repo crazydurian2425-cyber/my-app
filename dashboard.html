@@ -2537,7 +2537,11 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot .slot-row-duration{display:none;}
 .activity-slot.slot-type-activity .slot-row-duration,
 .activity-slot.slot-type-meal .slot-row-duration,
-.activity-slot.slot-type-accommodation .slot-row-duration{display:flex;align-items:center;gap:10px;}
+.activity-slot.slot-type-accommodation .slot-row-duration,
+.activity-slot.slot-type-hotel_checkin .slot-row-duration,
+.activity-slot.slot-type-hotel_checkout .slot-row-duration,
+.activity-slot.slot-type-shopping .slot-row-duration,
+.activity-slot.slot-type-entertainment .slot-row-duration{display:flex;align-items:center;gap:10px;}
 .activity-slot.slot-type-freetime .slot-row-address{display:none;}
 .slot-row-duration .slot-row-label{font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;}
 
@@ -13228,8 +13232,30 @@ function fillItineraryItems(items) {
       if (timeLabel && it.time) timeLabel.textContent = formatTimeDisplay(it.time)
       // Type — capitalise, map to dd display + icon
       const rawType = (it.type || 'activity').toLowerCase()
-      const labelMap = { activity:'Activity', meal:'Meal', transport:'Transport', accommodation:'Accommodation', freetime:'Free time', 'free time':'Free time' }
-      const keyMap   = { activity:'activity', meal:'meal', transport:'transport', accommodation:'accommodation', freetime:'freetime', 'free time':'freetime' }
+      const labelMap = {
+        activity:       'Activity',
+        meal:           'Meal',
+        transport:      'Transport',
+        accommodation:  'Accommodation',
+        freetime:       'Free time',
+        'free time':    'Free time',
+        hotel_checkin:  'Hotel check-in',
+        hotel_checkout: 'Hotel check-out',
+        shopping:       'Shopping',
+        entertainment:  'Entertainment',
+      }
+      const keyMap   = {
+        activity:       'activity',
+        meal:           'meal',
+        transport:      'transport',
+        accommodation:  'accommodation',
+        freetime:       'freetime',
+        'free time':    'freetime',
+        hotel_checkin:  'hotel_checkin',
+        hotel_checkout: 'hotel_checkout',
+        shopping:       'shopping',
+        entertainment:  'entertainment',
+      }
       const labelTxt = labelMap[rawType] || 'Activity'
       const iconKey  = keyMap[rawType]   || 'activity'
       const hidden = slot.querySelector('.slot-type-select')
@@ -13299,8 +13325,10 @@ function fillItineraryItems(items) {
       const durHidden = slot.querySelector('.slot-duration-input')
       const durLabel  = slot.querySelector('.duration-dd-label')
       const storedDur = parseInt(it.duration_minutes, 10)
-      const typeFloor = (iconKey === 'accommodation') ? 30
-                      : (iconKey === 'meal')          ? 30
+      const typeFloor = (iconKey === 'accommodation')   ? 30
+                      : (iconKey === 'meal')             ? 30
+                      : (iconKey === 'hotel_checkin')    ? 60
+                      : (iconKey === 'hotel_checkout')   ? 15
                       : 0
       if (durHidden && Number.isFinite(storedDur) && storedDur > 0) {
         const effective = Math.max(storedDur, typeFloor)
@@ -14218,10 +14246,24 @@ function getStopCategoriesForDay(dayNum, totalDays) {
   })
 }
 
-// Lookup map for label rendering — covers hidden + visible categories so
-// a legacy 'accommodation' row still shows its label even though it's
-// off the picker.
+// Lookup map for label rendering. Includes one entry for the retired
+// 'accommodation' key so legacy rows still resolve to a readable label
+// even after we dropped it from STOP_CATEGORIES (the picker no longer
+// offers it, but data still lives in the DB during rollout).
 const STOP_CATEGORY_BY_KEY = Object.fromEntries(STOP_CATEGORIES.map(c => [c.key, c]))
+STOP_CATEGORY_BY_KEY.accommodation = { key: 'accommodation', label: 'Accommodation', dayRule: 'hidden' }
+
+// Type-floor durations — minimum stay for each type, enforced wherever
+// the day-form needs a "realistic" duration (transport depart math,
+// chain enforcement, on-load hydration). Mirrors the human-readable
+// reality: dropping bags + room hand-off takes ~1 h, check-out ~15 min,
+// a meal at least 30 min so people don't get rushed.
+const TYPE_FLOOR_MINS = {
+  accommodation:  30,   // legacy; superseded by hotel_checkin going forward
+  meal:           30,
+  hotel_checkin:  60,
+  hotel_checkout: 15,
+}
 function toggleTypeDD(btn, e){
   e?.stopPropagation?.()
   const dd = btn.closest('.type-dd')
@@ -15039,7 +15081,12 @@ function applySlotTypeChange(slot, key) {
   hidden.value = key
   slot.classList.forEach(c => { if (c.startsWith('slot-type-')) slot.classList.remove(c) })
   slot.classList.add('slot-type-' + key)
-  const label = t('slot.type.' + key, key.charAt(0).toUpperCase() + key.slice(1))
+  // Prefer the canonical STOP_CATEGORIES label so multi-word enums like
+  // hotel_checkin render as "Hotel check-in" rather than "Hotel_checkin"
+  // when no translation is registered. Translation still wins when present.
+  const fallback = (typeof STOP_CATEGORY_BY_KEY !== 'undefined' && STOP_CATEGORY_BY_KEY[key]?.label)
+    || key.replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())
+  const label = t('slot.type.' + key, fallback)
   const ddLabel = slot.querySelector('.type-dd-label')
   if (ddLabel) ddLabel.textContent = label
   const ddIcon = slot.querySelector('.type-dd-toggle .type-dd-icon')
@@ -15675,8 +15722,10 @@ function _suggestTransportStart(prevSlot, nextSlot) {
   // explicitly asked for this: a hotel check-in stored as 15 min should
   // still allow 30 min before the next transport because that's the
   // realistic standard.
-  if (type === 'accommodation') stayMin = Math.max(stayMin, 30)
-  else if (type === 'meal')     stayMin = Math.max(stayMin, 30)
+  if (type === 'accommodation')   stayMin = Math.max(stayMin, 30)
+  else if (type === 'meal')           stayMin = Math.max(stayMin, 30)
+  else if (type === 'hotel_checkin')  stayMin = Math.max(stayMin, 60)
+  else if (type === 'hotel_checkout') stayMin = Math.max(stayMin, 15)
   // Default for anything else when no duration is set.
   if (stayMin <= 0) stayMin = 15
   const [h, m] = base.split(':').map(Number)
@@ -16733,8 +16782,10 @@ function _enforceTimeChain(dayContainer) {
   const _venueEffectiveDur = (slot) => {
     const type = slot.querySelector('.slot-type-select')?.value || 'activity'
     let stay = parseInt(slot.querySelector('.slot-duration-input')?.value || '0', 10) || 0
-    if (type === 'accommodation') stay = Math.max(stay, 30)
-    else if (type === 'meal')     stay = Math.max(stay, 30)
+    if (type === 'accommodation')  stay = Math.max(stay, 30)
+    else if (type === 'meal')          stay = Math.max(stay, 30)
+    else if (type === 'hotel_checkin') stay = Math.max(stay, 60)
+    else if (type === 'hotel_checkout')stay = Math.max(stay, 15)
     if (stay <= 0) stay = 15
     return stay
   }
@@ -17784,8 +17835,10 @@ function refreshDayDistances(dayContainer) {
       const prevType = a.querySelector('.slot-type-select')?.value || 'activity'
       const prevTime = a.querySelector('.slot-time-input')?.value || '09:00'
       let prevStay = parseInt(a.querySelector('.slot-duration-input')?.value || '0', 10) || 0
-      if (prevType === 'accommodation') prevStay = Math.max(prevStay, 30)
-      else if (prevType === 'meal')     prevStay = Math.max(prevStay, 30)
+      if (prevType === 'accommodation')   prevStay = Math.max(prevStay, 30)
+      else if (prevType === 'meal')           prevStay = Math.max(prevStay, 30)
+      else if (prevType === 'hotel_checkin')  prevStay = Math.max(prevStay, 60)
+      else if (prevType === 'hotel_checkout') prevStay = Math.max(prevStay, 15)
       if (prevStay <= 0) prevStay = 15
       const travelMin = Math.max(5, Math.round(km * 3))
       const baseMin = parseSlotTime(prevTime)
