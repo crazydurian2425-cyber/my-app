@@ -2325,6 +2325,33 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border:1px solid var(--border);background:var(--surface);
   text-transform:uppercase;letter-spacing:0.4px;font-weight:500;
 }
+/* Hotel check-in / check-out time-window warning. Appears INSIDE the slot
+   when the planner's chosen time falls outside the hotel's window. Amber
+   = early check-in (drop-bags OK), red = late check-out (late-fee risk).
+   Includes a quick-fix button that moves the slot to a safe time. */
+.hotel-time-warn{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:8px;padding:8px 12px;border-radius:8px;
+  font-size:12.5px;line-height:1.35;
+}
+.hotel-time-warn-amber{
+  background:rgba(214,158,46,0.10);
+  border:1px solid rgba(214,158,46,0.35);
+  color:#8a5a00;
+}
+.hotel-time-warn-red{
+  background:rgba(200,50,50,0.10);
+  border:1px solid rgba(200,50,50,0.40);
+  color:#a02929;
+}
+.hotel-time-warn .htw-icon{font-weight:700;flex-shrink:0;}
+.hotel-time-warn .htw-msg{flex:1;min-width:200px;}
+.hotel-time-warn .htw-fix{
+  flex-shrink:0;background:transparent;border:1px solid currentColor;
+  color:inherit;padding:4px 10px;border-radius:14px;font-size:12px;
+  font-weight:500;cursor:pointer;
+}
+.hotel-time-warn .htw-fix:hover{background:rgba(255,255,255,0.5);}
 /* "End day · back to hotel" action row — sits just above the end_of_day
    anchor. Visible only when a real venue exists in the day AND no
    transport is already wrapping it up. Click inserts the back-to-hotel
@@ -9484,7 +9511,11 @@ const GOOGLE_PLACES_API_KEY = 'AIzaSyBZrklPTsOgJiRu8-OtJb-d3lU2P0JdWv4'
 // Slot types that get autocomplete. Transport ("Paris → Lyon") and Free time
 // ("Asakusa afternoon") don't map to a Google place, so they keep the manual
 // 3-input flow.
-const PLACES_ENABLED_TYPES = new Set(['activity','meal','accommodation'])
+// Slot types that get the Google Places autocomplete + linked-chip flow.
+// hotel_checkin / hotel_checkout don't take an autocomplete — the venue
+// is auto-filled from plan.hotel_* fields and locked. Shopping and
+// Entertainment behave like Activity (free Places search).
+const PLACES_ENABLED_TYPES = new Set(['activity','meal','accommodation','shopping','entertainment'])
 
 // ── AUTH CHECK ───────────────────────────────────────────────
 const token   = localStorage.getItem('jj_token')
@@ -12602,6 +12633,15 @@ async function openItineraryForm(planId) {
   window._currentHotelName     = plan.hotel_name     || _tmeta.unit_hotel_name     || null
   window._currentHotelAddress  = plan.hotel_address  || _tmeta.unit_hotel_address  || null
   window._currentHotelPlaceId  = plan.hotel_place_id || null
+  window._currentHotelLat      = plan.hotel_lat      || null
+  window._currentHotelLng      = plan.hotel_lng      || null
+  // Check-in / check-out windows + bag-storage flag. Postgres returns TIME
+  // values as "HH:MM:SS" strings; trim to "HH:MM" so it lines up with the
+  // 15-min picker grid + the planner-facing display helpers.
+  const _trimSec = (t) => (typeof t === 'string') ? t.slice(0, 5) : null
+  window._currentHotelCheckInTime  = _trimSec(plan.hotel_check_in_time)  || '14:00'
+  window._currentHotelCheckOutTime = _trimSec(plan.hotel_check_out_time) || '11:00'
+  window._currentHotelStoresBags   = plan.hotel_stores_bags !== false  // default TRUE
   // daily_timing now lives on the traveler row as a normalised enum
   // (early / standard / late). Falls back to the legacy free-text meta value
   // for travelers that pre-date the migration.
@@ -13210,6 +13250,15 @@ function fillItineraryItems(items) {
       // every transport reverts to 'taxi' on close + reopen.
       if (iconKey === 'transport' && it.transport_mode) {
         slot.dataset.transportMode = it.transport_mode
+      }
+      // Hotel check-in / check-out: re-evaluate the time-window warning so
+      // a row stored with an out-of-window time shows the warning right
+      // after load (not only after the planner edits the time).
+      if ((iconKey === 'hotel_checkin' || iconKey === 'hotel_checkout')
+          && typeof _refreshHotelTimeWarning === 'function') {
+        // Defer one tick so the slot body + duration field are fully built
+        // before we append the warning element.
+        setTimeout(() => _refreshHotelTimeWarning(slot), 0)
       }
       // Restore Google-Place linkage if the row carries a place_id. We rebuild
       // _placeData from the persisted columns so submit/autosave round-trips
@@ -14113,12 +14162,58 @@ function buildTimeOptions(selected = '09:00', opts = {}) {
 let slotCounter = 0;
 // ── Custom type dropdown ──────────────────────────────────
 const TYPE_ICONS = {
-  activity:      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5c-2.5 0-4.5 2-4.5 4.5 0 3 4.5 8 4.5 8s4.5-5 4.5-8c0-2.5-2-4.5-4.5-4.5z"/><circle cx="8" cy="6" r="1.5"/></svg>',
-  meal:          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v5a2 2 0 002 2v5M6 2v5M10 2v12M12 2c-1 1.5-1 3.5 0 5v7"/></svg>',
-  transport:     '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="8" rx="1.5"/><path d="M3 8h10M5 11v2m6-2v2"/><circle cx="5.5" cy="9.5" r=".5" fill="currentColor"/><circle cx="10.5" cy="9.5" r=".5" fill="currentColor"/></svg>',
-  accommodation: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12V5m12 7V8.5c0-1-0.7-1.5-1.5-1.5H7v5m-5 0h12"/><circle cx="4.5" cy="8.5" r="1"/></svg>',
-  freetime:      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h8v3a3 3 0 01-3 3H6a3 3 0 01-3-3V6zM11 7h1.5a1.5 1.5 0 010 3H11M4 3v1M7 3v1M10 3v1"/></svg>',
+  activity:        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5c-2.5 0-4.5 2-4.5 4.5 0 3 4.5 8 4.5 8s4.5-5 4.5-8c0-2.5-2-4.5-4.5-4.5z"/><circle cx="8" cy="6" r="1.5"/></svg>',
+  meal:            '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v5a2 2 0 002 2v5M6 2v5M10 2v12M12 2c-1 1.5-1 3.5 0 5v7"/></svg>',
+  transport:       '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="8" rx="1.5"/><path d="M3 8h10M5 11v2m6-2v2"/><circle cx="5.5" cy="9.5" r=".5" fill="currentColor"/><circle cx="10.5" cy="9.5" r=".5" fill="currentColor"/></svg>',
+  // Legacy generic-hotel — kept for older rows; rendered identically to a
+  // building. Hidden from the picker now in favour of hotel_checkin /
+  // hotel_checkout.
+  accommodation:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12V5m12 7V8.5c0-1-0.7-1.5-1.5-1.5H7v5m-5 0h12"/><circle cx="4.5" cy="8.5" r="1"/></svg>',
+  hotel_checkin:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="9.5" r="2.5"/><path d="M7.5 9.5h6.5M11.5 9.5v2.5M14 9.5v3"/></svg>',
+  hotel_checkout:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h6v12H3z"/><path d="M9 8h5m-2-2 2 2-2 2"/></svg>',
+  shopping:        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h10l-1 9H4L3 5z"/><path d="M6 5V3.5a2 2 0 014 0V5"/></svg>',
+  entertainment:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.8 4.2 4.2 0.6-3 3 0.8 4.2L8 11.3l-3.8 2.2L5 9.3l-3-3 4.2-0.6L8 1.5z"/></svg>',
+  freetime:        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h8v3a3 3 0 01-3 3H6a3 3 0 01-3-3V6zM11 7h1.5a1.5 1.5 0 010 3H11M4 3v1M7 3v1M10 3v1"/></svg>',
 }
+
+// Canonical category list — order matters (planner sees this top-to-bottom).
+// `dayRule` says when this category is OFFERED in the dropdown:
+//   • 'always'    — every day
+//   • 'first-day' — only on Day 1 of the plan (each unit's check-in)
+//   • 'last-day'  — only on the plan's last day
+//   • 'hidden'    — never offered to the planner (legacy types still load
+//                   from the DB but the picker doesn't surface them)
+const STOP_CATEGORIES = [
+  { key: 'activity',       label: 'Activity',        dayRule: 'always'    },
+  { key: 'meal',           label: 'Meal',            dayRule: 'always'    },
+  { key: 'transport',      label: 'Transport',       dayRule: 'always'    },
+  { key: 'hotel_checkin',  label: 'Hotel check-in',  dayRule: 'first-day' },
+  { key: 'hotel_checkout', label: 'Hotel check-out', dayRule: 'last-day'  },
+  { key: 'shopping',       label: 'Shopping',        dayRule: 'always'    },
+  { key: 'entertainment',  label: 'Entertainment',   dayRule: 'always'    },
+  { key: 'freetime',       label: 'Free time',       dayRule: 'always'    },
+  { key: 'accommodation',  label: 'Accommodation',   dayRule: 'hidden'    },
+]
+
+// Returns the categories that should appear in the dropdown for the given
+// day. Used at slot-creation time AND when fillItineraryItems hydrates a
+// stored row — so even a legacy accommodation row still resolves to its
+// (now-hidden) entry for label/icon rendering.
+function getStopCategoriesForDay(dayNum, totalDays) {
+  const isFirst = dayNum === 1
+  const isLast  = (totalDays != null) && dayNum === totalDays
+  return STOP_CATEGORIES.filter(c => {
+    if (c.dayRule === 'hidden')    return false
+    if (c.dayRule === 'first-day') return isFirst
+    if (c.dayRule === 'last-day')  return isLast
+    return true
+  })
+}
+
+// Lookup map for label rendering — covers hidden + visible categories so
+// a legacy 'accommodation' row still shows its label even though it's
+// off the picker.
+const STOP_CATEGORY_BY_KEY = Object.fromEntries(STOP_CATEGORIES.map(c => [c.key, c]))
 function toggleTypeDD(btn, e){
   e?.stopPropagation?.()
   const dd = btn.closest('.type-dd')
@@ -14128,9 +14223,9 @@ function toggleTypeDD(btn, e){
 }
 function selectTypeDD(btn, label, key){
   const dd = btn.closest('.type-dd')
-  // Store the canonical KEY in the hidden input (not the localized label) —
-  // Postgres has a check constraint on plans.type that only accepts the
-  // English keys: activity / meal / transport / accommodation / freetime.
+  // Store the canonical KEY in the hidden input (not the localized label).
+  // Postgres CHECK constraint on itinerary_items.type accepts only the
+  // English keys (see docs/schema/add-stop-categories.sql).
   dd.querySelector('.slot-type-select').value = key
   dd.querySelector('.type-dd-icon').innerHTML = TYPE_ICONS[key]
   dd.querySelector('.type-dd-label').textContent = label
@@ -14150,8 +14245,155 @@ function selectTypeDD(btn, label, key){
     if (!PLACES_ENABLED_TYPES.has(key) && slot.classList.contains('slot-place-linked')) {
       clearLinkedPlace(slot, { keepTitle: true })
     }
+    // ── Hotel check-in / check-out auto-pre-fill ──
+    // Pull title + address + (optionally) the Google Place linkage from
+    // the plan's hotel_* fields. Set a sensible default time + duration
+    // matching French hotel norms. Planner can still adjust afterward.
+    if (key === 'hotel_checkin' || key === 'hotel_checkout') {
+      _applyHotelDefaults(slot, key)
+    }
   }
   autoSaveDraft()
+}
+
+// Auto-fill venue + address + linked place + default time/duration when the
+// planner picks Hotel check-in or Hotel check-out. Reads from
+// window._currentHotel* globals which were loaded at plan-open from
+// plans.hotel_name / hotel_address / hotel_place_id / hotel_lat / hotel_lng.
+function _applyHotelDefaults(slot, key) {
+  if (!slot) return
+  const isIn  = (key === 'hotel_checkin')
+  const isOut = (key === 'hotel_checkout')
+  if (!isIn && !isOut) return
+  const hotelName = window._currentHotelName || ''
+  const hotelAddr = window._currentHotelAddress || ''
+  // Title — only overwrite if the planner hasn't typed something custom
+  // (treat the field as "fresh" when it's empty OR matches the previous
+  // hotel value, so flipping checkin ↔ checkout keeps it tidy).
+  const titleInput = slot.querySelector('.slot-title-input')
+  if (titleInput && hotelName) {
+    const cur = (titleInput.value || '').trim()
+    if (!cur || cur === window._currentHotelName) titleInput.value = hotelName
+  }
+  const addrInput = slot.querySelector('.slot-address-input')
+  if (addrInput && hotelAddr) {
+    const cur = (addrInput.value || '').trim()
+    if (!cur || cur === window._currentHotelAddress) addrInput.value = hotelAddr
+  }
+  // Linked place — rebuild _placeData from the plan's hotel fields so the
+  // gap-fill + distance heuristics see this slot as a real Google-linked
+  // venue (used by _findItineraryHotel and the Routes API call).
+  const lat = parseFloat(window._currentHotelLat)
+  const lng = parseFloat(window._currentHotelLng)
+  if (window._currentHotelPlaceId || (Number.isFinite(lat) && Number.isFinite(lng))) {
+    slot._placeData = {
+      google_place_id: window._currentHotelPlaceId || null,
+      name:            hotelName,
+      address:         hotelAddr,
+      latitude:        Number.isFinite(lat) ? lat : null,
+      longitude:       Number.isFinite(lng) ? lng : null,
+    }
+    slot.classList.add('slot-place-linked')
+    if (typeof renderLinkedChip === 'function') renderLinkedChip(slot)
+  }
+  // Default time — sit it at the hotel's check-in / check-out window so the
+  // time-warning logic (next phase) doesn't fire on a brand-new slot.
+  const defTime = isIn
+    ? (window._currentHotelCheckInTime  || '14:00')
+    : (window._currentHotelCheckOutTime || '11:00')
+  // For check-out we land ~15 min before the official deadline so the
+  // planner has buffer.
+  let applyTime = defTime
+  if (isOut) {
+    const [h, m] = defTime.split(':').map(Number)
+    let total = (h || 0) * 60 + (m || 0) - 15
+    if (total < 0) total = 0
+    total = Math.round(total / 15) * 15
+    applyTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+  }
+  if (typeof _applySlotTime === 'function') _applySlotTime(slot, applyTime)
+  // Default duration — check-in 30 min, check-out 15 min. Mirrors the
+  // realistic time it takes (room hand-off vs. bag drop + key return).
+  const durHidden = slot.querySelector('.slot-duration-input')
+  const durLabel  = slot.querySelector('.duration-dd-label')
+  if (durHidden) {
+    const mins = isIn ? 30 : 15
+    durHidden.value = String(mins)
+    if (durLabel) {
+      durLabel.textContent = (typeof formatDurationLabel === 'function')
+        ? formatDurationLabel(mins) : (mins + ' min')
+      durLabel.classList.remove('is-empty')
+    }
+  }
+  _refreshHotelTimeWarning(slot)
+}
+
+// Show / hide the per-slot warning when the planner's chosen time falls
+// outside the hotel's check-in or check-out window. Amber for early
+// check-in (drop-bags scenario), red for late check-out (late-fee risk).
+// Includes a quick-fix button that moves the slot to a safe time.
+function _refreshHotelTimeWarning(slot) {
+  if (!slot) return
+  // Always start clean so a type-switch removes a stale warning.
+  slot.querySelectorAll(':scope > .hotel-time-warn').forEach(el => el.remove())
+  const key = slot.querySelector('.slot-type-select')?.value
+  if (key !== 'hotel_checkin' && key !== 'hotel_checkout') return
+  const time = slot.querySelector('.slot-time-input')?.value || ''
+  if (!/^\d{2}:\d{2}$/.test(time)) return
+  const toMin = (hhmm) => {
+    const [h, m] = hhmm.split(':').map(Number)
+    return (h || 0) * 60 + (m || 0)
+  }
+  const t = toMin(time)
+  const fmt = (typeof formatTimeDisplay === 'function') ? formatTimeDisplay : (x) => x
+  let level = null    // 'amber' | 'red'
+  let msg = ''
+  let suggested = null
+  if (key === 'hotel_checkin') {
+    const ci = window._currentHotelCheckInTime || '14:00'
+    if (t < toMin(ci)) {
+      level = 'amber'
+      msg = `Hotel check-in usually starts at ${fmt(ci)}. Earlier arrivals can drop bags but rooms may not be ready.`
+      suggested = ci
+    }
+  } else if (key === 'hotel_checkout') {
+    const co = window._currentHotelCheckOutTime || '11:00'
+    // Allow a 15 min grace — planner's default is co - 15, so we don't want
+    // to nag at the default value. Only warn when the slot's START is at
+    // or after the official deadline.
+    if (t >= toMin(co)) {
+      level = 'red'
+      msg = `Hotel check-out is at ${fmt(co)}. Setting it later may incur late fees or be impossible.`
+      // Suggest 15 min before deadline, snapped to the 15-min picker grid.
+      const mins = Math.max(0, Math.round((toMin(co) - 15) / 15) * 15)
+      suggested = `${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`
+    }
+  }
+  if (!level) return
+  const sugDisplay = suggested ? fmt(suggested) : ''
+  const wrap = document.createElement('div')
+  wrap.className = `hotel-time-warn hotel-time-warn-${level}`
+  wrap.innerHTML = `
+    <span class="htw-icon">${level === 'red' ? '✗' : '⚠'}</span>
+    <span class="htw-msg">${escapeHtml(msg)}</span>
+    ${suggested ? `<button type="button" class="htw-fix" onclick="_hotelTimeQuickFix('${slot.id}','${suggested}')">Move to ${escapeHtml(sugDisplay)}</button>` : ''}
+  `
+  // Insert at the END of the slot body so it sits below all the regular
+  // fields — closest to the planner's last interaction.
+  const body = slot.querySelector('.slot-body') || slot
+  body.appendChild(wrap)
+}
+
+function _hotelTimeQuickFix(slotId, hhmm) {
+  const slot = document.getElementById(slotId)
+  if (!slot || !hhmm) return
+  if (typeof _applySlotTime === 'function') _applySlotTime(slot, hhmm)
+  _refreshHotelTimeWarning(slot)
+  // Time changed → re-sort + day-wide refresh so chained transports cascade
+  // and the bookend recomputes its actual time.
+  const container = slot.closest('[id^="slots-day-"]')
+  if (container && typeof resortSlots === 'function') resortSlots(container)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 function toggleTimeDD(btn, e){
   e?.stopPropagation?.()
@@ -14209,6 +14451,8 @@ function _selectTimeDDImpl(btn, val){
     // If a place is linked, the time-vs-hours warning may need to appear or
     // disappear — re-render the chip to refresh it.
     if (slot._placeData) renderLinkedChip(slot)
+    // Hotel-window warning re-evaluates against the new time.
+    if (typeof _refreshHotelTimeWarning === 'function') _refreshHotelTimeWarning(slot)
   }
   // Persist the time change — picker was previously update-DOM-only,
   // so close + reopen restored the old time from the DB.
@@ -18127,11 +18371,11 @@ function addSlot(dayNum, seed = null) {
           <svg class="type-dd-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 6 8 9 5"/></svg>
         </button>
         <div class="type-dd-menu">
-          <button type="button" class="type-dd-option${seedTypeKey==='activity'     ?' is-selected':''}" onclick="selectTypeDD(this,'${t('slot.type.activity','Activity').replace(/'/g,"\\'")}','activity')"><span class="type-dd-icon">${TYPE_ICONS.activity}</span>${t('slot.type.activity','Activity')}</button>
-          <button type="button" class="type-dd-option${seedTypeKey==='meal'         ?' is-selected':''}" onclick="selectTypeDD(this,'${t('slot.type.meal','Meal').replace(/'/g,"\\'")}','meal')"><span class="type-dd-icon">${TYPE_ICONS.meal}</span>${t('slot.type.meal','Meal')}</button>
-          <button type="button" class="type-dd-option${seedTypeKey==='transport'    ?' is-selected':''}" onclick="selectTypeDD(this,'${t('slot.type.transport','Transport').replace(/'/g,"\\'")}','transport')"><span class="type-dd-icon">${TYPE_ICONS.transport}</span>${t('slot.type.transport','Transport')}</button>
-          <button type="button" class="type-dd-option${seedTypeKey==='accommodation'?' is-selected':''}" onclick="selectTypeDD(this,'${t('slot.type.accommodation','Accommodation').replace(/'/g,"\\'")}','accommodation')"><span class="type-dd-icon">${TYPE_ICONS.accommodation}</span>${t('slot.type.accommodation','Accommodation')}</button>
-          <button type="button" class="type-dd-option${seedTypeKey==='freetime'     ?' is-selected':''}" onclick="selectTypeDD(this,'${t('slot.type.freetime','Free time').replace(/'/g,"\\'")}','freetime')"><span class="type-dd-icon">${TYPE_ICONS.freetime}</span>${t('slot.type.freetime','Free time')}</button>
+          ${getStopCategoriesForDay(dayNum, dayCount || 1).map(cat => {
+            const sel = (seedTypeKey === cat.key) ? ' is-selected' : ''
+            const lbl = t('slot.type.' + cat.key, cat.label).replace(/'/g, "\\'")
+            return `<button type="button" class="type-dd-option${sel}" onclick="selectTypeDD(this,'${lbl}','${cat.key}')"><span class="type-dd-icon">${TYPE_ICONS[cat.key] || ''}</span>${escapeHtml(t('slot.type.' + cat.key, cat.label))}</button>`
+          }).join('')}
         </div>
       </div>
       <button class="slot-remove" onclick="removeSlot('${id}')" title="${t('slot.remove','Remove')}">✕</button>
