@@ -14223,7 +14223,14 @@ const TYPE_ICONS = {
 const STOP_CATEGORIES = [
   { key: 'activity',       label: 'Activity',        dayRule: 'always'    },
   { key: 'meal',           label: 'Meal',            dayRule: 'always'    },
-  { key: 'transport',      label: 'Transport',       dayRule: 'always'    },
+  // Transport is fully auto-managed: arrival → first-venue taxi gets
+  // seeded by _autoSeedDay1HotelIfNeeded, every venue→venue gap is filled
+  // by _gapFillTransportsForDay, and the back-to-hotel ride is added via
+  // the "End day" button. Allowing the planner to add a manual Transport
+  // slot caused duplicates (one row per click) sitting between the same
+  // two endpoints. Hide it from the picker — existing transport rows
+  // still load + render normally.
+  { key: 'transport',      label: 'Transport',       dayRule: 'hidden'    },
   { key: 'hotel_checkin',  label: 'Hotel check-in',  dayRule: 'first-day' },
   { key: 'hotel_checkout', label: 'Hotel check-out', dayRule: 'last-day'  },
   { key: 'shopping',       label: 'Shopping',        dayRule: 'always'    },
