@@ -17323,18 +17323,51 @@ function _sortSlotsInPlace(container) {
 
 // ── Maps JavaScript API loader (lazy, once per page) ──
 // Loaded on first toggleTransportMap call so the page doesn't pay the
-// Maps JS cost up-front. `libraries=geometry` gives us encoding.decodePath
-// which turns Routes API's encodedPolyline into lat/lng pairs.
+// Maps JS cost up-front. With `loading=async` the script's onload event
+// fires when the bootstrap script finishes - but the actual library
+// modules (geometry / maps / marker) still need to be imported via
+// google.maps.importLibrary() before they're usable.
+//
+// Previous version resolved on script.onload then immediately checked
+// `google.maps.geometry.encoding`, which was usually still undefined
+// on the first call - triggered the iframe fallback. By the second
+// click the libraries had finished loading in the background, so the
+// map rendered correctly. Hence the "first time fallback, second time
+// works" bug the user reported.
+//
+// Fix: explicitly await importLibrary for each library we use before
+// resolving. Resolution now means "the geometry/maps/marker modules
+// are usable RIGHT NOW".
 let _mapsJsPromise = null
 function loadMapsJs() {
-  if (window.google?.maps?.geometry?.encoding) return Promise.resolve()
+  if (window.google?.maps?.geometry?.encoding && window.google?.maps?.Map) {
+    return Promise.resolve()
+  }
   if (_mapsJsPromise) return _mapsJsPromise
   _mapsJsPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script')
     s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&libraries=geometry&v=weekly&loading=async`
     s.async = true
     s.defer = true
-    s.onload = () => resolve()
+    s.onload = async () => {
+      try {
+        if (window.google?.maps?.importLibrary) {
+          await Promise.all([
+            google.maps.importLibrary('geometry'),
+            google.maps.importLibrary('maps'),
+            google.maps.importLibrary('marker'),
+          ])
+        }
+        // Final sanity check — if geometry STILL isn't there, Maps JS API
+        // is probably disabled in the Cloud Console.
+        if (!window.google?.maps?.geometry?.encoding) {
+          throw new Error('geometry library unavailable after import (Maps JavaScript API may be disabled)')
+        }
+        resolve()
+      } catch (e) {
+        reject(e)
+      }
+    }
     s.onerror = () => reject(new Error('Maps JS failed to load'))
     document.head.appendChild(s)
   })
