@@ -13300,6 +13300,17 @@ function fillItineraryItems(items) {
       if (it.is_locked === true) {
         slot.dataset.isLocked = 'true'
       }
+      // A locked taxi loaded on Day 1 is the auto-seeded arrival taxi —
+      // we don't store the autoSeededArrivalTaxi flag in the DB, but the
+      // combination (transport + mode=taxi + Day 1 + is_locked) is
+      // unambiguous. Restoring it keeps the orphan-sweep exemption +
+      // refreshTransportSlot's lock detection consistent across reload.
+      if (iconKey === 'transport'
+          && (it.transport_mode || '') === 'taxi'
+          && it.is_locked === true
+          && (parseInt(day, 10) || 1) === 1) {
+        slot.dataset.autoSeededArrivalTaxi = 'true'
+      }
       // Hotel check-in / check-out: re-evaluate the time-window warning so
       // a row stored with an out-of-window time shows the warning right
       // after load (not only after the planner edits the time).
@@ -16917,13 +16928,13 @@ function refreshTransportSlot(slot) {
   const _isAutoSeededArrivalTaxi = slot.dataset.autoSeededArrivalTaxi === 'true'
   if (_isArrivalTransport || _isAutoSeededArrivalTaxi) {
     slot.dataset.isLocked = 'true'
-  } else {
-    // Actively CLEAR any stale lock so a transport that used to be
-    // a back-to-hotel ride (locked under the old auto-insert logic, or
-    // a back-to-hotel that has since been orphaned by a venue insert
-    // between it and the end_of_day anchor) becomes editable again.
-    delete slot.dataset.isLocked
   }
+  // Do NOT auto-clear the lock here. Autosave persists is_locked, so a
+  // transport loaded with the flag should stay locked even if the
+  // arrival station lookup hasn't resolved yet (else the AUTO badge
+  // flickers off → on across the async station lookup). Stale locks
+  // from pre-Phase-1 back-to-hotel transports are rare and can be
+  // cleared with a one-off SQL if they ever surface.
   const isLockedTransport = slot.dataset.isLocked === 'true'
   const removeBtnHtml = isLockedTransport
     ? `<span class="transport-locked-badge" title="Auto-inserted — always needed">🔒 auto</span>`
