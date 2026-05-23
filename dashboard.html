@@ -15006,13 +15006,16 @@ function _refreshHotelTimeWarning(slot) {
     }
   }
   if (!level) return
-  const sugDisplay = suggested ? fmt(suggested) : ''
   const wrap = document.createElement('div')
   wrap.className = `hotel-time-warn hotel-time-warn-${level}`
+  // Message-only design — the warning text already tells the planner
+  // which time the hotel's window expects, so the per-warning "Move
+  // to {time}" quick-fix button was redundant. Removed at user
+  // request. The planner can adjust the time via the existing
+  // time-dd picker on the slot.
   wrap.innerHTML = `
     <span class="htw-icon">${level === 'red' ? '✗' : '⚠'}</span>
     <span class="htw-msg">${escapeHtml(msg)}</span>
-    ${suggested ? `<button type="button" class="htw-fix" onclick="_hotelTimeQuickFix('${slot.id}','${suggested}')">Move to ${escapeHtml(sugDisplay)}</button>` : ''}
   `
   // Insert at the END of the slot body so it sits below all the regular
   // fields — closest to the planner's last interaction.
