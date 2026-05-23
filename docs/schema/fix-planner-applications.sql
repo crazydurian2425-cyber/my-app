@@ -75,6 +75,31 @@ $$;
 GRANT EXECUTE ON FUNCTION public.link_application_user(text, uuid) TO anon, authenticated;
 
 
+-- ── 4. Re-create the public INSERT RLS policy ──────────────────────────────
+-- The /apply form runs anonymously (browser → PostgREST as the `anon`
+-- role). Initial.sql carried a "for insert with check (true)" policy
+-- but if the DB was provisioned without it (or the policy was dropped
+-- in a later migration), every signup throws code 42501:
+--   "new row violates row-level security policy for table
+--    planner_applications".
+-- Re-assert RLS + a permissive INSERT policy targeting the anon AND
+-- authenticated roles explicitly. The form never reads back so no
+-- SELECT policy is granted - keeps the table closed to public reads.
+ALTER TABLE public.planner_applications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "applications public insert" ON public.planner_applications;
+CREATE POLICY "applications public insert"
+  ON public.planner_applications
+  FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
+
+-- Verify:
+--   SELECT polname, roles::text, cmd
+--   FROM pg_policies WHERE schemaname='public' AND tablename='planner_applications';
+--   -- Expect a row with cmd='INSERT' and roles like {anon,authenticated}.
+
+
 -- ── Verify ─────────────────────────────────────────────────────────────────
 --   SELECT column_name, data_type
 --   FROM information_schema.columns
