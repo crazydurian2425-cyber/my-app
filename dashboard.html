@@ -16663,12 +16663,14 @@ function refreshTransportSlot(slot) {
             || window._currentHotelName
             || ''
     } else if (_trailAnchorType === 'departure') {
-      // For airport / station departures, prefer the resolved Places name
-      // (set by _lookupStationAndAttach when the same station was used for
-      // arrival). Fall back to the unit's departure_location meta string
-      // ("CDG", "Paris Charles de Gaulle", "Gare de Lyon", etc).
+      // For airport / station departures, use ONLY departure-side data.
+      // Don't fall back to _currentArrivalStationResolvedName — arrival
+      // and departure can be different stations (Sofia: arrives at Gare
+      // Montparnasse, departs from CDG). Without this guard the airport
+      // transport rendered "Pullman → Gare Montparnasse" instead of
+      // "Pullman → CDG".
       toName = slot.dataset.toName
-            || window._currentArrivalStationResolvedName
+            || window._currentDepartureStationResolvedName
             || window._currentDepartureLocation
             || window._currentDepartureTo
             || ''
