@@ -16523,7 +16523,36 @@ function refreshTransportSlot(slot) {
             || window._currentArrivalLocation
             || ''
   }
-  const toName   = _venueNameOf(next)
+  let toName = _venueNameOf(next)
+  // ── Destination fallbacks for transports that lead to a LOCKED anchor ──
+  // _findVenueNeighbors skips locked anchors that lack _placeData, so a
+  // transport pointing at the end_of_day or departure anchor resolves
+  // `next` to null and falls back to the "next stop" placeholder. Pick
+  // up the real destination by walking forward past consecutive
+  // transports and reading the trailing locked anchor's metadata.
+  let _trail = slot.nextElementSibling
+  while (_trail && _trail.classList?.contains('slot-type-transport')) {
+    _trail = _trail.nextElementSibling
+  }
+  const _trailAnchorType = (_trail && _trail.classList?.contains('is-locked'))
+    ? _trail.dataset?.anchorType : null
+  if (!toName) {
+    if (_trailAnchorType === 'end_of_day') {
+      toName = _trail._placeData?.name
+            || window._currentHotelName
+            || ''
+    } else if (_trailAnchorType === 'departure') {
+      // For airport / station departures, prefer the resolved Places name
+      // (set by _lookupStationAndAttach when the same station was used for
+      // arrival). Fall back to the unit's departure_location meta string
+      // ("CDG", "Paris Charles de Gaulle", "Gare de Lyon", etc).
+      toName = slot.dataset.toName
+            || window._currentArrivalStationResolvedName
+            || window._currentDepartureLocation
+            || window._currentDepartureTo
+            || ''
+    }
+  }
   // Lat/lng: prev's _placeData first; otherwise the transport's own
   // dataset.fromLat/Lng (populated by _lookupStationAndAttach).
   let a = prev ? getSlotLatLng(prev) : null
@@ -16532,7 +16561,23 @@ function refreshTransportSlot(slot) {
     const fg = parseFloat(slot.dataset.fromLng)
     if (Number.isFinite(fl) && Number.isFinite(fg)) a = { lat: fl, lng: fg }
   }
-  const b = next ? getSlotLatLng(next) : null
+  let b = next ? getSlotLatLng(next) : null
+  // When next is missing because the trailing element is a locked anchor,
+  // try the anchor's _placeData (hotel for end_of_day) or the transport's
+  // own dataset.toLat/Lng (set by endTripToAirport when an arrival
+  // station was already resolved).
+  if (!b) {
+    if (_trail && _trail._placeData) {
+      const tlat = parseFloat(_trail._placeData.latitude)
+      const tlng = parseFloat(_trail._placeData.longitude)
+      if (Number.isFinite(tlat) && Number.isFinite(tlng)) b = { lat: tlat, lng: tlng }
+    }
+    if (!b) {
+      const tl = parseFloat(slot.dataset.toLat)
+      const tg = parseFloat(slot.dataset.toLng)
+      if (Number.isFinite(tl) && Number.isFinite(tg)) b = { lat: tl, lng: tg }
+    }
+  }
   const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
   const mode = slot.dataset.transportMode || 'taxi'
   // Sanity cap — if one of the venues is in a totally different country
