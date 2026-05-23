@@ -6394,8 +6394,6 @@ async function doAssign(setId, plannerId) {
     if (!ok) return false
     // Active "override" — planner is mid-work, admin wants to reset.
     // Wipe their in-progress plans + assignment and start fresh.
-    await sb.from('plans').delete().eq('set_id', setId).eq('planner_id', plannerId)
-    await sb.from('set_assignments').delete().eq('set_id', setId).eq('planner_id', plannerId)
     auditLog('assignment.reset', 'set_assignment', existing.id, { set_id: setId, planner_id: plannerId, prev_status: 'active' })
   } else if (existing) {
     // Completed/paid SAME-set re-assignment is NOT supported — the planner
@@ -6410,6 +6408,36 @@ async function doAssign(setId, plannerId) {
     )
     return false
   }
+  // ── Unconditional wipe of the planner's PRIOR work on THIS set ──
+  // Catches every code path that lands here with the intent to (re)assign:
+  //   - status='active' AND admin confirmed → wipe (was happening before).
+  //   - status missing entirely (assignment row deleted but plans linger,
+  //     e.g. from a manual SQL or a prior cleanup) → wipe (NEW).
+  //   - fresh assignment to a planner who somehow has stale plan rows for
+  //     this set (test data, replay) → wipe (NEW).
+  // Defensive: delete itinerary_items + item_images EXPLICITLY before
+  // deleting the plans, even though plan_id has ON DELETE CASCADE - if
+  // RLS or a missing cascade ever causes the parent delete to silently
+  // fail, the child rows are at least gone.
+  const { data: stalePlans } = await sb.from('plans')
+    .select('id').eq('set_id', setId).eq('planner_id', plannerId)
+  const staleIds = (stalePlans || []).map(p => p.id)
+  console.log('[doAssign] wiping prior work for planner', plannerId, 'on set', setId, '· plan_ids:', staleIds)
+  if (staleIds.length) {
+    const { error: itemDelErr } = await sb.from('itinerary_items').delete().in('plan_id', staleIds)
+    if (itemDelErr) console.warn('[doAssign] itinerary_items delete reported error', itemDelErr)
+    const { error: planDelErr } = await sb.from('plans').delete().in('id', staleIds)
+    if (planDelErr) {
+      // Fail loud — without the wipe, the recreate path will use the
+      // stale plan rows + alreadyHas filter, leaving the planner staring
+      // at their previous work post-reassign.
+      showToast('Failed to wipe planner\'s old plans: ' + planDelErr.message)
+      return false
+    }
+  }
+  // Drop any lingering assignment row so the INSERT below is the
+  // canonical fresh row with a NOW() claimed_at.
+  await sb.from('set_assignments').delete().eq('set_id', setId).eq('planner_id', plannerId)
 
   // ── Drop OTHER active assignments for this planner ──
   // Policy: a planner works on ONE active set at a time. The status column
