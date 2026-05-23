@@ -18576,11 +18576,24 @@ function endDayBackToHotel(dayContainerId) {
     titleInput.value = `${modeName} · ${aName} → ${bName}`
   }
   _applySlotTime(newT, departHHMM)
-  dayContainer.insertBefore(newT, endAnchor)
+  // Re-query the end_of_day anchor before inserting. addSlot above
+  // triggered renderDayBookends which re-creates the locked anchors,
+  // detaching the `endAnchor` reference captured at the top of this
+  // function. Use the live element so insertBefore doesn't throw
+  // NotFoundError ("not a child of this node").
+  const _liveEndAnchor = dayContainer.querySelector(
+    ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
+  )
+  if (_liveEndAnchor) {
+    dayContainer.insertBefore(newT, _liveEndAnchor)
+  } else {
+    console.warn('[endDay] no live end_of_day anchor to insert before, leaving newT at end')
+  }
   // Make sure the end_of_day anchor carries hotel _placeData so the
   // refresh below can resolve toName + lat/lng.
-  if (hotel && !endAnchor._placeData) {
-    endAnchor._placeData = {
+  const _anchorForData = _liveEndAnchor || endAnchor
+  if (hotel && _anchorForData && !_anchorForData._placeData) {
+    _anchorForData._placeData = {
       google_place_id: hotel.google_place_id,
       name: hotel.name,
       latitude: hotel.latitude,
@@ -18667,7 +18680,24 @@ function endTripToAirport(dayContainerId) {
     titleInput.value = `Taxi · ${aName} → ${departureTo}`
   }
   _applySlotTime(newT, departHHMM)
-  dayContainer.insertBefore(newT, depAnchor)
+  // Re-query the departure anchor before inserting — addSlot above
+  // triggered refreshDayDistances which calls renderDayBookends, and
+  // that function removes + re-creates the locked anchors. The
+  // `depAnchor` reference captured at the top of this function is
+  // now a detached node, so insertBefore would throw NotFoundError
+  // ("The node before which the new node is to be inserted is not a
+  // child of this node"). Grab the LIVE node right here.
+  const _liveDepAnchor = dayContainer.querySelector(
+    ':scope > .activity-slot.is-locked[data-anchor-type="departure"]'
+  )
+  if (_liveDepAnchor) {
+    dayContainer.insertBefore(newT, _liveDepAnchor)
+  } else {
+    // No locked departure anchor present (shouldn't happen on a
+    // last-day, but defensive). Leave newT where addSlot put it at
+    // the end of the container.
+    console.warn('[endTrip] no live departure anchor to insert before, leaving newT at end')
+  }
   // If a previous Places lookup already resolved the DEPARTURE station,
   // copy the lat/lng onto the transport's dataset immediately so the grid
   // populates without waiting for the async lookup to round-trip.
