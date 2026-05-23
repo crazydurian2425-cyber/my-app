@@ -18237,12 +18237,13 @@ function _sweepOrphanTransports(dayContainer) {
                             && !el.classList.contains('is-locked')
   const transports = slots.filter(s => s.classList.contains('slot-type-transport'))
   if (!transports.length) return false
-  // Pre-compute whether the day contains ANY real venue. If it doesn't,
-  // every transport is by definition orphan — remove them all.
-  const hasAnyVenue = slots.some(isRealVenue)
   let removed = false
   transports.forEach(t => {
-    if (!hasAnyVenue) { t.remove(); removed = true; return }
+    // The auto-seeded arrival taxi is intentionally persistent — the
+    // traveler always needs the ride from station/airport to the hotel,
+    // even when the planner hasn't filled in any activities yet. Skip
+    // the sweep so it stays in the day as a placeholder reminder.
+    if (t.dataset.autoSeededArrivalTaxi === 'true') return
     // Scan forward + backward through siblings for a real venue.
     let venueAfter = false
     for (let s = t.nextElementSibling; s; s = s.nextElementSibling) {
