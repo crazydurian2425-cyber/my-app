@@ -984,26 +984,52 @@ async function submitApplication(){
       showError(t('err.dup')); resetBtn(); return
     }
 
-    // Create the auth user first — they'll use this password to log in once approved
+    // Capture IP geolocation (best-effort, never blocks submission)
+    const geo = await captureGeo()
+
+    // ── Application FIRST, auth user second ──
+    // Reversing the previous order. Why: when planner_applications INSERT
+    // failed (e.g. missing columns under RLS, network blip), the already-
+    // created auth.users row was left orphaned — the next attempt with
+    // the same email then hit "already registered" with no application
+    // row to recover from. Now: if the INSERT fails, NO auth user is
+    // ever created, so the applicant can simply retry the form.
+    const { data: appRow, error: insErr } = await sb.from('planner_applications').insert({
+      name, email, city, japan_depth, languages, heard_from,
+      status: 'pending',
+      ...(geo || {})
+    }).select('id').single()
+    if (insErr) {
+      console.error('[apply] planner_applications insert failed', insErr)
+      // Surface the actual error so the admin can see in console what
+      // schema gap caused it (missing column / RLS / etc.). The user-
+      // facing toast stays friendly.
+      const msg = (insErr.message || '').toLowerCase()
+      if (msg.includes('column') || msg.includes('does not exist')) {
+        showError(t('err.generic') + ' (schema mismatch — run docs/schema/fix-planner-applications.sql in Supabase)')
+      } else {
+        showError(t('err.generic'))
+      }
+      resetBtn(); return
+    }
+    const appId = appRow?.id
+
+    // Now create the auth user. If this fails, the application row is
+    // already saved — admin can see the orphan + retry signup later or
+    // contact the applicant manually.
     const { data: auth, error: authErr } = await sb.auth.signUp({ email, password })
     if (authErr) {
-      // "User already registered" — different from application dup (no app row yet)
+      console.error('[apply] auth signUp failed (application row already saved)', authErr)
       const msg = (authErr.message || '').toLowerCase()
       if (msg.includes('registered') || msg.includes('exist')) { showError(t('err.authDup')); resetBtn(); return }
       showError(authErr.message || t('err.generic')); resetBtn(); return
     }
     const user_id = auth?.user?.id || null
 
-    // Capture IP geolocation (best-effort, never blocks submission)
-    const geo = await captureGeo()
-
-    // Insert application row linked to the auth user
-    const { error } = await sb.from('planner_applications').insert({
-      name, email, city, japan_depth, languages, heard_from,
-      user_id, status: 'pending',
-      ...(geo || {})
-    })
-    if (error) { console.error(error); showError(t('err.generic')); resetBtn(); return }
+    // Link the new auth user back to the application row.
+    if (user_id && appId) {
+      await sb.from('planner_applications').update({ user_id }).eq('id', appId)
+    }
 
     // Don't leave a live session on this page — they need to wait for approval
     try { await sb.auth.signOut() } catch (e) {}
