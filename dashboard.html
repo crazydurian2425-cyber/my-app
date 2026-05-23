@@ -14860,12 +14860,18 @@ function _applyHotelDefaults(slot, key) {
   // The slot now has a linked place (lat/lng). Re-run the day's
   // distance + transport refresh so any adjacent transport (e.g. the
   // last-venue → hotel-checkout taxi) picks up the new neighbour
-  // coords and fires Routes API. Without this the transport stays on
-  // its stale "ONYX → next stop · —" state until the planner edits
-  // something else that triggers a refresh.
+  // coords and fires Routes API.
+  // Plus gap-fill — when there was NO transport between the previous
+  // venue and this hotel slot (because the hotel slot only got its
+  // _placeData just now), the gap-fill pass auto-inserts one. Without
+  // this the planner sees Palais Garnier sitting directly next to
+  // Hotel check-out with no taxi/transit in between.
   const _dayContainer = slot.closest('[id^="slots-day-"]')
   if (_dayContainer && typeof refreshDayDistances === 'function') {
     refreshDayDistances(_dayContainer)
+  }
+  if (_dayContainer && typeof _gapFillTransportsForDay === 'function') {
+    _gapFillTransportsForDay(_dayContainer)
   }
 }
 
@@ -14920,13 +14926,18 @@ async function _enrichHotelSlotFromPlaceId(slot, placeId) {
     }
     if (typeof renderLinkedChip === 'function') renderLinkedChip(slot)
     if (typeof autoSaveDraft === 'function') autoSaveDraft()
-    // Refresh the day so the adjacent transport (last-stop → hotel
-    // check-out) sees the freshly-loaded lat/lng + place_id and fires
-    // its Routes API call. Without this, the transport stays at "—"
-    // until something else triggers a refresh.
+    // Refresh the day + run gap-fill so the adjacent transport
+    // (last-stop → hotel check-out) sees the freshly-loaded lat/lng
+    // + place_id, fires Routes API, AND a transport gets auto-
+    // inserted if one wasn't there yet (planner went straight from
+    // sparse-fallback hotel to enrichment without a refresh in
+    // between).
     const _dc = slot.closest('[id^="slots-day-"]')
     if (_dc && typeof refreshDayDistances === 'function') {
       refreshDayDistances(_dc)
+    }
+    if (_dc && typeof _gapFillTransportsForDay === 'function') {
+      _gapFillTransportsForDay(_dc)
     }
     console.log('[hotel-enrich] enriched', placeId.slice(0, 12) + '…', '· photos:', photoRefs.length, '· rating:', slot._placeData.rating)
   } catch (e) { console.warn('[hotel-enrich] threw', e) }
