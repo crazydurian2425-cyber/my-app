@@ -12578,6 +12578,20 @@ async function openItineraryForm(planId) {
   // bypasses. Reset on every form-open so the previous plan's flag doesn't
   // leak into this one.
   window._imgWarningAcknowledged = false
+  // Reset the resolved station-lookup globals from the previous plan.
+  // _initArrivalStationLookup / _initDepartureStationLookup early-return
+  // when the *LatLng global is already set; without this clear, opening
+  // Plan B after Plan A would skip Plan B's lookup and re-use Plan A's
+  // station coords (e.g. previous arrival city stays attached to the
+  // new arrival anchor, the new plan's airport transport gets the
+  // wrong destination, etc.). The lookups re-fire fresh on the new
+  // plan's _currentArrivalLocation / _currentDepartureLocation.
+  window._currentArrivalStationLatLng         = null
+  window._currentArrivalStationResolvedName   = null
+  window._currentArrivalStationPlaceId        = null
+  window._currentDepartureStationLatLng       = null
+  window._currentDepartureStationResolvedName = null
+  window._currentDepartureStationPlaceId      = null
   // Resolve which plan to open:
   //  - explicit planId (from tile click on any submitted/approved plan)
   //  - otherwise default to the current in-progress/revision plan
