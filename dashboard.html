@@ -18830,6 +18830,19 @@ function refreshDayDistances(dayContainer) {
   // name + coords (toName, distance, duration, cost all populate).
   dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')
     .forEach(refreshTransportSlot)
+  // Re-evaluate the hotel time-window warning on every hotel slot. The
+  // bug it fixes: planner picks 11:30 AM on a Hotel check-out (after
+  // 11:00 deadline) → _selectTimeDDImpl calls _refreshHotelTimeWarning
+  // BEFORE refreshDayDistances/_enforceTimeChain finish, so the
+  // warning's element gets created but then potentially blown away by
+  // a later DOM reflow. Calling it AGAIN here (after every refresh)
+  // guarantees the warning surfaces whenever the time + check-out
+  // window are mismatched, regardless of which path triggered the
+  // refresh.
+  if (typeof _refreshHotelTimeWarning === 'function') {
+    dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin, :scope > .activity-slot.slot-type-hotel_checkout')
+      .forEach(_refreshHotelTimeWarning)
+  }
   // Recompute the day summary card (stops / active hours / walking /
   // spend + warnings) on every refresh so it stays in sync with edits.
   refreshDaySummary(dayContainer)
