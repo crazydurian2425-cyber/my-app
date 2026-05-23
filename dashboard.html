@@ -9512,10 +9512,16 @@ const GOOGLE_PLACES_API_KEY = 'AIzaSyBZrklPTsOgJiRu8-OtJb-d3lU2P0JdWv4'
 // ("Asakusa afternoon") don't map to a Google place, so they keep the manual
 // 3-input flow.
 // Slot types that get the Google Places autocomplete + linked-chip flow.
-// hotel_checkin / hotel_checkout don't take an autocomplete — the venue
-// is auto-filled from plan.hotel_* fields and locked. Shopping and
-// Entertainment behave like Activity (free Places search).
-const PLACES_ENABLED_TYPES = new Set(['activity','meal','accommodation','shopping','entertainment'])
+// Hotel check-in / check-out auto-pre-fill from plan.hotel_* when those
+// fields are set, but the autocomplete stays enabled so the planner can
+// search + pick a different hotel (covers the case where the plan's
+// hotel_name is blank, or the planner wants to swap to a different
+// property). The pick updates the slot's _placeData; bookends + back-to-
+// hotel transports read whichever hotel is currently linked.
+const PLACES_ENABLED_TYPES = new Set([
+  'activity', 'meal', 'accommodation', 'shopping', 'entertainment',
+  'hotel_checkin', 'hotel_checkout',
+])
 
 // ── AUTH CHECK ───────────────────────────────────────────────
 const token   = localStorage.getItem('jj_token')
@@ -17252,9 +17258,14 @@ function closedAltsAction(slotId, action) {
 // there's ONE hotel per itinerary, used as the "back at hotel" target on
 // every day's end-of-day anchor.
 function _findItineraryHotel() {
-  const slots = document.querySelectorAll(
-    '[id^="slots-day-"] > .activity-slot.slot-type-accommodation:not(.is-locked)'
-  )
+  // After Phase-1 category restructure the hotel lives on hotel_checkin
+  // slots; legacy plans may still have it on accommodation slots. Match
+  // any of those so morning + end-of-day anchors keep finding the hotel
+  // across the rollout window.
+  const slots = document.querySelectorAll([
+    '[id^="slots-day-"] > .activity-slot.slot-type-hotel_checkin:not(.is-locked)',
+    '[id^="slots-day-"] > .activity-slot.slot-type-accommodation:not(.is-locked)',
+  ].join(','))
   for (const s of slots) {
     const d = s._placeData
     if (d && Number.isFinite(parseFloat(d.latitude)) && Number.isFinite(parseFloat(d.longitude))) {
