@@ -53,6 +53,28 @@ $$;
 GRANT EXECUTE ON FUNCTION public.check_application_exists(text) TO anon, authenticated;
 
 
+-- ── 3. Link auth user → application RPC ────────────────────────────────────
+-- Anon role has INSERT but NOT UPDATE on planner_applications (RLS).
+-- After auth.signUp succeeds in the apply form we need to patch the
+-- just-inserted row with the new auth user's id. Direct .update() from
+-- the browser would 403 — wrap it in a SECURITY DEFINER RPC that
+-- targets ONLY the row matching the same email + user_id IS NULL
+-- (so old historical rows with the same email can't be hijacked).
+CREATE OR REPLACE FUNCTION public.link_application_user(p_email text, p_user_id uuid)
+RETURNS void
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  UPDATE public.planner_applications
+  SET    user_id = p_user_id
+  WHERE  LOWER(email) = LOWER(p_email)
+    AND  user_id IS NULL;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.link_application_user(text, uuid) TO anon, authenticated;
+
+
 -- ── Verify ─────────────────────────────────────────────────────────────────
 --   SELECT column_name, data_type
 --   FROM information_schema.columns

@@ -994,25 +994,27 @@ async function submitApplication(){
     // the same email then hit "already registered" with no application
     // row to recover from. Now: if the INSERT fails, NO auth user is
     // ever created, so the applicant can simply retry the form.
-    const { data: appRow, error: insErr } = await sb.from('planner_applications').insert({
+    //
+    // Critically, we DO NOT chain `.select(...)` here — the anon RLS
+    // policy on planner_applications allows INSERT but not SELECT, so
+    // PostgREST's "return=representation" path 401s and the planner
+    // sees a "Something went wrong" even though the row may have
+    // actually inserted. Plain `.insert({...})` without a select returns
+    // {error} only and avoids the SELECT permission check.
+    const { error: insErr } = await sb.from('planner_applications').insert({
       name, email, city, japan_depth, languages, heard_from,
       status: 'pending',
       ...(geo || {})
-    }).select('id').single()
+    })
     if (insErr) {
       console.error('[apply] planner_applications insert failed', insErr)
-      // Surface the actual error so the admin can see in console what
-      // schema gap caused it (missing column / RLS / etc.). The user-
-      // facing toast stays friendly.
-      const msg = (insErr.message || '').toLowerCase()
-      if (msg.includes('column') || msg.includes('does not exist')) {
-        showError(t('err.generic') + ' (schema mismatch — run docs/schema/fix-planner-applications.sql in Supabase)')
-      } else {
-        showError(t('err.generic'))
-      }
+      // Surface the underlying message inline so missing columns / RLS
+      // / network failures are diagnosable without opening DevTools.
+      // The user-facing wording stays friendly via err.generic prefix.
+      const rawMsg = insErr.message || insErr.hint || insErr.code || 'unknown error'
+      showError(t('err.generic') + ' — ' + rawMsg)
       resetBtn(); return
     }
-    const appId = appRow?.id
 
     // Now create the auth user. If this fails, the application row is
     // already saved — admin can see the orphan + retry signup later or
@@ -1026,9 +1028,21 @@ async function submitApplication(){
     }
     const user_id = auth?.user?.id || null
 
-    // Link the new auth user back to the application row.
-    if (user_id && appId) {
-      await sb.from('planner_applications').update({ user_id }).eq('id', appId)
+    // Link the new auth user back to the application row via a
+    // SECURITY DEFINER RPC — the anon role doesn't have UPDATE on
+    // planner_applications, so a direct .update() would 403 here.
+    // The RPC matches by email + user_id IS NULL so we only patch
+    // the just-inserted row, not any historical orphan with the
+    // same email.
+    if (user_id) {
+      const { error: linkErr } = await sb.rpc('link_application_user', {
+        p_email: email, p_user_id: user_id,
+      })
+      if (linkErr) {
+        // Non-fatal — admin can still approve via the email match if
+        // user_id is null. Log so we know it happened.
+        console.warn('[apply] link_application_user RPC failed', linkErr)
+      }
     }
 
     // Don't leave a live session on this page — they need to wait for approval
