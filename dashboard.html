@@ -13398,6 +13398,93 @@ function fillItineraryItems(items) {
   // above didn't insert a taxi (timing, broken DOM, planner deleted it),
   // _ensureArrivalTaxiPresent kicks in once Places resolves.
   _initArrivalStationLookup()
+  // Resolve the DEPARTURE station too (e.g. CDG) so the End-trip
+  // transport (whether already saved or newly inserted) renders with
+  // real lat/lng + km/min/cost. Updates any existing transport that
+  // sits just before the locked departure anchor on the last day.
+  _initDepartureStationLookup()
+}
+
+// Look up an arrival OR departure station via Google Places textSearch,
+// then stash the resolved place_id + coords + display name on the
+// transport slot's dataset. `side` determines which end:
+//   'from' — populates dataset.fromPlaceId/Name/Lat/Lng and the global
+//            window._currentArrivalStation* (used by the arrival anchor
+//            title + the auto-seeded Day-1 taxi).
+//   'to'   — populates dataset.toPlaceId/Name/Lat/Lng and the global
+//            window._currentDepartureStation* (used by the End-trip-to-
+//            airport transport so the destination resolves with km/min/
+//            cost instead of just "CDG" as a label).
+// Returns the resolved descriptor or null on failure.
+async function _lookupStationGeneric(rawLoc, sideHint) {
+  rawLoc = String(rawLoc || '').trim()
+  if (!rawLoc) return null
+  const city = (window._currentDestination || '').trim()
+  const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  const query = isIata
+    ? `${rawLoc} Airport`
+    : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
+      ? `${rawLoc}, ${city}`
+      : rawLoc
+  window._stationLookupCache = window._stationLookupCache || new Map()
+  let resolved = window._stationLookupCache.get(query)
+  if (resolved) return resolved
+  try {
+    const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
+    const bias = buildDestBias(city)
+    if (bias) body.locationBias = bias
+    const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
+      },
+      body: JSON.stringify(body),
+    })
+    if (!resp.ok) {
+      console.warn(`[station-lookup:${sideHint}] searchText failed`, resp.status, await resp.text().catch(() => ''))
+      return null
+    }
+    const data = await resp.json()
+    const p = data?.places?.[0]
+    if (!p?.id || !p?.location) return null
+    resolved = {
+      placeId: p.id,
+      name:    p.displayName?.text || rawLoc,
+      address: p.formattedAddress || '',
+      lat:     p.location.latitude,
+      lng:     p.location.longitude,
+    }
+    window._stationLookupCache.set(query, resolved)
+    return resolved
+  } catch (e) {
+    console.warn(`[station-lookup:${sideHint}] threw`, e)
+    return null
+  }
+}
+
+// Departure-side lookup. Called by endTripToAirport so the airport
+// transport gets real lat/lng + name even when departure ≠ arrival
+// (e.g. arrival from Mont-Saint-Michel via Gare Montparnasse, departure
+// from CDG to Buenos Aires). Without this the End-trip transport
+// renders "Pullman Paris Montparnasse → CDG" with blank km/min/cost.
+async function _lookupDepartureStationAndAttach(transportSlot) {
+  if (!transportSlot) return
+  const rawLoc = (window._currentDepartureLocation || '').trim()
+  if (!rawLoc) return
+  const resolved = await _lookupStationGeneric(rawLoc, 'departure')
+  if (!resolved) return
+  const live = document.getElementById(transportSlot.id)
+  if (!live) return
+  live.dataset.toPlaceId = resolved.placeId
+  live.dataset.toName    = resolved.name
+  live.dataset.toLat     = String(resolved.lat)
+  live.dataset.toLng     = String(resolved.lng)
+  window._currentDepartureStationResolvedName = resolved.name
+  window._currentDepartureStationLatLng       = { lat: resolved.lat, lng: resolved.lng }
+  window._currentDepartureStationPlaceId      = resolved.placeId
+  if (typeof refreshTransportSlot === 'function') refreshTransportSlot(live)
 }
 
 // Look up the arrival station via Google Places textSearch, then stash
@@ -13539,6 +13626,40 @@ async function _initArrivalStationLookup() {
   } catch (e) {
     console.warn('[station-lookup] init threw', e)
   }
+}
+
+// Mirror of _initArrivalStationLookup for the DEPARTURE side. Resolves
+// the unit's departure_location (e.g. "CDG", "Paris CDG", "Gare de
+// Lyon") via Places searchText, stashes lat/lng + place_id on the
+// window._currentDepartureStation* globals, then patches any existing
+// transport that sits just above the locked departure anchor on the
+// last day. Without this, a planner who saves an End-trip transport
+// in one session and reopens the plan later sees "Pullman → CDG" with
+// blank km/min/cost because dataset.toLat/Lng don't persist across
+// load. Idempotent — bails early when globals are already resolved.
+async function _initDepartureStationLookup() {
+  if (window._currentDepartureStationLatLng) return
+  const rawLoc = (window._currentDepartureLocation || '').trim()
+  if (!rawLoc) return
+  const resolved = await _lookupStationGeneric(rawLoc, 'departure')
+  if (!resolved) return
+  window._currentDepartureStationResolvedName = resolved.name
+  window._currentDepartureStationLatLng       = { lat: resolved.lat, lng: resolved.lng }
+  window._currentDepartureStationPlaceId      = resolved.placeId
+  // Patch any already-rendered airport transport on the last day so its
+  // grid populates with km / min / cost. Iterate transports that have
+  // the locked departure anchor as their trailing element.
+  document.querySelectorAll('[id^="slots-day-"] > .activity-slot.slot-type-transport').forEach(t => {
+    let scan = t.nextElementSibling
+    while (scan && scan.classList?.contains('slot-type-transport')) scan = scan.nextElementSibling
+    if (scan && scan.classList?.contains('is-locked') && scan.dataset?.anchorType === 'departure') {
+      t.dataset.toPlaceId = resolved.placeId
+      t.dataset.toName    = resolved.name
+      t.dataset.toLat     = String(resolved.lat)
+      t.dataset.toLng     = String(resolved.lng)
+      if (typeof refreshTransportSlot === 'function') refreshTransportSlot(t)
+    }
+  })
 }
 
 // One-shot auto-seed for Day 1 afternoon arrivals (arrival_time hour ≥ 13).
@@ -17944,18 +18065,27 @@ function endTripToAirport(dayContainerId) {
   }
   _applySlotTime(newT, departHHMM)
   dayContainer.insertBefore(newT, depAnchor)
-  // If we previously resolved the arrival station via Places lookup, the
-  // same place may be the departure point — copy the lat/lng onto the
-  // transport's dataset so refreshTransportSlot can compute km/min from
-  // a known endpoint even without a Place link.
-  const stLL = window._currentArrivalStationLatLng
-  if (stLL && Number.isFinite(stLL.lat) && Number.isFinite(stLL.lng)) {
-    newT.dataset.toLat = String(stLL.lat)
-    newT.dataset.toLng = String(stLL.lng)
-    newT.dataset.toName = window._currentArrivalStationResolvedName || departureTo
+  // If a previous Places lookup already resolved the DEPARTURE station,
+  // copy the lat/lng onto the transport's dataset immediately so the grid
+  // populates without waiting for the async lookup to round-trip.
+  const depLL = window._currentDepartureStationLatLng
+  if (depLL && Number.isFinite(depLL.lat) && Number.isFinite(depLL.lng)) {
+    newT.dataset.toLat = String(depLL.lat)
+    newT.dataset.toLng = String(depLL.lng)
+    newT.dataset.toName = window._currentDepartureStationResolvedName || departureTo
+    if (window._currentDepartureStationPlaceId) {
+      newT.dataset.toPlaceId = window._currentDepartureStationPlaceId
+    }
   }
   if (typeof refreshDayDistances === 'function') refreshDayDistances(dayContainer)
   if (typeof autoSaveDraft === 'function') autoSaveDraft()
+  // Fire-and-forget: ask Google Places to resolve the departure
+  // location (e.g. "CDG" → Charles de Gaulle Airport, with lat/lng).
+  // On success, refreshTransportSlot is re-fired and the grid
+  // populates with real km / duration / Routes-API cost.
+  if (typeof _lookupDepartureStationAndAttach === 'function') {
+    _lookupDepartureStationAndAttach(newT)
+  }
 }
 
 function refreshDayDistances(dayContainer) {
