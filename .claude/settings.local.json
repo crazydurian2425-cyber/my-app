@@ -16,7 +16,8 @@
       "PowerShell(npx wrangler tail my-app --format=json)",
       "PowerShell(try { $r = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/' -UseBasicParsing -TimeoutSec 30 } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\"; \"HEADERS:\"; foreach \\($h in $_.Exception.Response.Headers\\) { \"  $h\" }; \"BODY:\"; $_.ErrorDetails.Message })",
       "PowerShell(npx opennextjs-cloudflare preview 2>&1)",
-      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/' -UseBasicParsing -TimeoutSec 30; \"STATUS: $\\($r.StatusCode\\) LEN: $\\($r.Content.Length\\)\"; if \\($r.Content -match 'Apex Talent'\\) { 'CONTENT: ok' } else { 'CONTENT: unexpected' } } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\" })"
+      "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/' -UseBasicParsing -TimeoutSec 30; \"STATUS: $\\($r.StatusCode\\) LEN: $\\($r.Content.Length\\)\"; if \\($r.Content -match 'Apex Talent'\\) { 'CONTENT: ok' } else { 'CONTENT: unexpected' } } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\" })",
+      "Bash(git -c user.email=teemo6769@gmail.com -c user.name=teemo6769 commit -am ' *)"
     ]
   }
 }

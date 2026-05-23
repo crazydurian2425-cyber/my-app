@@ -16357,6 +16357,50 @@ function _bumpRoutesDaily() {
   } catch (e) { return 0 }
 }
 
+// Build an RFC3339 timestamp for "the slot time on this trip-date as it
+// reads on the wall clock in the destination country", with the correct
+// UTC offset for that date. The previous version did setUTCHours(14)
+// then toISOString() → "...T14:00:00Z" which Routes API reads as 14:00
+// UTC, i.e. 16:00 Paris in summer / 15:00 in winter. Off by 1-2 hours.
+//
+// Uses Intl.DateTimeFormat in the target IANA zone to discover the
+// offset for the specific date (handles DST transitions automatically,
+// no hardcoded DST table that would rot when EU rules change). Falls
+// back to UTC if the timezone is unrecognised.
+function _localDepartISO(dateStr, dayOffset, hhmm, tz) {
+  if (!dateStr || !hhmm) return null
+  const base = new Date(dateStr + 'T00:00:00Z')
+  if (isNaN(base)) return null
+  base.setUTCDate(base.getUTCDate() + (dayOffset - 1))
+  const y  = base.getUTCFullYear()
+  const mo = base.getUTCMonth() + 1
+  const d  = base.getUTCDate()
+  const [h, m] = String(hhmm).split(':').map(Number)
+  // Probe a UTC moment with the desired wall-clock values, ask Intl how
+  // that moment renders in the target TZ. The hour difference reveals
+  // the offset; clean up if the day rolled.
+  let offsetH = 0
+  try {
+    const probe = new Date(Date.UTC(y, mo - 1, d, h || 0, m || 0, 0))
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    }).formatToParts(probe)
+    const pick = (type) => parseInt(parts.find(p => p.type === type)?.value || '0', 10)
+    const localH = pick('hour')
+    const localD = pick('day')
+    offsetH = localH - (h || 0)
+    if (localD > d) offsetH += 24
+    if (localD < d) offsetH -= 24
+    if (offsetH > 12)  offsetH -= 24
+    if (offsetH < -12) offsetH += 24
+  } catch (e) { offsetH = 0 }
+  const sign = offsetH >= 0 ? '+' : '-'
+  const oh = String(Math.abs(offsetH)).padStart(2, '0')
+  return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}T${String(h||0).padStart(2,'0')}:${String(m||0).padStart(2,'0')}:00${sign}${oh}:00`
+}
+
 // `departISO` (optional) = the actual trip-date + slot-time ISO string,
 // e.g. "2026-06-15T14:10:00Z". When passed, Routes API uses that as the
 // departure context — transit schedules differ by time-of-day (metro
@@ -17171,13 +17215,7 @@ function refreshTransportSlot(slot) {
     if (window._currentTripStartDate && departHHMM) {
       const _m = slot.closest('[id^="slots-day-"]')?.id?.match(/slots-day-(\d+)/)
       const _dayNum = _m ? parseInt(_m[1], 10) : 1
-      const _base = new Date(window._currentTripStartDate + 'T00:00:00Z')
-      if (!isNaN(_base)) {
-        _base.setUTCDate(_base.getUTCDate() + (_dayNum - 1))
-        const [_h, _mm] = String(departHHMM).split(':').map(Number)
-        _base.setUTCHours(_h || 0, _mm || 0, 0, 0)
-        _departISO = _base.toISOString()
-      }
+      _departISO = _localDepartISO(window._currentTripStartDate, _dayNum, departHHMM, 'Europe/Paris')
     }
     fetchRouteData(originSlot, next, mode, _departISO).then(result => {
       if (!result) return
