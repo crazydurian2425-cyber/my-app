@@ -14763,12 +14763,25 @@ function _applyHotelDefaults(slot, key) {
     const cur = (addrInput.value || '').trim()
     if (!cur || cur === window._currentHotelAddress) addrInput.value = hotelAddr
   }
-  // Linked place — rebuild _placeData from the plan's hotel fields so the
-  // gap-fill + distance heuristics see this slot as a real Google-linked
-  // venue (used by _findItineraryHotel and the Routes API call).
+  // Linked place — copy the RICH _placeData from the source hotel
+  // (the linked Day-1 hotel_checkin slot) so renderLinkedChip paints
+  // the same photo + rating + opening hours card on the check-out
+  // slot. Without this copy, the check-out chip rendered with just
+  // "GOOGLE VERIFIED" + a red placeholder pin, no thumbnail, no
+  // rating, no hours.
+  const _srcHotel = (typeof _findItineraryHotel === 'function') ? _findItineraryHotel() : null
   const lat = parseFloat(window._currentHotelLat)
   const lng = parseFloat(window._currentHotelLng)
-  if (window._currentHotelPlaceId || (Number.isFinite(lat) && Number.isFinite(lng))) {
+  if (_srcHotel) {
+    // Deep clone so editing the source slot doesn't mutate this one.
+    slot._placeData = { ..._srcHotel }
+    slot.classList.add('slot-place-linked')
+    if (typeof renderLinkedChip === 'function') renderLinkedChip(slot)
+  } else if (window._currentHotelPlaceId || (Number.isFinite(lat) && Number.isFinite(lng))) {
+    // Fallback to plan-level fields when no linked hotel slot is found
+    // (brand-new plan, hotel set via the brief only). Sparse chip is
+    // expected here — we don't have rating / photos until the planner
+    // picks via Places autocomplete.
     slot._placeData = {
       google_place_id: window._currentHotelPlaceId || null,
       name:            hotelName,
