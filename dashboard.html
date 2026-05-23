@@ -14334,8 +14334,12 @@ function _applyHotelDefaults(slot, key) {
 // Includes a quick-fix button that moves the slot to a safe time.
 function _refreshHotelTimeWarning(slot) {
   if (!slot) return
-  // Always start clean so a type-switch removes a stale warning.
-  slot.querySelectorAll(':scope > .hotel-time-warn').forEach(el => el.remove())
+  // Always start clean so a type-switch (or a quick-fix that resolves the
+  // violation) removes the stale warning. Search WITHOUT `:scope >`
+  // because the warning is appended inside .slot-body, not as a direct
+  // child of the slot — earlier `:scope > .hotel-time-warn` cleanup
+  // matched nothing and let duplicates stack.
+  slot.querySelectorAll('.hotel-time-warn').forEach(el => el.remove())
   const key = slot.querySelector('.slot-type-select')?.value
   if (key !== 'hotel_checkin' && key !== 'hotel_checkout') return
   const time = slot.querySelector('.slot-time-input')?.value || ''
