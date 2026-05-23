@@ -14179,6 +14179,9 @@ function _selectTimeDDImpl(btn, val){
     // disappear — re-render the chip to refresh it.
     if (slot._placeData) renderLinkedChip(slot)
   }
+  // Persist the time change — picker was previously update-DOM-only,
+  // so close + reopen restored the old time from the DB.
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 
 // Sort all slots in a day container by their current time value (ascending)
@@ -18161,6 +18164,10 @@ function removeSlot(id) {
   if (el) el.remove();
   if (dayNum) updateDayMeta(dayNum);
   if (container) refreshDayDistances(container);
+  // Persist the deletion immediately — without this, closing + reopening
+  // the plan resurrects the slot from the DB. Every mutation in the
+  // itinerary should round-trip to Supabase.
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 
 // Collapsible day sections — user can focus on one day at a time
