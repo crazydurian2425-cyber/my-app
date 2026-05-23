@@ -2045,6 +2045,29 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .slot-title-input:focus{border-color:var(--green-mid);}
 .slot-notes-input{width:100%;padding:8px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;resize:vertical;min-height:52px;line-height:1.4;}
 .slot-notes-input:focus{border-color:var(--green-mid);}
+/* Hotel-only notes label — small uppercase caption above the textarea,
+   populated by _applyHotelDefaults with the traveler's first name. */
+.slot-notes-label{
+  display:none;font-size:10.5px;font-weight:600;letter-spacing:0.06em;
+  text-transform:uppercase;color:var(--text-3);margin-top:8px;margin-bottom:4px;
+}
+.activity-slot.slot-type-hotel_checkin  .slot-notes-label,
+.activity-slot.slot-type-hotel_checkout .slot-notes-label{display:block;}
+/* Hide photo upload + previews on hotel-check-in / check-out. Planners
+   recommend hotels, they don't upload booking screenshots — the only
+   relevant content is the "why this hotel" note. */
+.activity-slot.slot-type-hotel_checkin  .img-upload-area,
+.activity-slot.slot-type-hotel_checkin  .img-previews,
+.activity-slot.slot-type-hotel_checkout .img-upload-area,
+.activity-slot.slot-type-hotel_checkout .img-previews{display:none;}
+/* Bags-stored checkbox row. Only visible on hotel_checkout. */
+.slot-hotel-bags-toggle{
+  display:none;align-items:center;gap:8px;margin-top:10px;
+  padding:8px 10px;border:1px dashed var(--border-med);border-radius:8px;
+  font-size:12px;color:var(--text-2);cursor:pointer;user-select:none;
+}
+.activity-slot.slot-type-hotel_checkout .slot-hotel-bags-toggle{display:flex;}
+.slot-hotel-bags-toggle input[type="checkbox"]{width:14px;height:14px;cursor:pointer;}
 
 /* Address input — same look as title, slightly lighter accent. Shown for
    activity / meal / accommodation / transport. Hidden for free time. */
@@ -14761,6 +14784,47 @@ function _applyHotelDefaults(slot, key) {
     }
   }
   _refreshHotelTimeWarning(slot)
+  // ── Hotel-specific notes label + bags-stored checkbox ──
+  // Planners recommend hotels (no booking), so the only field that
+  // really matters on these slots is a short "why this hotel" note.
+  // The photo upload + booking-notes placeholder were removed via
+  // CSS; here we set the visible label text and restore the bags
+  // toggle from the plan's current hotel_stores_bags flag.
+  const _firstName = window._currentFirstName || 'the traveler'
+  const _notesLabel = slot.querySelector('.slot-notes-label')
+  const _notesInput = slot.querySelector('.slot-notes-input')
+  if (_notesLabel) {
+    _notesLabel.textContent = isIn
+      ? `Why this hotel for ${_firstName}`
+      : `Reminder for ${_firstName}`
+  }
+  if (_notesInput) {
+    _notesInput.placeholder = isIn
+      ? 'Why this hotel matches her profile — location, vibe, value'
+      : 'Anything to remember before leaving — bag pickup, key drop, etc.'
+  }
+  if (!isIn) {
+    // Sync the bags-stored checkbox state from the plan-level flag.
+    const _bagsBox = slot.querySelector('.slot-hotel-bags-toggle input[type="checkbox"]')
+    if (_bagsBox) _bagsBox.checked = window._currentHotelStoresBags !== false
+  }
+}
+
+// Persist the "bags stored at hotel" flag onto plans.hotel_stores_bags
+// when the planner ticks/unticks the checkbox on a hotel_checkout slot.
+// Updates the in-memory cache too so cross-day reads (e.g. a future
+// bag-pickup auto-insert before the departure transport) see the new
+// value without waiting for a reload.
+async function _onHotelStoresBagsChange(checkbox) {
+  if (!checkbox || !currentPlanId) return
+  const newVal = !!checkbox.checked
+  window._currentHotelStoresBags = newVal
+  try {
+    const { error } = await sb.from('plans')
+      .update({ hotel_stores_bags: newVal })
+      .eq('id', currentPlanId)
+    if (error) console.warn('[hotel-bags] update failed', error)
+  } catch (e) { console.warn('[hotel-bags] update threw', e) }
 }
 
 // Show / hide the per-slot warning when the planner's chosen time falls
@@ -14971,6 +15035,27 @@ function updateSlotFieldLabels(slot, typeKey){
   if (addrInp) addrInp.placeholder = getAddressPlaceholder(typeKey)
   const notesInp = slot.querySelector('.slot-notes-input')
   if (notesInp) notesInp.placeholder = getNotesPlaceholder(typeKey)
+  // Hotel-specific dynamic notes label + bags-stored checkbox state.
+  // CSS hides both elements for non-hotel types, but for hotel types
+  // we still need to populate the label text + sync the checkbox so a
+  // saved hotel slot shows the right "Why this hotel for {first_name}"
+  // caption + the planner's prior bag-storage flag without waiting
+  // for them to click the type dropdown.
+  const notesLabel = slot.querySelector('.slot-notes-label')
+  if (notesLabel) {
+    if (typeKey === 'hotel_checkin' || typeKey === 'hotel_checkout') {
+      const _firstName = window._currentFirstName || 'the traveler'
+      notesLabel.textContent = typeKey === 'hotel_checkin'
+        ? `Why this hotel for ${_firstName}`
+        : `Reminder for ${_firstName}`
+    } else {
+      notesLabel.textContent = ''
+    }
+  }
+  if (typeKey === 'hotel_checkout') {
+    const _bagsBox = slot.querySelector('.slot-hotel-bags-toggle input[type="checkbox"]')
+    if (_bagsBox) _bagsBox.checked = window._currentHotelStoresBags !== false
+  }
 }
 // Duration label for a stored minutes value.
 // Format any minute value as a friendly stay-duration label.
@@ -19358,7 +19443,18 @@ function addSlot(dayNum, seed = null) {
           </div>
         </div>
       </div>
+      <!-- Hotel-specific notes label. Hidden via CSS for non-hotel types;
+           shown above the notes textarea for hotel_checkin / hotel_checkout.
+           Populated by _applyHotelDefaults with the traveler's first name. -->
+      <label class="slot-notes-label" id="notes-label-${id}"></label>
       <textarea class="slot-notes-input" placeholder="${escapeHtml(getNotesPlaceholder(seedTypeKey))}" oninput="autoSaveDraft()"></textarea>
+      <!-- Bags-stored toggle. Only visible for hotel_checkout slots.
+           Persists to plans.hotel_stores_bags so the per-trip flag
+           flows back into the plan row on every change. -->
+      <label class="slot-hotel-bags-toggle" id="bags-toggle-${id}">
+        <input type="checkbox" onchange="_onHotelStoresBagsChange(this)">
+        <span>🎒 Bags stored at hotel after check-out</span>
+      </label>
       <div class="img-upload-area" onclick="triggerImgUpload('${id}')">
         <div class="img-upload-icon">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-3)" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 10l3.5-3.5L7 9l3-3 5 5"/><circle cx="5" cy="6.5" r="1"/></svg>
