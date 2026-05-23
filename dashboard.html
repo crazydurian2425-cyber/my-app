@@ -2382,6 +2382,105 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 }
 .end-day-btn .edb-icon{font-size:16px;}
 .end-day-btn .edb-text{letter-spacing:0.02em;}
+
+/* ── Review page (wizard step 5) ──────────────────────────────────────────
+   Replaces the legacy Wrap-up tab (Japanese transport tips / spend
+   calculator / local tips chips). Three sections only:
+     1. review-stats : auto-computed 4-tile trip summary.
+     2. review-note  : the planner's personal welcome message.
+     3. review-submit-bar : commission + submit button. */
+.review-stats{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;
+  margin-bottom:18px;
+}
+@media (max-width:640px){.review-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
+.review-stat{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 12px;
+  text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.review-stat-value{
+  font-family:'DM Serif Display',serif;
+  font-size:22px;line-height:1.1;
+  color:var(--green-dark,#1a7a5e);
+}
+.review-stat-label{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;
+  color:var(--text-3);font-weight:500;
+}
+.review-stat.is-budget-ok    {background:rgba(26,122,94,0.08); border-color:rgba(26,122,94,0.30);}
+.review-stat.is-budget-amber {background:rgba(214,158,46,0.10);border-color:rgba(214,158,46,0.32); color:#8a5a00;}
+.review-stat.is-budget-amber .review-stat-value{color:#8a5a00;}
+.review-stat.is-budget-red   {background:rgba(200,50,50,0.10); border-color:rgba(200,50,50,0.36); color:#a02929;}
+.review-stat.is-budget-red   .review-stat-value{color:#a02929;}
+
+.review-note{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px 14px 10px;
+  margin-bottom:18px;
+}
+.review-note-label{
+  display:block;font-size:11.5px;text-transform:uppercase;
+  letter-spacing:0.06em;color:var(--text-3);font-weight:600;
+  margin-bottom:8px;
+}
+.review-note-textarea{
+  width:100%;min-height:96px;padding:10px 12px;
+  border:1px solid var(--border-med);border-radius:8px;
+  background:var(--bg);font-family:inherit;font-size:13px;line-height:1.5;
+  color:var(--text);resize:vertical;
+}
+.review-note-textarea:focus{outline:none;border-color:var(--green-dark,#1a7a5e);box-shadow:0 0 0 3px rgba(26,122,94,0.12);}
+.review-note-counter{
+  text-align:right;margin-top:6px;
+  font-size:11px;color:var(--text-3);
+}
+.review-note-counter.is-short  {color:var(--text-3);}
+.review-note-counter.is-good   {color:var(--green-dark,#1a7a5e);}
+.review-note-counter.is-overflow{color:#a02929;}
+
+.review-submit-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:rgba(26,122,94,0.06);
+  border:1px solid rgba(26,122,94,0.28);
+  border-radius:14px;padding:14px 18px;
+  flex-wrap:wrap;
+}
+.review-submit-left{display:flex;flex-direction:column;}
+.review-submit-earn-label{
+  font-size:11px;text-transform:uppercase;letter-spacing:0.08em;
+  color:var(--text-3);font-weight:500;
+}
+.review-submit-earn-amount{
+  font-family:'DM Serif Display',serif;
+  font-size:24px;line-height:1.1;
+  color:var(--green-dark,#1a7a5e);
+}
+.review-submit-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 22px;border-radius:22px;
+  background:var(--green-dark,#1a7a5e);
+  border:1px solid var(--green-dark,#1a7a5e);
+  color:#fff;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .15s ease;
+}
+.review-submit-btn:hover:not(:disabled){
+  background:#155b46;
+  transform:translateY(-1px);
+  box-shadow:0 2px 8px rgba(26,122,94,0.25);
+}
+.review-submit-btn:disabled{
+  background:var(--border-med);
+  border-color:var(--border-med);
+  color:var(--text-3);
+  cursor:not-allowed;
+}
+.review-submit-btn .rsb-icon{font-size:13px;}
 .transport-from-to{
   font-size:13px;color:var(--green-dark,#1a7a5e);font-weight:600;
   display:flex;align-items:center;gap:6px;flex-wrap:wrap;
@@ -7513,71 +7612,36 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
 
       <!-- ─── FINAL PAGE: Transport tips · Spend breakdown · Local tips ─── -->
       <div class="wiz-page" id="wiz-page-final">
-      <!-- Extra sections -->
-      <div class="section-divider" data-i18n="itin.transportTips">Transport tips</div>
-      <div class="form-group" style="margin-bottom:0">
-        <div class="quick-chips" style="margin-bottom:8px;">
-          <span class="quick-chips-label" data-i18n="itin.quickAdd">Quick add:</span>
-          <button type="button" class="quick-chip" onclick="appendToTa('transport-tips',t('chip.taxiText','🚕 Taxi (GO app): '),false)">🚕 <span data-i18n="chip.taxi">Taxi (GO)</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('transport-tips',t('chip.railText','🚆 JR / Metro: '),false)">🚆 <span data-i18n="chip.rail">JR / Metro</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('transport-tips',t('chip.shinkansenText','🚄 Shinkansen: '),false)">🚄 <span data-i18n="chip.shinkansen">Shinkansen</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('transport-tips',t('chip.walkingText','🚶 Walking: '),false)">🚶 <span data-i18n="chip.walking">Walking</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('transport-tips',t('chip.airportText','✈️ Airport: '),false)">✈️ <span data-i18n="chip.airport">Airport</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('transport-tips',t('chip.parkingText','🅿️ Parking: '),false)">🅿️ <span data-i18n="chip.parking">Parking</span></button>
+        <!-- ── Section 1 · Trip summary (auto-stats) ─────────────────── -->
+        <div id="review-summary" class="review-stats" aria-live="polite">
+          <!-- Populated by buildReviewPage() from computeDaySummary across all days. -->
         </div>
-        <textarea class="form-textarea autogrow" id="transport-tips" maxlength="600" placeholder="How to get around — GO taxi, JR / subway lines, Shinkansen, walking distances, parking tips..." oninput="autoGrow(this);updateCharCounter('transport-tips');autoSaveDraft()" data-i18n-ph="itin.transport.ph"></textarea>
-        <div class="char-counter" id="char-transport-tips" data-max="600">0 / 600</div>
-      </div>
 
-      <div class="section-divider" data-i18n="itin.spend">Estimated spend breakdown</div>
-      <div class="form-group" style="margin-bottom:0">
-        <!-- Structured mini-calculator for quick entry -->
-        <div class="spend-calc" style="background:rgba(31,28,22,0.03);border:1px solid rgba(31,28,22,0.06);border-radius:12px;padding:14px;margin-bottom:10px;">
-          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px;">
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <label data-i18n="spend.food" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);">Food / day</label>
-              <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--text-3);font-weight:600;" data-i18n="currency.symbol">$</span><input type="number" id="spend-food" class="form-input" placeholder="80" min="0" step="1" inputmode="numeric" oninput="clampNonNegative(this); updateSpendTotal()" style="flex:1;padding:7px 9px;font-size:12.5px;"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <label data-i18n="spend.transport" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);">Transport</label>
-              <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--text-3);font-weight:600;" data-i18n="currency.symbol">$</span><input type="number" id="spend-transport" class="form-input" placeholder="40" min="0" step="1" inputmode="numeric" oninput="clampNonNegative(this); updateSpendTotal()" style="flex:1;padding:7px 9px;font-size:12.5px;"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <label data-i18n="spend.attractions" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);">Attractions</label>
-              <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--text-3);font-weight:600;" data-i18n="currency.symbol">$</span><input type="number" id="spend-attractions" class="form-input" placeholder="60" min="0" step="1" inputmode="numeric" oninput="clampNonNegative(this); updateSpendTotal()" style="flex:1;padding:7px 9px;font-size:12.5px;"></div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <label data-i18n="spend.misc" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);">Misc / day</label>
-              <div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;color:var(--text-3);font-weight:600;" data-i18n="currency.symbol">$</span><input type="number" id="spend-misc" class="form-input" placeholder="20" min="0" step="1" inputmode="numeric" oninput="clampNonNegative(this); updateSpendTotal()" style="flex:1;padding:7px 9px;font-size:12.5px;"></div>
-            </div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px dashed rgba(31,28,22,0.1);">
-            <div data-i18n="spend.totalPerDay" style="font-size:11px;color:var(--text-3);">Total estimate / day</div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div id="spend-total" style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--e-green-d,#0f5240);">€0</div>
-              <button type="button" class="quick-chip" onclick="applySpendBreakdown()"><span data-i18n="spend.addToNotes">↓ Add to notes</span></button>
-            </div>
-          </div>
+        <!-- ── Section 2 · Personal note to traveler ────────────────── -->
+        <div class="review-note">
+          <label class="review-note-label" id="review-note-label" for="review-personal-message">Personal note to traveler</label>
+          <textarea id="review-personal-message"
+                    class="review-note-textarea"
+                    maxlength="2000"
+                    rows="6"
+                    placeholder="Welcome to France..."
+                    oninput="autoGrow(this); _refreshReviewWordCount(); autoSaveDraft()"></textarea>
+          <div class="review-note-counter" id="review-note-counter">0 / 200 words</div>
         </div>
-        <textarea class="form-textarea autogrow" id="spend-breakdown" maxlength="400" placeholder="Food: €xx/day · Transport: €xx · Entrance fees: €xx · Total: €xx" oninput="autoGrow(this);updateCharCounter('spend-breakdown');autoSaveDraft()" data-i18n-ph="spend.bd.ph"></textarea>
-        <div class="char-counter" id="char-spend-breakdown" data-max="400">0 / 400</div>
-      </div>
 
-      <div class="section-divider" data-i18n="itin.localTips">Local tips &amp; hidden gems</div>
-      <div class="form-group" style="margin-bottom:0">
-        <div class="quick-chips" style="margin-bottom:8px;">
-          <span class="quick-chips-label" data-i18n="itin.addTip">Add a tip:</span>
-          <button type="button" class="quick-chip" onclick="appendToTa('local-tips',t('tip.bestTimeText','⏰ Best time: '),false)">⏰ <span data-i18n="tip.bestTime">Best time</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('local-tips',t('tip.whatToOrderText','🍜 What to order: '),false)">🍜 <span data-i18n="tip.whatToOrder">What to order</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('local-tips',t('tip.skipText','⚠️ Skip this: '),false)">⚠️ <span data-i18n="tip.skip">Skip</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('local-tips',t('tip.insiderText','💡 Insider tip: '),false)">💡 <span data-i18n="tip.insider">Insider</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('local-tips',t('tip.photoText','📸 Photo spot: '),false)">📸 <span data-i18n="tip.photo">Photo spot</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('local-tips',t('tip.moneyText','💰 Money-saver: '),false)">💰 <span data-i18n="tip.money">Money-saver</span></button>
-          <button type="button" class="quick-chip" onclick="appendToTa('local-tips',t('tip.phraseText','🗣️ Useful phrase: '),false)">🗣️ <span data-i18n="tip.phrase">Phrase</span></button>
+        <!-- ── Section 3 · Commission + submit bar ───────────────────── -->
+        <div class="review-submit-bar">
+          <div class="review-submit-left">
+            <div class="review-submit-earn-label">You will earn</div>
+            <div class="review-submit-earn-amount" id="review-commission">€—</div>
+          </div>
+          <button type="button" id="review-submit-btn"
+                  class="review-submit-btn"
+                  onclick="submitFromReviewPage()">
+            <span class="rsb-icon">✓</span>
+            <span>Submit itinerary</span>
+          </button>
         </div>
-        <textarea class="form-textarea autogrow" id="local-tips" maxlength="800" placeholder="Best time to visit spots, what to order, what to skip, insider knowledge locals know..." oninput="autoGrow(this);updateCharCounter('local-tips');autoSaveDraft()" data-i18n-ph="itin.localTips.ph"></textarea>
-        <div class="char-counter" id="char-local-tips" data-max="800">0 / 800</div>
-      </div>
       </div><!-- /#wiz-page-final -->
 
     </div>
@@ -12738,6 +12802,8 @@ async function openItineraryForm(planId) {
   window._currentHotelCheckInTime  = _trimSec(plan.hotel_check_in_time)  || '14:00'
   window._currentHotelCheckOutTime = _trimSec(plan.hotel_check_out_time) || '11:00'
   window._currentHotelStoresBags   = plan.hotel_stores_bags !== false  // default TRUE
+  // Personal welcome note from the planner (Review page textarea).
+  window._currentPersonalMessage   = plan.personal_message_to_traveler || ''
   // daily_timing now lives on the traveler row as a normalised enum
   // (early / standard / late). Falls back to the legacy free-text meta value
   // for travelers that pre-date the migration.
@@ -14045,6 +14111,10 @@ function wizardGoTo(step){
   // scrollHeight is unreliable while a parent has display:none.
   if (step === 'final') {
     document.querySelectorAll('#wiz-page-final textarea.autogrow').forEach(autoGrow)
+    // Refresh the Review page contents (stats + commission) every time
+    // the planner lands on it — the underlying day data may have changed
+    // since the last visit (added stops, swapped modes, etc.).
+    if (typeof buildReviewPage === 'function') buildReviewPage()
   }
   renderWizardStepper()
   persistWizardStep()
@@ -18750,6 +18820,168 @@ function _fmtActiveHours(mins) {
   return `${h}h ${String(m).padStart(2,'0')}m`
 }
 
+// ── Review page (wizard step 5) ──────────────────────────────────────────
+// Auto-stat aggregator + commission lookup + submit action. Replaces
+// the legacy Wrap-up tab which had transport-tips quick-adds, a manual
+// €€€ spend calculator, and local-tips chips (none of those belong
+// here in the new design — per-stop tips live on individual slots).
+//
+// Trip stats fold every day's computeDaySummary() output into trip-
+// wide totals. Commission reads sets.std_payout_per_plan with
+// per-plan / per-traveler overrides honoured. Submit flips
+// plans.status to 'submitted' + sets submitted_at = NOW().
+function buildReviewPage() {
+  // 1. Collect per-day summaries by iterating every #slots-day-N container.
+  const dayContainers = [...document.querySelectorAll('[id^="slots-day-"]')]
+  let totalStops = 0, totalWalkingKm = 0, totalSpend = 0
+  const dayCountLocal = dayContainers.length || 1
+  dayContainers.forEach(dc => {
+    if (typeof computeDaySummary === 'function') {
+      const s = computeDaySummary(dc)
+      totalStops     += (s.stops      || 0)
+      totalWalkingKm += (s.walkingKm  || 0)
+      totalSpend     += (s.spendEur   || 0)
+    }
+  })
+  const avgWalkingKm = totalWalkingKm / dayCountLocal
+  const avgSpendEur  = totalSpend     / dayCountLocal
+  // 2. Budget status — compare avg/day to traveler's daily budget. Falls
+  // through to "—" (no badge) when the traveler row didn't set a budget.
+  const dailyBudget = Number(window._currentDailyBudget) || null
+  let budgetTone = 'ok'
+  let budgetLabel = '✓ in budget'
+  let budgetDetail = dailyBudget ? `€${dailyBudget} limit` : ''
+  if (dailyBudget && avgSpendEur > dailyBudget) {
+    const overPct = ((avgSpendEur - dailyBudget) / dailyBudget) * 100
+    if (overPct > 15) { budgetTone = 'red';   budgetLabel = '✗ over'   }
+    else              { budgetTone = 'amber'; budgetLabel = '⚠ over'   }
+    budgetDetail = `€${dailyBudget} limit`
+  } else if (!dailyBudget) {
+    budgetTone = 'ok'
+    budgetLabel = '—'
+    budgetDetail = 'no budget set'
+  }
+  // 3. Render the 4-tile grid.
+  const wrap = document.getElementById('review-summary')
+  if (wrap) {
+    const tileClassFor = (key) => {
+      if (key !== 'budget') return 'review-stat'
+      return 'review-stat is-budget-' + budgetTone
+    }
+    wrap.innerHTML = `
+      <div class="${tileClassFor('stops')}">
+        <div class="review-stat-value">${totalStops}</div>
+        <div class="review-stat-label">stops</div>
+      </div>
+      <div class="${tileClassFor('walk')}">
+        <div class="review-stat-value">${avgWalkingKm.toFixed(1)} km</div>
+        <div class="review-stat-label">avg walking/day</div>
+      </div>
+      <div class="${tileClassFor('spend')}">
+        <div class="review-stat-value">€${Math.round(avgSpendEur)}</div>
+        <div class="review-stat-label">avg spend/day</div>
+      </div>
+      <div class="${tileClassFor('budget')}">
+        <div class="review-stat-value">${escapeHtml(budgetLabel)}</div>
+        <div class="review-stat-label">${escapeHtml(budgetDetail || 'budget')}</div>
+      </div>
+    `
+  }
+  // 4. Personal-note label uses the traveler's first name when available.
+  const labelEl = document.getElementById('review-note-label')
+  if (labelEl) {
+    const first = window._currentFirstName || 'the traveler'
+    labelEl.textContent = `Personal note to ${first}`
+  }
+  const ta = document.getElementById('review-personal-message')
+  if (ta) {
+    const first = window._currentFirstName || ''
+    ta.placeholder = first
+      ? `${first}, welcome to France...`
+      : 'Welcome to France...'
+    // Hydrate from the open plan row (loaded onto window._currentPersonalMessage).
+    if (typeof window._currentPersonalMessage === 'string' && ta.value !== window._currentPersonalMessage) {
+      ta.value = window._currentPersonalMessage
+    }
+    if (typeof autoGrow === 'function') autoGrow(ta)
+    _refreshReviewWordCount()
+  }
+  // 5. Commission lookup (async) + submit-button state.
+  _refreshReviewCommission()
+}
+
+// Update the word-count footer beneath the personal note. 0-49 = short
+// (grey), 50-200 = sweet spot (green), 201+ = overflow (red). Cap is
+// 2000 characters via maxlength; this is a soft "word" indicator.
+function _refreshReviewWordCount() {
+  const ta = document.getElementById('review-personal-message')
+  const counter = document.getElementById('review-note-counter')
+  if (!ta || !counter) return
+  const words = (ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0)
+  const tone = words === 0 ? 'is-short'
+             : words < 50  ? 'is-short'
+             : words > 200 ? 'is-overflow'
+             :               'is-good'
+  counter.textContent = `${words} / 200 words`
+  counter.className = 'review-note-counter ' + tone
+}
+
+// Pull the planner's effective payout for THIS plan from the priority
+// chain: plans.planner_payout_override → travelers.planner_payout →
+// sets.std_payout_per_plan. Falls back to "€—" if none are set.
+async function _refreshReviewCommission() {
+  const amountEl = document.getElementById('review-commission')
+  if (!amountEl || !currentPlanId) return
+  amountEl.textContent = '€…'
+  try {
+    const { data: row } = await sb.from('plans')
+      .select('planner_payout_override, set_id, travelers(planner_payout)')
+      .eq('id', currentPlanId).maybeSingle()
+    if (!row) { amountEl.textContent = '€—'; return }
+    let amount = Number(row.planner_payout_override)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      const t = row.travelers
+      const tAmt = Array.isArray(t) ? (t[0]?.planner_payout) : t?.planner_payout
+      if (Number.isFinite(Number(tAmt)) && Number(tAmt) > 0) amount = Number(tAmt)
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      const { data: setRow } = await sb.from('sets')
+        .select('std_payout_per_plan').eq('id', row.set_id).maybeSingle()
+      const sAmt = Number(setRow?.std_payout_per_plan)
+      if (Number.isFinite(sAmt) && sAmt > 0) amount = sAmt
+    }
+    amountEl.textContent = (Number.isFinite(amount) && amount > 0)
+      ? `€${Math.round(amount)}` : '€—'
+  } catch (e) {
+    console.warn('[review] commission fetch threw', e)
+    amountEl.textContent = '€—'
+  }
+}
+
+// Submit-from-review handler. Confirm → mark plan submitted → toast +
+// close modal so the planner returns to the dashboard tile grid.
+async function submitFromReviewPage() {
+  if (!currentPlanId) { showToast('No plan open'); return }
+  const ok = confirm('Submit this itinerary? After submitting, edits require admin re-approval.')
+  if (!ok) return
+  // Flush pending autosave first so the personal note + any in-flight
+  // edits land in the row BEFORE we flip status.
+  if (typeof _flushAutoSave === 'function') _flushAutoSave()
+  try {
+    const { error } = await sb.from('plans').update({
+      status:       'submitted',
+      submitted_at: new Date().toISOString(),
+    }).eq('id', currentPlanId)
+    if (error) { showToast('Submit failed: ' + error.message); return }
+    showToast('Itinerary submitted — waiting for admin review')
+    closeModal('modal-submit')
+    if (typeof initDashboard === 'function') setTimeout(() => initDashboard(), 400)
+  } catch (e) {
+    console.warn('[review] submit threw', e)
+    showToast('Submit failed — check console')
+  }
+}
+
 function buildDaySummaryHtml(dayNum, summary) {
   const { stops, activeMin, walkingKm, spendEur, warnings, profileEnd } = summary
   // "Looks balanced" only when:
@@ -19475,11 +19707,13 @@ async function submitPlan() {
 
   const body = {
     itin_title:      title,
-    start_date:      document.getElementById('itin-start').value || null,
-    end_date:        document.getElementById('itin-end').value   || null,
-    transport_tips:  document.getElementById('transport-tips').value.trim(),
-    spend_breakdown: document.getElementById('spend-breakdown').value.trim(),
-    local_tips:      document.getElementById('local-tips').value.trim(),
+    start_date:      document.getElementById('itin-start')?.value || null,
+    end_date:        document.getElementById('itin-end')?.value   || null,
+    // Legacy fields no longer surfaced in the Review tab. The optional
+    // chaining keeps the submit path working even though the DOM
+    // elements have been removed.
+    personal_message_to_traveler:
+      document.getElementById('review-personal-message')?.value?.trim() || null,
     items
   }
 
@@ -19727,13 +19961,18 @@ async function _persistDraft(planId) {
       if (urls.length) urlsByOrder[sortOrder] = urls
     }
   })
+  // Legacy fields (transport-tips / spend-breakdown / local-tips) were
+  // ripped out of the Wrap-up page when it became "Review" — their DOM
+  // elements no longer exist, so the optional chaining returns null and
+  // we just don't update those columns (existing DB values are left
+  // intact). The new column is personal_message_to_traveler, fed from
+  // the Review page textarea.
   const { error: planErr } = await sb.from('plans').update({
-    itin_title: document.getElementById('itin-title').value.trim(),
-    start_date: document.getElementById('itin-start').value||null,
-    end_date: document.getElementById('itin-end').value||null,
-    transport_tips: document.getElementById('transport-tips').value.trim(),
-    spend_breakdown: document.getElementById('spend-breakdown').value.trim(),
-    local_tips: document.getElementById('local-tips').value.trim()
+    itin_title: document.getElementById('itin-title')?.value?.trim() || '',
+    start_date: document.getElementById('itin-start')?.value || null,
+    end_date:   document.getElementById('itin-end')?.value   || null,
+    personal_message_to_traveler:
+      document.getElementById('review-personal-message')?.value?.trim() || null,
   }).eq('id', planId).select('id, itin_title')
   console.log('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
   if (planErr) { console.warn('plan update failed', planErr); return false }
@@ -19847,12 +20086,11 @@ async function silentSaveDraft(scheduledPlanId) {
       if (i >= 0) {
         plans[i] = {
           ...plans[i],
-          itin_title:      document.getElementById('itin-title')?.value?.trim() || '',
-          start_date:      document.getElementById('itin-start')?.value || null,
-          end_date:        document.getElementById('itin-end')?.value || null,
-          transport_tips:  document.getElementById('transport-tips')?.value?.trim() || '',
-          spend_breakdown: document.getElementById('spend-breakdown')?.value?.trim() || '',
-          local_tips:      document.getElementById('local-tips')?.value?.trim() || ''
+          itin_title:                 document.getElementById('itin-title')?.value?.trim() || '',
+          start_date:                 document.getElementById('itin-start')?.value || null,
+          end_date:                   document.getElementById('itin-end')?.value || null,
+          personal_message_to_traveler:
+            document.getElementById('review-personal-message')?.value?.trim() || '',
         }
       }
     }
