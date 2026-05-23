@@ -1814,7 +1814,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   color:#8a6b1a;border-color:rgba(184,128,30,0.40);background:rgba(220,158,45,0.15);
 }
 .activity-slot.is-locked .anchor-badge-early{
-  color:var(--text-2);border-color:var(--border);background:var(--surface);
+  color:#8a6b1a;border-color:rgba(184,128,30,0.40);background:rgba(220,158,45,0.15);
 }
 /* Soft 1-line explanation under the end-of-day row. */
 .activity-slot.is-locked .anchor-footer{
@@ -1822,7 +1822,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   font-size:11px;color:var(--text-2);line-height:1.45;
 }
 .activity-slot.is-locked.anchor-end-of-day.anchor-state-late  .anchor-footer{color:#8a6b1a;}
-.activity-slot.is-locked.anchor-end-of-day.anchor-state-early .anchor-footer{color:var(--text-3);}
+.activity-slot.is-locked.anchor-end-of-day.anchor-state-early .anchor-footer{color:#8a6b1a;}
 .activity-slot.is-locked.anchor-end-of-day.anchor-state-on_profile .anchor-footer{color:#1a7a5e;}
 /* Suppress all the editable slot machinery on locked rows. */
 .activity-slot.is-locked .slot-header,
@@ -1935,7 +1935,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 }
 .day-summary-profile-on_profile .dsp-tag{color:#1a7a5e;border-color:rgba(26,122,94,0.35);background:rgba(26,122,94,0.10);}
 .day-summary-profile-late       .dsp-tag{color:#8a6b1a;border-color:rgba(184,128,30,0.40);background:rgba(220,158,45,0.15);}
-.day-summary-profile-early      .dsp-tag{color:var(--text-2);}
+.day-summary-profile-early      .dsp-tag{color:#8a6b1a;border-color:rgba(184,128,30,0.40);background:rgba(220,158,45,0.15);}
 .day-summary-warn,
 .day-summary-ok{
   margin-top:6px;padding:8px 10px;border-radius:6px;
@@ -17965,10 +17965,16 @@ function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
   const expectedStr = formatTimeDisplay(minsToHHMM(expected))
   if (actual == null) return { state: null, expected, actual: null, expectedStr, actualStr: null, gapMin: null }
   const gap = actual - expected   // +ve = late, -ve = early
+  // Thresholds per user spec:
+  //   ±15 min  → on track (acceptable, no warning)
+  //   >15 min early → too early (planner left buffer / skipped stops)
+  //   >60 min late  → too late (overshooting profile by more than 1 h)
+  //   in-between late (15-60 min) → neutral, no badge — within normal
+  //   itinerary slack so we don't nag planners on small overruns.
   let state = 'neutral'
-  if (Math.abs(gap) <= 30)        state = 'on_profile'
+  if (Math.abs(gap) <= 15)        state = 'on_profile'
+  else if (gap < -15)             state = 'early'
   else if (gap > 60)              state = 'late'
-  else if (gap < -60)             state = 'early'
   return { state, expected, actual, expectedStr, actualStr: formatTimeDisplay(minsToHHMM(actual)), gapMin: gap }
 }
 
@@ -18103,20 +18109,20 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     let titleStr = `Back at ${hotelDisplayName}`
     if (cmp.state === 'on_profile') {
       titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
-      badge  = { state: 'on_profile', label: '✓ on profile' }
+      badge  = { state: 'on_profile', label: '✓ on track' }
       footer = `${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`
     } else if (cmp.state === 'late') {
       titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
-      badge  = { state: 'late', label: '⚠ late' }
-      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. Confirm ${firstName} wants a late night.`
+      badge  = { state: 'late', label: '⚠ too late' }
+      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. More than 1 hour late — confirm ${firstName} wants a late night.`
     } else if (cmp.state === 'early') {
       titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
       const roomHours = Math.max(0, Math.round((-cmp.gapMin) / 60 * 10) / 10)
-      badge  = { state: 'early', label: 'ℹ early' }
-      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. You have ~${roomHours} hours of room for an evening activity.`
+      badge  = { state: 'early', label: '⚠ too early' }
+      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. You have ~${roomHours} h of room — add another stop?`
     } else if (cmp.actualStr) {
-      // Neutral zone (gap 30-60 min in either direction) — show the time but
-      // skip the badge / footer so the planner isn't nagged on edge cases.
+      // Neutral zone (15-60 min late) — within normal slack, show the
+      // time but skip the badge / footer so the planner isn't nagged.
       titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
     }
     bottomAnchor = _buildLockedAnchor({
@@ -18877,9 +18883,9 @@ function computeDaySummary(dayContainer) {
         state: cmp.state,
         expectedStr: cmp.expectedStr,
         actualStr: cmp.actualStr,
-        tagLabel: cmp.state === 'on_profile' ? '✓ on profile'
-               : cmp.state === 'late'        ? '⚠ late'
-               : cmp.state === 'early'       ? 'ℹ early'
+        tagLabel: cmp.state === 'on_profile' ? '✓ on track'
+               : cmp.state === 'late'        ? '⚠ too late'
+               : cmp.state === 'early'       ? '⚠ too early'
                :                                '',
       }
     : null
@@ -19074,7 +19080,7 @@ function buildDaySummaryHtml(dayNum, summary) {
   // actually produced a state (planner has put at least one stop down).
   const profileHtml = (profileEnd && profileEnd.state)
     ? `<div class="day-summary-profile day-summary-profile-${profileEnd.state}">
-         <span class="dsp-label">Profile end</span>
+         <span class="dsp-label">Suggested end</span>
          <span class="dsp-val">${escapeHtml(profileEnd.expectedStr)}</span>
          <span class="dsp-sep">·</span>
          <span class="dsp-label">Actual</span>
