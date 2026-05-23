@@ -15572,7 +15572,7 @@ const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 // change, because the cache key didn't include routing preference.
 // v5 entries also carry routes.polyline.encodedPolyline so our own
 // Maps JS render shows the SAME route as the grid distance/duration.
-const ROUTES_CACHE_PREFIX = 'jj_route_v5_'
+const ROUTES_CACHE_PREFIX = 'jj_route_v6_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
@@ -15596,14 +15596,29 @@ function _bumpRoutesDaily() {
   } catch (e) { return 0 }
 }
 
-async function fetchRouteData(fromSlot, toSlot, mode) {
+// `departISO` (optional) = the actual trip-date + slot-time ISO string,
+// e.g. "2026-06-15T14:10:00Z". When passed, Routes API uses that as the
+// departure context — transit schedules differ by time-of-day (metro
+// frequency, night-bus, line shutdowns) and driving uses traffic patterns
+// for that hour, so feeding the real depart time gives a route + duration
+// that actually matches what the traveler will experience.
+async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
   const fromId = fromSlot?._placeData?.google_place_id
   const toId   = toSlot?._placeData?.google_place_id
   if (!fromId || !toId) return null
   const travelMode = _routesModeFor(mode)
   if (!travelMode) return null
-  // Cache hit?
-  const key = `${ROUTES_CACHE_PREFIX}${fromId}_${toId}_${travelMode}`
+  // Cache key now scopes per (origin, destination, mode, YYYY-MM-DD-HH).
+  // Same hour shares one cache entry — coarse enough that we don't blow
+  // the cache on every minute-level edit, fine enough to honour transit
+  // schedule changes (metro thins out late evening, lines stop after
+  // midnight). Falls back to a "now" bucket if departISO is missing so
+  // legacy callers still get caching.
+  const _hourKey = (() => {
+    const iso = departISO || new Date().toISOString()
+    return iso.slice(0, 13)  // "YYYY-MM-DDTHH"
+  })()
+  const key = `${ROUTES_CACHE_PREFIX}${fromId}_${toId}_${travelMode}_${_hourKey}`
   try {
     const raw = localStorage.getItem(key)
     if (raw) {
@@ -15617,6 +15632,20 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
     return null
   }
   try {
+    // Routes API requires departureTime in the FUTURE — if the planner is
+    // viewing a past trip (already happened) or the slot time + trip date
+    // resolves to a past moment, clamp to "now + 1 min" so the call doesn't
+    // 400. Transit routing without a departureTime defaults to "now"
+    // anyway, so the clamped value gives the same behaviour.
+    let routesDepart = departISO
+    if (routesDepart) {
+      const t = Date.parse(routesDepart)
+      if (!Number.isFinite(t) || t < Date.now()) {
+        routesDepart = new Date(Date.now() + 60_000).toISOString()
+      }
+    } else {
+      routesDepart = new Date(Date.now() + 60_000).toISOString()
+    }
     const body = {
       origin:      { placeId: fromId },
       destination: { placeId: toId },
@@ -15627,10 +15656,13 @@ async function fetchRouteData(fromSlot, toSlot, mode) {
       // Embed iframe (and most planners' intuition for ride-hail) prefers
       // FASTEST. We pick by min duration below to match the embed.
       computeAlternativeRoutes: true,
+      // Pass the real depart time so transit schedules + driving traffic
+      // patterns are computed for THAT moment, not whenever the planner
+      // happens to refresh.
+      departureTime: routesDepart,
     }
     if (travelMode === 'DRIVE') {
       body.routingPreference = 'TRAFFIC_AWARE_OPTIMAL'
-      body.departureTime = new Date(Date.now() + 60_000).toISOString()
     }
     // Pull step-by-step transit details too — line names, station names,
     // walking segments, headsign, stop count. Costs the same as the
@@ -16309,7 +16341,23 @@ function refreshTransportSlot(slot) {
   const fromPlaceId = prev?._placeData?.google_place_id || slot.dataset.fromPlaceId || null
   if (!tooFar && fromPlaceId && next?._placeData?.google_place_id) {
     const originSlot = prev || { _placeData: { google_place_id: fromPlaceId } }
-    fetchRouteData(originSlot, next, mode).then(result => {
+    // Compute the real trip-date + slot-time so the Routes API picks the
+    // right transit schedule + traffic pattern. Trip start date lives on
+    // window._currentTripStartDate (loaded from plans.start_date); the
+    // slot's day number determines the offset.
+    let _departISO = null
+    if (window._currentTripStartDate && departHHMM) {
+      const _m = slot.closest('[id^="slots-day-"]')?.id?.match(/slots-day-(\d+)/)
+      const _dayNum = _m ? parseInt(_m[1], 10) : 1
+      const _base = new Date(window._currentTripStartDate + 'T00:00:00Z')
+      if (!isNaN(_base)) {
+        _base.setUTCDate(_base.getUTCDate() + (_dayNum - 1))
+        const [_h, _mm] = String(departHHMM).split(':').map(Number)
+        _base.setUTCHours(_h || 0, _mm || 0, 0, 0)
+        _departISO = _base.toISOString()
+      }
+    }
+    fetchRouteData(originSlot, next, mode, _departISO).then(result => {
       if (!result) return
       const live = document.getElementById(slot.id)
       if (live) applyRouteDataToSlot(live, result)
