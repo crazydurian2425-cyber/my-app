@@ -14857,6 +14857,16 @@ function _applyHotelDefaults(slot, key) {
     const _bagsBox = slot.querySelector('.slot-hotel-bags-toggle input[type="checkbox"]')
     if (_bagsBox) _bagsBox.checked = window._currentHotelStoresBags !== false
   }
+  // The slot now has a linked place (lat/lng). Re-run the day's
+  // distance + transport refresh so any adjacent transport (e.g. the
+  // last-venue → hotel-checkout taxi) picks up the new neighbour
+  // coords and fires Routes API. Without this the transport stays on
+  // its stale "ONYX → next stop · —" state until the planner edits
+  // something else that triggers a refresh.
+  const _dayContainer = slot.closest('[id^="slots-day-"]')
+  if (_dayContainer && typeof refreshDayDistances === 'function') {
+    refreshDayDistances(_dayContainer)
+  }
 }
 
 // Fetch the rich Google Place details for a hotel slot when we only
@@ -14910,6 +14920,14 @@ async function _enrichHotelSlotFromPlaceId(slot, placeId) {
     }
     if (typeof renderLinkedChip === 'function') renderLinkedChip(slot)
     if (typeof autoSaveDraft === 'function') autoSaveDraft()
+    // Refresh the day so the adjacent transport (last-stop → hotel
+    // check-out) sees the freshly-loaded lat/lng + place_id and fires
+    // its Routes API call. Without this, the transport stays at "—"
+    // until something else triggers a refresh.
+    const _dc = slot.closest('[id^="slots-day-"]')
+    if (_dc && typeof refreshDayDistances === 'function') {
+      refreshDayDistances(_dc)
+    }
     console.log('[hotel-enrich] enriched', placeId.slice(0, 12) + '…', '· photos:', photoRefs.length, '· rating:', slot._placeData.rating)
   } catch (e) { console.warn('[hotel-enrich] threw', e) }
 }
