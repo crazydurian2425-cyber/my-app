@@ -18020,11 +18020,12 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     let _scan = bottomAnchor.previousElementSibling
     while (_scan && _scan.classList?.contains('is-locked')) _scan = _scan.previousElementSibling
     const _hasExisting = !!(_scan && _scan.classList?.contains('slot-type-transport'))
-    // Only render when at least one real venue exists for the day —
-    // otherwise the transport's `from` would be null.
-    const _hasVenue = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
-      .some(s => !s.classList.contains('slot-type-transport') && !s.classList.contains('is-locked'))
-    if (!_hasExisting && _hasVenue) {
+    // Show the pill whenever no transport already sits before the
+    // departure anchor — symmetric with the end_of_day button. Even
+    // on an empty Day 3 the planner needs the visual cue that they
+    // can click here to wrap the trip; the handler itself bails
+    // gracefully when there's nothing to depart from.
+    if (!_hasExisting) {
       const _row = document.createElement('div')
       _row.className = 'end-day-row'
       _row.innerHTML = `
@@ -18203,7 +18204,14 @@ function endTripToAirport(dayContainerId) {
   const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('slot-type-transport')
               && !s.classList.contains('is-locked'))
-  if (!venues.length) return
+  if (!venues.length) {
+    // Empty day — nothing to depart from. Friendly hint so the
+    // planner knows what to do next.
+    if (typeof showToast === 'function') {
+      showToast('Add at least one activity first — the airport transport leaves from your last stop')
+    }
+    return
+  }
   const lastVenue = venues[venues.length - 1]
   // Depart time = last venue start + (type-floored) stay.
   const startMin = parseSlotTime(lastVenue.querySelector('.slot-time-input')?.value || '')
