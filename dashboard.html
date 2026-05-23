@@ -15790,6 +15790,14 @@ function applyRouteDataToSlot(slot, data) {
       const _dayNum = _m ? parseInt(_m[1], 10) : 1
       renderDayBookends(dayContainer, _dayNum, (typeof dayCount === 'number') ? dayCount : null)
     }
+    // Day summary card has its OWN PROFILE END · ACTUAL row that reads
+    // the same _dayEndProfileCompare path. Without this refresh the
+    // bookend updates to 9:41 PM but the summary card stays at 9:27 PM,
+    // so the two displays diverge. Keep them in sync by re-rendering
+    // the summary card whenever Routes API patches the grid.
+    if (dayContainer && typeof refreshDaySummary === 'function') {
+      refreshDaySummary(dayContainer)
+    }
   }
   // Step-by-step timeline — ONLY useful when the trip mixes transit with
   // walks (planner needs to know which line + station + walks between).
