@@ -19734,7 +19734,12 @@ async function submitPlan() {
         })
         return
       }
-      if (typeKey !== 'freetime' && (!it.address || !it.address.trim())) {
+      // Address required only for slot types that surface the address
+      // input. Transport rows derive their from/to text from neighbour
+      // slots (no address field at all). Free-time slots intentionally
+      // skip an address (the row is a theme / area, not a venue).
+      const _addrRequired = !['freetime', 'transport'].includes(typeKey)
+      if (_addrRequired && (!it.address || !it.address.trim())) {
         flashFormError({
           target: slot,
           focusInput: slot?.querySelector('.slot-address-input'),
