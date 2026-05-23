@@ -15259,6 +15259,22 @@ function applyPlaceToSlot(slot, place) {
   // can now be computed (or updated if it had a different place before).
   const _dayContainer = slot.closest('[id^="slots-day-"]')
   refreshDayDistances(_dayContainer)
+  // ── Cross-day bookend refresh when the HOTEL changes ──
+  // If the slot just linked is the hotel_checkin row (the single
+  // accommodation slot per unit), every other day's morning anchor +
+  // end_of_day anchor reads its display name from _findItineraryHotel()
+  // which now returns the freshly-picked Google place name. Force a
+  // refresh on the OTHER day containers so Day 2's "Morning at the
+  // hotel" updates to "Morning at Pullman Paris Montparnasse" without
+  // waiting for the planner to switch tabs.
+  const _linkedType = slot.querySelector('.slot-type-select')?.value
+  if (_linkedType === 'hotel_checkin' || _linkedType === 'accommodation') {
+    document.querySelectorAll('[id^="slots-day-"]').forEach(c => {
+      if (c !== _dayContainer && typeof refreshDayDistances === 'function') {
+        refreshDayDistances(c)
+      }
+    })
+  }
   // Universal gap-fill: after the slot is linked, walk neighbours and
   // auto-insert transports for any pair with km ≥ 0.5. Runs AFTER
   // refreshDayDistances so addSlot's tail-call refresh doesn't recurse.
