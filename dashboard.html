@@ -14780,8 +14780,8 @@ function _applyHotelDefaults(slot, key) {
   } else if (window._currentHotelPlaceId || (Number.isFinite(lat) && Number.isFinite(lng))) {
     // Fallback to plan-level fields when no linked hotel slot is found
     // (brand-new plan, hotel set via the brief only). Sparse chip is
-    // expected here — we don't have rating / photos until the planner
-    // picks via Places autocomplete.
+    // expected here — we don't have rating / photos until enrichment
+    // resolves below.
     slot._placeData = {
       google_place_id: window._currentHotelPlaceId || null,
       name:            hotelName,
@@ -14791,6 +14791,15 @@ function _applyHotelDefaults(slot, key) {
     }
     slot.classList.add('slot-place-linked')
     if (typeof renderLinkedChip === 'function') renderLinkedChip(slot)
+  }
+  // Async-enrich when the chip would otherwise render bare (no photo /
+  // rating / hours). Triggers a Places GetPlace lookup against the
+  // place_id we have and merges the rich fields into _placeData, then
+  // re-renders the chip so the photo + ★ rating + opening hours
+  // appear without the planner having to retype the hotel name.
+  const _pd = slot._placeData
+  if (_pd?.google_place_id && (!Array.isArray(_pd.photo_refs) || _pd.photo_refs.length === 0) && _pd.rating == null) {
+    _enrichHotelSlotFromPlaceId(slot, _pd.google_place_id)
   }
   // Default time — sit it at the hotel's check-in / check-out window so the
   // time-warning logic (next phase) doesn't fire on a brand-new slot.
@@ -14848,6 +14857,61 @@ function _applyHotelDefaults(slot, key) {
     const _bagsBox = slot.querySelector('.slot-hotel-bags-toggle input[type="checkbox"]')
     if (_bagsBox) _bagsBox.checked = window._currentHotelStoresBags !== false
   }
+}
+
+// Fetch the rich Google Place details for a hotel slot when we only
+// have the place_id (e.g. auto-filled Hotel check-in / check-out from
+// plan-level fields, where photo_refs / rating / opening_hours weren't
+// stored). Merges the fetched fields into the slot's _placeData and
+// re-renders the linked chip so the photo + ★ rating + hours appear
+// without the planner having to retype the hotel name and re-pick.
+//
+// Fires autoSaveDraft after the merge so the enriched data persists
+// on the next save — no more "first paint is bare-bones, retype to
+// see chip".
+async function _enrichHotelSlotFromPlaceId(slot, placeId) {
+  if (!slot || !placeId || typeof GOOGLE_PLACES_API_KEY !== 'string' || !GOOGLE_PLACES_API_KEY) return
+  const fields = [
+    'id','displayName','formattedAddress','location',
+    'rating','userRatingCount','priceLevel','priceRange',
+    'regularOpeningHours','internationalPhoneNumber',
+    'websiteUri','googleMapsUri','types','photos'
+  ].join(',')
+  try {
+    const resp = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+      headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields }
+    })
+    if (!resp.ok) { console.warn('[hotel-enrich] GetPlace failed', resp.status); return }
+    const place = await resp.json()
+    if (!place?.id) return
+    const photoRefs = Array.isArray(place.photos)
+      ? place.photos.map(p => p?.name).filter(Boolean).slice(0, 6)
+      : []
+    // Merge — preserve any fields we already had (name/address from the
+    // plan-level fields take priority over Google's displayName when
+    // the planner customised them; everything else comes from Places).
+    const prev = slot._placeData || {}
+    slot._placeData = {
+      google_place_id:    place.id,
+      name:               prev.name    || place.displayName?.text || '',
+      address:            prev.address || place.formattedAddress  || '',
+      latitude:           place.location?.latitude  ?? prev.latitude  ?? null,
+      longitude:          place.location?.longitude ?? prev.longitude ?? null,
+      rating:             (typeof place.rating === 'number') ? place.rating : null,
+      user_rating_count:  (typeof place.userRatingCount === 'number') ? place.userRatingCount : null,
+      price_level:        place.priceLevel || null,
+      price_range_json:   place.priceRange || null,
+      phone:              place.internationalPhoneNumber || null,
+      website:            place.websiteUri || null,
+      google_maps_url:    place.googleMapsUri || null,
+      opening_hours_json: place.regularOpeningHours || null,
+      photo_refs:         photoRefs,
+      place_types:        Array.isArray(place.types) ? place.types : null,
+    }
+    if (typeof renderLinkedChip === 'function') renderLinkedChip(slot)
+    if (typeof autoSaveDraft === 'function') autoSaveDraft()
+    console.log('[hotel-enrich] enriched', placeId.slice(0, 12) + '…', '· photos:', photoRefs.length, '· rating:', slot._placeData.rating)
+  } catch (e) { console.warn('[hotel-enrich] threw', e) }
 }
 
 // Persist the "bags stored at hotel" flag onto plans.hotel_stores_bags
