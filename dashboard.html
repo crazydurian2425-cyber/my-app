@@ -12870,7 +12870,20 @@ async function openItineraryForm(planId) {
     const { data: items } = await sb.from('itinerary_items')
       .select('*, item_images(id,url)')
       .eq('plan_id', plan.id).order('sort_order', { ascending: true })
-    if (items?.length) fillItineraryItems(items)
+    if (items?.length) {
+      fillItineraryItems(items)
+    } else {
+      // Empty plan (fresh assignment / just-wiped) — fillItineraryItems
+      // bails before reaching its refreshAllDistances tail, so the
+      // locked bookend anchors (morning at hotel, end_of_day back at
+      // hotel, departure on last day) never render on Day 2+. Force a
+      // refresh on every day so each one shows its anchors + End-day /
+      // End-trip pills even when there's nothing else to render.
+      if (typeof _autoSeedDay1HotelIfNeeded === 'function') _autoSeedDay1HotelIfNeeded()
+      if (typeof refreshAllDistances === 'function') refreshAllDistances()
+      if (typeof _initArrivalStationLookup === 'function') _initArrivalStationLookup()
+      if (typeof _initDepartureStationLookup === 'function') _initDepartureStationLookup()
+    }
   }
 
   // Submit button state — target the actual submit button (.wiz-submit)
