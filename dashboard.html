@@ -11920,6 +11920,14 @@ function openModal(id) {
   document.body.classList.add('modal-open')
 }
 function closeModal(id) {
+  // If a debounced autosave is pending for the itinerary modal, flush it
+  // synchronously before close — otherwise the planner deletes a slot,
+  // closes within the 1500 ms debounce window, and the change never
+  // round-trips. Reopening reloads the OLD (un-saved) state from the DB
+  // and the deleted slot reappears.
+  if (id === 'modal-submit' && typeof _flushAutoSave === 'function') {
+    _flushAutoSave()
+  }
   document.getElementById(id).classList.remove('open')
   // Only release the lock if no other modal is still open.
   if (!document.querySelector('.modal-overlay.open')) {
@@ -11933,7 +11941,14 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
   let startedOnOverlay = false;
   o.addEventListener('mousedown', e => { startedOnOverlay = (e.target === o); });
   o.addEventListener('click', e => {
-    if (startedOnOverlay && e.target === o) o.classList.remove('open');
+    if (startedOnOverlay && e.target === o) {
+      // Same flush — backdrop-dismiss path skips closeModal entirely so it
+      // would otherwise leave a pending autosave dangling.
+      if (o.id === 'modal-submit' && typeof _flushAutoSave === 'function') {
+        _flushAutoSave()
+      }
+      o.classList.remove('open');
+    }
     startedOnOverlay = false;
   });
 });
@@ -18890,6 +18905,24 @@ function autoSaveDraft() {
   console.log('[autosave] autoSaveDraft scheduled', { currentPlanId: planIdAtSchedule })
   if (_autoSaveTimer) clearTimeout(_autoSaveTimer)
   _autoSaveTimer = setTimeout(() => silentSaveDraft(planIdAtSchedule), 1500)
+  _autoSavePendingPlanId = planIdAtSchedule
+}
+
+// Fire any pending debounced autosave NOW. Called on modal close (✕
+// button, backdrop click) so a deletion done in the last ≤1500 ms
+// reaches the DB before the planner reopens the plan and would
+// otherwise see the deleted item resurrected from the un-flushed save.
+let _autoSavePendingPlanId = null
+function _flushAutoSave() {
+  if (!_autoSaveTimer) return
+  clearTimeout(_autoSaveTimer)
+  _autoSaveTimer = null
+  const pid = _autoSavePendingPlanId || currentPlanId
+  _autoSavePendingPlanId = null
+  console.log('[autosave] flushing pending save on modal close', { pid })
+  // Fire-and-forget — the async fetch keeps running in the background
+  // even after the modal class change, so the row update completes.
+  silentSaveDraft(pid)
 }
 
 // Wire input events on the modal body. Event delegation handles all the
