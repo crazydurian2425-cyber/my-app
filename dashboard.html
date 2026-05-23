@@ -14294,28 +14294,34 @@ function addDayBlock(dayNum, totalDays) {
     wrap.appendChild(section)
     document.getElementById('days-container').appendChild(wrap)
   }
-  // Prefer seedSlots[] if the guideline supplied one — it's the explicit
-  // chronological slot sequence with per-slot time overrides (lets us spread
-  // attractions across morning/afternoon/evening instead of stacking them).
-  // Fall back to items[] (with optional count) for guidelines that haven't
-  // been migrated yet. fillItineraryItems() replaces these with real saved
-  // data if the plan has been worked on before.
-  const seedList = Array.isArray(g.seedSlots) && g.seedSlots.length ? g.seedSlots : null
-  // Day 1 always begins with a Hotel check-in anchor (15:00 / 30 min) so
-  // the planner doesn't have to remember to add one. Skipped if the
-  // guideline's seedList already opens with a hotel seed, and replaced by
-  // saved data on plan reload (fillItineraryItems clears + re-populates).
+  // Per user rule: no auto-pre-seeded activity / meal / etc. slots on
+  // ANY day. Each day starts with just its locked bookend anchors,
+  // plus — on Day 1 — the auto-seeded arrival taxi + locked hotel
+  // check-in (handled by _autoSeedDay1HotelIfNeeded after item load).
+  // The guideline's seedSlots / items arrays are now used purely as
+  // informational "Recommended structure" hints rendered in the day
+  // header (2 attractions, Hotel check-in, Dinner venue chips); they
+  // no longer materialise as actual rows. Planner adds what they
+  // need via "+ Add activity to Day N".
   if (dayNum === 1) {
-    const guidelineHasHotel = seedList && seedList.some(s => s?.icon === 'hotel')
-                          || (!seedList && Array.isArray(g.items) && g.items.some(it => it?.icon === 'hotel'))
-    if (!guidelineHasHotel) addSlot(dayNum, { icon: 'hotel' })
-  }
-  if (seedList) {
-    for (const seed of seedList) addSlot(dayNum, seed)
-  } else {
-    for (const item of g.items) {
-      const n = Number.isFinite(item.count) ? Math.max(1, item.count) : 1
-      for (let i = 0; i < n; i++) addSlot(dayNum, item)
+    // Day 1 still gets the hotel check-in pre-seed so a brand-new plan
+    // (no saved items yet, before _autoSeedDay1HotelIfNeeded fires)
+    // already has its locked check-in row visible. fillItineraryItems
+    // wipes + reloads on plan-open, so this is harmless for saved
+    // plans. We stamp the lock flags here so the × button stays
+    // hidden even on the brand-new path.
+    const _dayContainer = section.querySelector('#slots-day-' + dayNum)
+    const _before = new Set(_dayContainer
+      ? [..._dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')]
+      : [])
+    addSlot(dayNum, { icon: 'hotel' })
+    if (_dayContainer) {
+      const _newHotel = [..._dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')]
+        .find(s => !_before.has(s))
+      if (_newHotel) {
+        _newHotel.dataset.isLocked = 'true'
+        _newHotel.dataset.autoSeededHotelCheckin = 'true'
+      }
     }
   }
   // Sub-account training mode: stamp Day 1 with the compulsory submit badge.
