@@ -14673,16 +14673,16 @@ function selectDurationDD(btn, mins, label){
 }
 
 const SEED_DEFAULTS = {
-  attraction: { typeLabel:'Activity',      typeKey:'activity',      title:'',                titleKey:null,             time:null       },
-  hotel:      { typeLabel:'Accommodation', typeKey:'accommodation', title:'Hotel check-in',  titleKey:'seed.hotelIn',   time:'15:00'    },
-  checkout:   { typeLabel:'Accommodation', typeKey:'accommodation', title:'Hotel check-out', titleKey:'seed.hotelOut',  time:'11:00'    },
-  breakfast:  { typeLabel:'Meal',          typeKey:'meal',          title:'Breakfast',       titleKey:'seed.breakfast', time:'08:00'    },
-  lunch:      { typeLabel:'Meal',          typeKey:'meal',          title:'Lunch',           titleKey:'seed.lunch',     time:'12:30'    },
-  dinner:     { typeLabel:'Meal',          typeKey:'meal',          title:'Dinner',          titleKey:'seed.dinner',    time:'19:30'    },
+  attraction: { typeLabel:'Activity',         typeKey:'activity',       title:'',                titleKey:null,             time:null       },
+  hotel:      { typeLabel:'Hotel check-in',   typeKey:'hotel_checkin',  title:'Hotel check-in',  titleKey:'seed.hotelIn',   time:'14:00'    },
+  checkout:   { typeLabel:'Hotel check-out',  typeKey:'hotel_checkout', title:'Hotel check-out', titleKey:'seed.hotelOut',  time:'11:00'    },
+  breakfast:  { typeLabel:'Meal',             typeKey:'meal',           title:'Breakfast',       titleKey:'seed.breakfast', time:'08:00'    },
+  lunch:      { typeLabel:'Meal',             typeKey:'meal',           title:'Lunch',           titleKey:'seed.lunch',     time:'12:30'    },
+  dinner:     { typeLabel:'Meal',             typeKey:'meal',           title:'Dinner',          titleKey:'seed.dinner',    time:'19:30'    },
   // Used by the long-distance helper's "Add transport" buttons. typeKey=transport
   // so the slot renders with transport icon + transport-specific layout. Time
   // is null — caller passes an explicit `seed.time`.
-  transport:  { typeLabel:'Transport',     typeKey:'transport',     title:'',                titleKey:null,             time:null       },
+  transport:  { typeLabel:'Transport',        typeKey:'transport',      title:'',                titleKey:null,             time:null       },
 }
 
 // Ideal meal time-of-day windows. Used to warn the planner when a meal
@@ -15047,7 +15047,7 @@ function suggestStayDuration({ slotType, seedIcon, placeTypes, startTime }) {
   if (seedIcon === 'lunch')     return 60
   if (seedIcon === 'dinner')    return 60
   if (seedIcon === 'snack' || seedIcon === 'coffee') return 30
-  if (seedIcon === 'hotel')     return 30
+  if (seedIcon === 'hotel')     return 60   // matches hotel_checkin floor
   if (seedIcon === 'checkout')  return 15
   // 2) Place types from Google.
   if (Array.isArray(placeTypes) && placeTypes.length) {
