@@ -8439,7 +8439,7 @@ const TM_I18N = {
     'wiz.back':'← Back',
     'wiz.next':'Next →',
     'wiz.step.brief':'Brief',
-    'wiz.step.final':'Wrap-up',
+    'wiz.step.final':'Review',
     'sub.banner.title':'Sub-account · Training mode',
     'sub.banner.body':'Submit each plan once <strong>Day 1</strong> has at least <strong>3 fully-completed activities</strong> — each with a real name, address, and one photo. The mentor will complete Days 2 onward.',
     'dash.awaitingAssignment':'Awaiting set assignment from admin',
@@ -9120,7 +9120,7 @@ const TM_I18N = {
     'wiz.back':'← Retour',
     'wiz.next':'Suivant →',
     'wiz.step.brief':'Brief',
-    'wiz.step.final':'Finalisation',
+    'wiz.step.final':'Revue',
     'sub.banner.title':'Compte d\'apprentissage · mode formation',
     'sub.banner.body':'Pour chaque plan, soumettez le <strong>Jour 1</strong> avec au moins <strong>3 activités</strong> dotées de nom réel, adresse et photo. Les jours 2+ sont finalisés par votre mentor.',
     'dash.awaitingAssignment':'En attente d\'attribution par un administrateur',
@@ -14075,7 +14075,7 @@ function wizardSteps(){
 }
 function wizardStepLabel(step){
   if (step === 'brief') return t('wiz.step.brief','Brief')
-  if (step === 'final') return t('wiz.step.final','Wrap-up')
+  if (step === 'final') return t('wiz.step.final','Review')
   const m = step.match(/^day-(\d+)$/)
   if (m) return t('day.headerN','Day {n}').replace('{n}', m[1])
   return step
@@ -19580,30 +19580,13 @@ async function submitPlan() {
   // Clear any old error banner from a previous attempt.
   hideModalErrorBanner()
 
-  // Normal planners (not sub-accounts): Transport tips and Local tips boxes
-  // are required — Estimated spend breakdown stays optional.
-  if (!window._isSubaccount) {
-    const transEl = document.getElementById('transport-tips')
-    const localEl = document.getElementById('local-tips')
-    const transTxt = transEl?.value?.trim() || ''
-    const localTxt = localEl?.value?.trim() || ''
-    if (!transTxt) {
-      flashFormError({
-        target: transEl,
-        focusInput: transEl,
-        message: t('plan.submit.transportRequired','Please fill in Transport tips before submitting')
-      })
-      return
-    }
-    if (!localTxt) {
-      flashFormError({
-        target: localEl,
-        focusInput: localEl,
-        message: t('plan.submit.localRequired','Please fill in Local tips & hidden gems before submitting')
-      })
-      return
-    }
-  }
+  // Legacy required-fields check on Transport tips + Local tips removed
+  // when those sections were ripped out of the Wrap-up tab in favour of
+  // the simpler Review page. The Review page has no required text
+  // input — the personal note is encouraged but optional, and submit
+  // just relies on the planner having added enough stops. Translations
+  // stay in the locale tables (harmless dead strings) in case we want
+  // similar required-field validation against new Review fields later.
 
   // Collect all activity slots from the form. Pull the day number from the
   // `#slots-day-N` container, and gather pending image File objects per slot.
