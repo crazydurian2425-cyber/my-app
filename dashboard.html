@@ -2325,6 +2325,12 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border:1px solid var(--border);background:var(--surface);
   text-transform:uppercase;letter-spacing:0.4px;font-weight:500;
 }
+/* Activity slots flagged as auto-locked (e.g. the auto-seeded Day-1
+   Hotel check-in) hide their × delete button — the row is universally
+   needed (every arriving traveler checks in + drops luggage first)
+   so deleting it would leave the day in an inconsistent state. Type
+   + time + place are still editable; only deletion is disabled. */
+.activity-slot[data-is-locked="true"] .slot-remove{display:none;}
 /* Hotel check-in / check-out time-window warning. Appears INSIDE the slot
    when the planner's chosen time falls outside the hotel's window. Amber
    = early check-in (drop-bags OK), red = late check-out (late-fee risk).
@@ -13288,6 +13294,12 @@ function fillItineraryItems(items) {
       if (iconKey === 'transport' && it.transport_mode) {
         slot.dataset.transportMode = it.transport_mode
       }
+      // Restore the locked flag — applies to auto-seeded Day-1 Hotel
+      // check-in (and any other row marked is_locked=true in the DB).
+      // CSS hides the × button when this attribute is present.
+      if (it.is_locked === true) {
+        slot.dataset.isLocked = 'true'
+      }
       // Hotel check-in / check-out: re-evaluate the time-window warning so
       // a row stored with an out-of-window time shows the warning right
       // after load (not only after the planner edits the time).
@@ -13691,7 +13703,19 @@ function _autoSeedDay1HotelIfNeeded() {
     if (userStops.length === 0) {
       console.log('[day1-seed] empty day → adding taxi + hotel')
       _insertArrivalTaxi(null)
+      // Snapshot existing hotel_checkin slots BEFORE addSlot so we can
+      // pick out the freshly-inserted one and lock it. Locking marks
+      // the row as "always needed" — the × delete button is hidden so
+      // the planner can't accidentally remove the first action of the
+      // arrival day.
+      const _beforeAdd = new Set([...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')])
       addSlot(1, { icon: 'hotel' })
+      const newHotel = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')]
+        .find(s => !_beforeAdd.has(s))
+      if (newHotel) {
+        newHotel.dataset.isLocked = 'true'
+        newHotel.dataset.autoSeededHotelCheckin = 'true'
+      }
       // _insertArrivalTaxi already queues an autosave; the hotel addSlot
       // doesn't, so kick it explicitly so both new rows persist.
       if (typeof autoSaveDraft === 'function') autoSaveDraft()
@@ -19443,6 +19467,11 @@ async function _persistDraft(planId) {
       const transportMode = (slotType === 'transport')
         ? (slot.dataset.transportMode || null)
         : null
+      // Persist the slot's lock state so the auto-seeded Day-1 Hotel
+      // check-in (and any other locked row) keeps the × button hidden
+      // across close + reopen. Re-uses the is_locked column already
+      // added by docs/schema/add-day-bookends.sql.
+      const isLockedRow = slot.dataset.isLocked === 'true'
       items.push({
         day_number: dayNum,
         time:       slot.querySelector('.slot-time-input')?.value || null,
@@ -19452,6 +19481,7 @@ async function _persistDraft(planId) {
         duration_minutes: (slotType === 'activity' && Number.isFinite(durMins)) ? durMins : null,
         notes:      slot.querySelector('.slot-notes-input')?.value?.trim() || '',
         transport_mode: transportMode,
+        is_locked:  isLockedRow,
         sort_order: sortOrder,
         ...getPlaceFieldsForSlot(slot)
       })
