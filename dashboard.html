@@ -14320,12 +14320,14 @@ function _applyHotelDefaults(slot, key) {
     applyTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
   }
   if (typeof _applySlotTime === 'function') _applySlotTime(slot, applyTime)
-  // Default duration — check-in 30 min, check-out 15 min. Mirrors the
-  // realistic time it takes (room hand-off vs. bag drop + key return).
+  // Default duration — check-in 60 min, check-out 15 min. Reasoning:
+  // after check-in the traveler usually wants room hand-off + drop bags +
+  // rest / freshen up before heading out. Check-out is just a bag-drop +
+  // key-return, faster.
   const durHidden = slot.querySelector('.slot-duration-input')
   const durLabel  = slot.querySelector('.duration-dd-label')
   if (durHidden) {
-    const mins = isIn ? 30 : 15
+    const mins = isIn ? 60 : 15
     durHidden.value = String(mins)
     if (durLabel) {
       durLabel.textContent = (typeof formatDurationLabel === 'function')
@@ -14524,11 +14526,13 @@ function getAddressPlaceholder(typeKey){
 }
 function getNotesPlaceholder(typeKey){
   switch (typeKey) {
-    case 'meal':          return t('slot.label.notes.meal','What to order or recommended dishes')
-    case 'accommodation': return t('slot.label.notes.accommodation','Booking notes or room details')
-    case 'transport':     return t('slot.label.notes.transport','Notes (timing, transfers, tickets)')
-    case 'freetime':      return t('slot.label.notes.freetime','Suggested activities for free time')
-    default:              return t('slot.label.notes.activity','What to do there (highlights, must-see)')
+    case 'meal':           return t('slot.label.notes.meal','What to order or recommended dishes')
+    case 'accommodation':  return t('slot.label.notes.accommodation','Booking notes or room details')
+    case 'hotel_checkin':  return t('slot.label.notes.hotel_checkin','Booking notes — confirmation code, room preferences, special requests')
+    case 'hotel_checkout': return t('slot.label.notes.hotel_checkout','Booking notes — bag storage, late check-out, anything to confirm at the desk')
+    case 'transport':      return t('slot.label.notes.transport','Notes (timing, transfers, tickets)')
+    case 'freetime':       return t('slot.label.notes.freetime','Suggested activities for free time')
+    default:               return t('slot.label.notes.activity','What to do there (highlights, must-see)')
   }
 }
 // Updates the per-type field placeholders on an existing slot. Used when the
