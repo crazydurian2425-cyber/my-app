@@ -17711,8 +17711,25 @@ function computeDaySummary(dayContainer) {
   // mode to Uber and seeing "~€26" actually pushes €26 into this total).
   // Falls back to the haversine heuristic only when the grid isn't filled.
   let walkingKm = 0, transportSpend = 0
+  // Sum walk sub-steps from a transit route — Routes API breaks a metro
+  // ride into Walk → Transit → Walk segments. Each `walk` step carries
+  // its own distanceM, which counts as real walking even when the
+  // transport mode itself is 'transit'.
+  const _walkKmFromSteps = (steps) => {
+    if (!Array.isArray(steps)) return 0
+    return steps.reduce((sum, st) => {
+      if (st?.kind !== 'walk') return sum
+      const m = Number(st.distanceM)
+      return Number.isFinite(m) ? sum + m / 1000 : sum
+    }, 0)
+  }
   transports.forEach(s => {
     const mode = s.dataset.transportMode || ''
+    // Walk sub-steps from transit — adds to walkingKm regardless of how
+    // we resolve the transport's own distance/cost below.
+    if (mode !== 'walk' && s._routeData?.steps) {
+      walkingKm += _walkKmFromSteps(s._routeData.steps)
+    }
     // 1. Prefer the live grid (Routes API or heuristic-rendered values).
     const cells = s.querySelectorAll('.transport-grid .tg-value')
     const distTxt = cells[0]?.textContent || ''
