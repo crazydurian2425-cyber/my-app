@@ -14994,12 +14994,13 @@ function _refreshHotelTimeWarning(slot) {
     }
   } else if (key === 'hotel_checkout') {
     const co = window._currentHotelCheckOutTime || '11:00'
-    // Allow a 15 min grace — planner's default is co - 15, so we don't want
-    // to nag at the default value. Only warn when the slot's START is at
-    // or after the official deadline.
-    if (t >= toMin(co)) {
+    // 11:00 AM check-outs are still on time. Only warn when the slot
+    // is strictly AFTER the hotel's deadline (e.g. 11:15+ when the
+    // deadline is 11:00). 15-min picker grid means the next stop
+    // past 11:00 is 11:15.
+    if (t > toMin(co)) {
       level = 'red'
-      msg = `Hotel check-out is at ${fmt(co)}. Setting it later may incur late fees or be impossible.`
+      msg = `Past the hotel's ${fmt(co)} check-out — late fees may apply. Confirm with reception before scheduling here.`
       // Suggest 15 min before deadline, snapped to the 15-min picker grid.
       const mins = Math.max(0, Math.round((toMin(co) - 15) / 15) * 15)
       suggested = `${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`
