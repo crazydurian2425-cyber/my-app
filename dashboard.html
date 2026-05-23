@@ -17323,21 +17323,26 @@ function _sortSlotsInPlace(container) {
 
 // ── Maps JavaScript API loader (lazy, once per page) ──
 // Loaded on first toggleTransportMap call so the page doesn't pay the
-// Maps JS cost up-front. With `loading=async` the script's onload event
-// fires when the bootstrap script finishes - but the actual library
-// modules (geometry / maps / marker) still need to be imported via
-// google.maps.importLibrary() before they're usable.
+// Maps JS cost up-front. `libraries=geometry` gives us encoding.decodePath
+// which turns Routes API's encodedPolyline into lat/lng pairs.
 //
-// Previous version resolved on script.onload then immediately checked
-// `google.maps.geometry.encoding`, which was usually still undefined
-// on the first call - triggered the iframe fallback. By the second
-// click the libraries had finished loading in the background, so the
-// map rendered correctly. Hence the "first time fallback, second time
-// works" bug the user reported.
+// We deliberately DON'T use `loading=async` here. Under async loading
+// the script's onload fires when the bootstrap finishes downloading,
+// but the geometry / maps / marker library MODULES haven't been
+// imported yet - `google.maps.geometry.encoding` is undefined. The
+// user has to use `google.maps.importLibrary('geometry')` and read the
+// returned object; the global isn't reliably populated. That created
+// the "first click shows fallback iframe, second click works" bug
+// because the libraries were still being fetched in the background
+// when the first call ran.
 //
-// Fix: explicitly await importLibrary for each library we use before
-// resolving. Resolution now means "the geometry/maps/marker modules
-// are usable RIGHT NOW".
+// The sync loader (no loading=async) bundles every library named in
+// the `libraries=` param into the initial script payload, so by the
+// time onload fires, `google.maps.geometry.encoding` and friends are
+// usable RIGHT NOW. Slightly larger initial payload, but it only
+// happens once on first map-show click — the trade-off is worth it
+// for the simpler timing model. Google flags this as deprecated but
+// still fully supported.
 let _mapsJsPromise = null
 function loadMapsJs() {
   if (window.google?.maps?.geometry?.encoding && window.google?.maps?.Map) {
@@ -17346,27 +17351,15 @@ function loadMapsJs() {
   if (_mapsJsPromise) return _mapsJsPromise
   _mapsJsPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script')
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&libraries=geometry&v=weekly&loading=async`
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&libraries=geometry&v=weekly`
     s.async = true
     s.defer = true
-    s.onload = async () => {
-      try {
-        if (window.google?.maps?.importLibrary) {
-          await Promise.all([
-            google.maps.importLibrary('geometry'),
-            google.maps.importLibrary('maps'),
-            google.maps.importLibrary('marker'),
-          ])
-        }
-        // Final sanity check — if geometry STILL isn't there, Maps JS API
-        // is probably disabled in the Cloud Console.
-        if (!window.google?.maps?.geometry?.encoding) {
-          throw new Error('geometry library unavailable after import (Maps JavaScript API may be disabled)')
-        }
-        resolve()
-      } catch (e) {
-        reject(e)
+    s.onload = () => {
+      if (!window.google?.maps?.geometry?.encoding) {
+        reject(new Error('geometry library unavailable after script load (Maps JavaScript API may be disabled in Cloud Console)'))
+        return
       }
+      resolve()
     }
     s.onerror = () => reject(new Error('Maps JS failed to load'))
     document.head.appendChild(s)
