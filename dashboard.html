@@ -12768,11 +12768,20 @@ async function openItineraryForm(planId) {
   // needs between their last activity ending and the flight/train doors
   // (airport travel + check-in + security + boarding gate).
   // Defaults: flight 240 (4 h, intercontinental from Paris is standard),
-  // non-flight 90 (train/bus). Override via traveler meta airport_buffer_minutes.
+  // non-flight 90 (train/bus).
   // Last-day cutoff = departure_time − buffer (no extra cushion — the
   // buffer itself is already padding).
-  window._currentAirportBuffer = Number(_tmeta.airport_buffer_minutes)
-    || (_tmeta.unit_departure_method === 'flight' ? 240 : 90)
+  //
+  // Meta override (`_tmeta.airport_buffer_minutes`) can only INCREASE
+  // the buffer above the floor — never below. Legacy seed data
+  // sometimes stores `120` for flights from the old 2-hour default,
+  // and we don't want that to silently shorten a 4-hour minimum on
+  // an international departure.
+  const _bufFloor = (_tmeta.unit_departure_method === 'flight') ? 240 : 90
+  const _bufMeta  = Number(_tmeta.airport_buffer_minutes)
+  window._currentAirportBuffer = Number.isFinite(_bufMeta)
+    ? Math.max(_bufMeta, _bufFloor)
+    : _bufFloor
   // Expose budget context so the linked-chip render can compare each
   // stop's estimated cost against the traveler's daily limit + their
   // splurge tolerance, and flag the right severity (RED / AMBER / none).
