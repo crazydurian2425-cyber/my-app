@@ -20040,13 +20040,27 @@ async function _persistDraft(planId) {
   // we just don't update those columns (existing DB values are left
   // intact). The new column is personal_message_to_traveler, fed from
   // the Review page textarea.
-  const { error: planErr } = await sb.from('plans').update({
+  const _personalMessage = document.getElementById('review-personal-message')?.value?.trim() || null
+  const _baseBody = {
     itin_title: document.getElementById('itin-title')?.value?.trim() || '',
     start_date: document.getElementById('itin-start')?.value || null,
     end_date:   document.getElementById('itin-end')?.value   || null,
-    personal_message_to_traveler:
-      document.getElementById('review-personal-message')?.value?.trim() || null,
+  }
+  let { error: planErr } = await sb.from('plans').update({
+    ..._baseBody,
+    personal_message_to_traveler: _personalMessage,
   }).eq('id', planId).select('id, itin_title')
+  // Graceful degrade: if the personal_message_to_traveler column doesn't
+  // exist yet (user hasn't run docs/schema/add-personal-message.sql),
+  // retry the update WITHOUT that field so the rest of the autosave
+  // still persists. Surfaces a console warning + non-blocking toast so
+  // the admin sees the remediation step.
+  if (planErr && /personal_message_to_traveler/i.test(planErr.message || '')) {
+    console.warn('[autosave] personal_message column missing — run docs/schema/add-personal-message.sql in Supabase. Retrying without that field.')
+    if (typeof showToast === 'function') showToast('Run docs/schema/add-personal-message.sql in Supabase to enable the personal note field')
+    const retry = await sb.from('plans').update(_baseBody).eq('id', planId).select('id, itin_title')
+    planErr = retry.error
+  }
   console.log('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
   if (planErr) { console.warn('plan update failed', planErr); return false }
   // ── Data-loss guard ──
