@@ -14189,6 +14189,9 @@ const TYPE_ICONS = {
 //   • 'last-day'  — only on the plan's last day
 //   • 'hidden'    — never offered to the planner (legacy types still load
 //                   from the DB but the picker doesn't surface them)
+// 'accommodation' is fully retired from the picker. The DB CHECK
+// constraint still accepts it so legacy rows pass validation, but new
+// picks always map to hotel_checkin / hotel_checkout / activity.
 const STOP_CATEGORIES = [
   { key: 'activity',       label: 'Activity',        dayRule: 'always'    },
   { key: 'meal',           label: 'Meal',            dayRule: 'always'    },
@@ -14198,7 +14201,6 @@ const STOP_CATEGORIES = [
   { key: 'shopping',       label: 'Shopping',        dayRule: 'always'    },
   { key: 'entertainment',  label: 'Entertainment',   dayRule: 'always'    },
   { key: 'freetime',       label: 'Free time',       dayRule: 'always'    },
-  { key: 'accommodation',  label: 'Accommodation',   dayRule: 'hidden'    },
 ]
 
 // Returns the categories that should appear in the dropdown for the given
@@ -14869,12 +14871,34 @@ function applyPlaceToSlot(slot, place) {
     photo_refs:        photoRefs,
     place_types:       placeTypes,
   }
-  // Auto-detect slot type from Google's place types (meal / accommodation /
+  // Auto-detect slot type from Google's place types (meal / hotel /
   // activity). Planner can still override via the type dropdown after.
-  const detectedType = detectSlotTypeFromTypes(placeTypes)
+  // Two guards before we flip:
+  //   1. If the slot is ALREADY hotel_checkin / hotel_checkout (planner
+  //      explicitly picked the category and is now picking the actual
+  //      hotel via autocomplete), don't override. Picking Pullman from
+  //      a hotel_checkin slot should keep it as hotel_checkin.
+  //   2. Map hotel place_types onto hotel_checkin / hotel_checkout /
+  //      activity depending on the slot's day position — never onto the
+  //      deprecated 'accommodation' enum. A hotel picked on a mid-trip
+  //      day stays as 'activity' (a visit, not a stay).
   const currentTypeInput = slot.querySelector('.slot-type-select')
-  if (detectedType && currentTypeInput && currentTypeInput.value !== detectedType) {
-    applySlotTypeChange(slot, detectedType)
+  const currentType      = currentTypeInput?.value || null
+  const isHotelCategory  = currentType === 'hotel_checkin' || currentType === 'hotel_checkout'
+  if (!isHotelCategory) {
+    let detectedType = detectSlotTypeFromTypes(placeTypes)
+    if (detectedType === 'accommodation') {
+      const _container = slot.closest('[id^="slots-day-"]')
+      const _m         = _container ? _container.id.match(/slots-day-(\d+)/) : null
+      const _dayNum    = _m ? parseInt(_m[1], 10) : 1
+      const _last      = (typeof dayCount === 'number') ? dayCount : null
+      if (_dayNum === 1)                detectedType = 'hotel_checkin'
+      else if (_last && _dayNum === _last) detectedType = 'hotel_checkout'
+      else                              detectedType = 'activity'
+    }
+    if (detectedType && currentType !== detectedType) {
+      applySlotTypeChange(slot, detectedType)
+    }
   }
   // Auto-suggest a stay duration whenever the slot doesn't already have
   // one set. Works for ANY slot type — meals get the time-of-day-aware
