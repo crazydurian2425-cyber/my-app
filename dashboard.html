@@ -17887,6 +17887,11 @@ function refreshDayDistances(dayContainer) {
   // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
   // API races, mode swaps with cached results).
   _enforceTimeChain(dayContainer)
+  // Sweep orphan transports — when the planner deletes every venue, the
+  // arrival → first-venue taxi is left behind (its × button is replaced
+  // with the AUTO lock badge, so they can't delete it manually). Any
+  // transport with no REAL venue on either side is removed here.
+  _sweepOrphanTransports(dayContainer)
   // ── Locked day bookends ──
   // Re-render at the very end so they always live at top/bottom and don't
   // get reshuffled by _sortSlotsInPlace or helper-card injection.
@@ -17928,6 +17933,47 @@ function refreshAllDistances() {
 //   applyPlaceToSlot (or similar) → refreshDayDistances → returns
 //                                 → _gapFillTransportsForDay → returns
 // No re-entry, no flag needed.
+// Remove transport slots that have no REAL venue on either side. Real
+// venue = non-locked, non-transport slot — i.e. an actual stop the
+// planner added. Auto-locked arrival taxis become orphans when the
+// planner deletes every venue in the day, and the AUTO badge hides the
+// × button so they can't clean it up manually. Called at the tail of
+// refreshDayDistances so every mutation path (delete, type change,
+// time edit, plan-open hydrate) sweeps stale transports.
+function _sweepOrphanTransports(dayContainer) {
+  if (!dayContainer) return false
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  const isRealVenue = (el) => el && el.classList.contains('activity-slot')
+                            && !el.classList.contains('slot-type-transport')
+                            && !el.classList.contains('is-locked')
+  const transports = slots.filter(s => s.classList.contains('slot-type-transport'))
+  if (!transports.length) return false
+  // Pre-compute whether the day contains ANY real venue. If it doesn't,
+  // every transport is by definition orphan — remove them all.
+  const hasAnyVenue = slots.some(isRealVenue)
+  let removed = false
+  transports.forEach(t => {
+    if (!hasAnyVenue) { t.remove(); removed = true; return }
+    // Scan forward + backward through siblings for a real venue.
+    let venueAfter = false
+    for (let s = t.nextElementSibling; s; s = s.nextElementSibling) {
+      if (isRealVenue(s)) { venueAfter = true; break }
+    }
+    let venueBefore = false
+    for (let s = t.previousElementSibling; s; s = s.previousElementSibling) {
+      if (isRealVenue(s)) { venueBefore = true; break }
+    }
+    // Orphan when NEITHER side has a real venue. A transport flanked by
+    // an arrival/morning anchor + a real venue (or vice versa) stays.
+    if (!venueAfter && !venueBefore) {
+      console.log('[orphan-sweep] removing', t.id, '— no real venue on either side')
+      t.remove()
+      removed = true
+    }
+  })
+  return removed
+}
+
 function _gapFillTransportsForDay(dayContainer) {
   console.log('[gap-fill] ENTERED for', dayContainer?.id, '· children:', dayContainer?.children?.length)
   if (!dayContainer) return
