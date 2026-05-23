@@ -12369,7 +12369,19 @@ async function renderTravelerBrief(plan, t, notes) {
   const interestsHtml = renderInterestPills(meta.interests)
   const intensityTxt = meta.intensity ? titleCaseEnum(meta.intensity)
                      : (meta.pace ? titleCaseEnum(meta.pace) + ' walking' : '')
-  const dailyTimingTxt = meta.daily_timing ? titleCaseEnum(meta.daily_timing) : ''
+  // Show the daily_timing enum + the explicit wake time it maps to so the
+  // planner sees exactly when every Day 2+ morning anchor will start.
+  // Same _wakeTimeForTiming mapping the day-form uses: early → 7:00 am,
+  // standard → 8:30 am, late → 9:30 am.
+  const dailyTimingTxt = (() => {
+    if (!meta.daily_timing) return ''
+    const label = titleCaseEnum(meta.daily_timing)
+    const wake = (typeof _wakeTimeForTiming === 'function')
+      ? _wakeTimeForTiming(String(meta.daily_timing).toLowerCase())
+      : null
+    const wakeDisplay = wake ? (typeof formatTimeDisplay === 'function' ? formatTimeDisplay(wake) : wake) : ''
+    return wakeDisplay ? `${label} · ${wakeDisplay}` : label
+  })()
   const mustAvoid = meta.must_avoid ? meta.must_avoid.split(/\s*,\s*/).join(' · ') : ''
   // Interests always renders. Pills row stays on top spanning 2 cols even
   // when empty, so the layout doesn't reflow plan-to-plan.
