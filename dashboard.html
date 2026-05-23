@@ -13829,7 +13829,7 @@ function getDayGuideline(dayNum, totalDays) {
 //   • Middle days → no constraint
 //   • Single-day trip → both ends apply (rare for batch-01 since min is 2D1N)
 function dayTimeWindow(dayNum, totalDays) {
-  const out = { minTime: null, maxTime: null, reason: '', defaultFirst: null }
+  const out = { minTime: null, maxTime: null, reason: '', defaultFirst: null, dayStartsAt: null }
   const arr = window._currentArrivalTime || null
   const dep = window._currentDepartureTime || null
   const buf = Number(window._currentAirportBuffer) || 0
@@ -13852,9 +13852,22 @@ function dayTimeWindow(dayNum, totalDays) {
     if (total > 23 * 60 + 45) total = 23 * 60 + 45
     return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
   }
+  // Raw arrival+10 (no grid snap) — represents the moment the traveler
+  // finishes disembarking and the auto-inserted taxi/transit departs.
+  // Used in the day banner ("day starts at 14:10") so the message
+  // matches the locked arrival → hotel transport's depart time.
+  const addMin = (hhmm, mins) => {
+    if (!hhmm) return null
+    const [h, m] = hhmm.split(':').map(Number)
+    let total = h * 60 + m + mins
+    if (total < 0) total = 0
+    if (total > 23 * 60 + 59) total = 23 * 60 + 59
+    return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+  }
   if (dayNum === 1 && totalDays >= 1 && arr) {
     out.minTime = snap30(arr)
     out.defaultFirst = bump(arr, 30)
+    out.dayStartsAt = addMin(arr, 10)
     out.reason = `Traveler arrives at ${arr} — earliest stop is ${out.defaultFirst}`
   }
   if (dayNum === totalDays && totalDays >= 1 && dep) {
@@ -13889,7 +13902,11 @@ function buildDayTimeBanner(dayNum, totalDays) {
   if (dayNum === 1 && w.minTime) {
     const fromBit = arrFrom ? ` from <strong>${escapeHtml(arrFrom)}</strong>${arrMethod ? ' by ' + arrMethod : ''}` : ''
     const locBit  = arrLoc ? ` at <strong>${escapeHtml(arrLoc)}</strong>` : ''
-    lines.push(`Traveler arrives <strong>${arr}</strong>${locBit}${fromBit} — day starts at <strong>${w.defaultFirst}</strong>`)
+    // "day starts at" = arrival + 10 min disembark buffer = same as the
+    // auto-seeded arrival-taxi's depart time. Falls back to defaultFirst
+    // for older browsers / unexpected states where dayStartsAt wasn't set.
+    const _startsAt = w.dayStartsAt || w.defaultFirst
+    lines.push(`Traveler arrives <strong>${arr}</strong>${locBit}${fromBit} — day starts at <strong>${_startsAt}</strong>`)
   }
   if (dayNum === totalDays && w.maxTime) {
     const toBit = depTo ? ` → ${escapeHtml(depTo)}${depMethod ? ' by ' + depMethod : ''}` : ''
