@@ -16854,6 +16854,21 @@ function applyRouteDataToSlot(slot, data) {
   // Stash the route data (incl. polyline) on the slot so toggleTransportMap
   // can render OUR own Maps JS map using the SAME route the grid displays.
   slot._routeData = data
+  // Race-condition upgrade: if the planner already clicked "Show route map"
+  // BEFORE the Routes API resolved, the map host is currently stuck on
+  // the iframe fallback with the "Loading custom map…" note. Now that we
+  // finally have the polyline, blow the fallback away and render the real
+  // map. Without this the iframe sticks for the lifetime of the page even
+  // though the polyline is sitting right here on the slot.
+  const mapHost = slot.querySelector('.transport-map-host')
+  if (mapHost && !mapHost.hidden && data.polyline) {
+    const hasIframe = !!mapHost.querySelector('iframe')
+    const hasRealMap = !!mapHost.querySelector('.gm-style')
+    if (hasIframe && !hasRealMap) {
+      mapHost.innerHTML = ''
+      _renderRouteMapInto(mapHost, slot)
+    }
+  }
   const cells = host.querySelectorAll('.transport-grid .tg-value')
   if (cells[0]) { cells[0].textContent = `${data.distanceKm.toFixed(1)} km`; cells[0].classList.remove('tg-blank') }
   if (cells[1]) { cells[1].textContent = `${data.durationMin} min`;          cells[1].classList.remove('tg-blank') }
