@@ -18272,7 +18272,7 @@ function _computeActualDayEnd(dayContainer) {
 }
 
 // Compare actual vs expected end-of-day. Returns:
-//   { state: 'on_profile' | 'late' | 'early' | 'neutral',
+//   { state: 'on_profile' | 'late' | 'early',
 //     expected, actual, expectedStr, actualStr,
 //     gapMin (positive when actual is later than expected) }
 function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
@@ -18282,15 +18282,15 @@ function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
   if (actual == null) return { state: null, expected, actual: null, expectedStr, actualStr: null, gapMin: null }
   const gap = actual - expected   // +ve = late, -ve = early
   // Thresholds per user spec:
-  //   ±15 min  → on track (acceptable, no warning)
-  //   >15 min early → too early (planner left buffer / skipped stops)
-  //   >60 min late  → too late (overshooting profile by more than 1 h)
-  //   in-between late (15-60 min) → neutral, no badge — within normal
-  //   itinerary slack so we don't nag planners on small overruns.
-  let state = 'neutral'
-  if (Math.abs(gap) <= 15)        state = 'on_profile'
-  else if (gap < -15)             state = 'early'
-  else if (gap > 60)              state = 'late'
+  //   gap in [-30, +60]  → on track ✓ (acceptable band — show status)
+  //   gap < -30          → too early (planner skipped stops / left buffer)
+  //   gap > +60          → too late  (overshooting profile by > 1 h)
+  // Asymmetric on purpose: a packed itinerary that runs an hour long is
+  // still fine; cutting a day 30+ min short means something's missing.
+  // No neutral state — every comparison gets a status badge.
+  let state = 'on_profile'
+  if (gap < -30)      state = 'early'
+  else if (gap > 60)  state = 'late'
   return { state, expected, actual, expectedStr, actualStr: formatTimeDisplay(minsToHHMM(actual)), gapMin: gap }
 }
 
