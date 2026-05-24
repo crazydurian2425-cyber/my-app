@@ -16232,14 +16232,26 @@ function checkTimeAgainstHours(slot, oh, plannedDate) {
   const dayName = DAY_NAMES[jsDay]
   const firstOpen  = intervals[0].open
   const lastClose  = intervals[intervals.length - 1].close
-  // Friendly label for the first open interval — what we'd suggest fixing to.
-  const openHoursLabel = (dayLine.match(/(\d{1,2}:\d{2}\s*[AP]M)/i) || [])[1] || ''
+  // Friendly 12-hour label from minutes — derived from `firstOpen` itself,
+  // NOT regex-parsed from the dayLine. Google's hours strings omit AM/PM
+  // on the open side when the period matches the close (e.g.
+  // "12:00 – 2:00 PM"), so a regex looking for the first /\d:\d AM|PM/
+  // match would return "2:00 PM" (the lunch close) and the warning would
+  // read "before this place opens (2:00 PM Saturday)" — the lunch CLOSE
+  // time pretending to be the open time. Format from minutes instead.
+  const _fmt12h = (mins) => {
+    const h = Math.floor(mins / 60), m = mins % 60
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const h12 = (h % 12 === 0) ? 12 : (h % 12)
+    return `${h12}:${String(m).padStart(2,'0')} ${ampm}`
+  }
+  const openHoursLabel = _fmt12h(firstOpen)
 
   if (slotMin < firstOpen) {
     return { kind: 'before_open', dayName, slotTime: slotTimeStr, suggestedTime: minsToHHMM(firstOpen), openHoursLabel }
   }
   if (slotMin >= lastClose) {
-    return { kind: 'after_close', dayName, slotTime: slotTimeStr, suggestedTime: null, openHoursLabel: (dayLine.match(/[–—-]\s*(\d{1,2}:\d{2}\s*[AP]M)\s*$/) || [])[1] || '' }
+    return { kind: 'after_close', dayName, slotTime: slotTimeStr, suggestedTime: null, openHoursLabel: _fmt12h(lastClose) }
   }
   // Split-shift gap — find the next open interval after slotMin.
   for (let i = 0; i < intervals.length - 1; i++) {
