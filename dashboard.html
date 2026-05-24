@@ -18163,7 +18163,26 @@ function _wakeTimeForTiming(timing) {
 //   5. Day-type adjustment:
 //        day 1 (arrival)                          → -60 (jet lag)
 //        last day before early-AM flight (<09:00) → -60
+//
+// SPECIAL CASE — departure day: the traveler's day ends at the airport/
+// station cutoff (`departure_time − airport_buffer`), not the profile
+// baseline. Sofia's 5 PM flight with a 4 h buffer means the last
+// activity must wrap by 1 PM regardless of what her daily_timing
+// profile would otherwise suggest. Skip the clamp too — cutoffs can
+// legitimately fall outside the 17:00–23:45 display range (e.g. an
+// early-AM flight cutoff well before noon).
 function _computeExpectedDayEnd(dayNum, totalDays) {
+  if (totalDays && dayNum === totalDays && window._currentDepartureTime) {
+    // Accept both "17:00" (meta string) and "17:00:00" (Postgres TIME).
+    const parts = String(window._currentDepartureTime).split(':')
+    const h = parseInt(parts[0], 10), mm = parseInt(parts[1], 10)
+    if (Number.isFinite(h) && Number.isFinite(mm)) {
+      const depMin = h * 60 + mm
+      const buf = Number(window._currentAirportBuffer) || 0
+      const cutoff = depMin - buf
+      if (cutoff >= 0) return cutoff
+    }
+  }
   const timing = window._currentDailyTiming || 'standard'
   let base = (timing === 'early')  ? 21 * 60
            : (timing === 'late')   ? 23 * 60 + 30
