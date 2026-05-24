@@ -12790,17 +12790,18 @@ async function openItineraryForm(planId) {
   // Airport buffer in minutes — represents the WHOLE time the traveler
   // needs between their last activity ending and the flight/train doors
   // (airport travel + check-in + security + boarding gate).
-  // Defaults: flight 240 (4 h, intercontinental from Paris is standard),
-  // non-flight 90 (train/bus).
+  // Defaults: flight 180 (3 h, the realistic intercontinental cushion
+  // from a Paris hotel to CDG including last-stop transit), non-flight
+  // 90 (train/bus).
   // Last-day cutoff = departure_time − buffer (no extra cushion — the
   // buffer itself is already padding).
   //
   // Meta override (`_tmeta.airport_buffer_minutes`) can only INCREASE
   // the buffer above the floor — never below. Legacy seed data
   // sometimes stores `120` for flights from the old 2-hour default,
-  // and we don't want that to silently shorten a 4-hour minimum on
+  // and we don't want that to silently shorten a 3-hour minimum on
   // an international departure.
-  const _bufFloor = (_tmeta.unit_departure_method === 'flight') ? 240 : 90
+  const _bufFloor = (_tmeta.unit_departure_method === 'flight') ? 180 : 90
   const _bufMeta  = Number(_tmeta.airport_buffer_minutes)
   window._currentAirportBuffer = Number.isFinite(_bufMeta)
     ? Math.max(_bufMeta, _bufFloor)
@@ -18282,15 +18283,15 @@ function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
   if (actual == null) return { state: null, expected, actual: null, expectedStr, actualStr: null, gapMin: null }
   const gap = actual - expected   // +ve = late, -ve = early
   // Thresholds per user spec:
-  //   gap in [-30, +60]  → on track ✓ (acceptable band — show status)
-  //   gap < -30          → too early (planner skipped stops / left buffer)
-  //   gap > +60          → too late  (overshooting profile by > 1 h)
-  // Asymmetric on purpose: a packed itinerary that runs an hour long is
-  // still fine; cutting a day 30+ min short means something's missing.
-  // No neutral state — every comparison gets a status badge.
+  //   |gap| <= 15  → on track ✓ (acceptable band — show status)
+  //   gap < -15    → too early (planner skipped stops / left buffer)
+  //   gap > +15    → too late  (overshooting profile)
+  // Symmetric ±15 min so the planner gets clear feedback when the
+  // day misses the suggested cutoff in either direction. No neutral
+  // state — every comparison gets a status badge.
   let state = 'on_profile'
-  if (gap < -30)      state = 'early'
-  else if (gap > 60)  state = 'late'
+  if (gap < -15)      state = 'early'
+  else if (gap > 15)  state = 'late'
   return { state, expected, actual, expectedStr, actualStr: formatTimeDisplay(minsToHHMM(actual)), gapMin: gap }
 }
 
@@ -18429,17 +18430,14 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       footer = `${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`
     } else if (cmp.state === 'late') {
       titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
+      const lateMin = Math.max(0, cmp.gapMin)
       badge  = { state: 'late', label: '⚠ too late' }
-      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. More than 1 hour late — confirm ${firstName} wants a late night.`
+      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. Running ${lateMin} min late — confirm ${firstName} wants a later night.`
     } else if (cmp.state === 'early') {
       titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
-      const roomHours = Math.max(0, Math.round((-cmp.gapMin) / 60 * 10) / 10)
+      const earlyMin = Math.max(0, -cmp.gapMin)
       badge  = { state: 'early', label: '⚠ too early' }
-      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. You have ~${roomHours} h of room — add another stop?`
-    } else if (cmp.actualStr) {
-      // Neutral zone (15-60 min late) — within normal slack, show the
-      // time but skip the badge / footer so the planner isn't nagged.
-      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
+      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. Day ends ${earlyMin} min early — add another stop?`
     }
     bottomAnchor = _buildLockedAnchor({
       type: 'end_of_day',
