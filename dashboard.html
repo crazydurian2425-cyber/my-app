@@ -18853,9 +18853,18 @@ function refreshDayDistances(dayContainer) {
   // guarantees the warning surfaces whenever the time + check-out
   // window are mismatched, regardless of which path triggered the
   // refresh.
+  //
+  // Wrapped in setTimeout(0) so it runs AFTER the current sync call
+  // stack unwinds — any final DOM mutation from refreshDaySummary or
+  // the caller's downstream code (e.g. selectDurationDD's autoSave +
+  // re-render) has already settled before we read the slot's
+  // .slot-time-input value. Without this, a duration-change cascade
+  // can write the new time AFTER our sync sweep reads the old one.
   if (typeof _refreshHotelTimeWarning === 'function') {
-    dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin, :scope > .activity-slot.slot-type-hotel_checkout')
-      .forEach(_refreshHotelTimeWarning)
+    setTimeout(() => {
+      dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin, :scope > .activity-slot.slot-type-hotel_checkout')
+        .forEach(_refreshHotelTimeWarning)
+    }, 0)
   }
   // Recompute the day summary card (stops / active hours / walking /
   // spend + warnings) on every refresh so it stays in sync with edits.
