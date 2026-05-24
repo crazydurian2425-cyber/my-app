@@ -19648,11 +19648,25 @@ function addSlot(dayNum, seed = null) {
   // showing a time that's grayed out (confusing).
   if (_winForSlot.minTime && defTime < _winForSlot.minTime) defTime = _winForSlot.minTime
   if (_winForSlot.maxTime && defTime >= _winForSlot.maxTime) {
-    // Step back one 30-min slot from the cap so we land on an enabled option.
+    // Step back one 30-min slot from the cap so we land on an enabled option…
+    // BUT never below the latest existing slot. The planner's mental model
+    // is "+ Add activity goes at the bottom of the day"; if we step back
+    // past existing slots, _sortSlotsInPlace later sorts the new slot UP
+    // into the middle, breaking that expectation (the 8:45-am-before-9:00
+    // bug). When the cap is too tight to step back cleanly, keep the
+    // bumpAnd value — the new slot sits at the bottom past the cap and the
+    // planner can see + adjust the time conflict directly.
     const [h, m] = _winForSlot.maxTime.split(':').map(Number)
     let total = h * 60 + m - 30
     if (total < 0) total = 0
-    defTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+    const stepped = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+    if (!latestExisting || stepped > latestExisting) {
+      defTime = stepped
+    }
+    // else: keep defTime at bumpAnd(latestExisting) so the new slot stays
+    //       at the bottom of the day. It'll render past the cap (greyed in
+    //       the picker), which is the correct visual signal that the day
+    //       is full.
   }
 
   const slot = document.createElement('div');
