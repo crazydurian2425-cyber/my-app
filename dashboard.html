@@ -13478,7 +13478,9 @@ function fillItineraryItems(items) {
       // / ...). Without this, refreshTransportSlot's default kicks in and
       // every transport reverts to 'taxi' on close + reopen.
       if (iconKey === 'transport' && it.transport_mode) {
-        slot.dataset.transportMode = it.transport_mode
+        // Legacy 'train' mode collapsed into 'transit' ("Public transport")
+        // — Routes API maps both to TRANSIT anyway, no behaviour change.
+        slot.dataset.transportMode = (it.transport_mode === 'train') ? 'transit' : it.transport_mode
       }
       // Restore the locked flag — applies to auto-seeded Day-1 Hotel
       // check-in (and any other row marked is_locked=true in the DB).
@@ -16356,7 +16358,7 @@ function pickTransportModes(km) {
   })
   if (km < 3)  return [ opt('walk', true),  opt('taxi') ]
   if (km < 10) return [ opt('taxi', true),  opt('transit') ]
-  if (km < 80) return [ opt('train', true), opt('taxi') ]
+  if (km < 80) return [ opt('transit', true), opt('taxi') ]
   return        [ opt('hsr', true),  opt('flight') ]
 }
 
@@ -17111,8 +17113,8 @@ function _transportEstimates(mode, km) {
 // display label is "Uber" — more recognisable than generic "Taxi" for
 // French urban rides where Uber is the dominant ride-hail.
 const _MODE_LABELS = {
-  walk: 'Walk', taxi: 'Uber', transit: 'Metro / Bus',
-  train: 'Train', car: 'Rental car', hsr: 'Bullet train', flight: 'Flight'
+  walk: 'Walk', taxi: 'Uber', transit: 'Public transport',
+  train: 'Public transport', car: 'Rental car', hsr: 'Bullet train', flight: 'Flight'
 }
 const _MODE_ICONS = {
   walk: '🚶', taxi: '🚕', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
@@ -17122,13 +17124,13 @@ const _MODE_ICONS = {
 // mode is always included even if it falls outside the bucket, so the
 // planner never loses a deliberate choice.
 function _sensibleModes(km) {
-  if (km == null)    return ['walk','taxi','transit','train','hsr','flight']
+  if (km == null)    return ['walk','taxi','transit','hsr','flight']
   if (km < 1)        return ['walk','taxi']
   if (km < 3)        return ['walk','taxi','transit']
   if (km < 10)       return ['taxi','transit']
-  if (km < 30)       return ['taxi','transit','train']
-  if (km < 80)       return ['train','taxi']
-  if (km < 500)      return ['train','hsr']
+  if (km < 30)       return ['taxi','transit']
+  if (km < 80)       return ['transit','taxi']
+  if (km < 500)      return ['transit','hsr']
   if (km < 1500)     return ['hsr','flight']
   return ['flight']
 }
