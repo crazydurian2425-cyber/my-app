@@ -17488,11 +17488,20 @@ function refreshTransportSlot(slot) {
   // then patch the grid + time range in place. Heuristic numbers show
   // until this resolves (~200 ms typically). Cached per place_id+mode
   // so a re-render is instant.
-  // Routes API origin: prefer prev's linked place, else the auto-resolved
-  // station place_id on the transport slot's dataset.
+  // Routes API origin + destination: prefer the slot's linked _placeData,
+  // else the auto-resolved station place_id on the transport's dataset.
+  // The departure-side fallback (slot.dataset.toPlaceId) is what makes the
+  // end-trip transport work — the locked departure anchor doesn't carry
+  // _placeData (only morning + end_of_day anchors do), so without this
+  // fallback the Routes API call was being skipped and we never got a
+  // polyline → "Show route map" was stuck on the iframe fallback forever.
   const fromPlaceId = prev?._placeData?.google_place_id || slot.dataset.fromPlaceId || null
-  if (!tooFar && fromPlaceId && next?._placeData?.google_place_id) {
+  const toPlaceId   = next?._placeData?.google_place_id || slot.dataset.toPlaceId   || null
+  if (!tooFar && fromPlaceId && toPlaceId) {
     const originSlot = prev || { _placeData: { google_place_id: fromPlaceId } }
+    const destSlot   = (next?._placeData?.google_place_id)
+      ? next
+      : { _placeData: { google_place_id: toPlaceId } }
     // Compute the real trip-date + slot-time so the Routes API picks the
     // right transit schedule + traffic pattern. Trip start date lives on
     // window._currentTripStartDate (loaded from plans.start_date); the
@@ -17503,7 +17512,7 @@ function refreshTransportSlot(slot) {
       const _dayNum = _m ? parseInt(_m[1], 10) : 1
       _departISO = _localDepartISO(window._currentTripStartDate, _dayNum, departHHMM, 'Europe/Paris')
     }
-    fetchRouteData(originSlot, next, mode, _departISO).then(result => {
+    fetchRouteData(originSlot, destSlot, mode, _departISO).then(result => {
       if (!result) return
       const live = document.getElementById(slot.id)
       if (live) applyRouteDataToSlot(live, result)
