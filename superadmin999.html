@@ -1882,21 +1882,22 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <div class="form-group"><label class="form-label">Arrival date</label><input class="form-input" type="date" id="et-arrival"></div>
         <div class="form-group"><label class="form-label">Arrival time</label><input class="form-input" type="time" id="et-arrival-time"></div>
       </div>
+      <!-- Daily budget, Hotel budget, Departure time, Interests REMOVED here —
+           they're now set in the meta sections below (Budget profile, Unit
+           transport, Interests & pace) which carry the per-pax + per-night
+           units the dashboard actually reads. Pace + Must avoid kept: pace
+           is a Relaxed/Moderate enum (distinct from meta intensity which is
+           a km/day band), must_avoid has no meta equivalent. -->
       <div class="form-row">
         <div class="form-group"><label class="form-label">Duration</label>
           <select class="form-select" id="et-duration"><option>5D4N</option><option>6D5N</option><option>7D6N</option><option>8D7N</option><option>9D8N</option><option>10D9N</option><option>11D10N</option><option>12D11N</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Departure time</label><input class="form-input" type="time" id="et-departure-time"></div>
-      </div>
-      <div class="form-row">
         <div class="form-group"><label class="form-label">Group size</label><input class="form-input" type="number" id="et-group" min="1"></div>
-        <div class="form-group"><label class="form-label">Daily budget per pax</label><input class="form-input" type="number" id="et-budget" min="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Hotel budget — per night per pax</label><input class="form-input" type="number" id="et-hotel-budget" min="0"></div>
         <div class="form-group"><label class="form-label">Traveler total — what they pay JJ</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
+        <div class="form-group"></div>
       </div>
-      <div class="form-group"><label class="form-label">Interests</label><input class="form-input" id="et-interests"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Pace</label>
           <select class="form-select" id="et-pace"><option>Relaxed</option><option>Moderate</option><option>Fast-paced</option><option>Structured</option></select>
@@ -6414,11 +6415,11 @@ function editTraveler(id) {
   const nameEl = document.getElementById('edit-traveler-name')
   if (nameEl) nameEl.textContent = t.name
   const s = (eid, val) => { const e = document.getElementById(eid); if(e) e.value = val||'' }
-  s('et-name', t.name); s('et-phone', t.phone); s('et-arrival', t.arrival_date); s('et-arrival-time', t.arrival_time || ''); s('et-departure-time', t.departure_time || '')
-  s('et-group', t.group_size||1); s('et-budget', t.budget_per_day); s('et-interests', t.interests)
+  s('et-name', t.name); s('et-phone', t.phone); s('et-arrival', t.arrival_date); s('et-arrival-time', t.arrival_time || '')
+  s('et-group', t.group_size||1)
   s('et-avoid', t.must_avoid)
   s('et-notes', t.special_notes); s('et-payout', t.planner_payout)
-  s('et-hotel-budget', t.hotel_budget); s('et-traveler-total', t.traveler_total)
+  s('et-traveler-total', t.traveler_total)
   loadEtDestFromString(t.destination || 'Paris')
   s('et-type', t.traveler_type||'solo')
   s('et-duration', t.duration||'5D4N'); s('et-pace', t.pace||'Relaxed')
@@ -6501,18 +6502,21 @@ async function saveTravelerEdit() {
   const id = document.getElementById('edit-traveler-id').value
   if (!id) return
   const g = eid => document.getElementById(eid)?.value
+  // budget_per_day, hotel_budget, interests, departure_time intentionally
+  // NOT in this update. The corresponding inputs were removed from the
+  // form — those values now live in meta.daily_spend_per_pax_eur,
+  // meta.hotel_budget_per_night_pax_eur, meta.interests (array),
+  // meta.unit_departure_time. Legacy columns stay untouched so any data
+  // already saved there isn't wiped.
   const updates = {
     name: g('et-name')?.trim(), phone: g('et-phone')?.trim(),
     destination: g('et-destination'), traveler_type: g('et-type'),
-    arrival_date: g('et-arrival'), arrival_time: g('et-arrival-time') || null, departure_time: g('et-departure-time') || null, duration: g('et-duration'),
+    arrival_date: g('et-arrival'), arrival_time: g('et-arrival-time') || null, duration: g('et-duration'),
     group_size: parseInt(g('et-group'))||1,
-    budget_per_day: parseFloat(g('et-budget'))||null,
-    interests: g('et-interests')?.trim(),
     pace: (g('et-pace') || 'moderate').toLowerCase(),
     must_avoid: g('et-avoid')?.trim(),
     special_notes: g('et-notes')?.trim(),
     planner_payout: parseFloat(g('et-payout'))||null,
-    hotel_budget: parseFloat(g('et-hotel-budget'))||null,
     traveler_total: parseFloat(g('et-traveler-total'))||null,
     requires_bond: document.getElementById('et-bond')?.checked || false,
     bond_amount: document.getElementById('et-bond')?.checked ? (parseFloat(g('et-bond-amount')) || null) : null,
