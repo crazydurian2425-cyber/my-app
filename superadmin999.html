@@ -1873,30 +1873,27 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <input type="hidden" id="et-destination">
       </div>
       <div class="form-row">
+        <!-- Daily budget, Hotel budget, Departure time, Interests previously
+             lived in this top section as legacy columns; they now live
+             in the meta sections below (Budget profile, Unit transport,
+             Interests & pace) which carry the per-pax + per-night units
+             the dashboard actually reads. Pace + Must avoid kept here:
+             pace is a Relaxed/Moderate enum (distinct from meta intensity
+             which is a km/day band), must_avoid has no meta equivalent. -->
         <div class="form-group"><label class="form-label">Type</label>
           <select class="form-select" id="et-type"><option value="solo">Solo</option><option value="couple">Couple</option><option value="honeymoon">Honeymoon</option><option value="family">Family</option><option value="group">Group</option><option value="corporate">Corporate</option></select>
         </div>
-        <div class="form-group"></div>
+        <div class="form-group"><label class="form-label">Traveler total — what they pay JJ</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Arrival date</label><input class="form-input" type="date" id="et-arrival"></div>
         <div class="form-group"><label class="form-label">Arrival time</label><input class="form-input" type="time" id="et-arrival-time"></div>
       </div>
-      <!-- Daily budget, Hotel budget, Departure time, Interests REMOVED here —
-           they're now set in the meta sections below (Budget profile, Unit
-           transport, Interests & pace) which carry the per-pax + per-night
-           units the dashboard actually reads. Pace + Must avoid kept: pace
-           is a Relaxed/Moderate enum (distinct from meta intensity which is
-           a km/day band), must_avoid has no meta equivalent. -->
       <div class="form-row">
         <div class="form-group"><label class="form-label">Duration</label>
           <select class="form-select" id="et-duration"><option>5D4N</option><option>6D5N</option><option>7D6N</option><option>8D7N</option><option>9D8N</option><option>10D9N</option><option>11D10N</option><option>12D11N</option></select>
         </div>
         <div class="form-group"><label class="form-label">Group size</label><input class="form-input" type="number" id="et-group" min="1"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label class="form-label">Traveler total — what they pay JJ</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
-        <div class="form-group"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Pace</label>
