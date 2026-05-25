@@ -20,41 +20,46 @@
 --
 -- After this, any future doAssign INSERT that would create a duplicate
 -- will fail with 23505 unique_violation instead of silently corrupting
--- the dashboard. The admin sees a clear error and can investigate.
+-- the dashboard.
+--
+-- Implementation: uses inline CTEs (no TEMP TABLE) so Supabase's
+-- "creates a table without RLS" linter warning never fires.
 -- ============================================================================
 
--- ── 1a. Identify which plan rows are duplicates (everything past the
---        most-recent row in each (set_id, planner_id, traveler_id) group) ──
-CREATE TEMP TABLE _dupe_plan_ids AS
-SELECT id
-FROM (
-  SELECT id,
-         ROW_NUMBER() OVER (
-           PARTITION BY set_id, planner_id, traveler_id
-           ORDER BY created_at DESC NULLS LAST, id DESC
-         ) AS rn
-  FROM   public.plans
-  WHERE  planner_id IS NOT NULL
-) ranked
-WHERE  rn > 1;
-
-
--- ── 1b. Drop itinerary_items rows for the duplicates FIRST ──
--- The live FK is RESTRICT (not CASCADE as initial.sql claims), so any
--- items attached to a duplicate plan would block its deletion. Wipe
--- them explicitly. item_images cascade off itinerary_items normally
--- so they go with this delete.
+-- ── 1a. Delete itinerary_items linked to duplicate plans ──
+-- The live FK is RESTRICT, not CASCADE (despite what initial.sql says),
+-- so items on duplicate plans would block their deletion. Wipe first.
+WITH dupe_plan_ids AS (
+  SELECT id FROM (
+    SELECT id, ROW_NUMBER() OVER (
+      PARTITION BY set_id, planner_id, traveler_id
+      ORDER BY created_at DESC NULLS LAST, id DESC
+    ) AS rn
+    FROM   public.plans
+    WHERE  planner_id IS NOT NULL
+  ) ranked
+  WHERE  rn > 1
+)
 DELETE FROM public.itinerary_items
-WHERE  plan_id IN (SELECT id FROM _dupe_plan_ids);
+WHERE  plan_id IN (SELECT id FROM dupe_plan_ids);
 
 
--- ── 1c. Now delete the duplicate plan rows ──
+-- ── 1b. Delete the duplicate plan rows themselves ──
+-- Re-evaluate the same CTE because the previous DELETE doesn't change
+-- which plans are duplicates — rn is computed off plans alone.
+WITH dupe_plan_ids AS (
+  SELECT id FROM (
+    SELECT id, ROW_NUMBER() OVER (
+      PARTITION BY set_id, planner_id, traveler_id
+      ORDER BY created_at DESC NULLS LAST, id DESC
+    ) AS rn
+    FROM   public.plans
+    WHERE  planner_id IS NOT NULL
+  ) ranked
+  WHERE  rn > 1
+)
 DELETE FROM public.plans
-WHERE  id IN (SELECT id FROM _dupe_plan_ids);
-
-
--- Temp table auto-drops at end of session, but explicit for clarity.
-DROP TABLE IF EXISTS _dupe_plan_ids;
+WHERE  id IN (SELECT id FROM dupe_plan_ids);
 
 
 -- ── 2. Partial unique index — block future duplicates ───────────────
