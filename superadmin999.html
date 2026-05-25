@@ -6761,17 +6761,25 @@ async function doAssign(setId, plannerId) {
     }
   }
 
-  // Insert new assignment with EXPLICIT status='active' — the dashboard's
-  // active-set query (dashboard.html line ~10412) filters by status='active',
-  // and the column default per initial.sql is 'in_progress'. Without this
-  // explicit value the new assignment lands with status='in_progress' and
-  // the planner's dashboard ignores it — they see nothing after reassign.
+  // Insert new assignment WITHOUT an explicit status. The column default
+  // depends on the live DB — could be 'in_progress' (per initial.sql) or
+  // 'active' (if the fix-set-assignment-active-status.sql migration ran).
+  // Specifying 'active' explicitly fails on databases where the constraint
+  // hasn't been updated, with a silent check-constraint violation. The
+  // dashboard's active-set query accepts BOTH 'active' and 'in_progress',
+  // so either default lands correctly.
   const { error: assignErr } = await sb.from('set_assignments').insert({
     set_id: setId, planner_id: plannerId,
-    claimed_at: new Date().toISOString(), deadline: deadlineStr,
-    status: 'active'
+    claimed_at: new Date().toISOString(), deadline: deadlineStr
   })
   if (assignErr) { showToast('Failed to create assignment: ' + assignErr.message); return false }
+  // Belt-and-braces: try to bump to 'active' so future code paths that
+  // only check status='active' still work. Silently swallow the error
+  // if the constraint rejects (DB still on the old constraint).
+  await sb.from('set_assignments')
+    .update({ status: 'active' })
+    .eq('set_id', setId).eq('planner_id', plannerId)
+    .then(({ error }) => { if (error) console.warn('[doAssign] bump to active failed (expected if constraint not updated):', error.message) })
 
   // Build isolated plan copies for this planner (safe for 100+ planners on same set)
   // 1. Check which traveler plans this planner already has

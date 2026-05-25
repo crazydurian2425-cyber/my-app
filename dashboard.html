@@ -10538,10 +10538,15 @@ async function initDashboard() {
 
   let totalEarned = 0, pendingPayout = 0, setsCompleted = 0
   const payoutOf = p => (p.planner_payout_override != null ? p.planner_payout_override : (p.travelers?.planner_payout || 0))
+  // SETS COMPLETED counts every set the planner finished — both
+  // 'completed' (admin approved, payout not yet released) AND 'paid'
+  // (admin released the funds). Previously only counted 'paid', which
+  // meant a planner with €240 batch-approved still saw "0 sets completed"
+  // until withdrawal — confusing and unfair to the planner's track record.
+  setsCompleted = paidSetIds.length + completedSetIds.length
   if (paidSetIds.length) {
     const { data: pp } = await sb.from('plans').select('planner_payout_override, travelers(planner_payout)')
       .in('set_id', paidSetIds).eq('status', 'approved').eq('planner_id', planner.id)
-    setsCompleted = paidSetIds.length
   }
   if (completedSetIds.length) {
     const { data: cp } = await sb.from('plans').select('planner_payout_override, travelers(planner_payout)')
