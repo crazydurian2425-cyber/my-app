@@ -10455,6 +10455,29 @@ async function initDashboard() {
       .eq('planner_id', planner.id)
       .order('plan_number')
 
+    // Defensive dedup: if a doAssign race ever leaves duplicate rows
+    // for the same (planner, traveler) combo, the planner would see
+    // "Plan 1 · Plan 1" twice in the dashboard. Keep the most-recent
+    // row per traveler_id (highest created_at wins) so the UI always
+    // renders one card per traveler. The DB-side unique index
+    // (plans_unique_per_planner, added in fix-duplicate-plans.sql)
+    // also enforces this — but the JS guard means the UI is correct
+    // even on databases where the constraint hasn't been applied yet.
+    if (plansData?.length) {
+      const seenByTraveler = new Map()
+      const sortedByCreated = [...plansData].sort((a, b) => {
+        const aT = new Date(a.created_at || 0).getTime()
+        const bT = new Date(b.created_at || 0).getTime()
+        return bT - aT   // newest first
+      })
+      for (const p of sortedByCreated) {
+        const key = p.traveler_id || p.id
+        if (!seenByTraveler.has(key)) seenByTraveler.set(key, p)
+      }
+      plansData = [...seenByTraveler.values()]
+        .sort((a, b) => (a.plan_number || 0) - (b.plan_number || 0))
+    }
+
     // If no plans yet — auto-create copies (handles first login after assignment).
     // GUARD: skip if auth session isn't ready, otherwise RLS hides existing
     // plans and we'd insert duplicates.
