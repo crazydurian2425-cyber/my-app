@@ -1088,10 +1088,10 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Group size (pax)</label><input class="form-input" id="nt-group-size" type="number" placeholder="e.g. 2" min="1"></div>
-            <div class="form-group"><label class="form-label">Daily budget per pax (€)</label><input class="form-input" id="nt-budget" type="number" min="0" placeholder="e.g. 10500"></div>
+            <div class="form-group"><label class="form-label">Daily budget per pax</label><input class="form-input" id="nt-budget" type="number" min="0" placeholder="e.g. 10500"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Hotel budget — per night per pax (€)</label><input class="form-input" id="nt-hotel-budget" type="number" min="0" placeholder="e.g. 11000"></div>
+            <div class="form-group"><label class="form-label">Hotel budget — per night per pax</label><input class="form-input" id="nt-hotel-budget" type="number" min="0" placeholder="e.g. 11000"></div>
             <div class="form-group"></div>
           </div>
 
@@ -1105,8 +1105,8 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
 
           <div class="s-div">Pricing & commitment</div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Price charged to traveler (€)</label><input class="form-input" type="number" id="nt-price" min="0" placeholder="e.g. 18000" oninput="calcMargin()"></div>
-            <div class="form-group"><label class="form-label">Planner payout (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· normal range €5,000–10,000</span></label><input class="form-input" type="number" id="nt-payout" min="0" placeholder="e.g. 7500" oninput="calcMargin()"></div>
+            <div class="form-group"><label class="form-label">Price charged to traveler</label><input class="form-input" type="number" id="nt-price" min="0" placeholder="e.g. 18000" oninput="calcMargin()"></div>
+            <div class="form-group"><label class="form-label">Planner payout <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· normal range €5,000–10,000</span></label><input class="form-input" type="number" id="nt-payout" min="0" placeholder="e.g. 7500" oninput="calcMargin()"></div>
           </div>
 
           <div class="toggle-row">
@@ -1114,7 +1114,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
             <label class="toggle"><input type="checkbox" id="nt-bond" onchange="toggleBondField()"><span class="toggle-slider"></span></label>
           </div>
           <div id="bond-amount-wrap" style="display:none;padding-top:14px;">
-            <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount (€)</label><input class="form-input" type="number" id="nt-bond-amount" min="0" placeholder="e.g. 6000 — forfeited if deadline missed"></div>
+            <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount</label><input class="form-input" type="number" id="nt-bond-amount" min="0" placeholder="e.g. 6000 — forfeited if deadline missed"></div>
           </div>
 
           <div style="margin-top:20px;background:var(--cream);border-radius:var(--radius-sm);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;">
@@ -1890,11 +1890,11 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Group size</label><input class="form-input" type="number" id="et-group" min="1"></div>
-        <div class="form-group"><label class="form-label">Daily budget per pax (€)</label><input class="form-input" type="number" id="et-budget" min="0"></div>
+        <div class="form-group"><label class="form-label">Daily budget per pax</label><input class="form-input" type="number" id="et-budget" min="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Hotel budget — per night per pax (€)</label><input class="form-input" type="number" id="et-hotel-budget" min="0"></div>
-        <div class="form-group"><label class="form-label">Traveler total — what they pay JJ (€)</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
+        <div class="form-group"><label class="form-label">Hotel budget — per night per pax</label><input class="form-input" type="number" id="et-hotel-budget" min="0"></div>
+        <div class="form-group"><label class="form-label">Traveler total — what they pay JJ</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
       </div>
       <div class="form-group"><label class="form-label">Interests</label><input class="form-input" id="et-interests"></div>
       <div class="form-row">
@@ -1982,8 +1982,8 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
             </div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Daily spend / pax (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-daily-spend" min="0" placeholder="mirrors Daily budget"></div>
-            <div class="form-group"><label class="form-label">Hotel / night / pax (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-hotel-night" min="0" placeholder="mirrors Hotel budget"></div>
+            <div class="form-group"><label class="form-label">Daily spend / pax <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-daily-spend" min="0" placeholder="mirrors Daily budget"></div>
+            <div class="form-group"><label class="form-label">Hotel / night / pax <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-hotel-night" min="0" placeholder="mirrors Hotel budget"></div>
           </div>
           <div class="form-group"><label class="form-label">Booking authority</label>
             <select class="form-select" id="et-meta-booking-auth">
@@ -2128,10 +2128,10 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <label class="toggle"><input type="checkbox" id="et-bond" onchange="toggleEtBondField()"><span class="toggle-slider"></span></label>
       </div>
       <div id="et-bond-amount-wrap" style="display:none;padding-top:10px;">
-        <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· override platform formula</span></label><input class="form-input" type="number" id="et-bond-amount" min="0" placeholder="e.g. 10000"></div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· override platform formula</span></label><input class="form-input" type="number" id="et-bond-amount" min="0" placeholder="e.g. 10000"></div>
       </div>
 
-      <div class="form-group"><label class="form-label">Planner payout / commission (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· auto-calculated from settings; override if needed</span></label><input class="form-input" type="number" id="et-payout" min="0"></div>
+      <div class="form-group"><label class="form-label">Planner payout / commission <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· auto-calculated from settings; override if needed</span></label><input class="form-input" type="number" id="et-payout" min="0"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-edit-traveler')">Cancel</button>
@@ -2322,7 +2322,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Release amount (€)</label>
+        <label class="form-label">Release amount</label>
         <div style="display:flex;gap:8px;align-items:center;">
           <input class="form-input" id="po-amount" type="number" step="1" min="0" placeholder="0" style="flex:1;">
           <button type="button" onclick="poSetFull()" class="btn btn-ghost btn-sm" style="flex-shrink:0;">Release full balance</button>
@@ -2360,7 +2360,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         </select>
       </div>
       <div class="form-group" style="margin-top:12px;">
-        <label class="form-label">Amount (€) <span style="color:var(--red);">*</span></label>
+        <label class="form-label">Amount <span style="color:var(--red);">*</span></label>
         <input class="form-input" id="bill-amount" type="number" step="1" min="1" placeholder="600000">
       </div>
       <div class="form-group" style="margin-top:12px;">
@@ -2408,7 +2408,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     </div>
     <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Amount (€) <span style="color:var(--red);">*</span></label>
+        <label class="form-label">Amount <span style="color:var(--red);">*</span></label>
         <input class="form-input" id="adj-amount" type="number" step="1" placeholder="e.g. 600000 to credit, -50000 to debit">
         <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Positive = credit (adds to wallet). Negative = debit (removes).</div>
       </div>
