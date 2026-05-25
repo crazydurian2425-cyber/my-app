@@ -1098,7 +1098,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div class="s-div">Preferences</div>
           <div class="form-group"><label class="form-label">Interests</label><input class="form-input" id="nt-interests" placeholder="e.g. Local bistros, châteaux, photography"></div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Pace preference</label><select class="form-select" id="nt-pace"><option>Relaxed</option><option>Moderate</option><option>Fast-paced</option><option>Structured</option></select></div>
+            <div class="form-group"><label class="form-label">Pace preference</label><select class="form-select" id="nt-pace"><option value="slow">Slow</option><option value="moderate" selected>Moderate</option><option value="active">Active</option><option value="packed">Packed</option></select></div>
             <div class="form-group"><label class="form-label">Must avoid</label><input class="form-input" id="nt-avoid" placeholder="e.g. Large tour groups, packed schedules"></div>
           </div>
           <div class="form-group"><label class="form-label">Special notes</label><textarea class="form-textarea" id="nt-notes" placeholder="Dietary requirements, accessibility needs, specific requests..."></textarea></div>
@@ -1919,7 +1919,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
             <div class="form-group"><label class="form-label">Departure time</label><input class="form-input" type="time" id="et-meta-dep-time"></div>
           </div>
           <div class="form-group"><label class="form-label">Pace</label>
-            <select class="form-select" id="et-pace"><option>Relaxed</option><option>Moderate</option><option>Fast-paced</option><option>Structured</option></select>
+            <select class="form-select" id="et-pace"><option value="slow">Slow</option><option value="moderate" selected>Moderate</option><option value="active">Active</option><option value="packed">Packed</option></select>
           </div>
         </div>
       </details>
@@ -6452,7 +6452,7 @@ function editTraveler(id) {
   s('et-traveler-total', t.traveler_total)
   loadEtDestFromString(t.destination || 'Paris')
   s('et-type', t.traveler_type||'solo')
-  s('et-duration', t.duration||'3D2N'); s('et-pace', t.pace||'Moderate')
+  s('et-duration', t.duration||'3D2N'); s('et-pace', t.pace||'moderate')
   // Bond fields
   const bondCb = document.getElementById('et-bond')
   if (bondCb) bondCb.checked = !!t.requires_bond
