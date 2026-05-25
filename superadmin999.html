@@ -1999,7 +1999,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Daily spend / pax <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-daily-spend" min="0" placeholder="mirrors Daily budget"></div>
-            <div class="form-group"><label class="form-label">Hotel / night / pax <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-hotel-night" min="0" placeholder="mirrors Hotel budget"></div>
+            <div class="form-group"><label class="form-label">Hotel / night <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· total per room, not per pax</span></label><input class="form-input" type="number" id="et-meta-hotel-night" min="0" placeholder="e.g. 320 for a couple sharing"></div>
           </div>
           <div class="form-group"><label class="form-label">Booking authority</label>
             <select class="form-select" id="et-meta-booking-auth">
@@ -6471,7 +6471,7 @@ function editTraveler(id) {
   s('et-meta-tier',             m.budget_tier || '')
   s('et-meta-splurge',          m.splurge_willingness || '')
   s('et-meta-daily-spend',      m.daily_spend_per_pax_eur || '')
-  s('et-meta-hotel-night',      m.hotel_budget_per_night_pax_eur || '')
+  s('et-meta-hotel-night',      m.hotel_budget_per_night_eur || '')
   s('et-meta-booking-auth',     m.booking_authority || '')
   s('et-meta-accom-type',       m.accommodation_type || '')
   s('et-meta-room-type',        m.room_type || '')
@@ -6532,7 +6532,7 @@ async function saveTravelerEdit() {
   // budget_per_day, hotel_budget, interests, departure_time intentionally
   // NOT in this update. The corresponding inputs were removed from the
   // form — those values now live in meta.daily_spend_per_pax_eur,
-  // meta.hotel_budget_per_night_pax_eur, meta.interests (array),
+  // meta.hotel_budget_per_night_eur, meta.interests (array),
   // meta.unit_departure_time. Legacy columns stay untouched so any data
   // already saved there isn't wiped.
   const updates = {
@@ -6576,7 +6576,7 @@ async function saveTravelerEdit() {
   set(patch, 'budget_tier',                       g('et-meta-tier') || undefined)
   set(patch, 'splurge_willingness',               g('et-meta-splurge') || undefined)
   set(patch, 'daily_spend_per_pax_eur',           num(g('et-meta-daily-spend')))
-  set(patch, 'hotel_budget_per_night_pax_eur',    num(g('et-meta-hotel-night')))
+  set(patch, 'hotel_budget_per_night_eur',        num(g('et-meta-hotel-night')))
   set(patch, 'booking_authority',                 g('et-meta-booking-auth') || undefined)
   set(patch, 'accommodation_type',                g('et-meta-accom-type') || undefined)
   set(patch, 'room_type',                         g('et-meta-room-type')?.trim() || undefined)

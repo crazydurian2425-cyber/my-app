@@ -12443,7 +12443,10 @@ async function renderTravelerBrief(plan, t, notes) {
 
   // ── SECTION 3: budgets (tier badge in corner) ──
   const dailyTxt = meta.daily_spend_per_pax_eur ? fmtEur(meta.daily_spend_per_pax_eur) : ''
-  const hotelTxt = meta.hotel_budget_per_night_pax_eur ? fmtEur(meta.hotel_budget_per_night_pax_eur) : ''
+  // Hotel budget is TOTAL per night (per room), not per-pax — hotels
+  // price by room, not by person. Daily spend stays per-pax (food +
+  // activities scale with group_size).
+  const hotelTxt = meta.hotel_budget_per_night_eur ? fmtEur(meta.hotel_budget_per_night_eur) : ''
   const splurgeAmt = splurgeAmountForTier(meta.budget_tier)
   const splurgeTxt = meta.splurge_willingness
     ? `${titleCaseEnum(meta.splurge_willingness)}${splurgeAmt ? ' (' + fmtEur(splurgeAmt) + '+)' : ''}`
@@ -12455,7 +12458,7 @@ async function renderTravelerBrief(plan, t, notes) {
     ${sectionHeader('wallet', 'Budgets')}
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
-      ${cell('Hotel / night / pax', hotelTxt)}
+      ${cell('Hotel / night', hotelTxt)}
       ${cell('Splurge willingness', escapeHtml(splurgeTxt))}
       ${cell('Booking authority', escapeHtml(bookingTxt))}
     `)}
