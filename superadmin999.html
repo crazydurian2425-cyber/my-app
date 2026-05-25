@@ -1083,7 +1083,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
             <div class="form-group"><label class="form-label">Arrival time <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· local</span></label><input class="form-input" type="time" id="nt-arrival-time" placeholder="--:--"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Duration</label><select class="form-select"><option>5D4N</option><option>6D5N</option><option>7D6N</option><option>8D7N</option><option>9D8N</option><option>10D9N</option><option>11D10N</option><option>12D11N</option></select></div>
+            <div class="form-group"><label class="form-label">Duration</label><select class="form-select"><option>2D1N</option><option>3D2N</option></select></div>
             <div class="form-group"><label class="form-label">Departure time <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· last day local</span></label><input class="form-input" type="time" id="nt-departure-time" placeholder="--:--"></div>
           </div>
           <div class="form-row">
@@ -1879,29 +1879,47 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
            out. Open by default since these are the most-edited values
            per traveler. -->
       <details class="et-meta-section" open style="margin-top:14px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
-        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">🗓 Trip basics <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· type, dates, duration, pace</span></summary>
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">🗓 Trip basics <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· duration, arrival, departure, pace, occasion</span></summary>
         <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <!-- Mirrors the brief's TRIP BASICS section 1:1:
+                 Destination (chips above) · Duration
+                 Arrival (date · time · …)
+                 Departure (date · time · …)
+                 Pace · Occasion
+               Group type + Group size moved to 👥 Traveler details.
+               Must avoid moved to ⭐ Interests & pace.
+               Traveler total moved to the commercial cluster at the bottom.
+               Departure date/time moved here FROM 🚆 Unit transport so
+               the trip-shape rhythm reads in one section. Method, location,
+               from/to + buffer stay in Unit transport for the routing detail.-->
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Type</label>
-              <select class="form-select" id="et-type"><option value="solo">Solo</option><option value="couple">Couple</option><option value="honeymoon">Honeymoon</option><option value="family">Family</option><option value="group">Group</option><option value="corporate">Corporate</option></select>
+            <div class="form-group"><label class="form-label">Duration</label>
+              <select class="form-select" id="et-duration"><option>2D1N</option><option>3D2N</option></select>
             </div>
-            <div class="form-group"><label class="form-label">Traveler total — what they pay JJ</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
+            <div class="form-group"><label class="form-label">Occasion</label>
+              <select class="form-select" id="et-meta-occasion">
+                <option value="">—</option>
+                <option value="solo_travel">Solo travel</option>
+                <option value="honeymoon">Honeymoon</option>
+                <option value="anniversary">Anniversary</option>
+                <option value="birthday">Birthday</option>
+                <option value="wine_pilgrimage">Wine pilgrimage</option>
+                <option value="family_holiday">Family holiday</option>
+                <option value="business">Business</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Arrival date</label><input class="form-input" type="date" id="et-arrival"></div>
             <div class="form-group"><label class="form-label">Arrival time</label><input class="form-input" type="time" id="et-arrival-time"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Duration</label>
-              <select class="form-select" id="et-duration"><option>5D4N</option><option>6D5N</option><option>7D6N</option><option>8D7N</option><option>9D8N</option><option>10D9N</option><option>11D10N</option><option>12D11N</option></select>
-            </div>
-            <div class="form-group"><label class="form-label">Group size</label><input class="form-input" type="number" id="et-group" min="1"></div>
+            <div class="form-group"><label class="form-label">Departure date</label><input class="form-input" type="date" id="et-meta-dep-date"></div>
+            <div class="form-group"><label class="form-label">Departure time</label><input class="form-input" type="time" id="et-meta-dep-time"></div>
           </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Pace</label>
-              <select class="form-select" id="et-pace"><option>Relaxed</option><option>Moderate</option><option>Fast-paced</option><option>Structured</option></select>
-            </div>
-            <div class="form-group"><label class="form-label">Must avoid</label><input class="form-input" id="et-avoid"></div>
+          <div class="form-group"><label class="form-label">Pace</label>
+            <select class="form-select" id="et-pace"><option>Relaxed</option><option>Moderate</option><option>Fast-paced</option><option>Structured</option></select>
           </div>
         </div>
       </details>
@@ -1917,8 +1935,18 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
            keys that came from the seed file). -->
 
       <details class="et-meta-section" style="margin-top:14px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
-        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">👥 Traveler details <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· ages, languages, mobility, origin</span></summary>
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">👥 Traveler details <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· group, ages, languages, mobility, origin</span></summary>
         <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <!-- Mirrors the brief's TRAVELERS section.
+               Group type + Group size moved here from old Trip basics
+               (brief shows them under TRAVELERS). Occasion moved OUT to
+               Trip basics where the brief renders it. -->
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Group type</label>
+              <select class="form-select" id="et-type"><option value="solo">Solo</option><option value="couple">Couple</option><option value="honeymoon">Honeymoon</option><option value="family">Family</option><option value="group">Group</option><option value="corporate">Corporate</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">Group size</label><input class="form-input" type="number" id="et-group" min="1"></div>
+          </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Ages <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· comma-separated</span></label><input class="form-input" id="et-meta-ages" placeholder="e.g. 28, 32"></div>
             <div class="form-group"><label class="form-label">Languages</label><input class="form-input" id="et-meta-languages" placeholder="e.g. Spanish, English"></div>
@@ -1944,19 +1972,6 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div class="form-row">
             <div class="form-group"><label class="form-label">Origin country</label><input class="form-input" id="et-meta-origin-country" placeholder="e.g. Argentina"></div>
             <div class="form-group"><label class="form-label">Origin city</label><input class="form-input" id="et-meta-origin-city" placeholder="e.g. Buenos Aires"></div>
-          </div>
-          <div class="form-group"><label class="form-label">Occasion</label>
-            <select class="form-select" id="et-meta-occasion">
-              <option value="">—</option>
-              <option value="solo_travel">Solo travel</option>
-              <option value="honeymoon">Honeymoon</option>
-              <option value="anniversary">Anniversary</option>
-              <option value="birthday">Birthday</option>
-              <option value="wine_pilgrimage">Wine pilgrimage</option>
-              <option value="family_holiday">Family holiday</option>
-              <option value="business">Business</option>
-              <option value="other">Other</option>
-            </select>
           </div>
         </div>
       </details>
@@ -2050,8 +2065,10 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       </details>
 
       <details class="et-meta-section" style="margin-top:8px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
-        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">⭐ Interests &amp; pace <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· drives the brief chips</span></summary>
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">⭐ Interests &amp; pace <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· drives the brief chips · includes must-avoid</span></summary>
         <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <!-- Must avoid moved here from old Trip basics — brief renders
+               it under INTERESTS & PRIORITIES, not Trip basics. -->
           <div class="form-group"><label class="form-label">Meta interests <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· comma-separated, snake_case</span></label><input class="form-input" id="et-meta-interests" placeholder="e.g. art_museums, architecture, food_wine"></div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Intensity</label>
@@ -2072,6 +2089,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
               </select>
             </div>
           </div>
+          <div class="form-group"><label class="form-label">Must avoid</label><input class="form-input" id="et-avoid" placeholder="e.g. Large tour groups, packed schedules"></div>
         </div>
       </details>
 
@@ -2098,6 +2116,8 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div style="font-size:11px;color:var(--ink-3);margin-bottom:8px;line-height:1.5;">
             <strong>Departure</strong> = how they leave THIS unit's city. Last unit = international flight home. Middle units = connecting transport to next unit.
           </div>
+          <!-- Departure date + Departure time moved to 🗓 Trip basics
+               above so the trip-shape rhythm reads in one section. -->
           <div class="form-row">
             <div class="form-group"><label class="form-label">Departure method</label>
               <select class="form-select" id="et-meta-dep-method">
@@ -2109,10 +2129,6 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
               </select>
             </div>
             <div class="form-group"><label class="form-label">Departure location</label><input class="form-input" id="et-meta-dep-location" placeholder="e.g. Saint-Malo Station"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label">Departure date</label><input class="form-input" type="date" id="et-meta-dep-date"></div>
-            <div class="form-group"><label class="form-label">Departure time <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· mirrors top</span></label><input class="form-input" type="time" id="et-meta-dep-time"></div>
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Departure to <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· next city or home</span></label><input class="form-input" id="et-meta-dep-to" placeholder="e.g. Mont-Saint-Michel or Buenos Aires"></div>
@@ -2137,7 +2153,13 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <div class="form-group" style="margin-bottom:0"><label class="form-label">Bond amount <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· override platform formula</span></label><input class="form-input" type="number" id="et-bond-amount" min="0" placeholder="e.g. 10000"></div>
       </div>
 
-      <div class="form-group"><label class="form-label">Planner payout / commission <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· auto-calculated from settings; override if needed</span></label><input class="form-input" type="number" id="et-payout" min="0"></div>
+      <!-- Commercial cluster — Traveler total + Planner payout. Trip
+           basics doesn't show commercial figures in the brief, so the
+           "what they pay JJ" amount lives here next to the payout. -->
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Traveler total — what they pay JJ</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
+        <div class="form-group"><label class="form-label">Planner payout / commission <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· auto-calculated</span></label><input class="form-input" type="number" id="et-payout" min="0"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-edit-traveler')">Cancel</button>
@@ -6427,7 +6449,7 @@ function editTraveler(id) {
   s('et-traveler-total', t.traveler_total)
   loadEtDestFromString(t.destination || 'Paris')
   s('et-type', t.traveler_type||'solo')
-  s('et-duration', t.duration||'5D4N'); s('et-pace', t.pace||'Relaxed')
+  s('et-duration', t.duration||'3D2N'); s('et-pace', t.pace||'Moderate')
   // Bond fields
   const bondCb = document.getElementById('et-bond')
   if (bondCb) bondCb.checked = !!t.requires_bond
