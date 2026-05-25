@@ -1072,10 +1072,10 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <div class="card-body">
           <div class="form-row">
             <div class="form-group"><label class="form-label">Full name</label><input class="form-input" id="nt-name" placeholder="e.g. Tanaka Hiroshi"></div>
-            <div class="form-group"><label class="form-label">Contact (WhatsApp)</label><input class="form-input" id="nt-phone" placeholder="+81 90-xxxx-xxxx"></div>
+            <div class="form-group"><label class="form-label">Contact (WhatsApp)</label><input class="form-input" id="nt-phone" placeholder="+33 6 xx xx xx xx"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Destination</label><select class="form-select"><option>Tokyo</option><option>Osaka</option><option>Kyoto</option><option>Sapporo</option><option>Nagoya</option><option>Fukuoka</option><option>Hiroshima</option><option>Nara</option><option>Okinawa</option><option>Kobe</option><option>Other</option></select></div>
+            <div class="form-group"><label class="form-label">Destination</label><select class="form-select" id="nt-destination"><option>Paris</option><option>Saint-Malo</option><option>Mont-Saint-Michel</option><option>Nice</option><option>Lyon</option><option>Bordeaux</option><option>Marseille</option><option>Toulouse</option><option>Strasbourg</option><option>Nantes</option><option>Rennes</option><option>Avignon</option><option>Lille</option><option>Reims</option><option>Versailles</option><option>Cannes</option><option>Other</option></select></div>
             <div class="form-group"><label class="form-label">Traveler type</label><select class="form-select" id="traveler-type-select"><option value="solo">Solo</option><option value="couple">Couple</option><option value="family">Family</option><option value="group">Group</option><option value="corporate">Corporate</option></select></div>
           </div>
           <div class="form-row">
@@ -1096,15 +1096,12 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           </div>
 
           <div class="s-div">Preferences</div>
-          <div class="form-group"><label class="form-label">Interests (English)</label><input class="form-input" id="nt-interests" placeholder="e.g. Street food, cultural sites, photography"></div>
-          <div class="form-group"><label class="form-label">Interests (日本語)</label><input class="form-input" id="nt-interests-ja" placeholder="例：屋台料理、文化遺産、写真撮影"></div>
+          <div class="form-group"><label class="form-label">Interests</label><input class="form-input" id="nt-interests" placeholder="e.g. Local bistros, châteaux, photography"></div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Pace preference</label><select class="form-select" id="nt-pace"><option>Relaxed</option><option>Moderate</option><option>Fast-paced</option><option>Structured</option></select></div>
-            <div class="form-group"><label class="form-label">Must avoid (English)</label><input class="form-input" id="nt-avoid" placeholder="e.g. Crowded trains, rush-hour transfers"></div>
+            <div class="form-group"><label class="form-label">Must avoid</label><input class="form-input" id="nt-avoid" placeholder="e.g. Large tour groups, packed schedules"></div>
           </div>
-          <div class="form-group"><label class="form-label">Must avoid (日本語)</label><input class="form-input" id="nt-avoid-ja" placeholder="例：満員電車、ラッシュ時の乗換"></div>
-          <div class="form-group"><label class="form-label">Special notes (English)</label><textarea class="form-textarea" id="nt-notes" placeholder="Dietary requirements, accessibility needs, specific requests..."></textarea></div>
-          <div class="form-group"><label class="form-label">Special notes (日本語)</label><textarea class="form-textarea" id="nt-notes-ja" placeholder="食事制限、アクセシビリティのニーズ、特別なご要望など..."></textarea></div>
+          <div class="form-group"><label class="form-label">Special notes</label><textarea class="form-textarea" id="nt-notes" placeholder="Dietary requirements, accessibility needs, specific requests..."></textarea></div>
 
           <div class="s-div">Pricing & commitment</div>
           <div class="form-row">
@@ -1138,7 +1135,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div class="card-header"><div class="card-title">Live preview</div><div class="card-sub">How planners will see this traveler</div></div>
           <div class="card-body">
             <div style="background:var(--cream);border-radius:var(--radius-sm);padding:14px;">
-              <div id="prev-name" style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;">New traveler · Tokyo</div>
+              <div id="prev-name" style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:2px;">New traveler · Paris</div>
               <div id="prev-meta" style="font-size:11.5px;color:var(--ink-3);margin-bottom:10px;">Solo · 3D2N · Budget €—/day</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
                 <div style="background:var(--surface);border-radius:6px;padding:8px 10px;"><div style="font-size:9px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-4);margin-bottom:2px;">Interests</div><div id="prev-interests" style="font-size:12px;color:var(--ink)">—</div></div>
@@ -1899,38 +1896,14 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <div class="form-group"><label class="form-label">Hotel budget — per night per pax (€)</label><input class="form-input" type="number" id="et-hotel-budget" min="0"></div>
         <div class="form-group"><label class="form-label">Traveler total — what they pay JJ (€)</label><input class="form-input" type="number" id="et-traveler-total" min="0"></div>
       </div>
-      <div class="form-group"><label class="form-label">Interests (English)</label><input class="form-input" id="et-interests"></div>
-      <div class="form-group">
-        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Interests (日本語)</span>
-          <button type="button" class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('et-interests','et-interests-ja',this)">↻ Translate from English</button>
-        </label>
-        <input class="form-input" id="et-interests-ja">
-      </div>
+      <div class="form-group"><label class="form-label">Interests</label><input class="form-input" id="et-interests"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Pace</label>
           <select class="form-select" id="et-pace"><option>Relaxed</option><option>Moderate</option><option>Fast-paced</option><option>Structured</option></select>
         </div>
-        <div class="form-group"><label class="form-label">Must avoid (English)</label><input class="form-input" id="et-avoid"></div>
+        <div class="form-group"><label class="form-label">Must avoid</label><input class="form-input" id="et-avoid"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Must avoid (日本語)</span>
-          <button type="button" class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('et-avoid','et-avoid-ja',this)">↻ Translate from English</button>
-        </label>
-        <input class="form-input" id="et-avoid-ja">
-      </div>
-      <div class="form-group"><label class="form-label">Special notes (English)</label><textarea class="form-textarea" id="et-notes" style="min-height:70px;"></textarea></div>
-      <div class="form-group">
-        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
-          <span>Special notes (日本語)</span>
-          <button type="button" class="btn btn-ghost btn-sm" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('et-notes','et-notes-ja',this)">↻ Translate from English</button>
-        </label>
-        <textarea class="form-textarea" id="et-notes-ja" style="min-height:70px;"></textarea>
-      </div>
-      <div class="form-group" style="margin-top:-4px;">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="autoTranslateAll(this)" style="font-size:11.5px;">↻ Translate all 3 to Japanese</button>
-      </div>
+      <div class="form-group"><label class="form-label">Special notes</label><textarea class="form-textarea" id="et-notes" style="min-height:70px;"></textarea></div>
 
       <!-- ═══ EXTENDED META SECTIONS (rich brief fields) ═══════════════════
            Stored in `travelers.meta` (JSONB). The planner-facing Brief in
@@ -2977,7 +2950,7 @@ async function addTraveler() {
   const body = {
     name:           val('nt-name'),
     phone:          val('nt-phone'),
-    destination:    document.getElementById('nt-destination')?.value || 'Tokyo',
+    destination:    document.getElementById('nt-destination')?.value || 'Paris',
     traveler_type:  document.getElementById('traveler-type-select')?.value || 'solo',
     arrival_date:   document.getElementById('nt-arrival-date')?.value,
     arrival_time:   document.getElementById('nt-arrival-time')?.value || null,
@@ -2986,12 +2959,9 @@ async function addTraveler() {
     group_size:     parseInt(document.getElementById('nt-group-size')?.value) || 1,
     budget_per_day: num('nt-budget'),
     interests:      val('nt-interests'),
-    interests_ja:   val('nt-interests-ja') || null,
     pace:           (document.getElementById('nt-pace')?.value || 'moderate').toLowerCase(),
     must_avoid:     val('nt-avoid'),
-    must_avoid_ja:  val('nt-avoid-ja') || null,
     special_notes:  val('nt-notes'),
-    special_notes_ja: val('nt-notes-ja') || null,
     requires_bond:  document.getElementById('nt-bond')?.checked || false,
     bond_amount:    num('nt-bond-amount'),
     planner_payout: num('nt-payout'),
@@ -6249,7 +6219,7 @@ async function postSet() {
 
   // Derive city from the first assigned traveler's destination
   const firstTraveler = travelerPool.find(t => String(t.id) === String(filled[0]))
-  const city = firstTraveler?.raw?.destination || 'Tokyo'
+  const city = firstTraveler?.raw?.destination || 'Paris'
 
   const btn = document.querySelector('[onclick="postSet()"]')
   if (btn) { btn.disabled = true; btn.textContent = 'Publishing...' }
@@ -6314,7 +6284,7 @@ function updatePreview() {
   // Stable IDs, EUR currency
   const val = id => document.getElementById(id)?.value?.trim() || ''
   const name       = val('nt-name') || 'New traveler'
-  const dest       = document.getElementById('nt-destination')?.value || 'Tokyo'
+  const dest       = document.getElementById('nt-destination')?.value || 'Paris'
   const type       = document.getElementById('traveler-type-select')?.value || 'solo'
   const duration   = document.querySelectorAll('select.form-select')[2]?.value || '3D2N'
   const budget     = val('nt-budget')
@@ -6373,11 +6343,11 @@ function copySignupLink() {
 }
 
 // ── Multi-destination chip selector for the Edit traveler modal ──
-// Travelers can have multiple destinations stored as 'Tokyo · Hakone · Kyoto'
-// (joined by ' · '). Standard cities are pre-listed; anything outside the list
-// can be added via the + Custom button so we don't lose seed data like Hakone,
-// Otaru, Niseko, Kawaguchiko, Nagasaki, Yufuin etc.
-const ET_STD_CITIES = ['Tokyo','Kyoto','Osaka','Sapporo','Fukuoka','Hiroshima','Nara','Nagoya','Kobe','Okinawa','Hakone','Otaru','Niseko','Kawaguchiko','Nagasaki']
+// Travelers can have multiple destinations stored as 'Paris · Saint-Malo · Nice'
+// (joined by ' · '). Standard French cities are pre-listed; anything outside
+// the list (e.g. Mont-Saint-Michel, Côte d'Azur villages) can be added via
+// the + Custom button so seed data isn't lost.
+const ET_STD_CITIES = ['Paris','Saint-Malo','Mont-Saint-Michel','Nice','Lyon','Bordeaux','Marseille','Toulouse','Strasbourg','Nantes','Rennes','Avignon','Lille','Reims','Versailles','Cannes']
 let _etDestSelected = []
 let _etDestExtras   = []
 
@@ -6418,7 +6388,7 @@ function toggleEtDestCity(city) {
 }
 
 function addEtCustomCity() {
-  const v = (prompt('Add custom destination (e.g. Yufuin, Kawaguchiko):') || '').trim()
+  const v = (prompt('Add custom destination (e.g. Annecy, Carcassonne):') || '').trim()
   if (!v) return
   // De-dupe against standard list (case-insensitive)
   const stdMatch = ET_STD_CITIES.find(c => c.toLowerCase() === v.toLowerCase())
@@ -6446,10 +6416,10 @@ function editTraveler(id) {
   const s = (eid, val) => { const e = document.getElementById(eid); if(e) e.value = val||'' }
   s('et-name', t.name); s('et-phone', t.phone); s('et-arrival', t.arrival_date); s('et-arrival-time', t.arrival_time || ''); s('et-departure-time', t.departure_time || '')
   s('et-group', t.group_size||1); s('et-budget', t.budget_per_day); s('et-interests', t.interests)
-  s('et-interests-ja', t.interests_ja); s('et-avoid', t.must_avoid); s('et-avoid-ja', t.must_avoid_ja)
-  s('et-notes', t.special_notes); s('et-notes-ja', t.special_notes_ja); s('et-payout', t.planner_payout)
+  s('et-avoid', t.must_avoid)
+  s('et-notes', t.special_notes); s('et-payout', t.planner_payout)
   s('et-hotel-budget', t.hotel_budget); s('et-traveler-total', t.traveler_total)
-  loadEtDestFromString(t.destination || 'Tokyo')
+  loadEtDestFromString(t.destination || 'Paris')
   s('et-type', t.traveler_type||'solo')
   s('et-duration', t.duration||'5D4N'); s('et-pace', t.pace||'Relaxed')
   // Bond fields
@@ -6527,19 +6497,6 @@ async function autoTranslateField(srcId, dstId, btn) {
   }
 }
 
-async function autoTranslateAll(btn) {
-  const original = btn?.textContent
-  if (btn) { btn.disabled = true; btn.textContent = 'Translating all 3…' }
-  try {
-    await autoTranslateField('et-interests','et-interests-ja', null)
-    await autoTranslateField('et-avoid','et-avoid-ja', null)
-    await autoTranslateField('et-notes','et-notes-ja', null)
-    if (btn) { btn.textContent = '✓ Done — review + Save' ; setTimeout(() => { btn.textContent = original; btn.disabled = false }, 2500) }
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = original }
-  }
-}
-
 async function saveTravelerEdit() {
   const id = document.getElementById('edit-traveler-id').value
   if (!id) return
@@ -6551,12 +6508,9 @@ async function saveTravelerEdit() {
     group_size: parseInt(g('et-group'))||1,
     budget_per_day: parseFloat(g('et-budget'))||null,
     interests: g('et-interests')?.trim(),
-    interests_ja: g('et-interests-ja')?.trim() || null,
     pace: (g('et-pace') || 'moderate').toLowerCase(),
     must_avoid: g('et-avoid')?.trim(),
-    must_avoid_ja: g('et-avoid-ja')?.trim() || null,
     special_notes: g('et-notes')?.trim(),
-    special_notes_ja: g('et-notes-ja')?.trim() || null,
     planner_payout: parseFloat(g('et-payout'))||null,
     hotel_budget: parseFloat(g('et-hotel-budget'))||null,
     traveler_total: parseFloat(g('et-traveler-total'))||null,
