@@ -1931,6 +1931,222 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div class="form-group" style="margin-top:-4px;">
         <button type="button" class="btn btn-ghost btn-sm" onclick="autoTranslateAll(this)" style="font-size:11.5px;">↻ Translate all 3 to Japanese</button>
       </div>
+
+      <!-- ═══ EXTENDED META SECTIONS (rich brief fields) ═══════════════════
+           Stored in `travelers.meta` (JSONB). The planner-facing Brief in
+           dashboard.html reads ~20 fields from this blob — origin, ages,
+           tier, splurge, interests, accommodation, dining, transport… —
+           none of which the legacy top-of-form covers. These 6 collapsed
+           sections expose every one of them so the brief can be fully
+           edited from this modal, no SQL. saveTravelerEdit() merges the
+           values into meta (preserving seed_batch / person_id / unit_order
+           keys that came from the seed file). -->
+
+      <details class="et-meta-section" style="margin-top:14px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">👥 Traveler details <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· ages, languages, mobility, origin</span></summary>
+        <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Ages <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· comma-separated</span></label><input class="form-input" id="et-meta-ages" placeholder="e.g. 28, 32"></div>
+            <div class="form-group"><label class="form-label">Languages</label><input class="form-input" id="et-meta-languages" placeholder="e.g. Spanish, English"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Mobility</label>
+              <select class="form-select" id="et-meta-mobility">
+                <option value="">—</option>
+                <option value="none">None</option>
+                <option value="limited">Limited</option>
+                <option value="wheelchair">Wheelchair</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Previous visits</label>
+              <select class="form-select" id="et-meta-prev-visits">
+                <option value="">—</option>
+                <option value="first_time">First time</option>
+                <option value="repeat">Repeat visitor</option>
+                <option value="local">Local / lives there</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Origin country</label><input class="form-input" id="et-meta-origin-country" placeholder="e.g. Argentina"></div>
+            <div class="form-group"><label class="form-label">Origin city</label><input class="form-input" id="et-meta-origin-city" placeholder="e.g. Buenos Aires"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Occasion</label>
+            <select class="form-select" id="et-meta-occasion">
+              <option value="">—</option>
+              <option value="solo_travel">Solo travel</option>
+              <option value="honeymoon">Honeymoon</option>
+              <option value="anniversary">Anniversary</option>
+              <option value="birthday">Birthday</option>
+              <option value="wine_pilgrimage">Wine pilgrimage</option>
+              <option value="family_holiday">Family holiday</option>
+              <option value="business">Business</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <details class="et-meta-section" style="margin-top:8px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">💰 Budget profile <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· tier, splurge, booking authority</span></summary>
+        <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Tier</label>
+              <select class="form-select" id="et-meta-tier">
+                <option value="">—</option>
+                <option value="budget">Budget</option>
+                <option value="mid_range">Mid-range</option>
+                <option value="luxury">Luxury</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Splurge willingness</label>
+              <select class="form-select" id="et-meta-splurge">
+                <option value="">—</option>
+                <option value="none">None</option>
+                <option value="occasional">Occasional (1-2 OK)</option>
+                <option value="frequent">Frequent</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Daily spend / pax (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-daily-spend" min="0" placeholder="mirrors Daily budget"></div>
+            <div class="form-group"><label class="form-label">Hotel / night / pax (€) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· meta key</span></label><input class="form-input" type="number" id="et-meta-hotel-night" min="0" placeholder="mirrors Hotel budget"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Booking authority</label>
+            <select class="form-select" id="et-meta-booking-auth">
+              <option value="">—</option>
+              <option value="planner_recommends">Planner recommends (traveler picks)</option>
+              <option value="traveler_decides">Traveler decides (planner suggests)</option>
+              <option value="full_booking">Full booking (planner books)</option>
+            </select>
+          </div>
+        </div>
+      </details>
+
+      <details class="et-meta-section" style="margin-top:8px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">🛌 Accommodation</summary>
+        <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Type</label>
+              <select class="form-select" id="et-meta-accom-type">
+                <option value="">—</option>
+                <option value="hotel">Hotel</option>
+                <option value="airbnb">Airbnb</option>
+                <option value="hostel">Hostel</option>
+                <option value="boutique">Boutique inn</option>
+                <option value="villa">Villa / chateau</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Room type</label><input class="form-input" id="et-meta-room-type" placeholder="e.g. Private room with shared bath"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Must-haves <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· comma-separated</span></label><input class="form-input" id="et-meta-accom-musthaves" placeholder="e.g. Central location, Wifi, Quiet street"></div>
+        </div>
+      </details>
+
+      <details class="et-meta-section" style="margin-top:8px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">🍽 Food &amp; dining</summary>
+        <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Dietary</label>
+              <select class="form-select" id="et-meta-dietary">
+                <option value="">—</option>
+                <option value="none">None</option>
+                <option value="vegetarian">Vegetarian</option>
+                <option value="vegan">Vegan</option>
+                <option value="pescatarian">Pescatarian</option>
+                <option value="halal">Halal</option>
+                <option value="kosher">Kosher</option>
+                <option value="gluten_free">Gluten-free</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Dining style</label>
+              <select class="form-select" id="et-meta-dining-style">
+                <option value="">—</option>
+                <option value="familiar_comfort">Familiar comfort</option>
+                <option value="local_authentic">Local authentic</option>
+                <option value="michelin_dining">Michelin / fine dining</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Cuisine interests <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· comma-separated</span></label><input class="form-input" id="et-meta-cuisine" placeholder="e.g. Local bistros, Pastries, Cafes, Crêpes"></div>
+        </div>
+      </details>
+
+      <details class="et-meta-section" style="margin-top:8px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">⭐ Interests &amp; pace <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· drives the brief chips</span></summary>
+        <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <div class="form-group"><label class="form-label">Meta interests <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· comma-separated, snake_case</span></label><input class="form-input" id="et-meta-interests" placeholder="e.g. art_museums, architecture, food_wine"></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Intensity</label>
+              <select class="form-select" id="et-meta-intensity">
+                <option value="">—</option>
+                <option value="light_walking">Light walking (4-6 km/day)</option>
+                <option value="moderate">Moderate (6-10 km/day)</option>
+                <option value="active">Active (10-14 km/day)</option>
+                <option value="packed">Packed (14+ km/day)</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Daily timing</label>
+              <select class="form-select" id="et-meta-daily-timing">
+                <option value="">—</option>
+                <option value="early">Early (7:00 wake)</option>
+                <option value="standard">Standard (8:30 wake)</option>
+                <option value="late">Late (9:30 wake)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <details class="et-meta-section" style="margin-top:8px;border:1px solid var(--border);border-radius:6px;background:var(--cream,#faf7ef);">
+        <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">🚆 Unit transport <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· arrival + departure for THIS unit</span></summary>
+        <div style="padding:12px 14px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--ink-3);margin-bottom:8px;line-height:1.5;">
+            <strong>Arrival</strong> = how the traveler reaches THIS unit's city. Unit 1 = international flight. Unit 2+ = connecting train / bus / car from the previous unit.
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Arrival method</label>
+              <select class="form-select" id="et-meta-arr-method">
+                <option value="">—</option>
+                <option value="flight">Flight</option>
+                <option value="train">Train</option>
+                <option value="bus">Bus</option>
+                <option value="car">Car</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Arrival location <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· IATA or station</span></label><input class="form-input" id="et-meta-arr-location" placeholder="e.g. RNS or Saint-Malo Station"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Arrival from</label><input class="form-input" id="et-meta-arr-from" placeholder="e.g. Buenos Aires, Argentina or previous city"></div>
+          <hr style="border:none;border-top:1px solid var(--border);margin:14px 0 12px;">
+          <div style="font-size:11px;color:var(--ink-3);margin-bottom:8px;line-height:1.5;">
+            <strong>Departure</strong> = how they leave THIS unit's city. Last unit = international flight home. Middle units = connecting transport to next unit.
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Departure method</label>
+              <select class="form-select" id="et-meta-dep-method">
+                <option value="">—</option>
+                <option value="flight">Flight</option>
+                <option value="train">Train</option>
+                <option value="bus">Bus</option>
+                <option value="car">Car</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Departure location</label><input class="form-input" id="et-meta-dep-location" placeholder="e.g. Saint-Malo Station"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Departure date</label><input class="form-input" type="date" id="et-meta-dep-date"></div>
+            <div class="form-group"><label class="form-label">Departure time <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· mirrors top</span></label><input class="form-input" type="time" id="et-meta-dep-time"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Departure to <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· next city or home</span></label><input class="form-input" id="et-meta-dep-to" placeholder="e.g. Mont-Saint-Michel or Buenos Aires"></div>
+            <div class="form-group"><label class="form-label">Buffer (min) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· flight 180 default</span></label><input class="form-input" type="number" id="et-meta-buffer" min="0" placeholder="180"></div>
+          </div>
+        </div>
+      </details>
+
       <!-- Bond toggle + amount — admin can flip a traveler into bond status from the edit form,
            same controls available on Add traveler. Bond amount is editable so it can be tuned
            per-row instead of always relying on the platform formula. -->
@@ -6241,6 +6457,42 @@ function editTraveler(id) {
   if (bondCb) bondCb.checked = !!t.requires_bond
   s('et-bond-amount', t.bond_amount)
   toggleEtBondField()
+  // ── Populate the rich meta sections from travelers.meta JSONB ──
+  // Arrays are joined with ", " for display; the save handler splits
+  // them back. Empty/missing keys leave the field blank so the planner
+  // can see at a glance what's set vs not.
+  const m = (t.meta && typeof t.meta === 'object') ? t.meta : {}
+  const arrToCsv = a => Array.isArray(a) ? a.join(', ') : (a || '')
+  s('et-meta-ages',             arrToCsv(m.ages))
+  s('et-meta-languages',        arrToCsv(m.languages))
+  s('et-meta-mobility',         m.mobility || '')
+  s('et-meta-prev-visits',      m.previous_visits || '')
+  s('et-meta-origin-country',   m.origin_country || '')
+  s('et-meta-origin-city',      m.origin_city || '')
+  s('et-meta-occasion',         m.occasion || '')
+  s('et-meta-tier',             m.budget_tier || '')
+  s('et-meta-splurge',          m.splurge_willingness || '')
+  s('et-meta-daily-spend',      m.daily_spend_per_pax_eur || '')
+  s('et-meta-hotel-night',      m.hotel_budget_per_night_pax_eur || '')
+  s('et-meta-booking-auth',     m.booking_authority || '')
+  s('et-meta-accom-type',       m.accommodation_type || '')
+  s('et-meta-room-type',        m.room_type || '')
+  s('et-meta-accom-musthaves',  arrToCsv(m.accommodation_musthaves))
+  s('et-meta-dietary',          m.dietary_restrictions || '')
+  s('et-meta-dining-style',     m.dining_style || '')
+  s('et-meta-cuisine',          arrToCsv(m.cuisine_interests))
+  s('et-meta-interests',        arrToCsv(m.interests))
+  s('et-meta-intensity',        m.intensity || '')
+  s('et-meta-daily-timing',     m.daily_timing || '')
+  s('et-meta-arr-method',       m.unit_arrival_method || '')
+  s('et-meta-arr-location',     m.unit_arrival_location || '')
+  s('et-meta-arr-from',         m.unit_arrival_from || '')
+  s('et-meta-dep-method',       m.unit_departure_method || '')
+  s('et-meta-dep-location',     m.unit_departure_location || '')
+  s('et-meta-dep-date',         m.unit_departure_date || '')
+  s('et-meta-dep-time',         m.unit_departure_time || '')
+  s('et-meta-dep-to',           m.unit_departure_to || '')
+  s('et-meta-buffer',           m.airport_buffer_minutes || '')
   openModal('modal-edit-traveler')
 }
 
@@ -6313,6 +6565,53 @@ async function saveTravelerEdit() {
   }
   if (!updates.name) { showToast('Name is required'); return }
   if (!updates.destination) { showToast('Pick at least one destination'); return }
+  // ── Merge the rich meta-section inputs into travelers.meta ──
+  // CRITICAL: start from the existing meta blob so seed-only keys
+  // (seed_batch, person_id, unit_order, unit_total, trip_start_date,
+  // trip_end_date, …) are preserved. Only overwrite the keys the modal
+  // explicitly manages — anything else passes through untouched.
+  const t = allTravelers.find(t => t.id === id)
+  const existingMeta = (t && t.meta && typeof t.meta === 'object') ? t.meta : {}
+  const csvToArr = s => String(s || '')
+    .split(',')
+    .map(x => x.trim())
+    .filter(Boolean)
+  const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : undefined }
+  // Build the patch: each key only sets if the input has a value, so
+  // blank fields don't clobber existing seed data with empty strings.
+  const set = (obj, k, v) => { if (v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)) obj[k] = v }
+  const patch = {}
+  set(patch, 'ages',                              csvToArr(g('et-meta-ages')).map(x => parseInt(x, 10)).filter(Number.isFinite))
+  set(patch, 'languages',                         csvToArr(g('et-meta-languages')))
+  set(patch, 'mobility',                          g('et-meta-mobility') || undefined)
+  set(patch, 'previous_visits',                   g('et-meta-prev-visits') || undefined)
+  set(patch, 'origin_country',                    g('et-meta-origin-country')?.trim() || undefined)
+  set(patch, 'origin_city',                       g('et-meta-origin-city')?.trim() || undefined)
+  set(patch, 'occasion',                          g('et-meta-occasion') || undefined)
+  set(patch, 'budget_tier',                       g('et-meta-tier') || undefined)
+  set(patch, 'splurge_willingness',               g('et-meta-splurge') || undefined)
+  set(patch, 'daily_spend_per_pax_eur',           num(g('et-meta-daily-spend')))
+  set(patch, 'hotel_budget_per_night_pax_eur',    num(g('et-meta-hotel-night')))
+  set(patch, 'booking_authority',                 g('et-meta-booking-auth') || undefined)
+  set(patch, 'accommodation_type',                g('et-meta-accom-type') || undefined)
+  set(patch, 'room_type',                         g('et-meta-room-type')?.trim() || undefined)
+  set(patch, 'accommodation_musthaves',           csvToArr(g('et-meta-accom-musthaves')))
+  set(patch, 'dietary_restrictions',              g('et-meta-dietary') || undefined)
+  set(patch, 'dining_style',                      g('et-meta-dining-style') || undefined)
+  set(patch, 'cuisine_interests',                 csvToArr(g('et-meta-cuisine')))
+  set(patch, 'interests',                         csvToArr(g('et-meta-interests')))
+  set(patch, 'intensity',                         g('et-meta-intensity') || undefined)
+  set(patch, 'daily_timing',                      g('et-meta-daily-timing') || undefined)
+  set(patch, 'unit_arrival_method',               g('et-meta-arr-method') || undefined)
+  set(patch, 'unit_arrival_location',             g('et-meta-arr-location')?.trim() || undefined)
+  set(patch, 'unit_arrival_from',                 g('et-meta-arr-from')?.trim() || undefined)
+  set(patch, 'unit_departure_method',             g('et-meta-dep-method') || undefined)
+  set(patch, 'unit_departure_location',           g('et-meta-dep-location')?.trim() || undefined)
+  set(patch, 'unit_departure_date',               g('et-meta-dep-date') || undefined)
+  set(patch, 'unit_departure_time',               g('et-meta-dep-time') || undefined)
+  set(patch, 'unit_departure_to',                 g('et-meta-dep-to')?.trim() || undefined)
+  set(patch, 'airport_buffer_minutes',            num(g('et-meta-buffer')))
+  updates.meta = { ...existingMeta, ...patch }
   const { error } = await sb.from('travelers').update(updates).eq('id', id)
   if (error) { showToast('Error: ' + error.message); return }
   closeModal('modal-edit-traveler')
