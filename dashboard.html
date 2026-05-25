@@ -18520,12 +18520,27 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     // can click here to wrap the trip; the handler itself bails
     // gracefully when there's nothing to depart from.
     if (!_hasExisting) {
+      // Method-aware icon + label. The departure anchor below this button
+      // can be a flight (CDG), train (Pontorson), bus, or car — saying
+      // "transport to airport" on a train day is misleading. Pull the
+      // method from the global set at plan-open and map to a sensible
+      // destination noun (airport / station / pickup).
+      const _depMethod = String(window._currentDepartureMethod || '').toLowerCase()
+      const _depIcon = _depMethod === 'flight' ? '🛫'
+                     : _depMethod === 'train'  ? '🚆'
+                     : _depMethod === 'bus'    ? '🚌'
+                     : _depMethod === 'car'    ? '🚗'
+                     :                            '🛫'
+      const _depDest = _depMethod === 'flight'                 ? 'airport'
+                     : _depMethod === 'train' || _depMethod === 'bus' ? 'station'
+                     : _depMethod === 'car'                    ? 'pickup'
+                     :                                            'airport'
       const _row = document.createElement('div')
       _row.className = 'end-day-row'
       _row.innerHTML = `
         <button type="button" class="end-day-btn" onclick="endTripToAirport('${dayContainer.id}')">
-          <span class="edb-icon">🛫</span>
-          <span class="edb-text">End trip · transport to airport</span>
+          <span class="edb-icon">${_depIcon}</span>
+          <span class="edb-text">End trip · transport to ${_depDest}</span>
         </button>
       `
       dayContainer.insertBefore(_row, bottomAnchor)
