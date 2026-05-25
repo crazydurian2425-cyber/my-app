@@ -10407,12 +10407,21 @@ async function initDashboard() {
   // Load active set via set_assignments (new multi-planner system)
   console.log('Loading dashboard for planner:', planner.id)
 
-  // Try new-style via set_assignments first — only 'active' counts as the planner's working set.
-  // Completed/paid assignments are archived and shouldn't load as the working dashboard.
+  // Try new-style via set_assignments first — only 'active' (or legacy
+  // 'in_progress' from the initial.sql column default) counts as the
+  // planner's working set. Completed/paid assignments are archived and
+  // shouldn't load as the working dashboard.
+  //
+  // Defensive .in(): the column default per initial.sql is 'in_progress'
+  // but the canonical "working" status in the codebase is 'active'. Any
+  // assignment created via doAssign() without an explicit status would
+  // land as 'in_progress' and be invisible to a strict 'active'-only
+  // query. Accept both so legacy rows still show; doAssign now sets
+  // 'active' explicitly so all new rows are canonical.
   let { data: myAssignment } = await sb.from('set_assignments')
     .select('set_id, claimed_at, deadline, status')
     .eq('planner_id', planner.id)
-    .eq('status', 'active')
+    .in('status', ['active', 'in_progress'])
     .order('claimed_at', { ascending: false })
     .limit(1).maybeSingle()
 

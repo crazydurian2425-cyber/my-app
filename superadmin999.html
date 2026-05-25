@@ -6761,10 +6761,15 @@ async function doAssign(setId, plannerId) {
     }
   }
 
-  // Insert new assignment
+  // Insert new assignment with EXPLICIT status='active' — the dashboard's
+  // active-set query (dashboard.html line ~10412) filters by status='active',
+  // and the column default per initial.sql is 'in_progress'. Without this
+  // explicit value the new assignment lands with status='in_progress' and
+  // the planner's dashboard ignores it — they see nothing after reassign.
   const { error: assignErr } = await sb.from('set_assignments').insert({
     set_id: setId, planner_id: plannerId,
-    claimed_at: new Date().toISOString(), deadline: deadlineStr
+    claimed_at: new Date().toISOString(), deadline: deadlineStr,
+    status: 'active'
   })
   if (assignErr) { showToast('Failed to create assignment: ' + assignErr.message); return false }
 
