@@ -12729,11 +12729,18 @@ async function openItineraryForm(planId) {
   // ── Fresh-assignment auto-reset ──
   // When the admin reassigns a set (including the SAME set), the
   // set_assignments row's claimed_at advances. If that claimed_at is
-  // newer than the plan's updated_at, treat the plan as freshly-
-  // assigned and wipe the planner's prior edits (itinerary_items +
-  // plan-level fields they own). The wipe bumps updated_at, so
-  // subsequent opens of the same plan without a fresh reassignment
-  // skip this branch.
+  // newer than the plan's updated_at (within a tolerance — see below),
+  // treat the plan as freshly-assigned and wipe the planner's prior
+  // edits (itinerary_items + plan-level fields they own). The wipe
+  // bumps updated_at, so subsequent opens of the same plan without a
+  // fresh reassignment skip this branch.
+  //
+  // 30-second TOLERANCE: doAssign() INSERTs the new assignment row
+  // (claimed_at = now()) THEN INSERTs the new plan row (updated_at =
+  // default now() — a few ms later). Strict ">" never fires because
+  // plan.updated_at is always slightly later. Use a 30s grace so a
+  // reassignment that happened "approximately the same moment" as
+  // the plan's last edit still triggers the wipe.
   try {
     if (plan.set_id && plan.updated_at) {
       const { data: _assign } = await sb.from('set_assignments')
@@ -12742,11 +12749,21 @@ async function openItineraryForm(planId) {
         .eq('set_id', plan.set_id)
         .eq('status', 'active')
         .maybeSingle()
-      if (_assign?.claimed_at && new Date(_assign.claimed_at) > new Date(plan.updated_at)) {
+      const _claimedMs = _assign?.claimed_at ? new Date(_assign.claimed_at).getTime() : 0
+      const _updatedMs = plan.updated_at ? new Date(plan.updated_at).getTime() : 0
+      // Fire wipe if claimed_at is newer than updated_at OR within 30s
+      // of it (covers the doAssign race where the new plan's updated_at
+      // lands just after the new assignment's claimed_at). 30000 ms is
+      // generous; the planner can't possibly edit the plan that fast
+      // after admin reassignment.
+      const _shouldWipe = _claimedMs > 0 && _updatedMs > 0
+                       && _claimedMs + 30_000 >= _updatedMs
+      if (_shouldWipe) {
         console.log('[plan-open] fresh assignment detected — wiping plan data', {
           planId: plan.id,
           claimed_at: _assign.claimed_at,
           plan_updated_at: plan.updated_at,
+          delta_ms: _updatedMs - _claimedMs,
         })
         await _wipePlanToFresh(plan.id)
         // Re-fetch the plan row so the rest of openItineraryForm reads the
