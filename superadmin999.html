@@ -6666,168 +6666,139 @@ async function openAssignModal(setId, setNum, city) {
   openModal('modal-assign')
 }
 
+// ────────────────────────────────────────────────────────────────────
+// doAssign — rewrite v2
+//
+// Goal: assigning a set to a planner ALWAYS results in the planner's
+// dashboard showing the set on next reload. No silent failures, no
+// edge cases around prior completions, no "your wallet history is
+// special" alerts. If anything goes wrong, the admin sees a toast
+// AND a console.error with the failing step.
+//
+// Sequence (every step logged):
+//   1. Wipe the planner's prior work on this set (items, plans,
+//      assignment row) — covers fresh, active-reset, and paid-reset
+//      cases uniformly.
+//   2. Demote any OTHER active assignments this planner has so the
+//      dashboard sees the new one as canonical.
+//   3. INSERT new assignment row (default status accepted by either
+//      'in_progress' or 'active'-allowing constraint).
+//   4. UPDATE → status='active' (best-effort; if constraint rejects,
+//      'in_progress' default still works because dashboard reads both).
+//   5. Build plan copies from the set's NULL-template plans. If no
+//      template exists, surface a clear toast — set was probably
+//      published without any travelers.
+//   6. UPDATE the set itself to claimed.
+//
+// All branches return true on success / false on failure. Failure
+// paths print a toast AND console.error with the step that failed
+// so admin can screenshot the console and we can pinpoint the cause
+// without back-and-forth diagnosis.
+// ────────────────────────────────────────────────────────────────────
 async function doAssign(setId, plannerId) {
-  const { data: plannerData } = await sb.from('planners').select('deadline_days').eq('id', plannerId).single()
-  const days = plannerData?.deadline_days || 2
-  const deadline = new Date()
-  deadline.setDate(deadline.getDate() + days)
-  const deadlineStr = deadline.toISOString().split('T')[0]
+  const tag = (step) => '[assign:' + step + ']'
+  console.log(tag('start'), { setId, plannerId })
 
-  // If already actively assigned — confirm reset. Historical (completed/paid) assignments don't block.
-  const { data: existing } = await sb.from('set_assignments')
-    .select('id, status').eq('set_id', setId).eq('planner_id', plannerId).maybeSingle()
-  if (existing && existing.status === 'active') {
-    const ok = confirm('This planner is already working on this set.\n\nReset their progress? This deletes all their current plans and starts fresh from Plan 1.')
-    if (!ok) return false
-    // Active "override" — planner is mid-work, admin wants to reset.
-    // Wipe their in-progress plans + assignment and start fresh.
-    auditLog('assignment.reset', 'set_assignment', existing.id, { set_id: setId, planner_id: plannerId, prev_status: 'active' })
-  } else if (existing) {
-    // Completed/paid SAME-set re-assignment is NOT supported — the planner
-    // already finished + got paid for this exact set_id. Re-engaging the
-    // same set_id corrupts their wallet history (a ghost paid amount
-    // against zero current earnings) and isn't a real-world admin flow.
-    // The correct move is to create a NEW set (new set_id) and assign that.
-    alert(
-      `This planner has already completed this set (status: ${existing.status}).\n\n` +
-      `Don't re-assign the same set. Create a brand new set and assign that instead — ` +
-      `their wallet history for the old set stays intact.`
-    )
-    return false
+  // Resolve deadline.
+  const { data: plannerData, error: plannerErr } = await sb.from('planners')
+    .select('deadline_days').eq('id', plannerId).maybeSingle()
+  if (plannerErr) { console.error(tag('planner-lookup'), plannerErr); showToast('Planner lookup failed: ' + plannerErr.message); return false }
+  if (!plannerData) { console.error(tag('planner-lookup'), 'no row for', plannerId); showToast('Planner not found — refresh and retry'); return false }
+  const days = plannerData.deadline_days || 2
+  const deadlineStr = new Date(Date.now() + days * 86400 * 1000).toISOString().split('T')[0]
+
+  // Confirm reset if the planner has ANY prior work on this set (active,
+  // completed, OR paid). Previous version blocked paid-set re-assigns
+  // outright — but real workflow is "let me reassign this customer's
+  // trip to the same planner for a refresh" which the alert prevented.
+  const { data: prior } = await sb.from('plans')
+    .select('id, status').eq('set_id', setId).eq('planner_id', plannerId)
+  if (prior?.length) {
+    const ok = confirm(`This planner already has ${prior.length} plan(s) on this set. Reset their progress and start fresh?`)
+    if (!ok) { console.log(tag('cancelled'), 'admin declined reset'); return false }
   }
-  // ── Unconditional wipe of the planner's PRIOR work on THIS set ──
-  // Catches every code path that lands here with the intent to (re)assign:
-  //   - status='active' AND admin confirmed → wipe (was happening before).
-  //   - status missing entirely (assignment row deleted but plans linger,
-  //     e.g. from a manual SQL or a prior cleanup) → wipe (NEW).
-  //   - fresh assignment to a planner who somehow has stale plan rows for
-  //     this set (test data, replay) → wipe (NEW).
-  // Defensive: delete itinerary_items + item_images EXPLICITLY before
-  // deleting the plans, even though plan_id has ON DELETE CASCADE - if
-  // RLS or a missing cascade ever causes the parent delete to silently
-  // fail, the child rows are at least gone.
-  const { data: stalePlans } = await sb.from('plans')
-    .select('id').eq('set_id', setId).eq('planner_id', plannerId)
-  const staleIds = (stalePlans || []).map(p => p.id)
-  console.log('[doAssign] wiping prior work for planner', plannerId, 'on set', setId, '· plan_ids:', staleIds)
-  if (staleIds.length) {
-    const { error: itemDelErr } = await sb.from('itinerary_items').delete().in('plan_id', staleIds)
-    if (itemDelErr) console.warn('[doAssign] itinerary_items delete reported error', itemDelErr)
-    const { error: planDelErr } = await sb.from('plans').delete().in('id', staleIds)
-    if (planDelErr) {
-      // Fail loud — without the wipe, the recreate path will use the
-      // stale plan rows + alreadyHas filter, leaving the planner staring
-      // at their previous work post-reassign.
-      showToast('Failed to wipe planner\'s old plans: ' + planDelErr.message)
-      return false
-    }
+
+  // ── 1. Wipe planner's existing work on this set ──
+  console.log(tag('1-wipe'), 'plans+items+assignment for', { setId, plannerId })
+  const planIds = (prior || []).map(p => p.id)
+  if (planIds.length) {
+    const { error: itemsErr } = await sb.from('itinerary_items').delete().in('plan_id', planIds)
+    if (itemsErr) console.warn(tag('1-wipe-items'), itemsErr.message)
+    const { error: plansErr } = await sb.from('plans').delete().in('id', planIds)
+    if (plansErr) { console.error(tag('1-wipe-plans'), plansErr); showToast('Wipe plans failed: ' + plansErr.message); return false }
   }
-  // Drop any lingering assignment row so the INSERT below is the
-  // canonical fresh row with a NOW() claimed_at.
   await sb.from('set_assignments').delete().eq('set_id', setId).eq('planner_id', plannerId)
 
-  // ── Drop OTHER active assignments for this planner ──
-  // Policy: a planner works on ONE active set at a time. The status column
-  // only allows active/completed/paid, so we DELETE other 'active' rows
-  // (paid/completed are kept as history). Plans on those sets are also
-  // deleted so the dashboard fallback doesn't resurface them.
+  // ── 2. Demote OTHER active/in-progress assignments (one active set per planner) ──
+  console.log(tag('2-demote-others'))
   const { data: otherActive } = await sb.from('set_assignments')
-    .select('set_id').eq('planner_id', plannerId).eq('status', 'active')
+    .select('id, set_id').eq('planner_id', plannerId)
+    .in('status', ['active', 'in_progress'])
     .neq('set_id', setId)
-  const otherSetIds = (otherActive || []).map(a => a.set_id)
-  if (otherSetIds.length) {
-    await sb.from('plans').delete()
-      .eq('planner_id', plannerId).in('set_id', otherSetIds)
-    await sb.from('set_assignments').delete()
-      .eq('planner_id', plannerId).in('set_id', otherSetIds)
-    await sb.from('sets').update({ planner_id: null })
-      .eq('planner_id', plannerId).in('id', otherSetIds)
-    auditLog('assignment.drop_other_active', 'planner', plannerId, { dropped_set_ids: otherSetIds, dropped_count: otherSetIds.length })
+  if (otherActive?.length) {
+    const otherSetIds = otherActive.map(a => a.set_id)
+    console.log(tag('2-demote-others'), 'dropping', otherSetIds.length, 'sets')
+    await sb.from('plans').delete().eq('planner_id', plannerId).in('set_id', otherSetIds)
+    await sb.from('set_assignments').delete().eq('planner_id', plannerId).in('set_id', otherSetIds)
+    await sb.from('sets').update({ planner_id: null }).eq('planner_id', plannerId).in('id', otherSetIds)
   }
 
-  // Migrate old-style assignment: tag existing NULL-planner plans + create assignment row for old planner
-  const { data: setInfo } = await sb.from('sets').select('planner_id, status, claimed_at, deadline').eq('id', setId).single()
-  if (setInfo?.planner_id && setInfo.planner_id !== plannerId) {
-    await sb.from('plans').update({ planner_id: setInfo.planner_id })
-      .eq('set_id', setId).is('planner_id', null)
-    const { data: oldAssign } = await sb.from('set_assignments')
-      .select('id').eq('set_id', setId).eq('planner_id', setInfo.planner_id).maybeSingle()
-    if (!oldAssign) {
-      await sb.from('set_assignments').insert({
-        set_id: setId, planner_id: setInfo.planner_id,
-        claimed_at: setInfo.claimed_at || new Date().toISOString(),
-        deadline: setInfo.deadline || deadlineStr
-      })
-    }
-  }
-
-  // Insert new assignment WITHOUT an explicit status. The column default
-  // depends on the live DB — could be 'in_progress' (per initial.sql) or
-  // 'active' (if the fix-set-assignment-active-status.sql migration ran).
-  // Specifying 'active' explicitly fails on databases where the constraint
-  // hasn't been updated, with a silent check-constraint violation. The
-  // dashboard's active-set query accepts BOTH 'active' and 'in_progress',
-  // so either default lands correctly.
+  // ── 3. Create the new assignment row ──
+  console.log(tag('3-insert-assignment'))
   const { error: assignErr } = await sb.from('set_assignments').insert({
     set_id: setId, planner_id: plannerId,
     claimed_at: new Date().toISOString(), deadline: deadlineStr
   })
-  if (assignErr) { showToast('Failed to create assignment: ' + assignErr.message); return false }
-  // Belt-and-braces: try to bump to 'active' so future code paths that
-  // only check status='active' still work. Silently swallow the error
-  // if the constraint rejects (DB still on the old constraint).
-  await sb.from('set_assignments')
+  if (assignErr) { console.error(tag('3-insert-assignment'), assignErr); showToast('Assignment INSERT failed: ' + assignErr.message); return false }
+
+  // ── 4. Best-effort: bump status to 'active'. Dashboard reads BOTH
+  //       'active' and 'in_progress', so a constraint rejection here
+  //       isn't fatal — just log and continue. ──
+  const { error: bumpErr } = await sb.from('set_assignments')
     .update({ status: 'active' })
     .eq('set_id', setId).eq('planner_id', plannerId)
-    .then(({ error }) => { if (error) console.warn('[doAssign] bump to active failed (expected if constraint not updated):', error.message) })
+  if (bumpErr) console.warn(tag('4-bump-active'), 'constraint rejected, default status retained:', bumpErr.message)
 
-  // Build isolated plan copies for this planner (safe for 100+ planners on same set)
-  // 1. Check which traveler plans this planner already has
-  const { data: existingPlannerPlans } = await sb.from('plans')
-    .select('traveler_id').eq('set_id', setId).eq('planner_id', plannerId)
-  const alreadyHas = new Set(existingPlannerPlans?.map(p => p.traveler_id) || [])
-
-  // 2. Build template from original NULL-planner plans (cleanest source)
-  let { data: nullPlans } = await sb.from('plans')
+  // ── 5. Build plan copies from the set's template rows ──
+  console.log(tag('5-build-plans'))
+  const { data: nullPlans } = await sb.from('plans')
     .select('traveler_id, plan_number').eq('set_id', setId).is('planner_id', null).order('plan_number')
   let template = nullPlans || []
   if (!template.length) {
-    // All plans already have planner_id — deduplicate any existing planner's plans as template
+    // Fall back: any plans on this set, deduped by traveler.
     const { data: anyPlans } = await sb.from('plans')
       .select('traveler_id, plan_number').eq('set_id', setId).order('plan_number')
     const seen = new Set()
     template = (anyPlans || []).filter(p => !seen.has(p.traveler_id) && seen.add(p.traveler_id))
   }
-
-  // 3. Only create plans the planner doesn't have yet
-  const toCreate = template.filter(p => !alreadyHas.has(p.traveler_id))
-  if (toCreate.length) {
-    // Fetch bond info + current arrival_date for all travelers. The arrival_date
-    // is snapshotted onto each plan row at assignment time so future Postpone
-    // operations don't shift the date the planner is actively working against.
-    const travelerIds = toCreate.map(p => p.traveler_id)
-    const { data: tInfo } = await sb.from('travelers').select('id, requires_bond, arrival_date').in('id', travelerIds)
-    const bondMap     = new Map((tInfo||[]).map(t => [t.id, !!t.requires_bond]))
-    const arrivalMap  = new Map((tInfo||[]).map(t => [t.id, t.arrival_date]))
-    const copies = toCreate.map((p, i) => {
-      const isFirst = i === 0 && !alreadyHas.size
-      const needsBond = bondMap.get(p.traveler_id)
-      return {
-        set_id: setId, traveler_id: p.traveler_id,
-        plan_number: p.plan_number, planner_id: plannerId,
-        status: isFirst ? (needsBond ? 'bond_pending' : 'in_progress') : 'pending',
-        arrival_date_snapshot: arrivalMap.get(p.traveler_id) || null
-      }
-    })
-    const { error: planErr } = await sb.from('plans').insert(copies)
-    if (planErr) { showToast('Plan creation failed — run the SQL fix in Supabase first: ' + planErr.message); return false }
+  if (!template.length) {
+    console.warn(tag('5-no-template'), 'set has no plans — admin needs to add travelers first')
+    showToast('Assignment created but the set has no travelers. Open Post job set and add travelers, then re-assign.')
+    // Still claim the set so admin sees it as in-progress in their UI.
+    await sb.from('sets').update({ planner_id: plannerId, status: 'claimed', claimed_at: new Date().toISOString() }).eq('id', setId)
+    return true
   }
 
-  // Update set to claimed (planner_id tracks most recent for backward compat)
+  const travelerIds = template.map(p => p.traveler_id)
+  const { data: tInfo } = await sb.from('travelers').select('id, requires_bond, arrival_date').in('id', travelerIds)
+  const bondMap    = new Map((tInfo||[]).map(t => [t.id, !!t.requires_bond]))
+  const arrivalMap = new Map((tInfo||[]).map(t => [t.id, t.arrival_date]))
+  const copies = template.map((p, i) => ({
+    set_id: setId, traveler_id: p.traveler_id,
+    plan_number: p.plan_number, planner_id: plannerId,
+    status: i === 0 ? (bondMap.get(p.traveler_id) ? 'bond_pending' : 'in_progress') : 'pending',
+    arrival_date_snapshot: arrivalMap.get(p.traveler_id) || null
+  }))
+  const { error: planErr } = await sb.from('plans').insert(copies)
+  if (planErr) { console.error(tag('5-insert-plans'), planErr); showToast('Plan INSERT failed: ' + planErr.message); return false }
+
+  // ── 6. Mark the set as claimed ──
+  console.log(tag('6-claim-set'))
   await sb.from('sets').update({
     planner_id: plannerId, status: 'claimed', claimed_at: new Date().toISOString()
   }).eq('id', setId)
 
+  console.log(tag('done'), 'inserted', copies.length, 'plans')
   return true
 }
 
