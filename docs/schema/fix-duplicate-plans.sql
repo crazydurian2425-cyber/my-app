@@ -9,8 +9,11 @@
 -- SELECT, or a legacy fallback that didn't dedupe.
 --
 -- This migration:
---   1. DEDUPES existing duplicates (keeps the most recent row per
---      (set_id, planner_id, traveler_id))
+--   1. DEDUPES existing duplicates. Explicitly deletes itinerary_items
+--      first, THEN the duplicate plan row. The FK from itinerary_items
+--      → plans is declared ON DELETE CASCADE in initial.sql but the
+--      LIVE database has it as RESTRICT (schema drift), so we can't
+--      trust cascade to fire.
 --   2. ADDS a partial unique index to PREVENT future duplicates from
 --      being inserted. NULL planner_id is excluded (template plans
 --      can legitimately co-exist with planner copies on the same set).
@@ -20,12 +23,11 @@
 -- the dashboard. The admin sees a clear error and can investigate.
 -- ============================================================================
 
--- ── 1. Dedupe existing duplicates ────────────────────────────────────
--- Keep the row with the latest created_at (or highest id as tie-breaker)
--- for each (set_id, planner_id, traveler_id) combo. Itinerary_items
--- cascade off the deleted plan via FK ON DELETE CASCADE — if any items
--- existed on a duplicate plan they go too.
-WITH ranked AS (
+-- ── 1a. Identify which plan rows are duplicates (everything past the
+--        most-recent row in each (set_id, planner_id, traveler_id) group) ──
+CREATE TEMP TABLE _dupe_plan_ids AS
+SELECT id
+FROM (
   SELECT id,
          ROW_NUMBER() OVER (
            PARTITION BY set_id, planner_id, traveler_id
@@ -33,9 +35,26 @@ WITH ranked AS (
          ) AS rn
   FROM   public.plans
   WHERE  planner_id IS NOT NULL
-)
+) ranked
+WHERE  rn > 1;
+
+
+-- ── 1b. Drop itinerary_items rows for the duplicates FIRST ──
+-- The live FK is RESTRICT (not CASCADE as initial.sql claims), so any
+-- items attached to a duplicate plan would block its deletion. Wipe
+-- them explicitly. item_images cascade off itinerary_items normally
+-- so they go with this delete.
+DELETE FROM public.itinerary_items
+WHERE  plan_id IN (SELECT id FROM _dupe_plan_ids);
+
+
+-- ── 1c. Now delete the duplicate plan rows ──
 DELETE FROM public.plans
-WHERE  id IN (SELECT id FROM ranked WHERE rn > 1);
+WHERE  id IN (SELECT id FROM _dupe_plan_ids);
+
+
+-- Temp table auto-drops at end of session, but explicit for clarity.
+DROP TABLE IF EXISTS _dupe_plan_ids;
 
 
 -- ── 2. Partial unique index — block future duplicates ───────────────
