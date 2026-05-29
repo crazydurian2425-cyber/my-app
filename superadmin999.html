@@ -7718,8 +7718,8 @@ async function sendApprovalEmailAuto(app){
     return false
   }
   const loginUrl = buildPlannerLoginUrl()
-  const firstName = (app.name || '').split(' ')[0] || 'プランナー'
-  const subject = `Journey Junction プランナー登録が承認されました`
+  const firstName = (app.name || '').split(' ')[0] || 'planificateur'
+  const subject = `Votre candidature planificateur Journey Junction est approuvée`
   // Use the same branded template as the manual send so the auto-fired email
   // also includes the logo + consistent footer. `middle` is empty since we
   // don't have an admin-edited body in the auto path.
@@ -7772,16 +7772,16 @@ function openApprovalEmail(id){
   if (!app) return
   const loginUrl = buildPlannerLoginUrl()
   document.getElementById('welcome-to').textContent = app.email
-  document.getElementById('welcome-subject').value = `Journey Junction プランナー登録が承認されました`
+  document.getElementById('welcome-subject').value = `Votre candidature planificateur Journey Junction est approuvée`
   document.getElementById('welcome-body').value =
-`${app.name.split(' ')[0]} 様、
+`Bonjour ${app.name.split(' ')[0]},
 
-Journey Junction プランナーのご応募が承認されました。
+Votre candidature pour devenir planificateur Journey Junction a été approuvée.
 
-応募時に設定したメールアドレスとパスワードでログインしてください：
+Connectez-vous avec l'adresse e-mail et le mot de passe choisis lors de votre candidature :
 ${loginUrl}
 
-ご利用開始にあたり問題がございましたら、このメールにご返信ください。
+Si vous rencontrez le moindre problème pour démarrer, répondez simplement à cet e-mail.
 
 — Journey Junction`
   openModal('modal-welcome-email')
@@ -7818,17 +7818,17 @@ function buildApprovalEmailHtml({ firstName, middle, loginUrl }) {
 
       <tr><td style="padding:24px 36px 4px 36px;">
         <h1 style="margin:0 0 6px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
-          ようこそ、<em style="font-style:italic;color:#1a7a5e;">${escapeHtml(firstName)}</em>さん
+          Bienvenue, <em style="font-style:italic;color:#1a7a5e;">${escapeHtml(firstName)}</em>
         </h1>
         <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">
-          Journey Junction プランナーのご応募が<strong style="color:#1a7a5e;">承認</strong>されました。応募時に設定したメールアドレスとパスワードでログインできます。
+          Votre candidature pour devenir planificateur Journey Junction a été <strong style="color:#1a7a5e;">approuvée</strong>. Vous pouvez maintenant vous connecter avec l'adresse e-mail et le mot de passe choisis lors de votre candidature.
         </p>
       </td></tr>
 
       <tr><td style="padding:0 36px 8px 36px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr><td align="center" style="padding:6px 0 14px;">
-            <a href="${escapeHtml(loginUrl)}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">プランナーポータルを開く →</a>
+            <a href="${escapeHtml(loginUrl)}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">Ouvrir le portail planificateur →</a>
           </td></tr>
         </table>
       </td></tr>
@@ -7838,7 +7838,7 @@ function buildApprovalEmailHtml({ firstName, middle, loginUrl }) {
       <tr><td style="padding:18px 36px 28px 36px;">
         <div style="height:1px;background:rgba(0,0,0,0.06);margin-bottom:14px;"></div>
         <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;">
-          ログイン時に問題がございましたら、このメールにご返信ください。少人数のチームですべての返信を確認しております。
+          Un problème pour vous connecter ? Répondez simplement à cet e-mail. Nous sommes une petite équipe et lisons chaque message.
         </p>
       </td></tr>
 
@@ -7858,14 +7858,18 @@ async function sendApprovalEmail(){
   const body = document.getElementById('welcome-body').value
   const btn = document.querySelector('#modal-welcome-email .btn-primary')
 
-  // Pull first name out of the body's first line. Handles both:
-  //   English: "Hi X,"
-  //   Japanese: "X 様,"
-  const firstLineMatch = body.match(/^Hi\s+([^,]+),/i) || body.match(/^([^\n,]+?)\s*様[、,]/)
-  const firstName = firstLineMatch ? firstLineMatch[1].trim() : 'プランナー'
+  // Pull first name out of the body's first line. Handles:
+  //   French:   "Bonjour X,"
+  //   English:  "Hi X,"
+  //   Japanese: "X 様,"  (legacy — kept so old drafts still parse)
+  const firstLineMatch = body.match(/^Bonjour\s+([^,]+),/i)
+                      || body.match(/^Hi\s+([^,]+),/i)
+                      || body.match(/^([^\n,]+?)\s*様[、,]/)
+  const firstName = firstLineMatch ? firstLineMatch[1].trim() : 'planificateur'
 
   // Strip greeting opener + sign-off so we don't double them up with the template chrome.
   const middle = body
+    .replace(/^Bonjour\s+[^,]+,\s*\n+/i, '')
     .replace(/^Hi\s+[^,]+,\s*\n+/i, '')
     .replace(/^[^\n]+様[、,]\s*\n+/, '')
     .replace(/\n*—\s*Journey Junction\s*$/i, '')
