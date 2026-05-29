@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display:ital@0;1&family=Lora:ital@1&family=Noto+Sans+JP:wght@400;500;600&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1600&q=80&auto=format&fit=crop">
+<link rel="preload" as="image" href="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80&auto=format&fit=crop">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -277,13 +277,14 @@ html[lang="ja"] .form-sub{font-style:normal;font-family:'Noto Sans JP','Lora',se
 
 <!-- Language toggle -->
 <div class="lang-toggle" role="group" aria-label="Language">
-  <button type="button" class="lang-btn" data-lang="ja" onclick="setLang('ja')" aria-label="日本語 (Japanese)" title="日本語">
+  <button type="button" class="lang-btn active" data-lang="fr" onclick="setLang('fr')" aria-label="Français (French)" title="Français">
     <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect width="60" height="30" fill="#fff"/>
-      <circle cx="30" cy="15" r="9" fill="#BC002D"/>
+      <rect width="20" height="30" x="0"  fill="#0055A4"/>
+      <rect width="20" height="30" x="20" fill="#ffffff"/>
+      <rect width="20" height="30" x="40" fill="#EF4135"/>
     </svg>
   </button>
-  <button type="button" class="lang-btn active" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
+  <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
     <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <clipPath id="uk-a"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
       <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
@@ -298,8 +299,8 @@ html[lang="ja"] .form-sub{font-style:normal;font-family:'Noto Sans JP','Lora',se
 <!-- Hero panel -->
 <aside class="hero" aria-hidden="false">
   <img class="hero-img" id="hero-img"
-       src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1600&q=80&auto=format&fit=crop"
-       alt="Mount Fuji reflected in the lake at golden hour"
+       src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80&auto=format&fit=crop"
+       alt="The French Riviera coastline at golden hour"
        loading="eager" fetchpriority="high">
 
   <div class="hero-inner">
@@ -397,37 +398,38 @@ const TM_I18N = {
     'success.title':'Check your inbox',
     'success.body':'We sent a password reset link to <strong>{email}</strong>. Click the link in the email to set a new password. Check your spam folder if you don\'t see it.'
   },
-  ja: {
-    'hero.portalBadge':'プランナーポータル',
-    'hero.recoverEyebrow':'アカウント復旧',
-    'hero.forgotTitle':'パスワードを<br>お<em>忘れ</em>ですか？',
-    'hero.forgotDesc':'ご安心ください。メールアドレスを入力いただければ、新しいパスワードを設定するための安全なリンクをお送りします。',
-    'hero.secureNote':'セキュリティのため、リセットリンクは60分で期限切れになります。',
-    'form.eyebrow':'パスワードリセット',
-    'form.title':'パスワードを<em>リセット</em>',
-    'form.sub':'新しいパスワードを設定するためのリンクをメールでお送りします。',
-    'form.emailLabel':'メールアドレス',
-    'form.emailPh':'your@email.com',
-    'form.btnSend':'リセットリンクを送信',
-    'form.btnSending':'送信中...',
-    'form.or':'または',
-    'form.backToSignIn':'← サインイン画面に戻る',
-    'err.fillEmail':'メールアドレスを入力してください。',
-    'success.title':'メールをご確認ください',
-    'success.body':'<strong>{email}</strong> 宛にパスワードリセットリンクをお送りしました。メール内のリンクをクリックして新しいパスワードを設定してください。見つからない場合は迷惑メールフォルダもご確認ください。'
+  fr: {
+    'hero.portalBadge':'Portail planificateur',
+    'hero.recoverEyebrow':'Récupération de compte',
+    'hero.forgotTitle':'Bloqué hors de<br>votre <em>espace</em> ?',
+    'hero.forgotDesc':"Cela arrive aux meilleurs. Saisissez votre e-mail — nous vous enverrons un lien sécurisé pour définir un nouveau mot de passe et retrouver vos voyageurs.",
+    'hero.secureNote':'Les liens de réinitialisation expirent au bout de 60 minutes pour des raisons de sécurité.',
+    'form.eyebrow':'Réinitialisation du mot de passe',
+    'form.title':'Réinitialisez votre <em>mot de passe</em>',
+    'form.sub':'Nous vous enverrons un lien à usage unique pour définir un nouveau mot de passe.',
+    'form.emailLabel':'Adresse e-mail',
+    'form.emailPh':'votre@email.com',
+    'form.btnSend':'Envoyer le lien',
+    'form.btnSending':'Envoi...',
+    'form.or':'ou',
+    'form.backToSignIn':'← Retour à la connexion',
+    'err.fillEmail':'Veuillez saisir votre adresse e-mail.',
+    'success.title':'Vérifiez votre boîte de réception',
+    'success.body':'Nous avons envoyé un lien de réinitialisation à <strong>{email}</strong>. Cliquez sur le lien dans l\'e-mail pour définir un nouveau mot de passe. Vérifiez vos courriers indésirables si vous ne le voyez pas.'
   }
 }
 
 try {
-  if (!localStorage.getItem('jj_lang_resetv1')) {
+  if (!localStorage.getItem('jj_lang_resetv2')) {
     if (localStorage.getItem('jj_planner_lang') === 'ja') localStorage.removeItem('jj_planner_lang')
-    localStorage.setItem('jj_lang_resetv1', '1')
+    localStorage.setItem('jj_lang_resetv2', '1')
   }
 } catch (e) {}
-let TM_LANG = localStorage.getItem('jj_planner_lang') || 'en'
+let TM_LANG = localStorage.getItem('jj_planner_lang') || 'fr'
+if (TM_LANG !== 'en' && TM_LANG !== 'fr') TM_LANG = 'fr'
 
-const HERO_IMG_EN = 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1600&q=80&auto=format&fit=crop'
-const HERO_IMG_JA = 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1600&q=80&auto=format&fit=crop'
+const HERO_IMG_EN = 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80&auto=format&fit=crop'
+const HERO_IMG_FR = 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80&auto=format&fit=crop'
 
 function t(key) {
   return TM_I18N[TM_LANG]?.[key] ?? TM_I18N.en[key] ?? key
@@ -452,8 +454,8 @@ function applyLang() {
   if (heroImg) {
     heroImg.classList.add('fading')
     setTimeout(() => {
-      heroImg.src = TM_LANG === 'ja' ? HERO_IMG_JA : HERO_IMG_EN
-      heroImg.alt = TM_LANG === 'ja' ? '湖に映る富士山' : 'Mount Fuji reflected in the lake'
+      heroImg.src = TM_LANG === 'fr' ? HERO_IMG_FR : HERO_IMG_EN
+      heroImg.alt = TM_LANG === 'fr' ? "Le littoral de la Côte d'Azur à l'heure dorée" : 'The French Riviera coastline at golden hour'
       heroImg.classList.remove('fading')
     }, 220)
   }
@@ -462,7 +464,7 @@ function applyLang() {
     btn.classList.toggle('active', btn.dataset.lang === TM_LANG)
   })
   // document title
-  document.title = TM_LANG === 'ja' ? 'Journey Junction — パスワードリセット' : 'Journey Junction — Reset password'
+  document.title = TM_LANG === 'fr' ? 'Journey Junction — Réinitialisation du mot de passe' : 'Journey Junction — Reset password'
 }
 
 function setLang(lang) {
@@ -478,16 +480,16 @@ applyLang()
 // English. Falls back to the original message in EN mode (or for unknown errors).
 function translateAuthError(msg, fallback) {
   const m = (msg || '').toLowerCase()
-  const isJa = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') || (document.documentElement.lang === 'ja')
+  const isFr = (typeof TM_LANG !== 'undefined' && TM_LANG === 'fr') || (document.documentElement.lang === 'fr')
   if (!m) return fallback || ''
   if (m.includes('unable to validate email') || m.includes('invalid format') || m.includes('invalid email')) {
-    return isJa ? 'メールアドレスの形式が正しくありません' : msg
+    return isFr ? "Le format de l'adresse e-mail est incorrect" : msg
   }
   if (m.includes('rate limit') || m.includes('too many') || m.includes('429')) {
-    return isJa ? 'リクエストが多すぎます。少し待ってから再度お試しください' : msg
+    return isFr ? 'Trop de tentatives. Patientez un instant avant de réessayer.' : msg
   }
   if (m.includes('user not found') || m.includes('email not found')) {
-    return isJa ? 'このメールアドレスのアカウントが見つかりません' : msg
+    return isFr ? 'Aucun compte trouvé pour cette adresse e-mail' : msg
   }
   return fallback || msg
 }
