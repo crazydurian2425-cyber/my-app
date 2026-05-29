@@ -5083,19 +5083,20 @@ async function loadPayoutRequests() {
       ? `<div style="padding:20px;text-align:center;font-size:13px;color:var(--ink-3)">No pending requests</div>`
       : pending.map(r => {
           const bank = r.bank_snapshot || {}
-          // PayPay is preferred when configured; bank is the fallback. Old
-          // requests (pre-paypay support) only have bank fields — fall back
-          // to the planner's current `planners` row in that case.
+          // Instant payment is preferred when configured; SEPA bank transfer is
+          // the fallback. Old requests only have bank fields — fall back to the
+          // planner's current `planners` row in that case.
           const useSnapshotPaypay = bank.method === 'paypay' && bank.paypay_id
-          const useSnapshotBank   = !!bank.bank_name
+          const useSnapshotBank   = !!(bank.bank_name || bank.bank_account)
           const usePlannerPaypay  = !useSnapshotPaypay && !useSnapshotBank && r.planners?.paypay_id && r.planners?.paypay_holder
           let bankLine
           if (useSnapshotPaypay) {
-            bankLine = `🟦 PayPay · ${escapeHtml(bank.paypay_id)} · ${escapeHtml(bank.paypay_holder || '—')}`
+            bankLine = `⚡ Instant · ${escapeHtml(bank.paypay_id)} · ${escapeHtml(bank.paypay_holder || '—')}`
           } else if (useSnapshotBank) {
-            bankLine = `${escapeHtml(bank.bank_name)} · ${escapeHtml(bank.bank_account || '—')}${bank.bank_holder ? ' · ' + escapeHtml(bank.bank_holder) : ''}`
+            const bankParts = [bank.bank_name, bank.bank_account, bank.bank_bic, bank.bank_holder].filter(Boolean).map(escapeHtml)
+            bankLine = bankParts.length ? bankParts.join(' · ') : '—'
           } else if (usePlannerPaypay) {
-            bankLine = `🟦 PayPay · ${escapeHtml(r.planners.paypay_id)} · ${escapeHtml(r.planners.paypay_holder)}`
+            bankLine = `⚡ Instant · ${escapeHtml(r.planners.paypay_id)} · ${escapeHtml(r.planners.paypay_holder)}`
           } else {
             bankLine = `${escapeHtml(r.planners?.bank_name || 'No payout method on file')} · ${escapeHtml(r.planners?.bank_account || '—')}`
           }
@@ -5129,9 +5130,9 @@ async function loadPayoutRequests() {
       : history.slice(0, 100).map(r => {
           const bank = r.bank_snapshot || {}
           const bankShort = bank.method === 'paypay' && bank.paypay_id
-            ? `PayPay ${escapeHtml(bank.paypay_id)}`
-            : bank.bank_name
-              ? `${escapeHtml(bank.bank_name)} ${escapeHtml(bank.bank_account||'—')}`
+            ? `Instant ${escapeHtml(bank.paypay_id)}`
+            : (bank.bank_name || bank.bank_account)
+              ? `${escapeHtml(bank.bank_name || 'IBAN')} ${escapeHtml(bank.bank_account||'—')}`
               : '—'
           const reqD = r.requested_at ? new Date(r.requested_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—'
           const resD = r.resolved_at ? new Date(r.resolved_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—'

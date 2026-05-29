@@ -7247,38 +7247,29 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
         <div class="card" style="margin-top:16px;"><div class="card-header"><div class="card-title" data-i18n="profile.payment">Payment details</div><div class="card-sub" data-i18n="profile.payment.sub">For commission payout</div></div><div class="card-body">
 
           <!-- Switch hint: whichever section is filled in becomes the primary
-               payout method. PayPay wins when both are filled. -->
+               payout method. Instant payment wins when both are filled. -->
           <div data-i18n-html="profile.payout.switchHint" style="font-size:11.5px;color:var(--text-3);background:rgba(193,125,42,0.06);border:1px solid rgba(193,125,42,0.18);border-radius:8px;padding:9px 12px;margin-bottom:16px;line-height:1.5;">
-            Fill either section to receive payouts. <strong style="color:var(--text-2);">PayPay is used first</strong> when both are filled. Clear the PayPay fields to switch back to bank transfer.
+            Fill either section to receive payouts. <strong style="color:var(--text-2);">Instant payment is used first</strong> when both are filled. Clear those fields to switch back to the SEPA transfer.
           </div>
 
-          <!-- PayPay — preferred, instant payout method. Lives above the bank
-               section because it's faster + lower fees + most planners prefer it. -->
+          <!-- Instant payment (PayPal / Lydia / Wise) — preferred, fast payout.
+               Lives above the bank section because it clears faster. -->
           <div style="font-size:11px;font-weight:700;color:var(--e-green-d,#0f5240);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-            <span data-i18n="profile.paypay.header">PayPay</span>
+            <span data-i18n="profile.paypay.header">Instant payment</span>
             <span style="font-weight:500;letter-spacing:0;text-transform:none;font-size:10.5px;color:var(--text-3);" data-i18n="profile.paypay.tag">· preferred · instant</span>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label" data-i18n="profile.paypay.id">PayPay ID / phone</label><input class="form-input" id="profile-paypay-id" placeholder="090-xxxx-xxxx or PayPay ID" data-i18n-ph="profile.ph.paypayId"></div>
-            <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.paypay.holder">Account holder name</label><input class="form-input" id="profile-paypay-holder" placeholder="As shown in PayPay" data-i18n-ph="profile.ph.paypayHolder"></div>
+            <div class="form-group"><label class="form-label" data-i18n="profile.paypay.id">PayPal / Lydia · email or phone</label><input class="form-input" id="profile-paypay-id" placeholder="PayPal email or +33 6 xx xx xx xx" data-i18n-ph="profile.ph.paypayId"></div>
+            <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.paypay.holder">Account holder name</label><input class="form-input" id="profile-paypay-holder" placeholder="Account holder name" data-i18n-ph="profile.ph.paypayHolder"></div>
           </div>
 
-          <!-- Bank transfer — fallback when PayPay is empty. Same fields as before. -->
+          <!-- SEPA bank transfer — fallback when instant payment is empty. -->
           <div style="border-top:1px dashed rgba(0,0,0,0.10);margin-top:20px;padding-top:14px;">
-            <div style="font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:10px;" data-i18n="profile.bank.header">Bank transfer</div>
-            <div class="form-group"><label class="form-label" data-i18n="profile.holder">Recipient's full name</label><input class="form-input" id="profile-holder" placeholder="As registered with the bank (romaji/English)" data-i18n-ph="profile.ph.holder"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:10px;" data-i18n="profile.bank.header">SEPA bank transfer</div>
+            <div class="form-group"><label class="form-label" data-i18n="profile.holder">Account holder name</label><input class="form-input" id="profile-holder" placeholder="As registered with the bank" data-i18n-ph="profile.ph.holder"></div>
             <div class="form-group"><label class="form-label" data-i18n="profile.bank">Bank name</label><input class="form-input" id="profile-bank" placeholder="e.g. BNP Paribas, Société Générale, Crédit Agricole, La Banque Postale" data-i18n-ph="profile.ph.bank"></div>
-            <div class="form-row">
-              <div class="form-group"><label class="form-label" data-i18n="profile.branch">Branch name (shiten)</label><input class="form-input" id="profile-branch-name" placeholder="e.g. Shibuya Branch" data-i18n-ph="profile.ph.branch"></div>
-              <div class="form-group"><label class="form-label" data-i18n="profile.branchCode">Branch code</label><input class="form-input" id="profile-branch-code" placeholder="3 digits" maxlength="3" inputmode="numeric" data-i18n-ph="profile.ph.branchCode"></div>
-            </div>
-            <div class="form-row">
-              <div class="form-group"><label class="form-label" data-i18n="profile.acctType">Account type</label><select class="form-input" id="profile-account-type">
-                <option value="futsu" data-i18n="profile.acctType.futsu">Compte courant</option>
-                <option value="toza" data-i18n="profile.acctType.toza">Compte chèque</option>
-              </select></div>
-              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.account">Account number</label><input class="form-input" id="profile-account" placeholder="Usually 7 digits" maxlength="10" inputmode="numeric" data-i18n-ph="profile.ph.account"></div>
-            </div>
+            <div class="form-group"><label class="form-label" data-i18n="profile.account">IBAN</label><input class="form-input" id="profile-account" placeholder="FR76 xxxx xxxx xxxx xxxx xxxx xxx" maxlength="34" data-i18n-ph="profile.ph.account" style="text-transform:uppercase;"></div>
+            <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bic">BIC / SWIFT (optional)</label><input class="form-input" id="profile-branch-code" placeholder="e.g. BNPAFRPP" maxlength="11" data-i18n-ph="profile.ph.bic" style="text-transform:uppercase;"></div>
           </div>
         </div></div>
       </div>
@@ -7983,13 +7974,8 @@ const TM_I18N = {
     'wallet.empty':'No payout requests yet',
     'wallet.protection.title':'Wallet protection buffer',
     'wallet.protection.sub':'Fraud & chargeback buffer',
-    'profile.branch':'Branch name (shiten)',
-    'profile.branchCode':'Branch code',
-    'profile.acctType':'Account type',
-    'profile.acctType.futsu':'Compte courant',
-    'profile.acctType.toza':'Compte chèque',
-    'profile.ph.branch':'e.g. Shibuya Branch',
-    'profile.ph.branchCode':'3 digits',
+    'profile.bic':'BIC / SWIFT (optional)',
+    'profile.ph.bic':'e.g. BNPAFRPP',
     'wallet.protection.badge':'Fraud & chargeback buffer',
     'wallet.protection.body1':'On your <strong>first withdrawal</strong> we hold a one-time <strong><span id="w-protection-min">€100,000</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. Once that first payout clears, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
     'wallet.protection.body2':'Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. After your first payout the buffer releases — anything earned then becomes fully withdrawable.',
@@ -8012,17 +7998,17 @@ const TM_I18N = {
     'profile.email':'Email',
     'profile.phone':'Phone',
     'profile.payment':'Payment details',
-    'profile.paypay.header':'PayPay',
+    'profile.paypay.header':'Instant payment',
     'profile.paypay.tag':'· preferred · instant',
-    'profile.bank.header':'Bank transfer',
-    'profile.payout.switchHint':'Fill either section to receive payouts. <strong>PayPay is used first</strong> when both are filled. Clear the PayPay fields to switch back to bank transfer.',
-    'profile.paypay.id':'PayPay ID / phone',
+    'profile.bank.header':'SEPA bank transfer',
+    'profile.payout.switchHint':'Fill either section to receive payouts. <strong>Instant payment is used first</strong> when both are filled. Clear those fields to switch back to the SEPA transfer.',
+    'profile.paypay.id':'PayPal / Lydia · email or phone',
     'profile.paypay.holder':'Account holder name',
-    'profile.ph.paypayId':'090-xxxx-xxxx or PayPay ID',
-    'profile.ph.paypayHolder':'As shown in PayPay',
+    'profile.ph.paypayId':'PayPal email or +33 6 xx xx xx xx',
+    'profile.ph.paypayHolder':'Account holder name',
     'profile.payment.sub':'For commission payout',
     'profile.bank':'Bank name',
-    'profile.account':'Account number',
+    'profile.account':'IBAN',
     'profile.holder':'Account holder name',
     'profile.stats':'Your stats',
     'profile.stats.sets':'Sets done',
@@ -8034,12 +8020,12 @@ const TM_I18N = {
     'profile.types':'Travel types you excel at',
     'profile.ph.fullName':'Your full name',
     'profile.ph.city':'Your city',
-    'profile.ph.bank':'e.g. MUFG, SMBC, Mizuho',
-    'profile.ph.account':'Account number',
+    'profile.ph.bank':'e.g. BNP Paribas, Société Générale, Crédit Agricole',
+    'profile.ph.account':'FR76 xxxx xxxx xxxx xxxx xxxx xxx',
     'profile.ph.holder':'Name as per bank account',
     'profile.ph.cities':'e.g. Paris, Lyon, Marseille',
     'profile.ph.types':'e.g. Street food tours, family trips, corporate events...',
-    'profile.ph.phone':'+44 7xxx xxxxxx',
+    'profile.ph.phone':'+33 6 xx xx xx xx',
     'profile.ph.cityOther':'Type your city…',
     // First-time rules popup
     'rules.title':'Welcome to Journey Junction',
@@ -8056,7 +8042,7 @@ const TM_I18N = {
     'rules.btn.agree':'Agree & continue',
     'rules.btn.saving':'Saving…',
     'rules.err':'Failed to save — please try again',
-    'profile.ph.bank':'e.g. MUFG, SMBC, Mizuho',
+    'profile.ph.bank':'e.g. BNP Paribas, Société Générale, Crédit Agricole',
     'profile.ph.cities':'e.g. Paris, Lyon, Marseille',
     'profile.langs':'Languages you speak',
     'profile.travelTypes':'Travel types you cover',
@@ -8179,7 +8165,7 @@ const TM_I18N = {
     'pr.available':'Available',
     'pr.payingTo':'Paying to',
     'pr.updateBankHint':'Update payout details in Profile → Payment',
-    'toast.addPayoutMethodFirst':'Add PayPay or bank details in Profile first',
+    'toast.addPayoutMethodFirst':'Add instant payment or bank details in Profile first',
     'pr.amount':'Amount to withdraw',
     'pr.max':'Max',
     'pr.amountHint':'Enter any amount up to your available balance.',
@@ -8697,13 +8683,8 @@ const TM_I18N = {
     'wallet.empty':'Aucune demande de retrait pour l\'instant',
     'wallet.protection.title':'Buffer de protection du portefeuille',
     'wallet.protection.sub':'Retenue de sécurité contre fraude et chargebacks',
-    'profile.branch':'Agence',
-    'profile.branchCode':'Code guichet',
-    'profile.acctType':'Type de compte',
-    'profile.acctType.futsu':'Compte courant',
-    'profile.acctType.toza':'Compte chèque',
-    'profile.ph.branch':'ex : Paris Opéra',
-    'profile.ph.branchCode':'5 chiffres',
+    'profile.bic':'BIC / SWIFT (optionnel)',
+    'profile.ph.bic':'ex : BNPAFRPP',
     'wallet.protection.badge':'Réserve fraude/chargeback',
     'wallet.protection.body1':'Lors de votre <strong>premier retrait uniquement</strong>, nous retenons <strong><span id="w-protection-min">€1 000</span></strong> en buffer temporaire pour couvrir d\'éventuels ajustements post-approbation (litiges, corrections de caution, annulations de validation). Une fois le premier retrait effectué, le buffer est <strong>définitivement levé</strong> et tous les retraits suivants peuvent vider le portefeuille.',
     'wallet.protection.body2':'Plafond actuel : <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. Après le premier retrait, le buffer est levé et tout ce que vous gagnez devient librement retirable.',
@@ -8729,9 +8710,9 @@ const TM_I18N = {
     'profile.paypay.tag':'· recommandé · instantané',
     'profile.bank.header':'Virement SEPA',
     'profile.payout.switchHint':'Remplissez l\'un ou l\'autre. Si les deux sont renseignés, le <strong>paiement instantané est prioritaire</strong>. Videz son champ pour revenir au virement SEPA.',
-    'profile.paypay.id':'ID / Numéro de téléphone',
+    'profile.paypay.id':'PayPal / Lydia · e-mail ou téléphone',
     'profile.paypay.holder':'Titulaire du compte',
-    'profile.ph.paypayId':'+33 6 xx xx xx xx ou ID',
+    'profile.ph.paypayId':'E-mail PayPal ou +33 6 xx xx xx xx',
     'profile.ph.paypayHolder':'Nom du titulaire',
     'profile.payment.sub':'Où recevoir vos commissions',
     'profile.bank':'Banque',
@@ -9942,14 +9923,15 @@ function getPlannerPayoutMethod() {
   const ppHolder = (planner?.paypay_holder || '').trim()
   const hasPaypay = !!(ppId && ppHolder)
   const bankName    = (planner?.bank_name    || '').trim()
-  const bankAccount = (planner?.bank_account || '').trim()
-  const hasBank = !!(bankName && bankAccount)
+  const bankAccount = (planner?.bank_account || '').trim()   // IBAN
+  const bic         = (planner?.bank_branch_code || '').trim() // BIC/SWIFT (repurposed column)
+  const hasBank = !!bankAccount   // IBAN alone is enough for a SEPA transfer
 
   if (hasPaypay) {
     return {
       method: 'paypay',
-      title:  'PayPay · ' + ppId,
-      detail: ppHolder + (hasBank ? ' · bank backup on file' : ''),
+      title:  t('profile.paypay.header','Instant payment') + ' · ' + ppId,
+      detail: ppHolder + (hasBank ? ' · ' + t('wallet.bank.title','Bank on file') : ''),
       snapshot: {
         method:        'paypay',
         paypay_id:     ppId,
@@ -9957,24 +9939,25 @@ function getPlannerPayoutMethod() {
         // include bank too if also configured — admin can fall back manually
         bank_name:    bankName || null,
         bank_account: bankAccount || null,
+        bank_bic:     bic || null,
         bank_holder:  (planner?.bank_holder || null)
       }
     }
   }
   if (hasBank) {
     const parts = []
-    if (planner?.bank_branch_name) parts.push(planner.bank_branch_name + (planner.bank_branch_code ? ' (' + planner.bank_branch_code + ')' : ''))
-    if (planner?.bank_account_type) parts.push(planner.bank_account_type === 'toza' ? 'Compte chèque' : 'Compte courant')
     if (bankAccount) parts.push(bankAccount)
+    if (bic) parts.push(bic)
     if (planner?.bank_holder) parts.push(planner.bank_holder)
     return {
       method: 'bank',
-      title:  bankName,
+      title:  bankName || planner?.bank_holder || t('profile.bank.header','SEPA bank transfer'),
       detail: parts.length ? parts.join(' · ') : '—',
       snapshot: {
         method:       'bank',
-        bank_name:    bankName,
+        bank_name:    bankName || null,
         bank_account: bankAccount,
+        bank_bic:     bic || null,
         bank_holder:  planner?.bank_holder || null
       }
     }
@@ -10347,7 +10330,7 @@ async function submitPayoutRequest() {
   // Either PayPay OR bank is enough — PayPay is preferred when both are set.
   const submitMethod = getPlannerPayoutMethod()
   if (submitMethod.method === 'none') {
-    showToast(t('toast.addPayoutMethodFirst','Add PayPay or bank details in Profile first'))
+    showToast(t('toast.addPayoutMethodFirst','Add instant payment or bank details in Profile first'))
     return
   }
 
@@ -11758,10 +11741,7 @@ async function loadProfile() {
   el('profile-bank',    p.bank_name)
   el('profile-account', p.bank_account)
   el('profile-holder',  p.bank_holder)
-  el('profile-branch-name', p.bank_branch_name)
-  el('profile-branch-code', p.bank_branch_code)
-  const acctTypeSel = document.getElementById('profile-account-type')
-  if (acctTypeSel) acctTypeSel.value = p.bank_account_type || 'futsu'
+  el('profile-branch-code', p.bank_branch_code)  // BIC / SWIFT (repurposed column)
   el('profile-paypay-id',     p.paypay_id)
   el('profile-paypay-holder', p.paypay_holder)
   // Cities-you-cover + hidden specialty fields (langs + types) are persisted as
@@ -11854,11 +11834,11 @@ async function saveProfile() {
     city:             cityFinal,
     phone:            document.getElementById('profile-phone')?.value?.trim(),
     bank_name:        document.getElementById('profile-bank')?.value?.trim(),
-    bank_account:     document.getElementById('profile-account')?.value?.trim(),
+    // IBAN — uppercased + spaces stripped so it stores in canonical form
+    bank_account:     (document.getElementById('profile-account')?.value || '').replace(/\s+/g,'').toUpperCase() || null,
     bank_holder:      document.getElementById('profile-holder')?.value?.trim(),
-    bank_branch_name: document.getElementById('profile-branch-name')?.value?.trim() || null,
-    bank_branch_code: document.getElementById('profile-branch-code')?.value?.trim() || null,
-    bank_account_type: document.getElementById('profile-account-type')?.value || null,
+    // BIC / SWIFT, stored in the repurposed branch_code column
+    bank_branch_code: (document.getElementById('profile-branch-code')?.value || '').replace(/\s+/g,'').toUpperCase() || null,
     paypay_id:        document.getElementById('profile-paypay-id')?.value?.trim() || null,
     paypay_holder:    document.getElementById('profile-paypay-holder')?.value?.trim() || null,
   }
