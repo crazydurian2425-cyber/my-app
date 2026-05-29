@@ -15,8 +15,14 @@ const CREDENTIALS = [
   { user: 'admin', pass: '168168', allow: ['/superadmin999.html', '/supercs999.html'] },
 ]
 
-// Resend API key — server-side only (never sent to clients).
-const RESEND_API_KEY = 're_Coxh3Vqo_C68XoGkEf7fRXD9YQ7Zvukr3'
+// Resend API key — loaded from the Worker secret `RESEND_API_KEY` at the
+// top of fetch() (see below). NOT hardcoded — set it once with:
+//   npx wrangler secret put RESEND_API_KEY
+// (or Cloudflare dashboard → Workers → Settings → Variables → Secrets).
+// Module-level `let` so the existing handler functions can keep reading
+// it without threading `env` through every signature; fetch() assigns it
+// per-request from env before any handler runs.
+let RESEND_API_KEY = ''
 
 // Supabase project — service role key kept server-side only.
 // Used by /api/create-planner to create auth users + insert planner rows.
@@ -26,6 +32,12 @@ const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzd
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
+
+    // Load secrets from the Worker environment into the module-level
+    // vars the handlers read. Set via `wrangler secret put RESEND_API_KEY`.
+    // Falls back to empty string — handlers already guard with a 500 when
+    // the key is missing, so a forgotten secret fails loud, not silent.
+    if (env.RESEND_API_KEY) RESEND_API_KEY = env.RESEND_API_KEY
 
     // ── Supabase API proxy (admin/CS only — gates the service-role key) ──
     // Browser-side Supabase clients in superadmin999.html / supercs999.html
