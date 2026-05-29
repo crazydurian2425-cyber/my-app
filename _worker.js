@@ -15,14 +15,13 @@ const CREDENTIALS = [
   { user: 'admin', pass: '168168', allow: ['/superadmin999.html', '/supercs999.html'] },
 ]
 
-// Resend API key — loaded from the Worker secret `RESEND_API_KEY` at the
-// top of fetch() (see below). NOT hardcoded — set it once with:
-//   npx wrangler secret put RESEND_API_KEY
-// (or Cloudflare dashboard → Workers → Settings → Variables → Secrets).
-// Module-level `let` so the existing handler functions can keep reading
-// it without threading `env` through every signature; fetch() assigns it
-// per-request from env before any handler runs.
-let RESEND_API_KEY = ''
+// Resend API key. Prefers the Worker secret `env.RESEND_API_KEY` (set via
+// `npx wrangler secret put RESEND_API_KEY` or the Cloudflare dashboard) —
+// fetch() overrides this constant from env when the secret is present.
+// The hardcoded fallback keeps email working out-of-the-box on deploy
+// even before the secret is set. SECURITY: rotate this key in Resend
+// and set the env secret to retire the hardcoded one (it lives in git).
+let RESEND_API_KEY = 're_Coxh3Vqo_C68XoGkEf7fRXD9YQ7Zvukr3'
 
 // Supabase project — service role key kept server-side only.
 // Used by /api/create-planner to create auth users + insert planner rows.
