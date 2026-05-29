@@ -12847,18 +12847,23 @@ async function openItineraryForm(planId) {
   // Airport buffer in minutes — represents the WHOLE time the traveler
   // needs between their last activity ending and the flight/train doors
   // (airport travel + check-in + security + boarding gate).
-  // Defaults: flight 180 (3 h, the realistic intercontinental cushion
-  // from a Paris hotel to CDG including last-stop transit), non-flight
-  // 90 (train/bus).
+  //
+  // Per-method FLOORS (minimum buffer the admin can't go below) — these
+  // are realistic minimums so no one accidentally schedules a traveler
+  // to miss their departure:
+  //   flight 180 · train 30 · bus 20 · car 15  (default 30)
+  // The admin's BUFFER (MIN) field in superadmin999.html auto-fills with
+  // these per-method defaults, and can be bumped HIGHER (e.g. a 60-min
+  // train buffer for a far-out gare) — never below the floor.
+  //
   // Last-day cutoff = departure_time − buffer (no extra cushion — the
   // buffer itself is already padding).
-  //
-  // Meta override (`_tmeta.airport_buffer_minutes`) can only INCREASE
-  // the buffer above the floor — never below. Legacy seed data
-  // sometimes stores `120` for flights from the old 2-hour default,
-  // and we don't want that to silently shorten a 3-hour minimum on
-  // an international departure.
-  const _bufFloor = (_tmeta.unit_departure_method === 'flight') ? 180 : 90
+  const _depMethodForBuf = _tmeta.unit_departure_method
+  const _bufFloor = _depMethodForBuf === 'flight' ? 180
+                  : _depMethodForBuf === 'train'  ? 30
+                  : _depMethodForBuf === 'bus'    ? 20
+                  : _depMethodForBuf === 'car'    ? 15
+                  :                                  30
   const _bufMeta  = Number(_tmeta.airport_buffer_minutes)
   window._currentAirportBuffer = Number.isFinite(_bufMeta)
     ? Math.max(_bufMeta, _bufFloor)
