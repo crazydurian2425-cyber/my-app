@@ -16661,7 +16661,7 @@ const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 // change, because the cache key didn't include routing preference.
 // v5 entries also carry routes.polyline.encodedPolyline so our own
 // Maps JS render shows the SAME route as the grid distance/duration.
-const ROUTES_CACHE_PREFIX = 'jj_route_v6_'
+const ROUTES_CACHE_PREFIX = 'jj_route_v7_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
@@ -17525,6 +17525,13 @@ function refreshTransportSlot(slot) {
   const removeBtnHtml = isLockedTransport
     ? `<span class="transport-locked-badge" title="Auto-inserted — always needed">🔒 auto</span>`
     : `<button type="button" class="transport-remove" onclick="removeSlot('${slot.id}')" title="Remove transport">×</button>`
+  // Preserve any already-rendered transit step timeline across the rebuild —
+  // applyRouteDataToSlot adds it asynchronously, and wiping it on every
+  // refresh leaves the panel missing when the next fetch returns null (no
+  // place IDs, daily cap, transient API error). Re-attaching keeps the
+  // previous breakdown visible until a successful fetch replaces it.
+  const _preservedSteps = host.querySelector('.transport-steps')
+  if (_preservedSteps) _preservedSteps.remove()
   host.innerHTML = `
     <div class="transport-head">
       <select class="transport-mode-select" onchange="setTransportMode('${slot.id}', this.value)"${tooFar?' disabled':''}>${modeOptions}</select>
@@ -17541,6 +17548,14 @@ function refreshTransportSlot(slot) {
     </div>
     ${directionsLink}
     ${tooFarBanner}`
+  // Re-insert the preserved step timeline (if any) after the grid so it
+  // stays visible until applyRouteDataToSlot replaces it with fresh data.
+  if (_preservedSteps) {
+    const grid = host.querySelector('.transport-grid')
+    if (grid && grid.nextSibling) grid.parentNode.insertBefore(_preservedSteps, grid.nextSibling)
+    else if (grid) grid.parentNode.appendChild(_preservedSteps)
+    else host.appendChild(_preservedSteps)
+  }
   // Async: ask Google Routes API for the real distance/duration/fare,
   // then patch the grid + time range in place. Heuristic numbers show
   // until this resolves (~200 ms typically). Cached per place_id+mode
