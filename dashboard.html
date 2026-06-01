@@ -18938,7 +18938,10 @@ function refreshDayDistances(dayContainer) {
     const b = getSlotLatLng(bSlot)
     if (!a || !b) continue
     const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
-    if (!Number.isFinite(km) || km >= 0.5) continue
+    // Only the truly same-spot gaps (< 50 m) get a thin marker now — every
+    // larger gap gets a real transport block from _gapFillTransportsForDay,
+    // so the two never double up.
+    if (!Number.isFinite(km) || km >= 0.05) continue
     const desc = describeStopDistance(km)
     if (!desc) continue
     const el = document.createElement('div')
@@ -19121,7 +19124,13 @@ function _gapFillTransportsForDay(dayContainer) {
       if (!a) { console.log('  pair', i, 'skip: a no lat/lng', { aId: aSlot.id, aClass: aSlot.className, aHasPlaceData: !!aSlot._placeData }); continue }
       if (!b) { console.log('  pair', i, 'skip: b no lat/lng', { bId: bSlot.id, bClass: bSlot.className, bHasPlaceData: !!bSlot._placeData }); continue }
       const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
-      if (!Number.isFinite(km) || km < 0.5) { console.log('  pair', i, 'skip: km =', km); continue }
+      // Insert a transport for any measurable gap (≥ 50 m) so planners
+      // always see HOW to get between consecutive stops — a 2-min "Walk"
+      // block for short hops (e.g. Cathédrale → Palais du Tau, ~100 m) is
+      // exactly the info they want. Only truly same-spot pairs (< 50 m,
+      // e.g. hotel check-in → check-out in the same building) are skipped
+      // and get a thin distance marker instead.
+      if (!Number.isFinite(km) || km < 0.05) { console.log('  pair', i, 'skip: km =', km); continue }
       console.log('  pair', i, '✓ will insert · km=', km.toFixed(2), '· a=', aSlot.id || aSlot.className, '→ b=', bSlot.id || bSlot.className)
       // Compute depart time + mode.
       let departHHMM
