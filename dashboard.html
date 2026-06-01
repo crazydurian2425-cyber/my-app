@@ -17101,10 +17101,19 @@ function applyRouteDataToSlot(slot, data) {
         </div>`
     }).join('')
   } else {
-    // No transit involved — remove any stale steps panel from a previous
-    // mode (e.g. planner just switched from "transit" to "taxi").
+    // No transit steps in THIS response. Two distinct cases:
+    //  (a) planner switched to a non-transit mode (walk / taxi / car / flight)
+    //      → the old timeline is genuinely stale, remove it.
+    //  (b) mode is STILL public transport / TGV but Routes returned a route
+    //      without detailed steps this time (transient: cache-miss race,
+    //      a walk-only fastest alternative got picked, or a partial payload).
+    //      Keep the existing timeline rather than blanking a good breakdown
+    //      the planner was already looking at — this is the main reason the
+    //      step list seemed to "disappear" on a re-render.
+    const _mode = slot.dataset.transportMode || ''
+    const _isTransitMode = (_mode === 'transit' || _mode === 'train' || _mode === 'hsr')
     const existing = host.querySelector('.transport-steps')
-    if (existing) existing.remove()
+    if (existing && !_isTransitMode) existing.remove()
   }
 }
 
