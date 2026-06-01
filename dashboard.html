@@ -17162,20 +17162,22 @@ function _transportEstimates(mode, km) {
 //   transit — public transport (metro / bus / tram).
 //   train   — regional / intercity train you sit on for hours.
 //   car     — RENTAL car: planner drives themselves, road-trip style.
-//   hsr     — bullet train / TGV / Shinkansen.
+//   hsr     — high-speed intercity rail: TGV / OUIGO (booked, fast, pricier).
 //   flight  — domestic or international flight.
 // 'taxi' key kept for backward compat with stored slot data, but the
 // display label is "Uber" — more recognisable than generic "Taxi" for
-// French urban rides where Uber is the dominant ride-hail.
+// French urban rides where Uber is the dominant ride-hail. 'hsr' keeps its
+// key but the label is France-appropriate "TGV / high-speed train" (was the
+// Japan-ism "Bullet train").
 const _MODE_LABELS = {
   walk: 'Walk', taxi: 'Uber', transit: 'Public transport',
-  train: 'Public transport', car: 'Rental car', hsr: 'Bullet train', flight: 'Flight'
+  train: 'Public transport', car: 'Rental car', hsr: 'TGV / high-speed train', flight: 'Flight'
 }
 const _MODE_ICONS = {
   walk: '🚶', taxi: '🚕', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
 }
 // Sensible modes per distance bucket — used to filter the dropdown so a
-// 1.7 km walk doesn't offer "Bullet train" / "Flight" / etc. The current
+// 1.7 km walk doesn't offer "TGV / high-speed train" / "Flight" / etc. The current
 // mode is always included even if it falls outside the bucket, so the
 // planner never loses a deliberate choice.
 function _sensibleModes(km) {
@@ -17429,7 +17431,7 @@ function refreshTransportSlot(slot) {
   const departLabel = formatTimeDisplay(departHHMM)
   const arriveLabel = formatTimeDisplay(arriveHHMM)
   // Mode picker — only modes that make sense for THIS distance show up,
-  // so a 1.7 km hop doesn't offer Flight / Bullet train. The current mode
+  // so a 1.7 km hop doesn't offer Flight / TGV. The current mode
   // is always included even if it'd otherwise be filtered out, so the
   // planner can't lose their deliberate choice on a re-render.
   const sensible = _sensibleModes(km)
