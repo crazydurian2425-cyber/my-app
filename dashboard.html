@@ -16396,7 +16396,7 @@ function pickTransportModes(km) {
   if (km < 1) return null   // walking-only zone, no card needed
   // Suffixes that survived from the old per-mode descriptions; kept so the
   // helper card still tells the planner WHY the alt is the alt.
-  const suffix = { taxi:'faster', transit:'cheaper', car:'door-to-door',
+  const suffix = { bike:'eco', taxi:'faster', transit:'cheaper', car:'door-to-door',
                    hsr:'downtown-to-downtown', flight:'incl. airport buffer' }
   const metaFor = (mode) => {
     const est = _transportEstimates(mode, km)
@@ -16599,7 +16599,7 @@ function buildGmapsDirUrl(fromSlot, toSlot, mode) {
   const toName   = to.name   || to.address   || ''
   if (!fromName || !toName) return null
   const travelmode = ({
-    walk:'walking', taxi:'driving', car:'driving',
+    walk:'walking', bike:'bicycling', taxi:'driving', car:'driving',
     transit:'transit', train:'transit', hsr:'transit', flight:'transit'
   })[mode] || 'driving'
   let url = 'https://www.google.com/maps/dir/?api=1'
@@ -16632,7 +16632,7 @@ function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
   const toArg   = _embedPlaceParam(toSlot?._placeData)
   if (!fromArg || !toArg) return null
   const embedMode = ({
-    walk:'walking', taxi:'driving', car:'driving',
+    walk:'walking', bike:'bicycling', taxi:'driving', car:'driving',
     transit:'transit', train:'transit', hsr:'transit', flight:'flying'
   })[mode] || 'driving'
   return 'https://www.google.com/maps/embed/v1/directions'
@@ -16653,7 +16653,13 @@ function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
 //
 // Requires "Routes API" enabled on the Google Cloud project AND added to
 // the API key's allowed-APIs list (same key as Places).
-const ROUTES_DAILY_CAP = 200
+// 200 was far too low for active multi-day editing — a single cache-prefix
+// bump (which wipes every cached leg) plus a planner clicking through a
+// 5-day trip re-fetches dozens of legs, and once the cap is hit EVERY
+// remaining leg silently falls back to the heuristic (no Google duration,
+// no transit step timeline). 2000/browser/day still stops a true runaway
+// loop while leaving comfortable headroom for real editing.
+const ROUTES_DAILY_CAP = 2000
 const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 // v2: prefix bumped after switching DRIVE to TRAFFIC_AWARE. The old v1
 // cache held traffic-unaware durations (~15 min for the 3.4 km Arc de
@@ -16665,6 +16671,7 @@ const ROUTES_CACHE_PREFIX = 'jj_route_v7_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
+  if (mode === 'bike') return 'BICYCLE'
   if (mode === 'taxi' || mode === 'car') return 'DRIVE'
   if (mode === 'transit' || mode === 'train' || mode === 'hsr') return 'TRANSIT'
   return null   // flight isn't supported by Routes — keep heuristic
@@ -16895,6 +16902,7 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
 // Walk → free; Flight → no realistic estimate (Routes doesn't support it).
 function _costFromRealKm(mode, km) {
   if (mode === 'walk') return 0
+  if (mode === 'bike') return 0
   if (mode === 'taxi') return Math.round(2.5 + km * 2.8)
   if (mode === 'car')  return Math.round(8   + km * 0.30)
   if (mode === 'train') return Math.round(15 + km * 0.40)
@@ -17128,6 +17136,12 @@ function _transportEstimates(mode, km) {
     // ~11 min/km matches Google walking pace (5.5 km/h) — was 13.
     return { mins: Math.max(6, round(kmWalk * 11)), costEur: 0 }
   }
+  if (mode === 'bike') {
+    // City cycling ~15 km/h door-to-door (≈4 min/km) incl. light detours.
+    // Cost: free if you have your own bike; a few € for Vélib'-style share,
+    // but we keep it 0 so it reads as the cheap/eco option.
+    return { mins: Math.max(4, round(kmWalk * 4)), costEur: 0 }
+  }
   if (mode === 'taxi') {
     // Generic city taxi/rideshare: ~€2.5 base + ~€3/km (Paris-ish surge level)
     const mins = Math.max(4, round(kmCar * 3))
@@ -17167,6 +17181,7 @@ function _transportEstimates(mode, km) {
 // the difference between "Taxi / Grab" and "Car / taxi" (which was the
 // same overlap from user feedback).
 //   walk    — short walk
+//   bike    — bicycle / Vélib' bike-share. Routes API BICYCLE mode.
 //   taxi    — ride-hail (Uber / Grab / regular taxi). Hire-and-go.
 //   transit — public transport (metro / bus / tram).
 //   train   — regional / intercity train you sit on for hours.
@@ -17179,21 +17194,21 @@ function _transportEstimates(mode, km) {
 // key but the label is France-appropriate "TGV / high-speed train" (was the
 // Japan-ism "Bullet train").
 const _MODE_LABELS = {
-  walk: 'Walk', taxi: 'Uber', transit: 'Public transport',
+  walk: 'Walk', bike: 'Bicycle', taxi: 'Uber', transit: 'Public transport',
   train: 'Public transport', car: 'Rental car', hsr: 'TGV / high-speed train', flight: 'Flight'
 }
 const _MODE_ICONS = {
-  walk: '🚶', taxi: '🚕', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
+  walk: '🚶', bike: '🚲', taxi: '🚕', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
 }
 // Sensible modes per distance bucket — used to filter the dropdown so a
 // 1.7 km walk doesn't offer "TGV / high-speed train" / "Flight" / etc. The current
 // mode is always included even if it falls outside the bucket, so the
 // planner never loses a deliberate choice.
 function _sensibleModes(km) {
-  if (km == null)    return ['walk','taxi','transit','hsr','flight']
-  if (km < 1)        return ['walk','taxi']
-  if (km < 3)        return ['walk','taxi','transit']
-  if (km < 10)       return ['taxi','transit']
+  if (km == null)    return ['walk','bike','taxi','transit','hsr','flight']
+  if (km < 1)        return ['walk','bike','taxi']
+  if (km < 3)        return ['walk','bike','taxi','transit']
+  if (km < 10)       return ['bike','taxi','transit']
   if (km < 30)       return ['taxi','transit']
   if (km < 80)       return ['transit','taxi']
   if (km < 500)      return ['transit','hsr']
