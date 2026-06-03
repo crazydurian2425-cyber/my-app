@@ -2074,6 +2074,34 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .slot-address-input{width:100%;padding:8px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;}
 .slot-address-input:focus{border-color:var(--green-mid);}
 
+/* ── Quick-tip chips (replaces the free-text notes box on ACTIVITY slots) ──
+   The .slot-notes-input textarea still exists and holds the tips as JSON
+   (single source of truth for save/load); it's just hidden for activity. */
+.activity-slot.slot-type-activity .slot-notes-input{display:none;}
+.slot-tips{display:none;}
+.activity-slot.slot-type-activity .slot-tips{display:block;margin-top:4px;}
+.slot-tips-head{font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
+.slot-tips-cards{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+.tip-card{position:relative;border-left:2px solid var(--tipc,#888);background:color-mix(in srgb, var(--tipc,#888) 7%, var(--surface));border-radius:6px;padding:7px 26px 7px 10px;}
+.tip-card-head{font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--tipc,#888);margin-bottom:2px;}
+.tip-card-body{font-size:12.5px;color:var(--text);line-height:1.35;word-break:break-word;}
+.tip-card-x{position:absolute;top:5px;right:6px;width:16px;height:16px;line-height:14px;text-align:center;border:none;background:transparent;color:var(--text-3);font-size:12px;cursor:pointer;border-radius:4px;}
+.tip-card-x:hover{background:rgba(0,0,0,0.06);color:var(--text);}
+.slot-tips-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.tip-chip{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-family:'DM Sans',sans-serif;color:var(--tipc,#444);background:var(--surface);border:1px solid color-mix(in srgb, var(--tipc,#888) 35%, var(--border-med));border-radius:99px;padding:4px 10px;cursor:pointer;transition:background 0.12s,border-color 0.12s;}
+.tip-chip:hover{background:color-mix(in srgb, var(--tipc,#888) 9%, var(--surface));border-color:var(--tipc,#888);}
+.slot-tips-max{font-size:11px;color:var(--text-3);font-style:italic;}
+.slot-tips-editor{display:flex;gap:6px;margin-bottom:8px;align-items:center;}
+.slot-tips-editor[hidden]{display:none;}
+.tip-editor-input{flex:1;min-width:0;padding:7px 10px;border:1px solid var(--green-mid);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;}
+.tip-editor-save,.tip-editor-cancel{font-size:11.5px;font-family:'DM Sans',sans-serif;border-radius:6px;padding:6px 11px;cursor:pointer;border:1px solid var(--border-med);}
+.tip-editor-save{background:var(--green,#1a7a5e);color:#fff;border-color:var(--green,#1a7a5e);}
+.tip-editor-cancel{background:var(--surface);color:var(--text-2);}
+/* read-only tip rows in the plan-summary preview */
+.ps-tips{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+.ps-tip{font-size:12px;line-height:1.35;padding:3px 8px;border-left:2px solid #888;background:rgba(0,0,0,0.02);border-radius:4px;}
+.ps-tip-cat{font-weight:700;text-transform:uppercase;font-size:9.5px;letter-spacing:0.04em;margin-right:5px;}
+
 /* ─── Google Places autocomplete (activity / meal / accommodation only) ───
    The title input doubles as the search box. While the planner types,
    .places-dropdown appears beneath it with suggestions. On selection, the
@@ -13204,7 +13232,7 @@ async function openPlanSummary(plan) {
           <div class="ps-slot-title">${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</div>
           ${addrHtml}
           ${durHtml}
-          ${s.notes ? `<div class="ps-slot-notes">${escapeHtml(s.notes)}</div>` : ''}
+          ${s.notes ? renderNotesReadonly(s.notes) : ''}
           ${imgHtml}
         </div>
       </li>`
@@ -13514,6 +13542,9 @@ function fillItineraryItems(items) {
       if (titleInput) titleInput.value = it.title || ''
       const notesInput = slot.querySelector('.slot-notes-input')
       if (notesInput) notesInput.value = it.notes || ''
+      // Activity slots render the loaded notes as quick-tip chips. (Runs
+      // after the value is set; updateSlotFieldLabels above ran before it.)
+      if (iconKey === 'activity') renderSlotTips(slot)
       // Address (new field — null for legacy rows, just leaves the input blank)
       const addrInput = slot.querySelector('.slot-address-input')
       if (addrInput) addrInput.value = it.address || ''
@@ -15250,6 +15281,158 @@ function updateSlotFieldLabels(slot, typeKey){
     const _bagsBox = slot.querySelector('.slot-hotel-bags-toggle input[type="checkbox"]')
     if (_bagsBox) _bagsBox.checked = window._currentHotelStoresBags !== false
   }
+  // ── Quick-tip chips ↔ notes reconciliation ──
+  // Activity slots edit notes via the chip UI; the textarea is hidden and
+  // its value holds the tips JSON. Render the chips here. For any other type,
+  // flatten a stray tips-JSON back to readable text so the visible textarea
+  // never shows raw JSON (e.g. when the planner switches activity → meal).
+  const _tipsTa = slot.querySelector('.slot-notes-input')
+  if (typeKey === 'activity') {
+    renderSlotTips(slot)
+  } else if (_tipsTa) {
+    const _st = _parseTipsValue(_tipsTa.value)
+    if (_st.tips.length) {
+      const _flat = _st.tips.map(tp => `${(TIP_CAT_BY_KEY[tp.cat]||{label:'Tip'}).label}: ${tp.text}`).join(' · ')
+      _tipsTa.value = [_st.legacy, _flat].filter(Boolean).join(' · ')
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Quick-tip chips — structured, optional tips for ACTIVITY stops, replacing
+// the free-text notes box. Stored as JSON in the slot's notes field:
+//   {"tips":[{"cat":"best_time","text":"Go before 10am"}], "legacy":"old free text"}
+// Max 3 tips, one per category. Legacy free text (pre-chips) is preserved as
+// a read-only "note" card so nothing is ever lost.
+// ─────────────────────────────────────────────────────────────────────────
+const TIP_CATS = [
+  { key:'best_time', label:'Best time',       icon:'⏰',  color:'#185FA5' },
+  { key:'photo',     label:'Photo spot',      icon:'📷', color:'#534AB7' },
+  { key:'skip_if',   label:'Skip if',         icon:'⚠️', color:'#A32D2D' },
+  { key:'money',     label:'Money saver',     icon:'💰', color:'#2C5F2D' },
+  { key:'hidden',    label:'Hidden entrance', icon:'🚪', color:'#534AB7' },
+  { key:'phrase',    label:'Local phrase',    icon:'🗣️', color:'#185FA5' },
+]
+const TIP_CAT_BY_KEY = Object.fromEntries(TIP_CATS.map(c => [c.key, c]))
+const TIP_MAX = 3
+const _TIP_NOTE_CAT = { label:'Note', icon:'📝', color:'#6b6b6b' }
+
+// Parse a notes value → { tips:[{cat,text}], legacy:'' }. Robust against
+// plain-text (legacy), bad JSON, and unknown categories.
+function _parseTipsValue(raw) {
+  const out = { tips: [], legacy: '' }
+  const s = (raw == null ? '' : String(raw)).trim()
+  if (!s) return out
+  if (s.charAt(0) === '{') {
+    try {
+      const o = JSON.parse(s)
+      if (o && Array.isArray(o.tips)) {
+        out.tips = o.tips
+          .filter(tp => tp && tp.text)
+          .map(tp => ({ cat: TIP_CAT_BY_KEY[tp.cat] ? tp.cat : 'note', text: String(tp.text).slice(0, 120) }))
+          .slice(0, TIP_MAX)
+        out.legacy = o.legacy ? String(o.legacy) : ''
+        return out
+      }
+    } catch (e) { /* fall through to legacy */ }
+  }
+  out.legacy = s
+  return out
+}
+function _serializeTips(state) {
+  const hasTips = state.tips && state.tips.length
+  const hasLegacy = state.legacy && state.legacy.trim()
+  if (!hasTips && !hasLegacy) return ''
+  const o = { tips: state.tips || [] }
+  if (hasLegacy) o.legacy = state.legacy
+  return JSON.stringify(o)
+}
+
+// Render the chip UI into a slot's .slot-tips host from the textarea JSON.
+function renderSlotTips(slot) {
+  if (!slot) return
+  const host = slot.querySelector('.slot-tips')
+  if (!host) return
+  if (!slot.classList.contains('slot-type-activity')) { host.innerHTML = ''; return }
+  const ta = slot.querySelector('.slot-notes-input')
+  const state = _parseTipsValue(ta ? ta.value : '')
+  // Cards (legacy note first, then tips). Track the tips-array index for removal.
+  const cards = []
+  if (state.legacy) {
+    const c = _TIP_NOTE_CAT
+    cards.push(`<div class="tip-card" style="--tipc:${c.color}"><div class="tip-card-head">${c.icon} ${escapeHtml(c.label)}</div><div class="tip-card-body">${escapeHtml(state.legacy)}</div><button type="button" class="tip-card-x" title="Remove" onclick="tipRemove(this,-1)">✕</button></div>`)
+  }
+  state.tips.forEach((tp, i) => {
+    const c = TIP_CAT_BY_KEY[tp.cat] || _TIP_NOTE_CAT
+    cards.push(`<div class="tip-card" style="--tipc:${c.color}"><div class="tip-card-head">${c.icon} ${escapeHtml(c.label)}</div><div class="tip-card-body">${escapeHtml(tp.text)}</div><button type="button" class="tip-card-x" title="Remove" onclick="tipRemove(this,${i})">✕</button></div>`)
+  })
+  const usedCats = new Set(state.tips.map(tp => tp.cat))
+  const atMax = state.tips.length >= TIP_MAX
+  const chips = atMax
+    ? `<span class="slot-tips-max">Max ${TIP_MAX} tips — remove one to add another.</span>`
+    : TIP_CATS.filter(c => !usedCats.has(c.key))
+        .map(c => `<button type="button" class="tip-chip" style="--tipc:${c.color}" onclick="tipChipClick(this,'${c.key}')">${c.icon} ${escapeHtml(c.label)}</button>`)
+        .join('')
+  host.innerHTML =
+    `<div class="slot-tips-head">💡 Add a quick tip (optional)</div>` +
+    (cards.length ? `<div class="slot-tips-cards">${cards.join('')}</div>` : '') +
+    `<div class="slot-tips-editor" hidden><input type="text" class="tip-editor-input" maxlength="120" placeholder="" onkeydown="if(event.key==='Enter'){event.preventDefault();tipEditorSave(this)}else if(event.key==='Escape'){tipEditorCancel(this)}"><button type="button" class="tip-editor-save" onclick="tipEditorSave(this)">Save</button><button type="button" class="tip-editor-cancel" onclick="tipEditorCancel(this)">Cancel</button></div>` +
+    `<div class="slot-tips-chips">${chips}</div>`
+}
+function tipChipClick(btn, cat) {
+  const host = btn.closest('.slot-tips'); if (!host) return
+  const c = TIP_CAT_BY_KEY[cat]; if (!c) return
+  const editor = host.querySelector('.slot-tips-editor')
+  const input  = host.querySelector('.tip-editor-input')
+  const chips   = host.querySelector('.slot-tips-chips')
+  if (!editor || !input) return
+  editor.dataset.cat = cat
+  input.placeholder = `${c.icon} ${c.label}…`
+  input.value = ''
+  editor.hidden = false
+  if (chips) chips.style.display = 'none'
+  input.focus()
+}
+function tipEditorCancel(el) { renderSlotTips(el.closest('.activity-slot')) }
+function tipEditorSave(el) {
+  const slot = el.closest('.activity-slot'); const host = el.closest('.slot-tips')
+  if (!slot || !host) return
+  const editor = host.querySelector('.slot-tips-editor')
+  const input  = host.querySelector('.tip-editor-input')
+  const cat  = editor ? editor.dataset.cat : ''
+  const text = (input ? input.value : '').trim().slice(0, 120)
+  if (!cat || !text) { renderSlotTips(slot); return }
+  const ta = slot.querySelector('.slot-notes-input')
+  const state = _parseTipsValue(ta ? ta.value : '')
+  if (state.tips.length < TIP_MAX && !state.tips.some(tp => tp.cat === cat)) {
+    state.tips.push({ cat, text })
+  }
+  if (ta) ta.value = _serializeTips(state)
+  renderSlotTips(slot)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
+}
+function tipRemove(btn, idx) {
+  const slot = btn.closest('.activity-slot'); if (!slot) return
+  const ta = slot.querySelector('.slot-notes-input')
+  const state = _parseTipsValue(ta ? ta.value : '')
+  if (idx === -1) state.legacy = ''
+  else state.tips.splice(idx, 1)
+  if (ta) ta.value = _serializeTips(state)
+  renderSlotTips(slot)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
+}
+// Read-only render (plan-summary preview / traveler view). Returns HTML.
+function renderNotesReadonly(raw) {
+  const st = _parseTipsValue(raw)
+  if (st.tips.length) {
+    const cards = st.tips.map(tp => {
+      const c = TIP_CAT_BY_KEY[tp.cat] || _TIP_NOTE_CAT
+      return `<div class="ps-tip" style="border-left-color:${c.color};"><span class="ps-tip-cat" style="color:${c.color};">${c.icon} ${escapeHtml(c.label)}</span>${escapeHtml(tp.text)}</div>`
+    }).join('')
+    const legacy = st.legacy ? `<div class="ps-slot-notes">${escapeHtml(st.legacy)}</div>` : ''
+    return `<div class="ps-tips">${cards}</div>${legacy}`
+  }
+  return st.legacy ? `<div class="ps-slot-notes">${escapeHtml(st.legacy)}</div>` : ''
 }
 // Duration label for a stored minutes value.
 // Format any minute value as a friendly stay-duration label.
@@ -19860,6 +20043,9 @@ function addSlot(dayNum, seed = null) {
            Populated by _applyHotelDefaults with the traveler's first name. -->
       <label class="slot-notes-label" id="notes-label-${id}"></label>
       <textarea class="slot-notes-input" placeholder="${escapeHtml(getNotesPlaceholder(seedTypeKey))}" oninput="autoSaveDraft()"></textarea>
+      <!-- Quick-tip chips for activity slots (CSS shows this + hides the
+           textarea when slot-type-activity). Populated by renderSlotTips. -->
+      <div class="slot-tips"></div>
       <!-- Bags-stored toggle. Only visible for hotel_checkout slots.
            Persists to plans.hotel_stores_bags so the per-trip flag
            flows back into the plan row on every change. -->
@@ -19890,6 +20076,8 @@ function addSlot(dayNum, seed = null) {
     })
     if (_suggestedStay) applyDurationSuggestion(slot, _suggestedStay)
   }
+  // Activity slots use the quick-tip chips instead of the notes textarea.
+  if (slot.classList.contains('slot-type-activity')) renderSlotTips(slot)
   updateDayMeta(dayNum);
   refreshDayDistances(container);
 }

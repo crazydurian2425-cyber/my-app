@@ -2521,6 +2521,34 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeImageLi
 function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
 function jsEsc(s){ return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/</g,'\\x3c').replace(/>/g,'\\x3e').replace(/&/g,'\\x26').replace(/\r?\n/g,'\\n') }
 
+// Activity-stop notes are stored as quick-tip JSON ({"tips":[{cat,text}],"legacy":""})
+// by the planner dashboard. Render them as readable tip rows here instead of
+// dumping raw JSON. Falls back to plain text for legacy / non-tip notes.
+const _ADMIN_TIP_CATS = {
+  best_time:{label:'Best time',icon:'⏰',color:'#185FA5'},
+  photo:{label:'Photo spot',icon:'📷',color:'#534AB7'},
+  skip_if:{label:'Skip if',icon:'⚠️',color:'#A32D2D'},
+  money:{label:'Money saver',icon:'💰',color:'#2C5F2D'},
+  hidden:{label:'Hidden entrance',icon:'🚪',color:'#534AB7'},
+  phrase:{label:'Local phrase',icon:'🗣️',color:'#185FA5'},
+  note:{label:'Note',icon:'📝',color:'#6b6b6b'},
+}
+function renderNotesReadonly(raw){
+  const s = (raw==null?'':String(raw)).trim()
+  if (!s) return ''
+  let parsed = null
+  if (s.charAt(0)==='{'){ try { const o=JSON.parse(s); if (o && Array.isArray(o.tips)) parsed=o; } catch(e){} }
+  if (parsed){
+    const rows = (parsed.tips||[]).filter(tp=>tp&&tp.text).map(tp=>{
+      const c = _ADMIN_TIP_CATS[tp.cat] || _ADMIN_TIP_CATS.note
+      return `<div class="ps-tip" style="border-left:2px solid ${c.color};padding:3px 8px;margin-top:3px;font-size:12px;line-height:1.4;background:rgba(0,0,0,0.02);border-radius:4px;"><strong style="color:${c.color};font-size:9.5px;text-transform:uppercase;letter-spacing:0.04em;margin-right:5px;">${c.icon} ${escapeHtml(c.label)}</strong>${escapeHtml(String(tp.text))}</div>`
+    }).join('')
+    const legacy = parsed.legacy ? `<div class="ps-slot-notes">${escapeHtml(String(parsed.legacy))}</div>` : ''
+    return rows + legacy
+  }
+  return `<div class="ps-slot-notes">${escapeHtml(s)}</div>`
+}
+
 // ── Audit log helper — best-effort, never blocks the main action ──
 async function auditLog(action, targetType, targetId, metadata){
   try {
@@ -3456,7 +3484,7 @@ function renderPlanSummary(plan){
           <div class="ps-slot-title">${escapeHtml(s.title || '(untitled)')}</div>
           ${addrHtml}
           ${durHtml}
-          ${s.notes ? `<div class="ps-slot-notes">${escapeHtml(s.notes)}</div>` : ''}
+          ${s.notes ? renderNotesReadonly(s.notes) : ''}
           ${s.item_images?.length ? `<div class="ps-slot-imgs">${s.item_images.map(img => `<img src="${escapeHtml(img.url)}" alt="" onclick="openImageLightbox('${jsEsc(img.url)}')" style="cursor:zoom-in;">`).join('')}</div>` : ''}
         </div>
       </li>`
@@ -3534,7 +3562,7 @@ function renderItineraryPreview(items) {
             <div class="itin-activity">${escapeHtml(s.title)}</div>
             ${addrLine}
             ${durLine}
-            ${s.notes ? `<div class="itin-notes">${escapeHtml(s.notes)}</div>` : ''}
+            ${s.notes ? renderNotesReadonly(s.notes) : ''}
             ${s.item_images?.length ? `<div class="itin-img">${s.item_images.map(img=>`<img src="${escapeHtml(img.url)}" alt="" onclick="openImageLightbox('${jsEsc(img.url)}')" style="cursor:zoom-in;">`).join('')}</div>` : ''}
           </div>
         </div>`
