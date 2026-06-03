@@ -2078,10 +2078,16 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
    The .slot-notes-input textarea still exists and holds the tips as JSON
    (single source of truth for save/load); it's just hidden for activity. */
 .activity-slot.slot-type-activity .slot-notes-input,
-.activity-slot.slot-type-transport .slot-notes-input{display:none;}
+.activity-slot.slot-type-transport .slot-notes-input,
+.activity-slot.slot-type-shopping .slot-notes-input{display:none;}
 .slot-tips{display:none;}
 .activity-slot.slot-type-activity .slot-tips,
-.activity-slot.slot-type-transport .slot-tips{display:block;margin-top:4px;}
+.activity-slot.slot-type-transport .slot-tips,
+.activity-slot.slot-type-shopping .slot-tips{display:block;margin-top:4px;}
+/* Shopping stops are Google-verified with a photo already — no planner
+   upload needed (same as hotel/transport). */
+.activity-slot.slot-type-shopping .img-upload-area,
+.activity-slot.slot-type-shopping .img-previews{display:none;}
 .slot-tips-head{font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:8px;}
 .slot-tips-cards{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
 .tip-card{position:relative;border-left:2px solid var(--tipc,#888);background:color-mix(in srgb, var(--tipc,#888) 7%, var(--surface));border-radius:6px;padding:7px 26px 7px 10px;}
@@ -13548,9 +13554,9 @@ function fillItineraryItems(items) {
       if (titleInput) titleInput.value = it.title || ''
       const notesInput = slot.querySelector('.slot-notes-input')
       if (notesInput) notesInput.value = it.notes || ''
-      // Activity + transport slots render the loaded notes as quick-tip chips.
-      // (Runs after the value is set; updateSlotFieldLabels above ran before it.)
-      if (iconKey === 'activity' || iconKey === 'transport') renderSlotTips(slot)
+      // Activity / transport / shopping render the loaded notes as quick-tip
+      // chips. (Runs after the value is set; updateSlotFieldLabels ran before.)
+      if (iconKey === 'activity' || iconKey === 'transport' || iconKey === 'shopping') renderSlotTips(slot)
       // Address (new field — null for legacy rows, just leaves the input blank)
       const addrInput = slot.querySelector('.slot-address-input')
       if (addrInput) addrInput.value = it.address || ''
@@ -15297,7 +15303,7 @@ function updateSlotFieldLabels(slot, typeKey){
   // flatten a stray tips-JSON back to readable text so the visible textarea
   // never shows raw JSON (e.g. when the planner switches activity → meal).
   const _tipsTa = slot.querySelector('.slot-notes-input')
-  if (typeKey === 'activity' || typeKey === 'transport') {
+  if (typeKey === 'activity' || typeKey === 'transport' || typeKey === 'shopping') {
     renderSlotTips(slot)
   } else if (_tipsTa) {
     const _st = _parseTipsValue(_tipsTa.value)
@@ -15333,8 +15339,22 @@ const TIP_CATS_TRANSPORT = [
   { key:'phrase',   label:'Local phrase',     icon:'🗣️', color:'#185FA5' },
   { key:'luggage',  label:'Luggage tip',      icon:'🎒', color:'#534AB7' },
 ]
-const TIP_CAT_BY_KEY = Object.fromEntries([...TIP_CATS_ACTIVITY, ...TIP_CATS_TRANSPORT].map(c => [c.key, c]))
-function _tipCatsFor(slot){ return (slot && slot.classList.contains('slot-type-transport')) ? TIP_CATS_TRANSPORT : TIP_CATS_ACTIVITY }
+// Shopping stops share Money saver + Local phrase and add buy / trap /
+// payment / VAT-refund (détaxe — non-EU travellers spending €100+).
+const TIP_CATS_SHOPPING = [
+  { key:'what_buy', label:'What to buy',  icon:'👀', color:'#534AB7' },
+  { key:'money',    label:'Money saver',  icon:'💰', color:'#2C5F2D' },
+  { key:'trap',     label:'Tourist trap', icon:'⚠️', color:'#A32D2D' },
+  { key:'payment',  label:'Payment tip',  icon:'💳', color:'#C17D2A' },
+  { key:'phrase',   label:'Local phrase', icon:'🗣️', color:'#185FA5' },
+  { key:'vat',      label:'VAT refund',   icon:'🛂', color:'#185FA5' },
+]
+const TIP_CAT_BY_KEY = Object.fromEntries([...TIP_CATS_ACTIVITY, ...TIP_CATS_TRANSPORT, ...TIP_CATS_SHOPPING].map(c => [c.key, c]))
+function _tipCatsFor(slot){
+  if (slot && slot.classList.contains('slot-type-transport')) return TIP_CATS_TRANSPORT
+  if (slot && slot.classList.contains('slot-type-shopping'))  return TIP_CATS_SHOPPING
+  return TIP_CATS_ACTIVITY
+}
 const TIP_MAX = 3
 const _TIP_NOTE_CAT = { label:'Note', icon:'📝', color:'#6b6b6b' }
 
@@ -15376,7 +15396,8 @@ function renderSlotTips(slot) {
   if (!host) return
   const isActivity = slot.classList.contains('slot-type-activity')
   const isTransport = slot.classList.contains('slot-type-transport')
-  if (!isActivity && !isTransport) { host.innerHTML = ''; return }
+  const isShopping = slot.classList.contains('slot-type-shopping')
+  if (!isActivity && !isTransport && !isShopping) { host.innerHTML = ''; return }
   const ta = slot.querySelector('.slot-notes-input')
   const state = _parseTipsValue(ta ? ta.value : '')
   // Cards (legacy note first, then tips). Track the tips-array index for removal.
@@ -15396,7 +15417,9 @@ function renderSlotTips(slot) {
     : _tipCatsFor(slot).filter(c => !usedCats.has(c.key))
         .map(c => `<button type="button" class="tip-chip" style="--tipc:${c.color}" onclick="tipChipClick(this,'${c.key}')">${c.icon} ${escapeHtml(c.label)}</button>`)
         .join('')
-  const headLabel = isTransport ? '💡 Add transport tip (optional)' : '💡 Add a quick tip (optional)'
+  const headLabel = isTransport ? '💡 Add transport tip (optional)'
+                  : isShopping  ? '💡 Add shopping tip (optional)'
+                  :               '💡 Add a quick tip (optional)'
   host.innerHTML =
     `<div class="slot-tips-head">${headLabel}</div>` +
     (cards.length ? `<div class="slot-tips-cards">${cards.join('')}</div>` : '') +
@@ -20104,8 +20127,8 @@ function addSlot(dayNum, seed = null) {
     })
     if (_suggestedStay) applyDurationSuggestion(slot, _suggestedStay)
   }
-  // Activity + transport slots use the quick-tip chips instead of the textarea.
-  if (slot.classList.contains('slot-type-activity') || slot.classList.contains('slot-type-transport')) renderSlotTips(slot)
+  // Activity / transport / shopping slots use the quick-tip chips.
+  if (slot.classList.contains('slot-type-activity') || slot.classList.contains('slot-type-transport') || slot.classList.contains('slot-type-shopping')) renderSlotTips(slot)
   updateDayMeta(dayNum);
   refreshDayDistances(container);
 }
