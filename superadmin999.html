@@ -2525,12 +2525,19 @@ function jsEsc(s){ return String(s??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"
 // by the planner dashboard. Render them as readable tip rows here instead of
 // dumping raw JSON. Falls back to plain text for legacy / non-tip notes.
 const _ADMIN_TIP_CATS = {
+  // activity
   best_time:{label:'Best time',icon:'⏰',color:'#185FA5'},
   photo:{label:'Photo spot',icon:'📷',color:'#534AB7'},
   skip_if:{label:'Skip if',icon:'⚠️',color:'#A32D2D'},
   money:{label:'Money saver',icon:'💰',color:'#2C5F2D'},
   hidden:{label:'Hidden entrance',icon:'🚪',color:'#534AB7'},
   phrase:{label:'Local phrase',icon:'🗣️',color:'#185FA5'},
+  // transport
+  ticket:{label:'Ticket tip',icon:'🎫',color:'#185FA5'},
+  transfer:{label:'Transfer warning',icon:'⚠️',color:'#A32D2D'},
+  timing:{label:'Last departure',icon:'⏰',color:'#C17D2A'},
+  luggage:{label:'Luggage tip',icon:'🎒',color:'#534AB7'},
+  // legacy free text
   note:{label:'Note',icon:'📝',color:'#6b6b6b'},
 }
 function renderNotesReadonly(raw){
