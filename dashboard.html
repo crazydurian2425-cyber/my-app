@@ -15474,16 +15474,67 @@ function renderSlotTips(slot) {
     `<div class="slot-tips-editor" hidden><input type="text" class="tip-editor-input" maxlength="120" placeholder="" onkeydown="if(event.key==='Enter'){event.preventDefault();tipEditorSave(this)}else if(event.key==='Escape'){tipEditorCancel(this)}"><button type="button" class="tip-editor-save" onclick="tipEditorSave(this)">Save</button><button type="button" class="tip-editor-cancel" onclick="tipEditorCancel(this)">Cancel</button></div>` +
     `<div class="slot-tips-chips">${chips}</div>`
 }
+// Link the trip's check-in hotel onto a slot as its location (title +
+// address + _placeData + chip). Used by the free-time "Rest at hotel" chip
+// so the planner doesn't have to search for a hotel we already know.
+// Returns true if a hotel was found and linked.
+function _linkCheckinHotelToSlot(slot) {
+  if (!slot) return false
+  let name = window._currentHotelName || ''
+  let addr = window._currentHotelAddress || ''
+  let placeId = window._currentHotelPlaceId || null
+  let lat = parseFloat(window._currentHotelLat)
+  let lng = parseFloat(window._currentHotelLng)
+  const src = (typeof _findItineraryHotel === 'function') ? _findItineraryHotel() : null
+  if (src) {
+    name = name || src.name || ''
+    addr = addr || src.address || ''
+    placeId = placeId || src.google_place_id || null
+    if (!Number.isFinite(lat)) lat = parseFloat(src.latitude)
+    if (!Number.isFinite(lng)) lng = parseFloat(src.longitude)
+  }
+  if (!name && !placeId && !(Number.isFinite(lat) && Number.isFinite(lng))) return false
+  const titleInput = slot.querySelector('.slot-title-input')
+  if (titleInput && name) titleInput.value = name
+  const addrInput = slot.querySelector('.slot-address-input')
+  if (addrInput && addr) addrInput.value = addr
+  slot._placeData = src ? { ...src } : {
+    google_place_id: placeId || null,
+    name, address: addr,
+    latitude:  Number.isFinite(lat) ? lat : null,
+    longitude: Number.isFinite(lng) ? lng : null,
+  }
+  slot.classList.add('slot-place-linked')
+  if (typeof renderLinkedChip === 'function') renderLinkedChip(slot)
+  return true
+}
 function tipChipClick(btn, cat) {
   const host = btn.closest('.slot-tips'); if (!host) return
   const c = TIP_CAT_BY_KEY[cat]; if (!c) return
+  const slot = btn.closest('.activity-slot')
+  let prefill = ''
+  // "Rest at hotel" (free time): one click auto-links the check-in hotel as
+  // this stop's location — no search needed — then routing recomputes. The
+  // note editor still opens (pre-filled) so they can add an optional detail.
+  if (cat === 'rest_hotel' && slot) {
+    if (_linkCheckinHotelToSlot(slot)) {
+      prefill = 'Relax at the hotel'
+      if (typeof showToast === 'function') showToast('Location set to your hotel · ' + (slot._placeData?.name || ''))
+      const _dc = slot.closest('[id^="slots-day-"]')
+      if (_dc && typeof refreshDayDistances === 'function') refreshDayDistances(_dc)
+      if (_dc && typeof _gapFillTransportsForDay === 'function') _gapFillTransportsForDay(_dc)
+      if (typeof autoSaveDraft === 'function') autoSaveDraft()
+    } else if (typeof showToast === 'function') {
+      showToast('Set the check-in hotel first — then this links automatically')
+    }
+  }
   const editor = host.querySelector('.slot-tips-editor')
   const input  = host.querySelector('.tip-editor-input')
   const chips   = host.querySelector('.slot-tips-chips')
   if (!editor || !input) return
   editor.dataset.cat = cat
   input.placeholder = `${c.icon} ${c.label}…`
-  input.value = ''
+  input.value = prefill
   editor.hidden = false
   if (chips) chips.style.display = 'none'
   input.focus()
