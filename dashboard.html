@@ -16212,6 +16212,14 @@ function minsToHHMM(mins) {
 // enum, return null if neither is set.
 function estimatePerPaxCost(placeData) {
   if (!placeData) return null
+  // Hotels are NOT a daily per-pax activity cost — the room is billed
+  // per-night, per-room and tracked separately as hotel_budget_per_night.
+  // Google's price_level/price_range on a lodging reflects the room rate,
+  // so counting it here would dump €100-200 into the day's food+activity
+  // spend and trigger false "over budget" badges. Skip lodging entirely.
+  const types = Array.isArray(placeData.place_types)
+    ? placeData.place_types.map(x => String(x).toLowerCase()) : []
+  if (types.some(t => ['lodging','hotel','resort_hotel','bed_and_breakfast','motel','guest_house','extended_stay_hotel'].includes(t))) return null
   const pr = placeData.price_range_json
   if (pr?.startPrice) {
     const units = parseInt(pr.startPrice.units || '0', 10) || 0
@@ -19298,9 +19306,15 @@ function computeDaySummary(dayContainer) {
     const est = _transportEstimates(mode, km)
     if (est?.costEur != null) transportSpend += est.costEur
   })
-  // Stop spend — estimated per-pax cost for each linked venue.
+  // Stop spend — estimated per-pax cost for each linked venue. Hotel
+  // check-in/out are excluded by slot type too (belt + braces with the
+  // lodging guard in estimatePerPaxCost): the room is a separate
+  // per-night budget, not daily per-pax food/activity spend.
   let stopSpend = 0
   venues.forEach(s => {
+    if (s.classList.contains('slot-type-hotel_checkin') ||
+        s.classList.contains('slot-type-hotel_checkout') ||
+        s.classList.contains('slot-type-accommodation')) return
     const c = estimatePerPaxCost(s._placeData)
     if (c) stopSpend += c
   })
