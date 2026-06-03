@@ -14889,13 +14889,15 @@ function _applyHotelDefaults(slot, key) {
   const _notesInput = slot.querySelector('.slot-notes-input')
   if (_notesLabel) {
     _notesLabel.textContent = isIn
-      ? `Why this hotel for ${_firstName}`
-      : `Reminder for ${_firstName}`
+      ? `Why this hotel for ${_firstName} (optional)`
+      : `Reminder for ${_firstName} (optional)`
   }
   if (_notesInput) {
-    _notesInput.placeholder = isIn
-      ? 'Why this hotel matches her profile — location, vibe, value'
-      : 'Anything to remember before leaving — bag pickup, key drop, etc.'
+    // Single source of truth for the placeholder (getNotesPlaceholder) so the
+    // two code paths can't disagree — planner doesn't book, so this is purely
+    // an optional recommendation note, never the old "booking / confirmation
+    // code" framing.
+    _notesInput.placeholder = getNotesPlaceholder(isIn ? 'hotel_checkin' : 'hotel_checkout')
   }
   if (!isIn) {
     // Sync the bags-stored checkbox state from the plan-level flag.
@@ -15209,8 +15211,8 @@ function getNotesPlaceholder(typeKey){
   switch (typeKey) {
     case 'meal':           return t('slot.label.notes.meal','What to order or recommended dishes')
     case 'accommodation':  return t('slot.label.notes.accommodation','Booking notes or room details')
-    case 'hotel_checkin':  return t('slot.label.notes.hotel_checkin','Booking notes — confirmation code, room preferences, special requests')
-    case 'hotel_checkout': return t('slot.label.notes.hotel_checkout','Booking notes — bag storage, late check-out, anything to confirm at the desk')
+    case 'hotel_checkin':  return t('slot.label.notes.hotel_checkin','Optional — why this hotel suits them (location, vibe, value). Leave blank if nothing to add.')
+    case 'hotel_checkout': return t('slot.label.notes.hotel_checkout','Optional — reminder before leaving (bag pickup, key drop). Leave blank if nothing to add.')
     case 'transport':      return t('slot.label.notes.transport','Notes (timing, transfers, tickets)')
     case 'freetime':       return t('slot.label.notes.freetime','Suggested activities for free time')
     default:               return t('slot.label.notes.activity','What to do there (highlights, must-see)')
@@ -15238,8 +15240,8 @@ function updateSlotFieldLabels(slot, typeKey){
     if (typeKey === 'hotel_checkin' || typeKey === 'hotel_checkout') {
       const _firstName = window._currentFirstName || 'the traveler'
       notesLabel.textContent = typeKey === 'hotel_checkin'
-        ? `Why this hotel for ${_firstName}`
-        : `Reminder for ${_firstName}`
+        ? `Why this hotel for ${_firstName} (optional)`
+        : `Reminder for ${_firstName} (optional)`
     } else {
       notesLabel.textContent = ''
     }
