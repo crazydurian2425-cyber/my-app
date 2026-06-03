@@ -2081,13 +2081,15 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.slot-type-transport .slot-notes-input,
 .activity-slot.slot-type-shopping .slot-notes-input,
 .activity-slot.slot-type-meal .slot-notes-input,
-.activity-slot.slot-type-entertainment .slot-notes-input{display:none;}
+.activity-slot.slot-type-entertainment .slot-notes-input,
+.activity-slot.slot-type-freetime .slot-notes-input{display:none;}
 .slot-tips{display:none;}
 .activity-slot.slot-type-activity .slot-tips,
 .activity-slot.slot-type-transport .slot-tips,
 .activity-slot.slot-type-shopping .slot-tips,
 .activity-slot.slot-type-meal .slot-tips,
-.activity-slot.slot-type-entertainment .slot-tips{display:block;margin-top:4px;}
+.activity-slot.slot-type-entertainment .slot-tips,
+.activity-slot.slot-type-freetime .slot-tips{display:block;margin-top:4px;}
 /* Shopping stops are Google-verified with a photo already — no planner
    upload needed (same as hotel/transport). */
 .activity-slot.slot-type-shopping .img-upload-area,
@@ -2326,11 +2328,10 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.slot-place-linked .slot-address-input{
   background:var(--bg);color:var(--text-2);cursor:default;
 }
-/* Hide the search-related UI for slot types that don't get autocomplete. */
+/* Hide the search-related UI for slot types that don't get autocomplete.
+   (Free time IS place-linkable now, so it's no longer hidden here.) */
 .activity-slot.slot-type-transport .places-dropdown,
-.activity-slot.slot-type-freetime  .places-dropdown,
-.activity-slot.slot-type-transport .places-linked-chip,
-.activity-slot.slot-type-freetime  .places-linked-chip{display:none!important;}
+.activity-slot.slot-type-transport .places-linked-chip{display:none!important;}
 
 /* ── Transport slot polish ──
    Reads as a CONNECTOR between stops, NOT another destination card.
@@ -2698,10 +2699,11 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .duration-dd-option.is-selected{background:var(--green-light);color:var(--text);font-weight:600;}
 
 /* Per-type field visibility. Default: everything visible.
-   freetime hides Address. activity + meal + accommodation all show
-   the duration row so the planner can see "30 min check-in" / "60 min
+   activity + meal + accommodation + shopping + entertainment show the
+   duration row so the planner can see "30 min check-in" / "60 min
    dinner" / etc. — and so transport blocks downstream can compute
-   their depart time correctly. */
+   their depart time correctly. (Free time is place-linkable now and
+   shows Address like the others.) */
 .activity-slot .slot-row-duration{display:none;}
 .activity-slot.slot-type-activity .slot-row-duration,
 .activity-slot.slot-type-meal .slot-row-duration,
@@ -2710,7 +2712,6 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.slot-type-hotel_checkout .slot-row-duration,
 .activity-slot.slot-type-shopping .slot-row-duration,
 .activity-slot.slot-type-entertainment .slot-row-duration{display:flex;align-items:center;gap:10px;}
-.activity-slot.slot-type-freetime .slot-row-address{display:none;}
 .slot-row-duration .slot-row-label{font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;}
 
 /* IMAGE UPLOAD */
@@ -9644,6 +9645,8 @@ const GOOGLE_PLACES_API_KEY = 'AIzaSyBZrklPTsOgJiRu8-OtJb-d3lU2P0JdWv4'
 const PLACES_ENABLED_TYPES = new Set([
   'activity', 'meal', 'accommodation', 'shopping', 'entertainment',
   'hotel_checkin', 'hotel_checkout',
+  'freetime',   // place-linkable so a free-time block has coords → routing /
+                // end-of-day transport can compute a real origin from it.
 ])
 
 // ── AUTH CHECK ───────────────────────────────────────────────
@@ -13561,7 +13564,7 @@ function fillItineraryItems(items) {
       // Activity / transport / shopping / meal render the loaded notes as
       // quick-tip chips. (Runs after the value is set; updateSlotFieldLabels
       // ran before.)
-      if (['activity','transport','shopping','meal','entertainment'].includes(iconKey)) renderSlotTips(slot)
+      if (['activity','transport','shopping','meal','entertainment','freetime'].includes(iconKey)) renderSlotTips(slot)
       // Address (new field — null for legacy rows, just leaves the input blank)
       const addrInput = slot.querySelector('.slot-address-input')
       if (addrInput) addrInput.value = it.address || ''
@@ -15251,7 +15254,7 @@ function getTitlePlaceholder(typeKey, seedIcon){
     case 'meal':          return t('slot.label.name.meal','Name of place')
     case 'accommodation': return t('slot.label.name.accommodation','Hotel name')
     case 'transport':     return t('slot.label.name.transport','Line or mode')
-    case 'freetime':      return t('slot.label.name.freetime','Area or theme')
+    case 'freetime':      return t('slot.label.name.freetime','Search a spot or area (e.g. a neighbourhood, square, café)')
     default:              return t('slot.label.name.activity','Name of place')
   }
 }
@@ -15308,7 +15311,7 @@ function updateSlotFieldLabels(slot, typeKey){
   // flatten a stray tips-JSON back to readable text so the visible textarea
   // never shows raw JSON (e.g. when the planner switches activity → meal).
   const _tipsTa = slot.querySelector('.slot-notes-input')
-  if (['activity','transport','shopping','meal','entertainment'].includes(typeKey)) {
+  if (['activity','transport','shopping','meal','entertainment','freetime'].includes(typeKey)) {
     renderSlotTips(slot)
   } else if (_tipsTa) {
     const _st = _parseTipsValue(_tipsTa.value)
@@ -15374,12 +15377,23 @@ const TIP_CATS_ENTERTAINMENT = [
   { key:'preshow',   label:'Pre-show drink',  icon:'🍷', color:'#534AB7' },
   { key:'phrase',    label:'Local phrase',    icon:'🗣️', color:'#185FA5' },
 ]
-const TIP_CAT_BY_KEY = Object.fromEntries([...TIP_CATS_ACTIVITY, ...TIP_CATS_TRANSPORT, ...TIP_CATS_SHOPPING, ...TIP_CATS_MEAL, ...TIP_CATS_ENTERTAINMENT].map(c => [c.key, c]))
+// Free time = a block of open/leisure time (now place-linkable). Its chips
+// are leisure "ideas for the block", leaning into rest/recharge.
+const TIP_CATS_FREETIME = [
+  { key:'rest_hotel', label:'Rest at hotel', icon:'💆', color:'#185FA5' },
+  { key:'wander',     label:'Wander area',   icon:'🚶', color:'#2C5F2D' },
+  { key:'cafe',       label:'Café break',    icon:'☕', color:'#C17D2A' },
+  { key:'browse',     label:'Browse shops',  icon:'🛍️', color:'#534AB7' },
+  { key:'catchup',    label:'Catch up',      icon:'📱', color:'#185FA5' },
+  { key:'phototime',  label:'Photo time',    icon:'📷', color:'#534AB7' },
+]
+const TIP_CAT_BY_KEY = Object.fromEntries([...TIP_CATS_ACTIVITY, ...TIP_CATS_TRANSPORT, ...TIP_CATS_SHOPPING, ...TIP_CATS_MEAL, ...TIP_CATS_ENTERTAINMENT, ...TIP_CATS_FREETIME].map(c => [c.key, c]))
 function _tipCatsFor(slot){
   if (slot && slot.classList.contains('slot-type-transport'))     return TIP_CATS_TRANSPORT
   if (slot && slot.classList.contains('slot-type-shopping'))      return TIP_CATS_SHOPPING
   if (slot && slot.classList.contains('slot-type-meal'))          return TIP_CATS_MEAL
   if (slot && slot.classList.contains('slot-type-entertainment')) return TIP_CATS_ENTERTAINMENT
+  if (slot && slot.classList.contains('slot-type-freetime'))      return TIP_CATS_FREETIME
   return TIP_CATS_ACTIVITY
 }
 const TIP_MAX = 3
@@ -15426,7 +15440,8 @@ function renderSlotTips(slot) {
   const isShopping = slot.classList.contains('slot-type-shopping')
   const isMeal = slot.classList.contains('slot-type-meal')
   const isEntertainment = slot.classList.contains('slot-type-entertainment')
-  if (!isActivity && !isTransport && !isShopping && !isMeal && !isEntertainment) { host.innerHTML = ''; return }
+  const isFreetime = slot.classList.contains('slot-type-freetime')
+  if (!isActivity && !isTransport && !isShopping && !isMeal && !isEntertainment && !isFreetime) { host.innerHTML = ''; return }
   const ta = slot.querySelector('.slot-notes-input')
   const state = _parseTipsValue(ta ? ta.value : '')
   // Cards (legacy note first, then tips). Track the tips-array index for removal.
@@ -15450,6 +15465,7 @@ function renderSlotTips(slot) {
                   : isShopping      ? '💡 Add shopping tip (optional)'
                   : isMeal          ? '💡 Add meal tip (optional)'
                   : isEntertainment ? '💡 Add an entertainment tip (optional)'
+                  : isFreetime      ? '💡 Suggest something for the free time (optional)'
                   :                   '💡 Add a quick tip (optional)'
   host.innerHTML =
     `<div class="slot-tips-head">${headLabel}</div>` +
@@ -20158,8 +20174,8 @@ function addSlot(dayNum, seed = null) {
     })
     if (_suggestedStay) applyDurationSuggestion(slot, _suggestedStay)
   }
-  // Activity / transport / shopping / meal / entertainment use quick-tip chips.
-  if (['slot-type-activity','slot-type-transport','slot-type-shopping','slot-type-meal','slot-type-entertainment'].some(c => slot.classList.contains(c))) renderSlotTips(slot)
+  // Activity / transport / shopping / meal / entertainment / free time use chips.
+  if (['slot-type-activity','slot-type-transport','slot-type-shopping','slot-type-meal','slot-type-entertainment','slot-type-freetime'].some(c => slot.classList.contains(c))) renderSlotTips(slot)
   updateDayMeta(dayNum);
   refreshDayDistances(container);
 }
