@@ -16723,11 +16723,30 @@ function describeStopDistance(km) {
 }
 function getSlotLatLng(slot) {
   const d = slot?._placeData
-  if (!d) return null
-  const lat = parseFloat(d.latitude)
-  const lng = parseFloat(d.longitude)
-  if (!isFinite(lat) || !isFinite(lng)) return null
-  return { lat, lng }
+  if (d) {
+    const lat = parseFloat(d.latitude)
+    const lng = parseFloat(d.longitude)
+    if (isFinite(lat) && isFinite(lng)) return { lat, lng }
+  }
+  // Free-time block with no pinned place → inherit the previous located
+  // stop's position ("you're free around where you just were"), so the
+  // routing chain (gap-fill, end-of-day back-to-hotel) never breaks even
+  // if the planner didn't link a place. Precise routing resumes the moment
+  // they DO link one (the _placeData branch above wins).
+  if (slot?.classList?.contains('slot-type-freetime')) {
+    let p = slot.previousElementSibling
+    while (p) {
+      if (p.classList?.contains('activity-slot') && !p.classList.contains('slot-type-transport')) {
+        const pd = p._placeData
+        if (pd) {
+          const lat = parseFloat(pd.latitude), lng = parseFloat(pd.longitude)
+          if (isFinite(lat) && isFinite(lng)) return { lat, lng }
+        }
+      }
+      p = p.previousElementSibling
+    }
+  }
+  return null
 }
 // Wipe existing distance indicators in a day container and compute fresh
 // ones for every consecutive pair of slots that both carry coordinates.
@@ -19049,6 +19068,15 @@ function endDayBackToHotel(dayContainerId) {
     ? { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) }
     : null
   const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
+  // Already at the hotel (e.g. a "Rest at hotel" free-time block) — no
+  // back-to-hotel transport needed. Skip inserting a pointless 0-km leg;
+  // the locked "Back at hotel" anchor already shows they're there.
+  if (km != null && km < 0.05) {
+    if (typeof refreshDayDistances === 'function') refreshDayDistances(dayContainer)
+    if (typeof autoSaveDraft === 'function') autoSaveDraft()
+    if (typeof showToast === 'function') showToast('Already at the hotel — no transport needed')
+    return
+  }
   // Depart = last venue start + stay (with the usual type-based floors).
   const startMin = parseSlotTime(lastVenue.querySelector('.slot-time-input')?.value || '')
   let stay = parseInt(lastVenue.querySelector('.slot-duration-input')?.value || '0', 10) || 0
