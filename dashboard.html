@@ -2711,7 +2711,8 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.slot-type-hotel_checkin .slot-row-duration,
 .activity-slot.slot-type-hotel_checkout .slot-row-duration,
 .activity-slot.slot-type-shopping .slot-row-duration,
-.activity-slot.slot-type-entertainment .slot-row-duration{display:flex;align-items:center;gap:10px;}
+.activity-slot.slot-type-entertainment .slot-row-duration,
+.activity-slot.slot-type-freetime .slot-row-duration{display:flex;align-items:center;gap:10px;}
 .slot-row-duration .slot-row-label{font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;}
 
 /* IMAGE UPLOAD */
@@ -16021,6 +16022,10 @@ function suggestStayDuration({ slotType, seedIcon, placeTypes, startTime }) {
   if (seedIcon === 'snack' || seedIcon === 'coffee') return 30
   if (seedIcon === 'hotel')     return 60   // matches hotel_checkin floor
   if (seedIcon === 'checkout')  return 15
+  // Free time is a leisure BLOCK, not a venue visit — default ~90 min
+  // regardless of what place is linked (planner can adjust). Checked before
+  // place-types so linking a café doesn't shrink the block to 30 min.
+  if (slotType === 'freetime') return 90
   // 2) Place types from Google.
   if (Array.isArray(placeTypes) && placeTypes.length) {
     const set = new Set(placeTypes.map(s => String(s).toLowerCase()))
@@ -20439,7 +20444,7 @@ async function submitPlan() {
         day_number: dayNum, time, type,
         title: titleVal,
         address: addressVal || null,
-        duration_minutes: (type === 'activity' && Number.isFinite(durMins)) ? durMins : null,
+        duration_minutes: (['activity','freetime'].includes(type) && Number.isFinite(durMins)) ? durMins : null,
         notes,
         sort_order: sortOrder,
         ...getPlaceFieldsForSlot(slot),
@@ -20819,7 +20824,7 @@ async function _persistDraft(planId) {
         type:       slotType,
         title:      titleVal,
         address:    slot.querySelector('.slot-address-input')?.value?.trim() || null,
-        duration_minutes: (slotType === 'activity' && Number.isFinite(durMins)) ? durMins : null,
+        duration_minutes: (['activity','freetime'].includes(slotType) && Number.isFinite(durMins)) ? durMins : null,
         notes:      slot.querySelector('.slot-notes-input')?.value?.trim() || '',
         transport_mode: transportMode,
         is_locked:  isLockedRow,
