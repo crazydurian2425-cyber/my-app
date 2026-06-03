@@ -13530,6 +13530,10 @@ function fillItineraryItems(items) {
       const iconKey  = keyMap[rawType]   || 'activity'
       const hidden = slot.querySelector('.slot-type-select')
       if (hidden) hidden.value = iconKey
+      // A saved non-default type is a deliberate planner choice — lock it so
+      // re-linking a place after reload can't auto-override it. Default
+      // 'activity' stays unlocked so auto-detect can still help on re-link.
+      if (iconKey !== 'activity') slot.dataset.typeLocked = 'true'
       const ddLabel = slot.querySelector('.type-dd-label')
       if (ddLabel) ddLabel.textContent = labelTxt
       const ddIcon  = slot.querySelector('.type-dd-toggle .type-dd-icon')
@@ -14771,6 +14775,10 @@ function selectTypeDD(btn, label, key){
   // for activity). Then refresh placeholders to match the new type.
   const slot = dd.closest('.activity-slot')
   if (slot) {
+    // Planner explicitly chose this type — lock it so linking a Google place
+    // afterward can't auto-override it (see the typeLocked guard in
+    // applyPlaceToSlot). Their pick always wins.
+    slot.dataset.typeLocked = 'true'
     slot.classList.forEach(c => { if (c.startsWith('slot-type-')) slot.classList.remove(c) })
     slot.classList.add('slot-type-' + key)
     updateSlotFieldLabels(slot, key)
@@ -15792,7 +15800,11 @@ function applyPlaceToSlot(slot, place) {
   const currentTypeInput = slot.querySelector('.slot-type-select')
   const currentType      = currentTypeInput?.value || null
   const isHotelCategory  = currentType === 'hotel_checkin' || currentType === 'hotel_checkout'
-  if (!isHotelCategory) {
+  // typeLocked = the planner explicitly picked this type from the dropdown,
+  // so we must NOT auto-override it when they link a place. Auto-detect only
+  // applies to untouched stops (no manual pick yet).
+  const typeLocked = slot.dataset.typeLocked === 'true'
+  if (!isHotelCategory && !typeLocked) {
     let detectedType = detectSlotTypeFromTypes(placeTypes)
     if (detectedType === 'accommodation') {
       const _container = slot.closest('[id^="slots-day-"]')
