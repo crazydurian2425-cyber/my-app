@@ -9363,7 +9363,52 @@ const ENUM_FR = {
   hotel:'Hôtel', boutique:'Boutique', airbnb:'Airbnb', hostel:'Auberge', villa:'Villa / château',
   first_time:'Première visite', returning:'Déjà venu(e)', few_times:'Quelques fois',
   solo_travel:'Voyage solo', honeymoon:'Lune de miel', anniversary:'Anniversaire', family_trip:'Voyage en famille', business:'Affaires', leisure:'Loisirs', birthday:'Anniversaire',
+  // Traveler interest tags (snake_case enums shown as pills in the brief)
+  food_wine:'Gastronomie & vin', food_wine_non_alcoholic:'Gastronomie (sans alcool)', local_culture:'Culture locale',
+  photography:'Photographie', villages:'Villages', markets:'Marchés', architecture:'Architecture',
+  art_museums:'Musées d\'art', hidden_gems:'Trésors cachés', cafes:'Cafés', adventure_sports:'Sports d\'aventure',
+  beach:'Plage', cellar_tours:'Visites de caves', cuisine:'Cuisine', family_activities:'Activités en famille',
+  hiking:'Randonnée', history:'Histoire', lavender_fields:'Champs de lavande', luxury_brands:'Marques de luxe',
+  nature:'Nature', nightlife:'Vie nocturne', shopping:'Shopping', spa:'Spa', theme_parks:'Parcs d\'attractions',
   none:'Aucun',
+}
+// Cuisine-interest values are display strings (not snake_case enums), so they
+// get their own lookup keyed by lowercased value. French planners see these in
+// the brief's "Cuisine interests" / "Cuisines préférées" row.
+const CUISINE_FR = {
+  'aged classics':'Classiques affinés', 'beach cafes':'Cafés de plage', 'bistros':'Bistrots',
+  'bouchons':'Bouchons', 'bouillabaisse':'Bouillabaisse', 'boulangeries':'Boulangeries', 'brasseries':'Brasseries',
+  'cafes':'Cafés', 'cellar tours':'Visites de caves', 'champagne cellars':'Caves de Champagne', 'champagne':'Champagne',
+  'charcuterie':'Charcuterie', 'chateaux dining':'Dîner au château', 'cheese':'Fromages', 'choucroute':'Choucroute',
+  'cider':'Cidre', 'cocktails':'Cocktails', 'crêpes':'Crêpes', 'family bistros':'Bistrots familiaux',
+  'french classics':'Classiques français', 'glaces':'Glaces', 'gluten-free pastries':'Pâtisseries sans gluten',
+  'halal-friendly french':'Cuisine française halal', 'halal-friendly fine dining':'Gastronomie halal',
+  'hearty meals':'Plats copieux', 'ice cream':'Glaces', 'kid-friendly cafes':'Cafés adaptés aux enfants',
+  'lavender honey':'Miel de lavande', 'local corsican':'Cuisine corse locale', 'local bistros':'Bistrots locaux',
+  'local cheeses':'Fromages locaux', 'local pubs':'Pubs locaux', 'loire wines':'Vins de Loire',
+  'market food':'Cuisine de marché', 'markets':'Marchés', 'mediterranean':'Méditerranéenne', 'michelin':'Étoilé Michelin',
+  'mountain cuisine':'Cuisine de montagne', 'nightlife snacks':'En-cas nocturnes', 'niçoise':'Niçoise',
+  'nut-free french':'Cuisine française sans fruits à coque', 'omelette mère poulard':'Omelette de la Mère Poulard',
+  'pastries (nut-free)':'Pâtisseries (sans fruits à coque)', 'pastries':'Pâtisseries', 'patisseries':'Pâtisseries',
+  'pescatarian options':'Options pescetariennes', 'photo cafes':'Cafés photogéniques', 'picnics':'Pique-niques',
+  'pralines':'Pralines', 'premium cuisine':'Cuisine haut de gamme', 'provence cuisine':'Cuisine provençale',
+  'provençal':'Provençal', 'riesling':'Riesling', 'riviera classics':'Classiques de la Riviera',
+  'savoyard cuisine':'Cuisine savoyarde', 'savoyard':'Savoyard', 'seafood':'Fruits de mer',
+  'shopping street snacks':'En-cas de rue commerçante', 'street food':'Cuisine de rue', 'tarte flambée':'Tarte flambée',
+  'truffles':'Truffes', 'vegetarian french':'Cuisine française végétarienne', 'wine bars':'Bars à vin',
+  'wine cellars':'Caves à vin', 'wine pairings':'Accords mets-vins', 'wine tasting':'Dégustation de vin',
+  'wine':'Vin', 'winstubs':'Winstubs',
+}
+// Translate a comma/·-separated cuisine list for French planners, keeping any
+// "NO xxx" negative markers so highlightNegativePrefs still flags them.
+function localizeCuisineCsv(raw){
+  if (!raw || !isPlannerFR()) return raw
+  return String(raw).split(/\s*[,·]\s*/).filter(Boolean).map(p => {
+    const neg = /^no\s+/i.test(p)
+    const core = neg ? p.replace(/^no\s+/i,'') : p
+    const fr = CUISINE_FR[core.toLowerCase().trim()] || core
+    return neg ? ('NO ' + fr) : fr
+  }).join(', ')
 }
 
 function applyLang(lang){
@@ -12566,7 +12611,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const cuisineRaw = Array.isArray(meta.cuisine_interests)
     ? meta.cuisine_interests.join(', ')
     : (meta.cuisine_interests || '')
-  const cuisineHtml = highlightNegativePrefs(cuisineRaw)
+  const cuisineHtml = highlightNegativePrefs(localizeCuisineCsv(cuisineRaw))
   // Diet "no shellfish" / allergies — same negative-pref treatment.
   const dietHtml = diet
     ? (dietCritical
