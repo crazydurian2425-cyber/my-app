@@ -12288,24 +12288,9 @@ async function renderTravelerBrief(plan, t, notes) {
     } catch (e) { /* fall back to current unit only */ }
   }
 
-  // ── which sibling units does THIS planner own? ──
-  // Plan rows are RLS-gated to the planner who owns them, so this select
-  // only returns rows where planner_id = me. Used to:
-  //   1) Decide which sibling rows show full info vs locked card
-  //      (commission is now a flat rate by duration — no continuity bonus)
-  let myTravelerIds = new Set()
-  if (siblings.length > 1 && planner?.id) {
-    const sibIds = siblings.map(s => s.id).filter(Boolean)
-    try {
-      const { data: myPlans } = await sb.from('plans')
-        .select('traveler_id')
-        .in('traveler_id', sibIds)
-        .eq('planner_id', planner.id)
-      myTravelerIds = new Set((myPlans || []).map(p => p.traveler_id))
-    } catch (e) { /* RLS will silently filter */ }
-  }
-  // Always include the current plan's traveler — we're definitely working on this one.
-  if (t.id) myTravelerIds.add(t.id)
+  // Trip context shows only the CURRENT unit in full; every other unit is
+  // locked (cities + dates only) regardless of who owns it — purely for
+  // orientation. So we no longer need to look up which siblings are "mine".
 
   // ── destination display: full multi-city list when on a multi-unit trip ──
   const destinationList = siblings.length > 1
@@ -12618,7 +12603,6 @@ async function renderTravelerBrief(plan, t, notes) {
     }, 0)
     const rows = siblings.map(s => {
       const isCurrent = s.id === t.id
-      const isMine = myTravelerIds.has(s.id)
       const m = String(s.duration || '').match(/(\d+)D/i)
       const nightsUnit = m ? Math.max(parseInt(m[1], 10) - 1, 0) : 0
       const endStr = s.arrival_date ? addDaysLocal(s.arrival_date, nightsUnit) : ''
@@ -12631,15 +12615,12 @@ async function renderTravelerBrief(plan, t, notes) {
       const INK = 'var(--text,#1A2E25)'
       const INK_MUTED = 'var(--color-text-secondary,#5a6b62)'
       const INK_TERTIARY = 'var(--color-text-tertiary,#8a958f)'
-      if (isMine) {
-        // Full info — green border, "YOU ARE HERE" or "Unit N · yours"
-        // Flat rate by duration (no continuity bonus) — matches stored payout.
+      if (isCurrent) {
+        // The unit being planned — highlighted, with its commission.
         const myFee = baseCommissionForDuration(s.duration)
         return `
           <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(63,186,115,0.10);border:1px solid rgba(63,186,115,0.45);margin-bottom:6px;">
-            ${isCurrent
-              ? '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#2C5F2D;color:#ffffff;padding:3px 8px;border-radius:4px;flex-shrink:0;">You are here</span>'
-              : `<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#2C5F2D;flex-shrink:0;">Unit ${order} · yours</span>`}
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#2C5F2D;color:#ffffff;padding:3px 8px;border-radius:4px;flex-shrink:0;">You are here</span>
             <div style="flex:1;min-width:0;font-size:14px;color:${INK};">
               <strong>${escapeHtml(s.destination || '—')}</strong>
               <span style="color:${INK_MUTED};"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
@@ -12647,10 +12628,9 @@ async function renderTravelerBrief(plan, t, notes) {
             <span style="font-size:13px;font-weight:600;color:#2C5F2D;flex-shrink:0;">${fmtEur(myFee)}</span>
           </div>`
       }
-      // Locked card — no commission, no planner identity. Status only.
-      const isUnclaimed = s.status === 'unassigned'
-      const isCompleted = s.status === 'completed' || s.status === 'approved'
-      const statusLabel = isCompleted ? 'Completed' : (isUnclaimed ? 'Awaiting planner' : 'Planned by another')
+      // Every other unit — locked: cities + dates only. No status label, no
+      // commission, no planner identity (your own units included — this panel
+      // is purely for orientation; full details live in your plan list).
       return `
         <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(0,0,0,0.025);border:1px solid var(--color-border-tertiary);margin-bottom:6px;opacity:0.75;">
           <span style="font-size:14px;flex-shrink:0;line-height:1;color:${INK_TERTIARY};">🔒</span>
@@ -12659,7 +12639,6 @@ async function renderTravelerBrief(plan, t, notes) {
             <strong>${escapeHtml(s.destination || '—')}</strong>
             <span style="color:${INK_TERTIARY};"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
           </div>
-          <span style="font-size:11px;font-weight:600;color:${INK_TERTIARY};flex-shrink:0;font-style:italic;">${statusLabel}</span>
         </div>`
     }).join('')
 
@@ -19836,9 +19815,19 @@ function buildReviewPage() {
   const ta = document.getElementById('review-personal-message')
   if (ta) {
     const first = window._currentFirstName || ''
-    ta.placeholder = first
-      ? `${first}, welcome to France...`
-      : 'Welcome to France...'
+    // Position-aware prompt: a "welcome" only fits the arrival (first) unit.
+    // Middle units get a continuation, the last unit a send-off — so a planner
+    // doing Unit 2/3 isn't prompted to welcome a traveler who's already here.
+    const _order = window._currentUnitOrder || 1
+    const _total = window._currentUnitTotal || 1
+    const _city  = (window._currentDestination || '').trim()
+    const _fromCity = (window._currentArrivalFrom || '').split(',')[0].trim()
+    const _cityTxt = _city ? ` in ${_city}` : ''
+    let _body
+    if (_order <= 1)                        _body = 'welcome to France...'
+    else if (_total > 1 && _order >= _total) _body = `for your last stop${_cityTxt} — and safe travels home...`
+    else _body = _fromCity ? `hope ${_fromCity} was wonderful — for your time${_cityTxt}...` : `for your time${_cityTxt}...`
+    ta.placeholder = first ? `${first}, ${_body}` : (_body.charAt(0).toUpperCase() + _body.slice(1))
     // Hydrate from the open plan row (loaded onto window._currentPersonalMessage).
     if (typeof window._currentPersonalMessage === 'string' && ta.value !== window._currentPersonalMessage) {
       ta.value = window._currentPersonalMessage
