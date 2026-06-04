@@ -8266,6 +8266,10 @@ const TM_I18N = {
     'slot.type.transport':'Transport',
     'slot.type.accommodation':'Accommodation',
     'slot.type.freetime':'Free time',
+    'slot.type.shopping':'Shopping',
+    'slot.type.entertainment':'Entertainment',
+    'slot.type.hotel_checkin':'Hotel check-in',
+    'slot.type.hotel_checkout':'Hotel check-out',
     'slot.titlePh':'Activity name or description',
     'slot.notesPh':'Details, tips, address, booking notes...',
     'slot.remove':'Remove',
@@ -8962,6 +8966,10 @@ const TM_I18N = {
     'slot.type.transport':'Transport',
     'slot.type.accommodation':'Hébergement',
     'slot.type.freetime':'Temps libre',
+    'slot.type.shopping':'Shopping',
+    'slot.type.entertainment':'Divertissement',
+    'slot.type.hotel_checkin':'Arrivée à l\'hôtel',
+    'slot.type.hotel_checkout':'Départ de l\'hôtel',
     'slot.titlePh':'Nom de l\'activité ou description',
     'slot.notesPh':'Détails, conseils, adresse, infos de réservation…',
     'slot.remove':'Supprimer',
@@ -9320,6 +9328,43 @@ function t(key, fallback){
   if (Object.prototype.hasOwnProperty.call(dict, key)) return dict[key]
   if (TM_I18N.en && Object.prototype.hasOwnProperty.call(TM_I18N.en, key)) return TM_I18N.en[key]
   return (fallback !== undefined) ? fallback : key
+}
+
+// Inline bilingual helper for the day-form's dynamically-built strings (brief,
+// trip context, tip chips, day summary, transport, warnings) which were
+// hardcoded in English. French is served from the 'ja' dictionary slot
+// (repurposed in the France pivot), so French users have TM_LANG === 'ja'.
+function isPlannerFR(){ return TM_LANG === 'ja' || TM_LANG === 'fr' }
+function dt(en, fr){ return isPlannerFR() ? fr : en }
+
+// FR translations for the day-form brief LABELS (section headers + field
+// labels) — applied centrally inside cell() / sectionHeader().
+const BRIEF_LABEL_FR = {
+  'Trip basics':'Bases du voyage', 'Travelers':'Voyageurs', 'Budgets':'Budgets',
+  'Accommodation':'Hébergement', 'Food & dining':'Restauration',
+  'Interests & priorities':'Centres d’intérêt & priorités',
+  'Destination':'Destination', 'Duration':'Durée', 'Pace':'Rythme', 'Occasion':'Occasion',
+  'Group type':'Type de groupe', 'Ages':'Âges', 'Languages':'Langues', 'Mobility':'Mobilité',
+  'Previous visits':'Visites précédentes', 'From':'Origine',
+  'Daily / pax':'Par jour / pers.', 'Hotel / night':'Hôtel / nuit',
+  'Splurge willingness':'Budget plaisir', 'Booking authority':'Décision de réservation',
+  'Type':'Type', 'Room':'Chambre', 'Must-haves':'Indispensables',
+  'Dietary':'Régime', 'Dining style':'Style de restauration', 'Cuisine interests':'Cuisines préférées',
+  'Intensity':'Intensité', 'Daily timing':'Horaires de journée', 'Must avoid':'À éviter',
+  'Interests':'Centres d’intérêt', 'Arrival':'Arrivée', 'Departure':'Départ',
+}
+// FR translations for enum VALUES (pace, intensity, occasion, dining, etc.) —
+// applied centrally inside titleCaseEnum(). Keyed by the raw lowercase enum.
+const ENUM_FR = {
+  slow:'Tranquille', moderate:'Modéré', active:'Actif', packed:'Intense', relaxed:'Détendu', balanced:'Équilibré',
+  standard:'Standard', early:'Tôt', late:'Tard',
+  occasional:'Occasionnel', frequent:'Fréquent', rare:'Rare', never:'Jamais', luxury:'Luxe',
+  planner_recommends:'Le planificateur recommande', traveler_decides:'Le voyageur décide', collaborative:'Collaboratif',
+  local_authentic:'Local & authentique', michelin_dining:'Cuisine étoilée', fine_dining:'Gastronomique', casual:'Décontracté', mixed:'Varié', street_food:'Cuisine de rue',
+  hotel:'Hôtel', boutique:'Boutique', airbnb:'Airbnb', hostel:'Auberge', villa:'Villa / château',
+  first_time:'Première visite', returning:'Déjà venu(e)', few_times:'Quelques fois',
+  solo_travel:'Voyage solo', honeymoon:'Lune de miel', anniversary:'Anniversaire', family_trip:'Voyage en famille', business:'Affaires', leisure:'Loisirs', birthday:'Anniversaire',
+  none:'Aucun',
 }
 
 function applyLang(lang){
@@ -12214,9 +12259,9 @@ const RAIL_CITIES = new Set(['Paris','Lyon','Marseille','Bordeaux','Toulouse','N
 const ISLAND_CITIES = new Set(['Corsica (Ajaccio)','Corsica (Bonifacio)'])
 function guessTransport(fromCity, toCity) {
   if (!fromCity || !toCity) return ''
-  if (ISLAND_CITIES.has(toCity) || ISLAND_CITIES.has(fromCity)) return 'by ferry / flight'
-  if (RAIL_CITIES.has(fromCity) && RAIL_CITIES.has(toCity)) return 'by train'
-  return 'by car / train'
+  if (ISLAND_CITIES.has(toCity) || ISLAND_CITIES.has(fromCity)) return dt('by ferry / flight','en ferry / avion')
+  if (RAIL_CITIES.has(fromCity) && RAIL_CITIES.has(toCity)) return dt('by train','en train')
+  return dt('by car / train','en voiture / train')
 }
 const FLAG_BY_COUNTRY = {
   'Japan':'🇯🇵','South Korea':'🇰🇷','Korea':'🇰🇷','China':'🇨🇳','Singapore':'🇸🇬','Malaysia':'🇲🇾',
@@ -12237,6 +12282,7 @@ const TIER_BADGE = {
 }
 function titleCaseEnum(s) {
   if (!s) return ''
+  if (isPlannerFR()) { const k = String(s).toLowerCase().trim(); if (ENUM_FR[k]) return ENUM_FR[k] }
   return String(s).replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 function fmtEur(n) {
@@ -12374,9 +12420,10 @@ async function renderTravelerBrief(plan, t, notes) {
     const labelExtra = opts.badge || ''
     const labelColor = opts.criticalLabel ? 'var(--color-text-danger)' : 'var(--color-text-tertiary)'
     const spanStyle = opts.span2 ? 'grid-column:span 2;' : ''
+    const labelTxt = isPlannerFR() ? (BRIEF_LABEL_FR[label] || label) : label
     return `
       <div style="${spanStyle}min-width:0;">
-        <div style="font-size:11px;color:${labelColor};margin-bottom:2px;font-weight:500;letter-spacing:0.04em;">${escapeHtml(label)}${labelExtra}</div>
+        <div style="font-size:11px;color:${labelColor};margin-bottom:2px;font-weight:500;letter-spacing:0.04em;">${escapeHtml(labelTxt)}${labelExtra}</div>
         <div style="font-size:14px;color:var(--text,#1A2E25);line-height:1.4;word-wrap:break-word;">${display}</div>
       </div>`
   }
@@ -12384,11 +12431,13 @@ async function renderTravelerBrief(plan, t, notes) {
   // Section header: bolder + darker so it reads as a real divider, not a
   // sub-label. Dark green icon (#2C5F2D, matches the top "TRAVELER BRIEF"),
   // 13px label in primary ink, weight 700. Pass iconColor to override.
-  const sectionHeader = (iconClass, title, badge = '', iconColor = '#2C5F2D') =>
-    `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--color-border-tertiary);">
+  const sectionHeader = (iconClass, title, badge = '', iconColor = '#2C5F2D') => {
+    const titleTxt = isPlannerFR() ? (BRIEF_LABEL_FR[title] || title) : title
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--color-border-tertiary);">
        <i class="ti ti-${iconClass}" style="color:${iconColor};font-size:16px;" aria-hidden="true"></i>
-       <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:var(--text,#1A2E25);">${escapeHtml(title).toUpperCase()}${badge}</span>
+       <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:var(--text,#1A2E25);">${escapeHtml(titleTxt).toUpperCase()}${badge}</span>
      </div>`
+  }
   // Section wrapper — keeps consistent vertical rhythm between sections.
   const wrap = (innerHtml) => `<div style="margin-bottom:1.5rem;">${innerHtml}</div>`
 
@@ -12423,7 +12472,7 @@ async function renderTravelerBrief(plan, t, notes) {
         arrFrom ? `(${arrMethod} from ${arrFrom})` : null,
       ].filter(Boolean).join(' · ')
     : ''
-  const arrivalLabel = `Arrival to ${t.destination || 'this unit'}`
+  const arrivalLabel = dt(`Arrival to ${t.destination || 'this unit'}`, `Arrivée à ${t.destination || 'cette étape'}`)
 
   // — DEPARTURE FROM THIS UNIT —
   const depDate   = meta.unit_departure_date || unitEnd
@@ -12448,7 +12497,7 @@ async function renderTravelerBrief(plan, t, notes) {
         depTrailer,
       ].filter(Boolean).join(' · ')
     : ''
-  const departureLabel = `Departure from ${t.destination || 'this unit'}`
+  const departureLabel = dt(`Departure from ${t.destination || 'this unit'}`, `Départ de ${t.destination || 'cette étape'}`)
 
   const occasion = meta.occasion ? titleCaseEnum(meta.occasion) : ''
   const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
@@ -12585,7 +12634,7 @@ async function renderTravelerBrief(plan, t, notes) {
     ${sectionHeader('heart', 'Interests & priorities')}
     ${grid2(`
       <div style="grid-column:span 2;">
-        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;letter-spacing:0.04em;">INTERESTS</div>
+        <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;letter-spacing:0.04em;">${dt('INTERESTS', "CENTRES D'INTÉRÊT")}</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">${interestsHtml || '<span style="color:var(--color-text-tertiary);font-size:14px;">—</span>'}</div>
       </div>
       ${cell('Intensity', escapeHtml(intensityTxt))}
@@ -12620,7 +12669,7 @@ async function renderTravelerBrief(plan, t, notes) {
         const myFee = baseCommissionForDuration(s.duration)
         return `
           <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(63,186,115,0.10);border:1px solid rgba(63,186,115,0.45);margin-bottom:6px;">
-            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#2C5F2D;color:#ffffff;padding:3px 8px;border-radius:4px;flex-shrink:0;">You are here</span>
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#2C5F2D;color:#ffffff;padding:3px 8px;border-radius:4px;flex-shrink:0;">${dt('You are here','Vous êtes ici')}</span>
             <div style="flex:1;min-width:0;font-size:14px;color:${INK};">
               <strong>${escapeHtml(s.destination || '—')}</strong>
               <span style="color:${INK_MUTED};"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
@@ -12634,7 +12683,7 @@ async function renderTravelerBrief(plan, t, notes) {
       return `
         <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(0,0,0,0.025);border:1px solid var(--color-border-tertiary);margin-bottom:6px;opacity:0.75;">
           <span style="font-size:14px;flex-shrink:0;line-height:1;color:${INK_TERTIARY};">🔒</span>
-          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${INK_TERTIARY};flex-shrink:0;">Unit ${order}</span>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${INK_TERTIARY};flex-shrink:0;">${dt('Unit','Unité')} ${order}</span>
           <div style="flex:1;min-width:0;font-size:14px;color:${INK_MUTED};">
             <strong>${escapeHtml(s.destination || '—')}</strong>
             <span style="color:${INK_TERTIARY};"> · ${escapeHtml(s.duration || '')}${datesTxt ? ' · ' + datesTxt : ''}</span>
@@ -12645,31 +12694,37 @@ async function renderTravelerBrief(plan, t, notes) {
     // Helpful context tip — derived from adjacent units only.
     const tipParts = []
     if (prevUnit) {
-      tipParts.push(`Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — keep the arrival day relaxed.`)
+      tipParts.push(dt(
+        `Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — keep the arrival day relaxed.`,
+        `Le voyageur arrive de <strong>${escapeHtml(prevUnit.destination)}</strong> le ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — gardez la journée d'arrivée détendue.`
+      ))
     }
     if (nextUnit && unitEnd) {
-      tipParts.push(`Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — leave time on the last day.`)
+      tipParts.push(dt(
+        `Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — leave time on the last day.`,
+        `Le voyageur repart vers <strong>${escapeHtml(nextUnit.destination)}</strong> le ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — gardez du temps le dernier jour.`
+      ))
     }
     const tipHtml = tipParts.length
-      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.10);border:1px solid rgba(224,139,58,0.30);border-radius:8px;font-size:13px;color:var(--text,#1A2E25);line-height:1.55;"><strong style="color:#BA6A1A;">💡 Helpful context · </strong>${tipParts.join(' ')}</div>`
+      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.10);border:1px solid rgba(224,139,58,0.30);border-radius:8px;font-size:13px;color:var(--text,#1A2E25);line-height:1.55;"><strong style="color:#BA6A1A;">💡 ${dt('Helpful context','Contexte utile')} · </strong>${tipParts.join(' ')}</div>`
       : ''
 
     sectionContext = wrap(`
-      ${sectionHeader('map-pin', `Trip context · ${siblings.length} units · ${totalNights} nights total`)}
+      ${sectionHeader('map-pin', dt(`Trip context · ${siblings.length} units · ${totalNights} nights total`, `Contexte du voyage · ${siblings.length} unités · ${totalNights} nuits au total`))}
       ${rows}
       ${tipHtml}
-      <div style="margin-top:8px;font-size:11px;color:var(--color-text-secondary,#5a6b62);font-style:italic;">🔒 Other units locked for privacy — you see cities + dates only.</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--color-text-secondary,#5a6b62);font-style:italic;">🔒 ${dt('Other units locked for privacy — you see cities + dates only.', 'Autres unités masquées par confidentialité — vous ne voyez que les villes + dates.')}</div>
     `)
   }
 
   // ── COMMISSION BOX (per spec: #2a2a2a bg, large green amount) ──
   // Flat rate by duration — show "€X base" unless an admin override applies.
-  const breakdownTxt = (commission === computedFee) ? `${fmtEur(computedFee)} base` : ''
+  const breakdownTxt = (commission === computedFee) ? `${fmtEur(computedFee)} ${dt('base','de base')}` : ''
   // ── COMMISSION BOX (subdued per mockup: secondary bg, small €, no icon) ──
   const sectionCommission = commission > 0 ? `
     <div style="background:var(--color-background-secondary);padding:12px 14px;border-radius:var(--border-radius-md);display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
       <div>
-        <span style="font-size:12px;font-weight:500;letter-spacing:0.5px;color:var(--color-text-secondary);">YOUR COMMISSION</span>
+        <span style="font-size:12px;font-weight:500;letter-spacing:0.5px;color:var(--color-text-secondary);">${dt('YOUR COMMISSION','VOTRE COMMISSION')}</span>
         ${breakdownTxt ? `<div style="font-size:10.5px;color:var(--color-text-tertiary);margin-top:2px;">${breakdownTxt}</div>` : ''}
       </div>
       <span style="font-size:16px;font-weight:500;color:var(--text,#1A2E25);">${fmtEur(commission)}</span>
@@ -12678,7 +12733,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // ── NOTE FROM TRAVELER (amber #BA7517 label, dashed top, plain body) ──
   const sectionNote = notes ? `
     <div style="padding-top:12px;border-top:0.5px dashed var(--color-border-tertiary);">
-      <div style="font-size:11px;font-weight:500;letter-spacing:0.5px;color:#BA7517;margin-bottom:4px;">NOTE FROM TRAVELER</div>
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.5px;color:#BA7517;margin-bottom:4px;">${dt('NOTE FROM TRAVELER','NOTE DU VOYAGEUR')}</div>
       <div style="font-size:14px;color:var(--text,#1A2E25);line-height:1.6;">${escapeHtml(notes)}</div>
     </div>` : ''
 
@@ -14456,7 +14511,7 @@ function dayTimeWindow(dayNum, totalDays) {
     out.minTime = snap30(arr)
     out.defaultFirst = bump(arr, 30)
     out.dayStartsAt = addMin(arr, 10)
-    out.reason = `Traveler arrives at ${arr} — earliest stop is ${out.defaultFirst}`
+    out.reason = dt(`Traveler arrives at ${arr} — earliest stop is ${out.defaultFirst}`, `Le voyageur arrive à ${arr} — première étape possible à ${out.defaultFirst}`)
   }
   if (dayNum === totalDays && totalDays >= 1 && dep) {
     // Cutoff: last stop must end before transit-to-airport begins.
@@ -14472,9 +14527,9 @@ function dayTimeWindow(dayNum, totalDays) {
     total = Math.floor(total / 30) * 30
     out.maxTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
     const hours = (buf / 60).toFixed(buf % 60 === 0 ? 0 : 1)
-    const why = `${hours} h ${window._currentDepartureMethod === 'flight' ? 'airport' : 'station'} buffer`
+    const why = dt(`${hours} h ${window._currentDepartureMethod === 'flight' ? 'airport' : 'station'} buffer`, `marge de ${hours} h pour ${window._currentDepartureMethod === 'flight' ? "l'aéroport" : 'la gare'}`)
     out.reason = (out.reason ? out.reason + ' · ' : '') +
-                 `Departs ${dep} — last stop must end by ${out.maxTime} (${why})`
+                 dt(`Departs ${dep} — last stop must end by ${out.maxTime} (${why})`, `Départ à ${dep} — la dernière étape doit finir avant ${out.maxTime} (${why})`)
   }
   return out
 }
@@ -14492,19 +14547,22 @@ function buildDayTimeBanner(dayNum, totalDays) {
   const depTo = window._currentDepartureTo || ''
   const depMethod = window._currentDepartureMethod || ''
   const lines = []
+  // "by <method>" → "en <méthode>" in French.
+  const _methodFr = { flight:'avion', train:'train', car:'voiture', bus:'bus', ferry:'ferry', navette:'navette' }
+  const byMethod = (m) => m ? (isPlannerFR() ? ' en ' + (_methodFr[String(m).toLowerCase()] || m) : ' by ' + m) : ''
   if (dayNum === 1 && w.minTime) {
-    const fromBit = arrFrom ? ` from <strong>${escapeHtml(arrFrom)}</strong>${arrMethod ? ' by ' + arrMethod : ''}` : ''
-    const locBit  = arrLoc ? ` at <strong>${escapeHtml(arrLoc)}</strong>` : ''
+    const fromBit = arrFrom ? `${dt(' from ',' de ')}<strong>${escapeHtml(arrFrom)}</strong>${byMethod(arrMethod)}` : ''
+    const locBit  = arrLoc ? `${dt(' at ',' à ')}<strong>${escapeHtml(arrLoc)}</strong>` : ''
     // "day starts at" = arrival + 10 min disembark buffer = same as the
     // auto-seeded arrival-taxi's depart time. Falls back to defaultFirst
     // for older browsers / unexpected states where dayStartsAt wasn't set.
     const _startsAt = w.dayStartsAt || w.defaultFirst
-    lines.push(`Traveler arrives <strong>${arr}</strong>${locBit}${fromBit} — day starts at <strong>${_startsAt}</strong>`)
+    lines.push(dt(`Traveler arrives <strong>${arr}</strong>${locBit}${fromBit} — day starts at <strong>${_startsAt}</strong>`, `Le voyageur arrive à <strong>${arr}</strong>${locBit}${fromBit} — la journée commence à <strong>${_startsAt}</strong>`))
   }
   if (dayNum === totalDays && w.maxTime) {
-    const toBit = depTo ? ` → ${escapeHtml(depTo)}${depMethod ? ' by ' + depMethod : ''}` : ''
-    const locBit = depLoc ? ` from <strong>${escapeHtml(depLoc)}</strong>` : ''
-    lines.push(`Traveler departs <strong>${dep}</strong>${locBit}${toBit} — last stop must end by <strong>${w.maxTime}</strong>`)
+    const toBit = depTo ? ` → ${escapeHtml(depTo)}${byMethod(depMethod)}` : ''
+    const locBit = depLoc ? `${dt(' from ',' de ')}<strong>${escapeHtml(depLoc)}</strong>` : ''
+    lines.push(dt(`Traveler departs <strong>${dep}</strong>${locBit}${toBit} — last stop must end by <strong>${w.maxTime}</strong>`, `Le voyageur repart à <strong>${dep}</strong>${locBit}${toBit} — la dernière étape doit finir avant <strong>${w.maxTime}</strong>`))
   }
   return `<div class="day-time-banner">
     <i class="ti ti-clock dtb-icon" aria-hidden="true"></i>
@@ -14664,7 +14722,7 @@ function buildTimeOptions(selected = '09:00', opts = {}) {
       const disabled = (minTime && val < minTime) || (maxTime && val >= maxTime)
       const dis = disabled ? ' is-disabled' : ''
       const click = disabled ? '' : ` onclick="selectTimeDD(this,'${val}')"`
-      const title = disabled ? ` title="${reason || 'Outside available time window'}"` : ''
+      const title = disabled ? ` title="${reason || dt('Outside available time window','En dehors de la plage horaire disponible')}"` : ''
       const dprop = disabled ? ' disabled aria-disabled="true"' : ''
       html += `<button type="button" class="time-dd-option${sel}${dis}"${click}${title}${dprop}>${display}</button>`
     }
@@ -14923,13 +14981,13 @@ function _applyHotelDefaults(slot, key) {
   // The photo upload + booking-notes placeholder were removed via
   // CSS; here we set the visible label text and restore the bags
   // toggle from the plan's current hotel_stores_bags flag.
-  const _firstName = window._currentFirstName || 'the traveler'
+  const _firstName = window._currentFirstName || dt('the traveler','le voyageur')
   const _notesLabel = slot.querySelector('.slot-notes-label')
   const _notesInput = slot.querySelector('.slot-notes-input')
   if (_notesLabel) {
     _notesLabel.textContent = isIn
-      ? `Why this hotel for ${_firstName} (optional)`
-      : `Reminder for ${_firstName} (optional)`
+      ? dt(`Why this hotel for ${_firstName} (optional)`, `Pourquoi cet hôtel pour ${_firstName} (facultatif)`)
+      : dt(`Reminder for ${_firstName} (optional)`, `Rappel pour ${_firstName} (facultatif)`)
   }
   if (_notesInput) {
     // Single source of truth for the placeholder (getNotesPlaceholder) so the
@@ -15083,7 +15141,7 @@ function _refreshHotelTimeWarning(slot) {
     const ci = window._currentHotelCheckInTime || '14:00'
     if (t < toMin(ci)) {
       level = 'amber'
-      msg = `Hotel check-in usually starts at ${fmt(ci)}. Earlier arrivals can drop bags but rooms may not be ready.`
+      msg = dt(`Hotel check-in usually starts at ${fmt(ci)}. Earlier arrivals can drop bags but rooms may not be ready.`, `L'arrivée à l'hôtel commence généralement à ${fmt(ci)}. Les arrivées plus tôt peuvent déposer les bagages, mais les chambres ne sont pas toujours prêtes.`)
       suggested = ci
     }
   } else if (key === 'hotel_checkout') {
@@ -15094,7 +15152,7 @@ function _refreshHotelTimeWarning(slot) {
     // past 11:00 is 11:15.
     if (t > toMin(co)) {
       level = 'red'
-      msg = `Past the hotel's ${fmt(co)} check-out — late fees may apply. Confirm with reception before scheduling here.`
+      msg = dt(`Past the hotel's ${fmt(co)} check-out — late fees may apply. Confirm with reception before scheduling here.`, `Après le départ de ${fmt(co)} de l'hôtel — des frais de retard peuvent s'appliquer. Confirmez avec la réception avant de planifier ici.`)
       // Suggest 15 min before deadline, snapped to the 15-min picker grid.
       const mins = Math.max(0, Math.round((toMin(co) - 15) / 15) * 15)
       suggested = `${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`
@@ -15230,31 +15288,31 @@ function getTitlePlaceholder(typeKey, seedIcon){
   // placeholder doubles as a contextual hint — e.g. "Lunch (name of
   // place)" — so the planner sees what kind of name to type without
   // having to overwrite a pre-filled title.
-  if (seedIcon === 'hotel')    return t('slot.label.name.hotelIn','Hotel check-in (hotel name)')
-  if (seedIcon === 'checkout') return t('slot.label.name.hotelOut','Hotel check-out (hotel name)')
-  if (seedIcon === 'lunch')    return t('slot.label.name.lunch','Lunch (name of place)')
-  if (seedIcon === 'dinner')   return t('slot.label.name.dinner','Dinner (name of place)')
+  if (seedIcon === 'hotel')    return dt('Hotel check-in (hotel name)',"Arrivée à l'hôtel (nom de l'hôtel)")
+  if (seedIcon === 'checkout') return dt('Hotel check-out (hotel name)',"Départ de l'hôtel (nom de l'hôtel)")
+  if (seedIcon === 'lunch')    return dt('Lunch (name of place)','Déjeuner (nom du lieu)')
+  if (seedIcon === 'dinner')   return dt('Dinner (name of place)','Dîner (nom du lieu)')
   switch (typeKey) {
-    case 'meal':          return t('slot.label.name.meal','Name of place')
-    case 'accommodation': return t('slot.label.name.accommodation','Hotel name')
-    case 'transport':     return t('slot.label.name.transport','Line or mode')
-    case 'freetime':      return t('slot.label.name.freetime','Search a spot or area (e.g. a neighbourhood, square, café)')
-    default:              return t('slot.label.name.activity','Name of place')
+    case 'meal':          return dt('Name of place','Nom du lieu')
+    case 'accommodation': return dt('Hotel name',"Nom de l'hôtel")
+    case 'transport':     return dt('Line or mode','Ligne ou mode')
+    case 'freetime':      return dt('Search a spot or area (e.g. a neighbourhood, square, café)','Cherchez un lieu ou un quartier (ex. un quartier, une place, un café)')
+    default:              return dt('Name of place','Nom du lieu')
   }
 }
 function getAddressPlaceholder(typeKey){
-  if (typeKey === 'transport') return t('slot.label.addr.transport','From → To (e.g. Paris → Lyon)')
-  return t('slot.label.addr.default','Address')
+  if (typeKey === 'transport') return dt('From → To (e.g. Paris → Lyon)','De → À (ex. Paris → Lyon)')
+  return dt('Address','Adresse')
 }
 function getNotesPlaceholder(typeKey){
   switch (typeKey) {
-    case 'meal':           return t('slot.label.notes.meal','What to order or recommended dishes')
-    case 'accommodation':  return t('slot.label.notes.accommodation','Booking notes or room details')
-    case 'hotel_checkin':  return t('slot.label.notes.hotel_checkin','Optional — why this hotel suits them (location, vibe, value). Leave blank if nothing to add.')
-    case 'hotel_checkout': return t('slot.label.notes.hotel_checkout','Optional — reminder before leaving (bag pickup, key drop). Leave blank if nothing to add.')
-    case 'transport':      return t('slot.label.notes.transport','Notes (timing, transfers, tickets)')
-    case 'freetime':       return t('slot.label.notes.freetime','Suggested activities for free time')
-    default:               return t('slot.label.notes.activity','What to do there (highlights, must-see)')
+    case 'meal':           return dt('What to order or recommended dishes','Quoi commander ou plats recommandés')
+    case 'accommodation':  return dt('Booking notes or room details','Notes de réservation ou détails de la chambre')
+    case 'hotel_checkin':  return dt('Optional — why this hotel suits them (location, vibe, value). Leave blank if nothing to add.',"Facultatif — pourquoi cet hôtel leur convient (emplacement, ambiance, rapport qualité-prix). Laissez vide si rien à ajouter.")
+    case 'hotel_checkout': return dt('Optional — reminder before leaving (bag pickup, key drop). Leave blank if nothing to add.','Facultatif — rappel avant le départ (récupération des bagages, remise des clés). Laissez vide si rien à ajouter.')
+    case 'transport':      return dt('Notes (timing, transfers, tickets)','Notes (horaires, correspondances, billets)')
+    case 'freetime':       return dt('Suggested activities for free time','Activités suggérées pour le temps libre')
+    default:               return dt('What to do there (highlights, must-see)','Quoi y faire (points forts, incontournables)')
   }
 }
 // Updates the per-type field placeholders on an existing slot. Used when the
@@ -15372,6 +15430,17 @@ const TIP_CATS_FREETIME = [
   { key:'phototime',  label:'Photo time',    icon:'📷', color:'#534AB7' },
 ]
 const TIP_CAT_BY_KEY = Object.fromEntries([...TIP_CATS_ACTIVITY, ...TIP_CATS_TRANSPORT, ...TIP_CATS_SHOPPING, ...TIP_CATS_MEAL, ...TIP_CATS_ENTERTAINMENT, ...TIP_CATS_FREETIME].map(c => [c.key, c]))
+// FR labels for tip categories (keyed by category key).
+const TIP_LABEL_FR = {
+  best_time:'Meilleur moment', photo:'Spot photo', skip_if:'À éviter si', money:'Bon plan', hidden:'Entrée cachée', phrase:'Phrase locale',
+  ticket:'Billet', transfer:'Correspondance', timing:'Dernier départ', luggage:'Bagages',
+  what_buy:'Quoi acheter', trap:'Piège à touristes', payment:'Paiement', vat:'Détaxe (TVA)',
+  order:'Quoi commander', reserve:'Réservation', dress:'Tenue', preshow:'Verre avant',
+  rest_hotel:"Repos à l'hôtel", wander:'Balade', cafe:'Pause café', browse:'Boutiques', catchup:'Souffler', phototime:'Photos',
+  note:'Note',
+}
+// Label for a tip category in the planner's language.
+function tipLabel(c){ return (c && isPlannerFR() && TIP_LABEL_FR[c.key]) ? TIP_LABEL_FR[c.key] : (c ? c.label : '') }
 function _tipCatsFor(slot){
   if (slot && slot.classList.contains('slot-type-transport'))     return TIP_CATS_TRANSPORT
   if (slot && slot.classList.contains('slot-type-shopping'))      return TIP_CATS_SHOPPING
@@ -15432,29 +15501,29 @@ function renderSlotTips(slot) {
   const cards = []
   if (state.legacy) {
     const c = _TIP_NOTE_CAT
-    cards.push(`<div class="tip-card" style="--tipc:${c.color}"><div class="tip-card-head">${c.icon} ${escapeHtml(c.label)}</div><div class="tip-card-body">${escapeHtml(state.legacy)}</div><button type="button" class="tip-card-x" title="Remove" onclick="tipRemove(this,-1)">✕</button></div>`)
+    cards.push(`<div class="tip-card" style="--tipc:${c.color}"><div class="tip-card-head">${c.icon} ${escapeHtml(tipLabel(c))}</div><div class="tip-card-body">${escapeHtml(state.legacy)}</div><button type="button" class="tip-card-x" title="${dt('Remove','Retirer')}" onclick="tipRemove(this,-1)">✕</button></div>`)
   }
   state.tips.forEach((tp, i) => {
     const c = TIP_CAT_BY_KEY[tp.cat] || _TIP_NOTE_CAT
-    cards.push(`<div class="tip-card" style="--tipc:${c.color}"><div class="tip-card-head">${c.icon} ${escapeHtml(c.label)}</div><div class="tip-card-body">${escapeHtml(tp.text)}</div><button type="button" class="tip-card-x" title="Remove" onclick="tipRemove(this,${i})">✕</button></div>`)
+    cards.push(`<div class="tip-card" style="--tipc:${c.color}"><div class="tip-card-head">${c.icon} ${escapeHtml(tipLabel(c))}</div><div class="tip-card-body">${escapeHtml(tp.text)}</div><button type="button" class="tip-card-x" title="${dt('Remove','Retirer')}" onclick="tipRemove(this,${i})">✕</button></div>`)
   })
   const usedCats = new Set(state.tips.map(tp => tp.cat))
   const atMax = state.tips.length >= TIP_MAX
   const chips = atMax
-    ? `<span class="slot-tips-max">Max ${TIP_MAX} tips — remove one to add another.</span>`
+    ? `<span class="slot-tips-max">${dt(`Max ${TIP_MAX} tips — remove one to add another.`, `Maximum ${TIP_MAX} conseils — retirez-en un pour en ajouter.`)}</span>`
     : _tipCatsFor(slot).filter(c => !usedCats.has(c.key))
-        .map(c => `<button type="button" class="tip-chip" style="--tipc:${c.color}" onclick="tipChipClick(this,'${c.key}')">${c.icon} ${escapeHtml(c.label)}</button>`)
+        .map(c => `<button type="button" class="tip-chip" style="--tipc:${c.color}" onclick="tipChipClick(this,'${c.key}')">${c.icon} ${escapeHtml(tipLabel(c))}</button>`)
         .join('')
-  const headLabel = isTransport     ? '💡 Add transport tip (optional)'
-                  : isShopping      ? '💡 Add shopping tip (optional)'
-                  : isMeal          ? '💡 Add meal tip (optional)'
-                  : isEntertainment ? '💡 Add an entertainment tip (optional)'
-                  : isFreetime      ? '💡 Suggest something for the free time (optional)'
-                  :                   '💡 Add a quick tip (optional)'
+  const headLabel = isTransport     ? dt('💡 Add transport tip (optional)','💡 Ajouter un conseil transport (facultatif)')
+                  : isShopping      ? dt('💡 Add shopping tip (optional)','💡 Ajouter un conseil shopping (facultatif)')
+                  : isMeal          ? dt('💡 Add meal tip (optional)','💡 Ajouter un conseil repas (facultatif)')
+                  : isEntertainment ? dt('💡 Add an entertainment tip (optional)','💡 Ajouter un conseil sortie (facultatif)')
+                  : isFreetime      ? dt('💡 Suggest something for the free time (optional)','💡 Suggérer une idée pour le temps libre (facultatif)')
+                  :                   dt('💡 Add a quick tip (optional)','💡 Ajouter un conseil (facultatif)')
   host.innerHTML =
     `<div class="slot-tips-head">${headLabel}</div>` +
     (cards.length ? `<div class="slot-tips-cards">${cards.join('')}</div>` : '') +
-    `<div class="slot-tips-editor" hidden><input type="text" class="tip-editor-input" maxlength="120" placeholder="" onkeydown="if(event.key==='Enter'){event.preventDefault();tipEditorSave(this)}else if(event.key==='Escape'){tipEditorCancel(this)}"><button type="button" class="tip-editor-save" onclick="tipEditorSave(this)">Save</button><button type="button" class="tip-editor-cancel" onclick="tipEditorCancel(this)">Cancel</button></div>` +
+    `<div class="slot-tips-editor" hidden><input type="text" class="tip-editor-input" maxlength="120" placeholder="" onkeydown="if(event.key==='Enter'){event.preventDefault();tipEditorSave(this)}else if(event.key==='Escape'){tipEditorCancel(this)}"><button type="button" class="tip-editor-save" onclick="tipEditorSave(this)">${dt('Save','Enregistrer')}</button><button type="button" class="tip-editor-cancel" onclick="tipEditorCancel(this)">${dt('Cancel','Annuler')}</button></div>` +
     `<div class="slot-tips-chips">${chips}</div>`
 }
 // Link the trip's check-in hotel onto a slot as its location (title +
@@ -15501,14 +15570,14 @@ function tipChipClick(btn, cat) {
   // note editor still opens (pre-filled) so they can add an optional detail.
   if (cat === 'rest_hotel' && slot) {
     if (_linkCheckinHotelToSlot(slot)) {
-      prefill = 'Relax at the hotel'
-      if (typeof showToast === 'function') showToast('Location set to your hotel · ' + (slot._placeData?.name || ''))
+      prefill = dt('Relax at the hotel', "Repos à l'hôtel")
+      if (typeof showToast === 'function') showToast(dt('Location set to your hotel · ','Lieu défini sur votre hôtel · ') + (slot._placeData?.name || ''))
       const _dc = slot.closest('[id^="slots-day-"]')
       if (_dc && typeof refreshDayDistances === 'function') refreshDayDistances(_dc)
       if (_dc && typeof _gapFillTransportsForDay === 'function') _gapFillTransportsForDay(_dc)
       if (typeof autoSaveDraft === 'function') autoSaveDraft()
     } else if (typeof showToast === 'function') {
-      showToast('Set the check-in hotel first — then this links automatically')
+      showToast(dt('Set the check-in hotel first — then this links automatically', "Définissez d'abord l'hôtel d'arrivée — ce lien se fera ensuite automatiquement"))
     }
   }
   const editor = host.querySelector('.slot-tips-editor')
@@ -15516,7 +15585,7 @@ function tipChipClick(btn, cat) {
   const chips   = host.querySelector('.slot-tips-chips')
   if (!editor || !input) return
   editor.dataset.cat = cat
-  input.placeholder = `${c.icon} ${c.label}…`
+  input.placeholder = `${c.icon} ${tipLabel(c)}…`
   input.value = prefill
   editor.hidden = false
   if (chips) chips.style.display = 'none'
@@ -15556,7 +15625,7 @@ function renderNotesReadonly(raw) {
   if (st.tips.length) {
     const cards = st.tips.map(tp => {
       const c = TIP_CAT_BY_KEY[tp.cat] || _TIP_NOTE_CAT
-      return `<div class="ps-tip" style="border-left-color:${c.color};"><span class="ps-tip-cat" style="color:${c.color};">${c.icon} ${escapeHtml(c.label)}</span>${escapeHtml(tp.text)}</div>`
+      return `<div class="ps-tip" style="border-left-color:${c.color};"><span class="ps-tip-cat" style="color:${c.color};">${c.icon} ${escapeHtml(tipLabel(c))}</span>${escapeHtml(tp.text)}</div>`
     }).join('')
     const legacy = st.legacy ? `<div class="ps-slot-notes">${escapeHtml(st.legacy)}</div>` : ''
     return `<div class="ps-tips">${cards}</div>${legacy}`
@@ -15715,7 +15784,7 @@ function uuidV4() {
 async function fetchPlacesPredictions(slot, query) {
   const dropdown = slot.querySelector('.places-dropdown')
   if (!dropdown) return
-  dropdown.innerHTML = '<div class="places-dropdown-status">Searching…</div>'
+  dropdown.innerHTML = `<div class="places-dropdown-status">${dt('Searching…','Recherche…')}</div>`
   dropdown.hidden = false
   const body = {
     input: query,
@@ -15734,19 +15803,19 @@ async function fetchPlacesPredictions(slot, query) {
     if (!resp.ok) {
       const errTxt = await resp.text().catch(() => '')
       console.warn('[places] autocomplete failed', resp.status, errTxt)
-      dropdown.innerHTML = `<div class="places-dropdown-status">Search unavailable (${resp.status}). Type the place manually.</div>`
+      dropdown.innerHTML = `<div class="places-dropdown-status">${dt(`Search unavailable (${resp.status}). Type the place manually.`, `Recherche indisponible (${resp.status}). Saisissez le lieu manuellement.`)}</div>`
       return
     }
     const data = await resp.json()
     const suggestions = (data?.suggestions || []).slice(0, 6)
     if (!suggestions.length) {
-      dropdown.innerHTML = '<div class="places-dropdown-status">No matches. Type the place manually.</div>'
+      dropdown.innerHTML = `<div class="places-dropdown-status">${dt('No matches. Type the place manually.','Aucun résultat. Saisissez le lieu manuellement.')}</div>`
       return
     }
     renderPlacesSuggestions(slot, suggestions)
   } catch (e) {
     console.warn('[places] autocomplete threw', e)
-    dropdown.innerHTML = '<div class="places-dropdown-status">Network issue. Try again or type the place manually.</div>'
+    dropdown.innerHTML = `<div class="places-dropdown-status">${dt('Network issue. Try again or type the place manually.','Problème réseau. Réessayez ou saisissez le lieu manuellement.')}</div>`
   }
 }
 
@@ -15798,7 +15867,7 @@ function renderPlacesSuggestions(slot, suggestions) {
 
 async function selectPlaceForSlot(slot, placeId) {
   const dropdown = slot.querySelector('.places-dropdown')
-  if (dropdown) dropdown.innerHTML = '<div class="places-dropdown-status">Loading place…</div>'
+  if (dropdown) dropdown.innerHTML = `<div class="places-dropdown-status">${dt('Loading place…','Chargement du lieu…')}</div>`
   const fields = [
     'id','displayName','formattedAddress','location',
     'rating','userRatingCount','priceLevel','priceRange',
@@ -15814,14 +15883,14 @@ async function selectPlaceForSlot(slot, placeId) {
     if (!resp.ok) {
       const errTxt = await resp.text().catch(() => '')
       console.warn('[places] details failed', resp.status, errTxt)
-      if (dropdown) dropdown.innerHTML = `<div class="places-dropdown-status">Couldn't load place (${resp.status}). Type manually or try another.</div>`
+      if (dropdown) dropdown.innerHTML = `<div class="places-dropdown-status">${dt(`Couldn't load place (${resp.status}). Type manually or try another.`, `Impossible de charger le lieu (${resp.status}). Saisissez-le manuellement ou essayez-en un autre.`)}</div>`
       return
     }
     const place = await resp.json()
     applyPlaceToSlot(slot, place)
   } catch (e) {
     console.warn('[places] details threw', e)
-    if (dropdown) dropdown.innerHTML = '<div class="places-dropdown-status">Network issue loading place.</div>'
+    if (dropdown) dropdown.innerHTML = `<div class="places-dropdown-status">${dt('Network issue loading place.','Problème réseau lors du chargement du lieu.')}</div>`
   } finally {
     // Whether success or failure, this session is done — next search will
     // open a fresh one.
@@ -15850,8 +15919,8 @@ function applyPlaceToSlot(slot, place) {
       // 300 km cap matches typical day-trip range from any French city.
       // Past that, the venue is almost certainly the wrong country/city.
       if (km > 300) {
-        const name = place.displayName?.text || place.displayName || 'this place'
-        const msg = `"${name}" is ${km.toFixed(0)} km from ${window._currentDestination}. That's outside the trip area — please pick a venue near ${window._currentDestination}.`
+        const name = place.displayName?.text || place.displayName || dt('this place','ce lieu')
+        const msg = dt(`"${name}" is ${km.toFixed(0)} km from ${window._currentDestination}. That's outside the trip area — please pick a venue near ${window._currentDestination}.`, `« ${name} » est à ${km.toFixed(0)} km de ${window._currentDestination}. C'est hors de la zone du voyage — choisissez un lieu près de ${window._currentDestination}.`)
         if (typeof showToast === 'function') showToast(msg)
         else alert(msg)
         // Clear the dropdown + reset the title so the planner searches again.
@@ -16194,8 +16263,8 @@ function formatPriceRange(pr) {
   const s = start?.units != null ? Number(start.units) : null
   const e = end?.units   != null ? Number(end.units)   : null
   if (s != null && e != null) return `${sym} ${s}–${e}`.trim()
-  if (s != null) return `From ${sym} ${s}`.trim()
-  if (e != null) return `Up to ${sym} ${e}`.trim()
+  if (s != null) return dt(`From ${sym} ${s}`, `À partir de ${sym} ${s}`).trim()
+  if (e != null) return dt(`Up to ${sym} ${e}`, `Jusqu’à ${sym} ${e}`).trim()
   return ''
 }
 // Pretty price level. Google returns 'PRICE_LEVEL_INEXPENSIVE' etc.; we
@@ -16203,7 +16272,7 @@ function formatPriceRange(pr) {
 // Multi-char currencies get space-separated repeats so "RM RM RM" doesn't
 // collapse into an unreadable "RMRMRM".
 function formatPriceLevel(level, currency = '$') {
-  if (level === 'PRICE_LEVEL_FREE') return 'Free'
+  if (level === 'PRICE_LEVEL_FREE') return dt('Free','Gratuit')
   const count = {
     PRICE_LEVEL_INEXPENSIVE:    1,
     PRICE_LEVEL_MODERATE:       2,
@@ -16235,6 +16304,10 @@ function getSlotPlannedDate(slot) {
 }
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+const DAY_NAMES_FR = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi']
+function localDayName(jsDay) {
+  return isPlannerFR() ? (DAY_NAMES_FR[jsDay] || DAY_NAMES[jsDay]) : DAY_NAMES[jsDay]
+}
 
 // Open/closed status FOR THE PLANNED DAY (not today). Helps planners avoid
 // recommending a place that's closed when their traveler will visit.
@@ -16254,20 +16327,20 @@ function formatOpeningStatus(oh, plannedDate) {
   // Without a planned date OR a schedule we can only fall back to the
   // openNow flag Google set at fetch time. Useful for picks made today.
   if (!plannedDate || !weekSchedule) {
-    if (oh.openNow === true)  return { status: 'open',    label: 'Open now',  plannedHours: null, dayName: null, weekSchedule }
-    if (oh.openNow === false) return { status: 'closed',  label: 'Closed now', plannedHours: null, dayName: null, weekSchedule }
+    if (oh.openNow === true)  return { status: 'open',    label: dt('Open now','Ouvert maintenant'),  plannedHours: null, dayName: null, weekSchedule }
+    if (oh.openNow === false) return { status: 'closed',  label: dt('Closed now','Fermé maintenant'), plannedHours: null, dayName: null, weekSchedule }
     return { status: 'unknown', label: '', plannedHours: null, dayName: null, weekSchedule }
   }
   // JavaScript Date.getDay() = 0=Sun…6=Sat. Google indexes Monday=0…Sunday=6.
   const jsDay = plannedDate.getDay()
   const googleIdx = (jsDay + 6) % 7
-  const dayName = DAY_NAMES[jsDay]
+  const dayName = localDayName(jsDay)
   const raw = weekSchedule[googleIdx] || ''
   // "Tuesday: Closed" vs "Tuesday: 11:00 AM – 9:00 PM"
   const isClosed = /:\s*closed\s*$/i.test(raw)
   const hours = raw.replace(/^[A-Za-z]+:\s*/, '').trim()
-  if (isClosed) return { status: 'closed', label: `Closed ${dayName}`, plannedHours: null, dayName, weekSchedule }
-  return { status: 'open', label: `Open ${dayName}`, plannedHours: hours, dayName, weekSchedule }
+  if (isClosed) return { status: 'closed', label: dt(`Closed ${dayName}`,`Fermé ${dayName}`), plannedHours: null, dayName, weekSchedule }
+  return { status: 'open', label: dt(`Open ${dayName}`,`Ouvert ${dayName}`), plannedHours: hours, dayName, weekSchedule }
 }
 
 function renderLinkedChip(slot) {
@@ -16309,9 +16382,9 @@ function renderLinkedChip(slot) {
   // closed on that day so it's impossible to miss.
   let plannedRow = ''
   if (open.status === 'closed' && open.dayName) {
-    plannedRow = `<div class="pl-planned pl-planned-closed">🔴 <strong>CLOSED on ${escapeHtml(open.dayName)}</strong> — pick another option</div>`
+    plannedRow = `<div class="pl-planned pl-planned-closed">🔴 <strong>${dt('CLOSED on','FERMÉ le')} ${escapeHtml(open.dayName)}</strong> — ${dt('pick another option','choisissez une autre option')}</div>`
   } else if (open.status === 'open' && open.dayName) {
-    plannedRow = `<div class="pl-planned pl-planned-open">🟢 Open ${escapeHtml(open.dayName)}${open.plannedHours ? ' · ' + escapeHtml(open.plannedHours) : ''}</div>`
+    plannedRow = `<div class="pl-planned pl-planned-open">🟢 ${dt('Open','Ouvert')} ${escapeHtml(open.dayName)}${open.plannedHours ? ' · ' + escapeHtml(open.plannedHours) : ''}</div>`
   } else if (open.label) {
     // No planned date yet (form just opened) — fall back to the openNow flag.
     plannedRow = `<div class="pl-planned">${escapeHtml(open.label)}${open.plannedHours ? ' · ' + escapeHtml(open.plannedHours) : ''}</div>`
@@ -16319,7 +16392,7 @@ function renderLinkedChip(slot) {
 
   // Full week schedule — collapsed by default, toggled via the link below.
   const scheduleHtml = (open.weekSchedule && open.weekSchedule.length)
-    ? `<button type="button" class="pl-schedule-toggle" onclick="togglePlaceSchedule('${slot.id}')">View full schedule</button>
+    ? `<button type="button" class="pl-schedule-toggle" onclick="togglePlaceSchedule('${slot.id}')">${dt('View full schedule','Voir les horaires complets')}</button>
        <div class="pl-schedule" hidden>
          ${open.weekSchedule.map(line => `<div class="pl-schedule-row">${escapeHtml(line)}</div>`).join('')}
        </div>`
@@ -16336,24 +16409,24 @@ function renderLinkedChip(slot) {
     const slotTimeFriendly = formatTimeDisplay(conflict.slotTime)
     const dayBit = conflict.dayName ? ` ${conflict.dayName}` : ''
     let msg = ''
-    let head = '⚠️ <strong>Time conflict</strong>'
+    let head = dt('⚠️ <strong>Time conflict</strong>','⚠️ <strong>Conflit d’horaire</strong>')
     let tone = ''   // '' = red (default), ' is-amber' for soft warnings
     if (conflict.kind === 'before_open' && conflict.openHoursLabel) {
-      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is before this place opens (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is before this place opens (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`, `L’heure choisie <strong>${escapeHtml(slotTimeFriendly)}</strong> est avant l’ouverture (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`)
     } else if (conflict.kind === 'after_close' && conflict.openHoursLabel) {
-      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is after this place closes (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is after this place closes (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`, `L’heure choisie <strong>${escapeHtml(slotTimeFriendly)}</strong> est après la fermeture (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`)
     } else if (conflict.kind === 'between_shifts') {
-      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> falls between shifts on${escapeHtml(dayBit)}`
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> falls between shifts on${escapeHtml(dayBit)}`, `L’heure choisie <strong>${escapeHtml(slotTimeFriendly)}</strong> tombe entre deux services${escapeHtml(dayBit)}`)
     } else if (conflict.kind === 'late_arrival') {
-      head = '⏰ <strong>Late arrival</strong>'
+      head = dt('⏰ <strong>Late arrival</strong>','⏰ <strong>Arrivée tardive</strong>')
       tone = ' is-amber'
-      const noun = conflict.isMeal ? 'kitchen' : 'venue'
-      msg = `Arriving at <strong>${escapeHtml(slotTimeFriendly)}</strong> — closes at <strong>${escapeHtml(conflict.closeTime)}</strong>. Most ${noun}s stop ${conflict.bufferMin} min before close (orders / last entry).`
+      const noun = conflict.isMeal ? dt('kitchen','cuisine') : dt('venue','lieu')
+      msg = dt(`Arriving at <strong>${escapeHtml(slotTimeFriendly)}</strong> — closes at <strong>${escapeHtml(conflict.closeTime)}</strong>. Most ${noun}s stop ${conflict.bufferMin} min before close (orders / last entry).`, `Arrivée à <strong>${escapeHtml(slotTimeFriendly)}</strong> — ferme à <strong>${escapeHtml(conflict.closeTime)}</strong>. La plupart des ${noun}s s’arrêtent ${conflict.bufferMin} min avant la fermeture (commandes / dernière entrée).`)
     } else {
-      msg = `Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`, `L’heure choisie <strong>${escapeHtml(slotTimeFriendly)}</strong> est en dehors des horaires d’ouverture${escapeHtml(dayBit)}`)
     }
     const fixBtn = conflict.suggestedTime
-      ? `<button type="button" class="pl-fix-time" onclick="applyTimeFix('${slot.id}','${conflict.suggestedTime}')">→ Change time to ${escapeHtml(formatTimeDisplay(conflict.suggestedTime))}</button>`
+      ? `<button type="button" class="pl-fix-time" onclick="applyTimeFix('${slot.id}','${conflict.suggestedTime}')">${dt('→ Change time to','→ Changer l’heure à')} ${escapeHtml(formatTimeDisplay(conflict.suggestedTime))}</button>`
       : ''
     conflictHtml = `
       <div class="pl-time-warning${tone}">
@@ -16374,11 +16447,14 @@ function renderLinkedChip(slot) {
       const slotMin = parseSlotTime(slot.querySelector('.slot-time-input')?.value || '')
       if (slotMin != null && (slotMin < win.startMin || slotMin >= win.endMin)) {
         const friendlyTime = formatTimeDisplay(slot.querySelector('.slot-time-input').value)
-        const categoryLabel = seedIcon.charAt(0).toUpperCase() + seedIcon.slice(1)
+        const _catEn = seedIcon.charAt(0).toUpperCase() + seedIcon.slice(1)
+        const _catFrMap = { breakfast:'Le petit-déjeuner', lunch:'Le déjeuner', dinner:'Le dîner' }
+        const categoryLabel = _catEn
+        const catFr = _catFrMap[seedIcon] || _catEn
         conflictHtml = `
           <div class="pl-time-warning is-amber">
-            <div class="pl-time-warning-head">⏰ <strong>${escapeHtml(categoryLabel)} timing</strong></div>
-            <div class="pl-time-warning-body">${escapeHtml(categoryLabel)} typically runs <strong>${escapeHtml(win.label)}</strong> — selected time <strong>${escapeHtml(friendlyTime)}</strong> is outside that window.</div>
+            <div class="pl-time-warning-head">⏰ <strong>${dt(escapeHtml(categoryLabel) + ' timing', 'Horaire ' + escapeHtml({breakfast:'petit-déjeuner',lunch:'déjeuner',dinner:'dîner'}[seedIcon] || categoryLabel))}</strong></div>
+            <div class="pl-time-warning-body">${dt(`${escapeHtml(categoryLabel)} typically runs <strong>${escapeHtml(win.label)}</strong> — selected time <strong>${escapeHtml(friendlyTime)}</strong> is outside that window.`, `${escapeHtml(catFr)} a généralement lieu <strong>${escapeHtml(win.label)}</strong> — l’heure choisie <strong>${escapeHtml(friendlyTime)}</strong> est hors de cette plage.`)}</div>
           </div>`
       }
     }
@@ -16394,11 +16470,11 @@ function renderLinkedChip(slot) {
     const costTxt  = fmtEur(budgetTier.cost)
     const isRed = budgetTier.level === 'red'
     const head = isRed
-      ? `🚨 <strong>Over budget</strong>`
-      : `⚠️ <strong>Splurge pick</strong>`
+      ? dt(`🚨 <strong>Over budget</strong>`, `🚨 <strong>Dépassement de budget</strong>`)
+      : dt(`⚠️ <strong>Splurge pick</strong>`, `⚠️ <strong>Choix coup de cœur</strong>`)
     const body = isRed
-      ? `Avg ~${costTxt}/pax — daily budget is ${dailyTxt}/pax. Confirm with the traveler or pick somewhere cheaper.`
-      : `Avg ~${costTxt}/pax vs ${dailyTxt}/pax daily budget. Counts as one of the traveler's planned splurge moments.`
+      ? dt(`Avg ~${costTxt}/pax — daily budget is ${dailyTxt}/pax. Confirm with the traveler or pick somewhere cheaper.`, `Moy. ~${costTxt}/pers. — le budget quotidien est de ${dailyTxt}/pers. Confirmez avec le voyageur ou choisissez moins cher.`)
+      : dt(`Avg ~${costTxt}/pax vs ${dailyTxt}/pax daily budget. Counts as one of the traveler's planned splurge moments.`, `Moy. ~${costTxt}/pers. contre ${dailyTxt}/pers. de budget quotidien. Compte comme un des extras prévus du voyageur.`)
     budgetHtml = `
       <div class="pl-budget-warning${isRed ? '' : ' is-amber'}">
         <div class="pl-time-warning-head">${head}</div>
@@ -16410,15 +16486,15 @@ function renderLinkedChip(slot) {
     ${thumb}
     <div class="pl-body">
       <div class="pl-row-1">
-        <span class="pl-google">Google verified</span>
-        <button type="button" class="pl-change" onclick="clearLinkedPlaceById('${slot.id}')">Change</button>
+        <span class="pl-google">${dt('Google verified','Vérifié par Google')}</span>
+        <button type="button" class="pl-change" onclick="clearLinkedPlaceById('${slot.id}')">${dt('Change','Changer')}</button>
       </div>
       ${row2Html ? `<div class="pl-row-2">${row2Html}</div>` : ''}
       ${plannedRow}
       ${conflictHtml}
       ${budgetHtml}
       ${scheduleHtml}
-      ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">View on Google Maps ↗</a>` : ''}
+      ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">${dt('View on Google Maps ↗','Voir sur Google Maps ↗')}</a>` : ''}
     </div>
   `
   // Closed on the planned day? Fade the chip's photo + body via CSS class
@@ -16444,7 +16520,7 @@ function togglePlaceSchedule(slotId) {
   if (!list || !btn) return
   const showing = !list.hidden
   list.hidden = showing
-  btn.textContent = showing ? 'View full schedule' : 'Hide full schedule'
+  btn.textContent = showing ? dt('View full schedule','Voir les horaires complets') : dt('Hide full schedule','Masquer les horaires complets')
 }
 
 // ─── Time-vs-hours validation ─────────────────────────────────────────────
@@ -16689,20 +16765,20 @@ function describeStopDistance(km) {
   if (km < 1) {
     // Walking pace ~12 min/km, floor at 1 min so a 50 m hop doesn't say "0 min".
     const mins = Math.max(1, Math.round(km * 12))
-    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min walk` }
+    return { tier: 'ok', icon: '✓', label: dt(`${km.toFixed(1)} km · ${mins} min walk`, `${km.toFixed(1)} km · ${mins} min à pied`) }
   }
   if (km < 3) {
     // Short ride / quick transit. Keep the word "walk" since most planners
     // still treat 1–3 km as walkable for fit travelers; downgrade if needed.
     const mins = Math.max(4, Math.round(km * 3))
-    return { tier: 'ok', icon: '✓', label: `${km.toFixed(1)} km · ${mins} min walk/taxi` }
+    return { tier: 'ok', icon: '✓', label: dt(`${km.toFixed(1)} km · ${mins} min walk/taxi`, `${km.toFixed(1)} km · ${mins} min à pied/taxi`) }
   }
   if (km < 8) {
     const mins = Math.max(8, Math.round(km * 3))
-    return { tier: 'warn', icon: '→', label: `${km.toFixed(1)} km · ${mins} min taxi` }
+    return { tier: 'warn', icon: '→', label: dt(`${km.toFixed(1)} km · ${mins} min taxi`, `${km.toFixed(1)} km · ${mins} min taxi`) }
   }
   const mins = Math.max(20, Math.round(km * 3))
-  return { tier: 'danger', icon: '⚠', label: `${km.toFixed(1)} km · ${mins} min — too far` }
+  return { tier: 'danger', icon: '⚠', label: dt(`${km.toFixed(1)} km · ${mins} min — too far`, `${km.toFixed(1)} km · ${mins} min — trop loin`) }
 }
 function getSlotLatLng(slot) {
   const d = slot?._placeData
@@ -16745,8 +16821,11 @@ function pickTransportModes(km) {
   if (km < 1) return null   // walking-only zone, no card needed
   // Suffixes that survived from the old per-mode descriptions; kept so the
   // helper card still tells the planner WHY the alt is the alt.
-  const suffix = { taxi:'faster', transit:'cheaper', car:'door-to-door',
-                   hsr:'downtown-to-downtown', flight:'incl. airport buffer' }
+  const suffix = isPlannerFR()
+    ? { taxi:'plus rapide', transit:'moins cher', car:'porte-à-porte',
+        hsr:'centre-ville à centre-ville', flight:'marge aéroport incluse' }
+    : { taxi:'faster', transit:'cheaper', car:'door-to-door',
+        hsr:'downtown-to-downtown', flight:'incl. airport buffer' }
   const metaFor = (mode) => {
     const est = _transportEstimates(mode, km)
     const minPart = (est.mins != null) ? `~${est.mins} min` : ''
@@ -16757,7 +16836,7 @@ function pickTransportModes(km) {
   // _MODE_LABELS / _MODE_ICONS tables so the helper card and the
   // transport block can NEVER disagree.
   const opt = (key, primary) => ({
-    key, icon: _MODE_ICONS[key], name: _MODE_LABELS[key], meta: metaFor(key),
+    key, icon: _MODE_ICONS[key], name: modeLabel(key), meta: metaFor(key),
     ...(primary ? { primary: true } : {})
   })
   if (km < 3)  return [ opt('walk', true),  opt('taxi') ]
@@ -16819,11 +16898,11 @@ function buildDistHelperHtml(desc, prevSlotId, nextSlotId, modes) {
   // For short hops we just say "X km between stops" — the mode options
   // below carry the time estimate per mode, so a header time is redundant.
   const head = desc.tier === 'ok'
-    ? `${desc.km.toFixed(1)} km between stops`
-    : `${desc.km.toFixed(1)} km · ~${desc.travelMin} min between stops`
+    ? dt(`${desc.km.toFixed(1)} km between stops`, `${desc.km.toFixed(1)} km entre les étapes`)
+    : dt(`${desc.km.toFixed(1)} km · ~${desc.travelMin} min between stops`, `${desc.km.toFixed(1)} km · ~${desc.travelMin} min entre les étapes`)
   const sub = desc.tier === 'ok'
-    ? 'Short hop — your planner can walk or hail a quick ride:'
-    : 'Long jump between stops — add a transport block so the day reads cleanly:'
+    ? dt('Short hop — your planner can walk or hail a quick ride:','Court trajet — à pied ou en course rapide :')
+    : dt('Long jump between stops — add a transport block so the day reads cleanly:','Grand écart entre les étapes — ajoutez un bloc transport pour une journée claire :')
   const headIcon = desc.tier === 'danger' ? '⚠️'
                  : desc.tier === 'ok'     ? '↻'
                  : '→'
@@ -16837,7 +16916,7 @@ function buildDistHelperHtml(desc, prevSlotId, nextSlotId, modes) {
           <div class="slot-dist-helper-opt-meta">${escapeHtml(m.meta)}</div>
         </div>
         <button type="button" class="${btnClass}"
-          onclick="addTransportBetween('${prevSlotId}','${nextSlotId}','${m.key}','${escapeHtml(m.name)}','${escapeHtml(m.icon)}','${escapeHtml(m.meta)}')">Add</button>
+          onclick="addTransportBetween('${prevSlotId}','${nextSlotId}','${m.key}','${escapeHtml(m.name)}','${escapeHtml(m.icon)}','${escapeHtml(m.meta)}')">${dt('Add','Ajouter')}</button>
       </div>`
   }).join('')
   return `
@@ -17437,13 +17516,13 @@ function applyRouteDataToSlot(slot, data) {
           <span class="ts-time"></span>
           <span class="ts-marker"><span class="ts-walk-icon" aria-hidden="true">🚶</span></span>
           <div class="ts-content is-segment">
-            <div class="ts-title">Walk · ${r.mins} min</div>
+            <div class="ts-title">${dt('Walk','À pied')} · ${r.mins} min</div>
             <div class="ts-sub">${escapeHtml(r.distTxt)}</div>
           </div>`
       }
       // transit-segment
       const s = r.step
-      const stopWord = (s.numStops === 1) ? 'stop' : 'stops'
+      const stopWord = (s.numStops === 1) ? dt('stop','arrêt') : dt('stops','arrêts')
       const stopBit = s.numStops ? ` · ${s.numStops} ${stopWord}` : ''
       const head = s.headsign ? ` → ${escapeHtml(s.headsign)}` : ''
       const linePill = `<span class="ts-line" style="background:${escapeHtml(s.lineColor)};color:${escapeHtml(s.textColor)};">${escapeHtml(s.lineName)}</span>`
@@ -17452,7 +17531,7 @@ function applyRouteDataToSlot(slot, data) {
         <span class="ts-marker">${linePill}</span>
         <div class="ts-content is-segment">
           <div class="ts-title">${escapeHtml(s.lineName)} · ${s.mins} min${stopBit}</div>
-          <div class="ts-sub">${head ? 'Towards' + head : ''}</div>
+          <div class="ts-sub">${head ? dt('Towards','Vers') + head : ''}</div>
         </div>`
     }).join('')
   } else {
@@ -17536,6 +17615,13 @@ function _transportEstimates(mode, km) {
 const _MODE_LABELS = {
   walk: 'Walk', taxi: 'Uber', transit: 'Public transport',
   train: 'Public transport', car: 'Rental car', hsr: 'TGV / high-speed train', flight: 'Flight'
+}
+const _MODE_LABELS_FR = {
+  walk: 'À pied', taxi: 'Uber', transit: 'Transports en commun',
+  train: 'Transports en commun', car: 'Voiture de location', hsr: 'TGV / train à grande vitesse', flight: 'Vol'
+}
+function modeLabel(k) {
+  return isPlannerFR() ? (_MODE_LABELS_FR[k] || _MODE_LABELS[k] || k) : (_MODE_LABELS[k] || k)
 }
 const _MODE_ICONS = {
   walk: '🚶', taxi: '🚕', transit: '🚇', train: '🚆', car: '🚗', hsr: '🚄', flight: '✈️'
@@ -17714,8 +17800,8 @@ function refreshTransportSlot(slot) {
   // ("39097 min taxi" is not a real estimate). Show a clear error instead.
   const tooFar = (km != null) && km > 1500
   const est = (km != null && !tooFar) ? _transportEstimates(mode, km) : { mins: null, costEur: null }
-  const fromHtml = fromName ? `<span>${escapeHtml(fromName)}</span>` : '<span class="tft-blank">previous stop</span>'
-  const toHtml   = toName   ? `<span>${escapeHtml(toName)}</span>`   : '<span class="tft-blank">next stop</span>'
+  const fromHtml = fromName ? `<span>${escapeHtml(fromName)}</span>` : `<span class="tft-blank">${dt('previous stop','étape précédente')}</span>`
+  const toHtml   = toName   ? `<span>${escapeHtml(toName)}</span>`   : `<span class="tft-blank">${dt('next stop','étape suivante')}</span>`
   // For absurd distances, blank the grid + show a red warning row instead
   // of "39097 min · €39100" which would look like real numbers.
   const kmTxt   = (km != null) ? `${km.toFixed(1)} km` : '—'
@@ -17801,11 +17887,11 @@ function refreshTransportSlot(slot) {
   const sensible = _sensibleModes(km)
   const visibleModes = sensible.includes(mode) ? sensible : [mode, ...sensible]
   const modeOptions = visibleModes
-    .map(k => `<option value="${k}"${k===mode?' selected':''}>${_MODE_ICONS[k]} ${_MODE_LABELS[k]}</option>`)
+    .map(k => `<option value="${k}"${k===mode?' selected':''}>${_MODE_ICONS[k]} ${modeLabel(k)}</option>`)
     .join('')
   const tooFarBanner = tooFar
     ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(184,74,62,0.08);border:1px solid rgba(184,74,62,0.30);border-radius:6px;color:#8a3329;font-size:11.5px;line-height:1.4;">
-         ⚠ ${km.toFixed(0)} km between the two venues — that's outside any normal day-trip range. Check that both stops are in the same trip area.
+         ⚠ ${dt(`${km.toFixed(0)} km between the two venues — that's outside any normal day-trip range. Check that both stops are in the same trip area.`, `${km.toFixed(0)} km entre les deux lieux — hors de portée d'une excursion normale. Vérifiez que les deux étapes sont dans la même zone.`)}
        </div>`
     : ''
   // Directions — two affordances:
@@ -17849,13 +17935,13 @@ function refreshTransportSlot(slot) {
                                 color:var(--green-dark,#1a7a5e);font-family:inherit;
                                 font-size:11.5px;display:inline-flex;align-items:center;gap:4px;">
                          <i class="ti ti-map" aria-hidden="true" style="font-size:13px;"></i>
-                         <span class="transport-map-toggle-label">Show route map</span>
+                         <span class="transport-map-toggle-label">${dt('Show route map','Voir l’itinéraire')}</span>
                        </button>` : ''}
          <a href="${dirUrl}" target="_blank" rel="noopener"
             style="display:inline-flex;align-items:center;gap:4px;
                    color:var(--green-dark,#1a7a5e);text-decoration:none;">
            <i class="ti ti-external-link" aria-hidden="true" style="font-size:13px;"></i>
-           Open in Google Maps
+           ${dt('Open in Google Maps','Ouvrir dans Google Maps')}
          </a>
        </div>
        ${embedUrl ? `<div class="transport-map-host" data-embed-url="${embedUrl}" hidden
@@ -17889,8 +17975,8 @@ function refreshTransportSlot(slot) {
   // cleared with a one-off SQL if they ever surface.
   const isLockedTransport = slot.dataset.isLocked === 'true'
   const removeBtnHtml = isLockedTransport
-    ? `<span class="transport-locked-badge" title="Auto-inserted — always needed">🔒 auto</span>`
-    : `<button type="button" class="transport-remove" onclick="removeSlot('${slot.id}')" title="Remove transport">×</button>`
+    ? `<span class="transport-locked-badge" title="${dt('Auto-inserted — always needed','Inséré automatiquement — toujours nécessaire')}">🔒 ${dt('auto','auto')}</span>`
+    : `<button type="button" class="transport-remove" onclick="removeSlot('${slot.id}')" title="${dt('Remove transport','Supprimer le transport')}">×</button>`
   // Preserve any already-rendered transit step timeline across the rebuild —
   // applyRouteDataToSlot adds it asynchronously, and wiping it on every
   // refresh leaves the panel missing when the next fetch returns null (no
@@ -17908,9 +17994,9 @@ function refreshTransportSlot(slot) {
       ${fromHtml}<span class="tft-arrow">→</span>${toHtml}
     </div>
     <div class="transport-grid">
-      <div><div class="tg-label">Distance</div><div class="tg-value${km==null?' tg-blank':''}">${escapeHtml(kmTxt)}</div></div>
-      <div><div class="tg-label">Duration</div><div class="tg-value${(tooFar||est.mins==null)?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
-      <div><div class="tg-label">Cost / pax</div><div class="tg-value${(tooFar||est.costEur==null)?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
+      <div><div class="tg-label">${dt('Distance','Distance')}</div><div class="tg-value${km==null?' tg-blank':''}">${escapeHtml(kmTxt)}</div></div>
+      <div><div class="tg-label">${dt('Duration','Durée')}</div><div class="tg-value${(tooFar||est.mins==null)?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
+      <div><div class="tg-label">${dt('Cost / pax','Coût / pers.')}</div><div class="tg-value${(tooFar||est.costEur==null)?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
     </div>
     ${directionsLink}
     ${tooFarBanner}`
@@ -18233,7 +18319,7 @@ function toggleTransportMap(slotId, btn) {
   const showing = !host.hidden
   if (showing) {
     host.hidden = true
-    if (label) label.textContent = 'Show route map'
+    if (label) label.textContent = dt('Show route map','Voir l’itinéraire')
     return
   }
   // First-time expand → prefer the Routes API polyline map, fall back to
@@ -18256,13 +18342,13 @@ function toggleTransportMap(slotId, btn) {
         const note = document.createElement('div')
         note.className = 'transport-map-note'
         note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:var(--text-3);line-height:1.4;border-left:2px solid var(--border);'
-        note.textContent = 'Loading custom map… showing Google Maps preview meanwhile.'
+        note.textContent = dt('Loading custom map… showing Google Maps preview meanwhile.','Chargement de la carte… aperçu Google Maps en attendant.')
         host.appendChild(note)
       }
     }
   }
   host.hidden = false
-  if (label) label.textContent = 'Hide route map'
+  if (label) label.textContent = dt('Hide route map','Masquer l’itinéraire')
 }
 
 // Mode picker change handler — stash the new mode + re-render the panel.
@@ -18402,25 +18488,28 @@ function _altPriceLine(p) {
 }
 
 function buildClosedAltsHtml(alternatives, plannedDate, slotId, originLat, originLng) {
-  const dayName = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][(() => {
+  const _dayIdx = (() => {
     const [yr, mo, da] = plannedDate.split('-').map(Number)
     const d = new Date(yr, mo - 1, da)
     const dow = d.getDay()
     return dow === 0 ? 6 : dow - 1
-  })()]
+  })()
+  const dayName = (isPlannerFR()
+    ? ['lun.','mar.','mer.','jeu.','ven.','sam.','dim.']
+    : ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'])[_dayIdx]
   if (!alternatives || !alternatives.length) {
     return `
       <div class="slot-closed-alts">
-        <div class="slot-closed-alts-head">⚠ Closed on ${escapeHtml(dayName)}</div>
-        <div class="slot-closed-alts-empty">No good open alternatives within 1.5 km. Try a wider search.</div>
+        <div class="slot-closed-alts-head">⚠ ${dt('Closed on','Fermé le')} ${escapeHtml(dayName)}</div>
+        <div class="slot-closed-alts-empty">${dt('No good open alternatives within 1.5 km. Try a wider search.','Aucune bonne alternative ouverte dans un rayon de 1,5 km. Élargissez la recherche.')}</div>
         <div class="slot-closed-alts-footer">
-          <a onclick="closedAltsAction('${slotId}','manual')">Search manually</a>
-          <a onclick="closedAltsAction('${slotId}','keep')">Keep anyway</a>
+          <a onclick="closedAltsAction('${slotId}','manual')">${dt('Search manually','Rechercher manuellement')}</a>
+          <a onclick="closedAltsAction('${slotId}','keep')">${dt('Keep anyway','Garder quand même')}</a>
         </div>
       </div>`
   }
   const items = alternatives.map(p => {
-    const name = (p.displayName?.text || p.displayName || 'Unnamed')
+    const name = (p.displayName?.text || p.displayName || dt('Unnamed','Sans nom'))
     const lat = p.location?.latitude, lng = p.location?.longitude
     const dKm = (lat != null && lng != null && originLat != null && originLng != null)
       ? haversineKm(originLat, originLng, lat, lng).toFixed(1) + ' km'
@@ -18435,22 +18524,22 @@ function buildClosedAltsHtml(alternatives, plannedDate, slotId, originLat, origi
           <div class="slot-closed-alt-row-1">
             <strong>${escapeHtml(name)}</strong>
             ${dKm ? `<span class="slot-closed-alt-dist">· ${escapeHtml(dKm)}</span>` : ''}
-            <span class="slot-closed-alt-open">● Open ${escapeHtml(dayName)}</span>
+            <span class="slot-closed-alt-open">● ${dt('Open','Ouvert')} ${escapeHtml(dayName)}</span>
           </div>
           <div class="slot-closed-alt-row-2">${escapeHtml(row2)}</div>
         </div>
         <button type="button" class="slot-closed-alt-swap"
-          onclick="closedAltsSwap('${slotId}','${escapeHtml(p.id)}')">Swap</button>
+          onclick="closedAltsSwap('${slotId}','${escapeHtml(p.id)}')">${dt('Swap','Remplacer')}</button>
       </div>`
   }).join('')
   return `
     <div class="slot-closed-alts">
-      <div class="slot-closed-alts-head">⚠ Closed on ${escapeHtml(dayName)}</div>
-      <div class="slot-closed-alts-sub">Try one of these alternatives nearby:</div>
+      <div class="slot-closed-alts-head">⚠ ${dt('Closed on','Fermé le')} ${escapeHtml(dayName)}</div>
+      <div class="slot-closed-alts-sub">${dt('Try one of these alternatives nearby:','Essayez une de ces alternatives à proximité :')}</div>
       ${items}
       <div class="slot-closed-alts-footer">
-        <a onclick="closedAltsAction('${slotId}','manual')">Search manually</a>
-        <a onclick="closedAltsAction('${slotId}','keep')">Keep anyway</a>
+        <a onclick="closedAltsAction('${slotId}','manual')">${dt('Search manually','Rechercher manuellement')}</a>
+        <a onclick="closedAltsAction('${slotId}','keep')">${dt('Keep anyway','Garder quand même')}</a>
       </div>
     </div>`
 }
@@ -18485,7 +18574,7 @@ async function ensureClosedAlternatives(slot, plannedDateInput) {
   if (existing) existing.remove()
   const host = document.createElement('div')
   host.className = 'slot-closed-alts-host'
-  host.innerHTML = `<div class="slot-closed-alts"><div class="slot-closed-alts-loading">Looking up nearby venues open on this day…</div></div>`
+  host.innerHTML = `<div class="slot-closed-alts"><div class="slot-closed-alts-loading">${dt('Looking up nearby venues open on this day…','Recherche de lieux ouverts ce jour-là à proximité…')}</div></div>`
   slot.appendChild(host)
   // Helper to swap the loading panel for an error/empty panel — used by
   // every failure path so we never leave the spinner stranded.
@@ -18498,8 +18587,8 @@ async function ensureClosedAlternatives(slot, plannedDateInput) {
   const errorPanel = (msg) => `<div class="slot-closed-alts">
     <div class="slot-closed-alts-head">⚠ ${escapeHtml(msg)}</div>
     <div class="slot-closed-alts-footer">
-      <a onclick="closedAltsAction('${slot.id}','manual')">Search manually</a>
-      <a onclick="closedAltsAction('${slot.id}','keep')">Keep anyway</a>
+      <a onclick="closedAltsAction('${slot.id}','manual')">${dt('Search manually','Rechercher manuellement')}</a>
+      <a onclick="closedAltsAction('${slot.id}','keep')">${dt('Keep anyway','Garder quand même')}</a>
     </div>
   </div>`
   const cached = _readNearbyCache(d.google_place_id, plannedDate)
@@ -18508,8 +18597,8 @@ async function ensureClosedAlternatives(slot, plannedDateInput) {
     replacePanel(buildClosedAltsHtml(filtered, plannedDate, slot.id, d.latitude, d.longitude))
     return
   }
-  if (!_canCallNearby()) { replacePanel(errorPanel(`Hit today's lookup limit (${PLACES_NEARBY_DAILY_CAP}/day).`)); return }
-  if (d.latitude == null || d.longitude == null) { replacePanel(errorPanel(`No coordinates — can't find alternatives.`)); return }
+  if (!_canCallNearby()) { replacePanel(errorPanel(dt(`Hit today's lookup limit (${PLACES_NEARBY_DAILY_CAP}/day).`, `Limite de recherches du jour atteinte (${PLACES_NEARBY_DAILY_CAP}/jour).`))); return }
+  if (d.latitude == null || d.longitude == null) { replacePanel(errorPanel(dt(`No coordinates — can't find alternatives.`, `Aucune coordonnée — impossible de trouver des alternatives.`))); return }
   slot.dataset.altsState = 'loading'
   try {
     const includedType = _nearbyTypeFor(d.place_types)
@@ -18524,7 +18613,7 @@ async function ensureClosedAlternatives(slot, plannedDateInput) {
   } catch (e) {
     console.warn('[alts] pipeline failed', e)
     slot.dataset.altsState = ''
-    replacePanel(errorPanel(`Lookup failed: ${String(e?.message || e).slice(0, 80)}`))
+    replacePanel(errorPanel(dt(`Lookup failed: ${String(e?.message || e).slice(0, 80)}`, `Échec de la recherche : ${String(e?.message || e).slice(0, 80)}`)))
   }
 }
 
@@ -18532,7 +18621,7 @@ async function closedAltsSwap(slotId, placeId) {
   const slot = document.getElementById(slotId)
   if (!slot || !placeId) return
   const btn = slot.querySelector(`.slot-closed-alt-swap[onclick*="${placeId}"]`)
-  if (btn) { btn.disabled = true; btn.textContent = 'Swapping…' }
+  if (btn) { btn.disabled = true; btn.textContent = dt('Swapping…','Remplacement…') }
   const savedType = slot.querySelector('.slot-type-select')?.value || null
   const savedTime = slot.querySelector('.slot-time-input')?.value || null
   const savedNotes = slot.querySelector('.slot-notes-input')?.value || null
@@ -18747,7 +18836,7 @@ function _buildLockedAnchor({ type, title, subtitle, method, badge, footer }) {
   // Right-side: profile-match badge (only on end-of-day) OR the "auto" pill.
   const rightHtml = badge
     ? `<span class="anchor-badge anchor-badge-${badge.state}">${escapeHtml(badge.label)}</span>`
-    : `<span class="anchor-lock"><span class="anchor-lock-icon">🔒</span>auto</span>`
+    : `<span class="anchor-lock"><span class="anchor-lock-icon">🔒</span>${dt('auto','auto')}</span>`
   el.innerHTML = `
     <div class="anchor-row">
       <span class="anchor-icon">${_anchorIconFor(type, method)}</span>
@@ -18786,13 +18875,15 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       const arrLoc = window._currentArrivalStationResolvedName
                   || window._currentArrivalLocation
                   || ''
-      const methodLabel = method === 'flight' ? 'Flight' : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
-      const locBit = arrLoc ? ` at ${arrLoc}` : ''
+      const methodLabel = method === 'flight' ? dt('Flight','Vol') : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
+      const locBit = arrLoc ? dt(` at ${arrLoc}`, ` à ${arrLoc}`) : ''
       topAnchor = _buildLockedAnchor({
         type: 'arrival',
         method,
-        title: `${formatTimeDisplay(arrTime)} · ${methodLabel} arrives${locBit}`,
-        subtitle: arrFrom && arrFrom !== 'origin' ? `from ${arrFrom} · Day 1 begins on arrival` : `Day 1 begins on arrival`,
+        title: `${formatTimeDisplay(arrTime)} · ${methodLabel} ${dt('arrives','arrive')}${locBit}`,
+        subtitle: arrFrom && arrFrom !== 'origin'
+          ? dt(`from ${arrFrom} · Day 1 begins on arrival`, `de ${arrFrom} · la journée 1 commence à l'arrivée`)
+          : dt(`Day 1 begins on arrival`, `la journée 1 commence à l'arrivée`),
       })
       // Hang the resolved station coords on the anchor so getSlotLatLng
       // works for the universal gap-fill pass downstream (auto-insert
@@ -18810,15 +18901,15 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     }
   } else {
     const breakfastBit = window._currentHotelBreakfast
-      ? 'Breakfast at hotel (45 min included)'
-      : 'Breakfast on the way'
+      ? dt('Breakfast at hotel (45 min included)', "Petit-déjeuner à l'hôtel (45 min inclus)")
+      : dt('Breakfast on the way', 'Petit-déjeuner en chemin')
     // Use the itinerary's hotel name (one per trip) — same as end-of-day.
     const morningHotel = _findItineraryHotel()
     const morningHotelName = morningHotel?.name || hotelName
     topAnchor = _buildLockedAnchor({
       type: 'morning',
-      title: `${formatTimeDisplay(wakeTime)} · Morning at ${morningHotelName}`,
-      subtitle: `Day ${dayNum} starts here · ${breakfastBit}`,
+      title: `${formatTimeDisplay(wakeTime)} · ${dt('Morning at','Matinée à')} ${morningHotelName}`,
+      subtitle: `${dt(`Day ${dayNum} starts here`, `journée ${dayNum} commence ici`)} · ${breakfastBit}`,
     })
     // Attach hotel _placeData so the gap-fill can compute the first
     // transport's distance from this anchor on Day 2+ if needed.
@@ -18837,20 +18928,20 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     const method = window._currentDepartureMethod
     if (method) {
       const depTime = window._currentDepartureTime || '17:00'
-      const depTo   = window._currentDepartureTo   || 'next stop'
-      const methodLabel = method === 'flight' ? 'Flight' : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
+      const depTo   = window._currentDepartureTo   || dt('next stop','étape suivante')
+      const methodLabel = method === 'flight' ? dt('Flight','Vol') : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
       bottomAnchor = _buildLockedAnchor({
         type: 'departure',
         method,
-        title: `${formatTimeDisplay(depTime)} · ${methodLabel} to ${depTo}`,
-        subtitle: `Day ${dayNum} ends with departure`,
+        title: `${formatTimeDisplay(depTime)} · ${methodLabel} ${dt('to','vers')} ${depTo}`,
+        subtitle: dt(`Day ${dayNum} ends with departure`, `la journée ${dayNum} se termine par le départ`),
       })
     }
   } else {
     // Profile-match check — compare actual end-of-day to what the
     // traveler's daily_timing + pace + caps say it should be.
     const cmp = _dayEndProfileCompare(dayContainer, dayNum, totalDays)
-    const firstName = window._currentFirstName || 'the traveler'
+    const firstName = window._currentFirstName || dt('the traveler','le voyageur')
     // Use the ITINERARY hotel (one per trip) as the back-to-hotel target.
     // Falls back to generic hotelName when the planner hasn't linked an
     // accommodation slot yet.
@@ -18858,26 +18949,26 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     const hotelDisplayName = itinHotel?.name || hotelName
     let badge = null
     let footer = null
-    let titleStr = `Back at ${hotelDisplayName}`
+    let titleStr = dt(`Back at ${hotelDisplayName}`, `Retour à ${hotelDisplayName}`)
     if (cmp.state === 'on_profile') {
-      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
-      badge  = { state: 'on_profile', label: '✓ on track' }
-      footer = `${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`
+      titleStr = `${cmp.actualStr} · ${dt('Back at','Retour à')} ${hotelDisplayName}`
+      badge  = { state: 'on_profile', label: dt('✓ on track','✓ dans les temps') }
+      footer = dt(`${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`, `Le profil de ${firstName} suggère environ ${cmp.expectedStr} — vous êtes dans les temps`)
     } else if (cmp.state === 'late') {
-      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
+      titleStr = `${cmp.actualStr} · ${dt('Back at','Retour à')} ${hotelDisplayName}`
       const lateMin = Math.max(0, cmp.gapMin)
-      badge  = { state: 'late', label: '⚠ too late' }
-      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. Running ${lateMin} min late — confirm ${firstName} wants a later night.`
+      badge  = { state: 'late', label: dt('⚠ too late','⚠ trop tard') }
+      footer = dt(`${firstName}'s profile suggests ${cmp.expectedStr}. Running ${lateMin} min late — confirm ${firstName} wants a later night.`, `Le profil de ${firstName} suggère ${cmp.expectedStr}. ${lateMin} min de retard — confirmez que ${firstName} souhaite finir plus tard.`)
     } else if (cmp.state === 'early') {
-      titleStr = `${cmp.actualStr} · Back at ${hotelDisplayName}`
+      titleStr = `${cmp.actualStr} · ${dt('Back at','Retour à')} ${hotelDisplayName}`
       const earlyMin = Math.max(0, -cmp.gapMin)
-      badge  = { state: 'early', label: '⚠ too early' }
-      footer = `${firstName}'s profile suggests ${cmp.expectedStr}. Day ends ${earlyMin} min early — add another stop?`
+      badge  = { state: 'early', label: dt('⚠ too early','⚠ trop tôt') }
+      footer = dt(`${firstName}'s profile suggests ${cmp.expectedStr}. Day ends ${earlyMin} min early — add another stop?`, `Le profil de ${firstName} suggère ${cmp.expectedStr}. La journée finit ${earlyMin} min trop tôt — ajouter une étape ?`)
     }
     bottomAnchor = _buildLockedAnchor({
       type: 'end_of_day',
       title: titleStr,
-      subtitle: `Day ${dayNum} ends here`,
+      subtitle: dt(`Day ${dayNum} ends here`, `la journée ${dayNum} se termine ici`),
       badge,
       footer,
     })
@@ -18917,7 +19008,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       _row.innerHTML = `
         <button type="button" class="end-day-btn" onclick="endDayBackToHotel('${dayContainer.id}')">
           <span class="edb-icon">🌙</span>
-          <span class="edb-text">End day · back to hotel</span>
+          <span class="edb-text">${dt('End day · back to hotel',"Terminer la journée · retour à l'hôtel")}</span>
         </button>
       `
       dayContainer.insertBefore(_row, bottomAnchor)
@@ -19000,8 +19091,8 @@ function renderEndDayButton(dayContainer, dayNum, totalDays) {
   while (scan && scan.classList?.contains('is-locked')) scan = scan.previousElementSibling
   const hasExisting = !!(scan && scan.classList?.contains('slot-type-transport'))
   const label = hasExisting
-    ? 'Refresh back-to-hotel transport'
-    : 'End day · back to hotel'
+    ? dt('Refresh back-to-hotel transport',"Actualiser le transport retour à l'hôtel")
+    : dt('End day · back to hotel',"Terminer la journée · retour à l'hôtel")
   const row = document.createElement('div')
   row.className = 'end-day-row'
   row.innerHTML = `
@@ -19057,7 +19148,7 @@ function endDayBackToHotel(dayContainerId) {
   if (km != null && km < 0.05) {
     if (typeof refreshDayDistances === 'function') refreshDayDistances(dayContainer)
     if (typeof autoSaveDraft === 'function') autoSaveDraft()
-    if (typeof showToast === 'function') showToast('Already at the hotel — no transport needed')
+    if (typeof showToast === 'function') showToast(dt('Already at the hotel — no transport needed',"Déjà à l'hôtel — aucun transport nécessaire"))
     return
   }
   // Depart = last venue start + stay (with the usual type-based floors).
@@ -19086,9 +19177,9 @@ function endDayBackToHotel(dayContainerId) {
   // Prefill title — planner sees "Metro · ONYX → Hôtel ..." right away.
   const titleInput = newT.querySelector('.slot-title-input')
   if (titleInput) {
-    const aName = _venueNameOf(lastVenue) || 'last stop'
-    const bName = hotel?.name || window._currentHotelName || 'the hotel'
-    const modeName = mode === 'walk' ? 'Walk' : (mode === 'taxi' ? 'Taxi' : 'Metro')
+    const aName = _venueNameOf(lastVenue) || dt('last stop','dernière étape')
+    const bName = hotel?.name || window._currentHotelName || dt('the hotel',"l'hôtel")
+    const modeName = mode === 'walk' ? dt('Walk','À pied') : (mode === 'taxi' ? 'Taxi' : dt('Metro','Métro'))
     titleInput.value = `${modeName} · ${aName} → ${bName}`
   }
   _applySlotTime(newT, departHHMM)
@@ -19159,7 +19250,7 @@ function endTripToAirport(dayContainerId) {
     // Empty day — nothing to depart from. Friendly hint so the
     // planner knows what to do next.
     if (typeof showToast === 'function') {
-      showToast('Add at least one activity first — the airport transport leaves from your last stop')
+      showToast(dt('Add at least one activity first — the airport transport leaves from your last stop','Ajoutez d’abord au moins une activité — le transport vers l’aéroport part de votre dernière étape'))
     }
     return
   }
@@ -19547,9 +19638,9 @@ function _gapFillTransportsForDay(dayContainer) {
         _applySlotTime(newT, departHHMM)
         const titleInput = newT.querySelector('.slot-title-input')
         if (titleInput) {
-          const aName = _venueNameOf(aSlot) || aSlot.querySelector('.anchor-title')?.textContent || 'origin'
-          const bName = _venueNameOf(bSlot) || 'destination'
-          const modeName = mode === 'walk' ? 'Walk' : (mode === 'taxi' ? 'Taxi' : 'Metro')
+          const aName = _venueNameOf(aSlot) || aSlot.querySelector('.anchor-title')?.textContent || dt('origin','départ')
+          const bName = _venueNameOf(bSlot) || dt('destination','destination')
+          const modeName = mode === 'walk' ? dt('Walk','À pied') : (mode === 'taxi' ? 'Taxi' : dt('Metro','Métro'))
           titleInput.value = `${modeName} · ${aName} → ${bName}`
         }
         if (aSlot.classList.contains('is-locked') && aSlot._placeData) {
@@ -19677,17 +19768,17 @@ function computeDaySummary(dayContainer) {
     return 10  // moderate / balanced default
   })()
   if (walkingKm > paceMax) {
-    warnings.push({ level:'amber', text:`${walkingKm.toFixed(1)} km walking — high for ${window._currentPace || 'moderate'} pace.` })
+    warnings.push({ level:'amber', text:dt(`${walkingKm.toFixed(1)} km walking — high for ${window._currentPace || 'moderate'} pace.`, `${walkingKm.toFixed(1)} km de marche — beaucoup pour un rythme ${window._currentPace || 'modéré'}.`) })
   }
   if (dailyBudget) {
     if (spendEur > dailyBudget * 2) {
-      warnings.push({ level:'red', text:`Day spend ~€${spendEur} is over 2× the €${dailyBudget}/day budget — confirm splurge with traveler or rebalance.` })
+      warnings.push({ level:'red', text:dt(`Day spend ~€${spendEur} is over 2× the €${dailyBudget}/day budget — confirm splurge with traveler or rebalance.`, `Dépense du jour ~${spendEur} € — plus de 2× le budget de ${dailyBudget} €/jour — confirmez l'extra avec le voyageur ou rééquilibrez.`) })
     } else if (spendEur > dailyBudget) {
-      warnings.push({ level:'amber', text:`Day over budget by €${spendEur - dailyBudget} (budget €${dailyBudget}/day · splurge may explain it).` })
+      warnings.push({ level:'amber', text:dt(`Day over budget by €${spendEur - dailyBudget} (budget €${dailyBudget}/day · splurge may explain it).`, `Journée au-dessus du budget de ${spendEur - dailyBudget} € (budget ${dailyBudget} €/jour · un extra peut l'expliquer).`) })
     }
   }
   if (activeMin > 12 * 60) {
-    warnings.push({ level:'amber', text:`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.` })
+    warnings.push({ level:'amber', text:dt(`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.`, `Journée de ${(activeMin/60).toFixed(1)} h — envisagez de retirer une étape.`) })
   }
   // ── Light-day / empty-day checks ──
   // "Balanced" needs more than "no warnings" — a day with one stop isn't
@@ -19704,14 +19795,14 @@ function computeDaySummary(dayContainer) {
                  : (pace.includes('active') || pace.includes('packed')) ? 4
                  :                                                        3
   if (venues.length === 0) {
-    warnings.push({ level:'amber', text:`No stops yet — add at least ${minStops} for a coherent day.` })
+    warnings.push({ level:'amber', text:dt(`No stops yet — add at least ${minStops} for a coherent day.`, `Aucune étape — ajoutez-en au moins ${minStops} pour une journée cohérente.`) })
   } else if (venues.length === 1 && !isArrivalDay && !isDepartureDay) {
-    warnings.push({ level:'amber', text:`Only 1 stop — add at least ${minStops - 1} more so the day reads like a real day.` })
+    warnings.push({ level:'amber', text:dt(`Only 1 stop — add at least ${minStops - 1} more so the day reads like a real day.`, `1 seule étape — ajoutez-en au moins ${minStops - 1} de plus pour une vraie journée.`) })
   } else if (venues.length < minStops && !isArrivalDay && !isDepartureDay) {
-    warnings.push({ level:'info', text:`${venues.length} stop${venues.length === 1 ? '' : 's'} — typical day has ${minStops}+ for ${pace || 'moderate'} pace.` })
+    warnings.push({ level:'info', text:dt(`${venues.length} stop${venues.length === 1 ? '' : 's'} — typical day has ${minStops}+ for ${pace || 'moderate'} pace.`, `${venues.length} étape${venues.length === 1 ? '' : 's'} — une journée type en compte ${minStops}+ pour un rythme ${pace || 'modéré'}.`) })
   }
   if (activeMin > 0 && activeMin < 60 && !isArrivalDay && !isDepartureDay) {
-    warnings.push({ level:'amber', text:`Active span is only ${activeMin} min — the day will feel rushed past the first stop.` })
+    warnings.push({ level:'amber', text:dt(`Active span is only ${activeMin} min — the day will feel rushed past the first stop.`, `Plage active de seulement ${activeMin} min — la journée semblera précipitée après la première étape.`) })
   }
   // Profile-match end-of-day comparison — same as what the end-of-day
   // anchor displays, surfaced here for the summary card.
@@ -19723,9 +19814,9 @@ function computeDaySummary(dayContainer) {
         state: cmp.state,
         expectedStr: cmp.expectedStr,
         actualStr: cmp.actualStr,
-        tagLabel: cmp.state === 'on_profile' ? '✓ on track'
-               : cmp.state === 'late'        ? '⚠ too late'
-               : cmp.state === 'early'       ? '⚠ too early'
+        tagLabel: cmp.state === 'on_profile' ? dt('✓ on track','✓ dans les temps')
+               : cmp.state === 'late'        ? dt('⚠ too late','⚠ trop tard')
+               : cmp.state === 'early'       ? dt('⚠ too early','⚠ trop tôt')
                :                                '',
       }
     : null
@@ -19890,8 +19981,8 @@ async function _refreshReviewCommission() {
 // Submit-from-review handler. Confirm → mark plan submitted → toast +
 // close modal so the planner returns to the dashboard tile grid.
 async function submitFromReviewPage() {
-  if (!currentPlanId) { showToast('No plan open'); return }
-  const ok = confirm('Submit this itinerary? After submitting, edits require admin re-approval.')
+  if (!currentPlanId) { showToast(dt('No plan open','Aucun plan ouvert')); return }
+  const ok = confirm(dt('Submit this itinerary? After submitting, edits require admin re-approval.','Soumettre cet itinéraire ? Après soumission, toute modification nécessite une nouvelle approbation de l’administrateur.'))
   if (!ok) return
   // Flush pending autosave first so the personal note + any in-flight
   // edits land in the row BEFORE we flip status.
@@ -19901,13 +19992,13 @@ async function submitFromReviewPage() {
       status:       'submitted',
       submitted_at: new Date().toISOString(),
     }).eq('id', currentPlanId)
-    if (error) { showToast('Submit failed: ' + error.message); return }
-    showToast('Itinerary submitted — waiting for admin review')
+    if (error) { showToast(dt('Submit failed: ','Échec de la soumission : ') + error.message); return }
+    showToast(dt('Itinerary submitted — waiting for admin review','Itinéraire soumis — en attente de validation par l’administrateur'))
     closeModal('modal-submit')
     if (typeof initDashboard === 'function') setTimeout(() => initDashboard(), 400)
   } catch (e) {
     console.warn('[review] submit threw', e)
-    showToast('Submit failed — check console')
+    showToast(dt('Submit failed — check console','Échec de la soumission — vérifiez la console'))
   }
 }
 
@@ -19919,9 +20010,9 @@ function buildDaySummaryHtml(dayNum, summary) {
   //   - active span ≥ 90 min (otherwise the day is too light to be a day)
   const looksBalanced = warnings.length === 0 && stops >= 2 && activeMin >= 90
   const okText = looksBalanced
-    ? `✓ Day ${dayNum} looks balanced.`
+    ? dt(`✓ Day ${dayNum} looks balanced.`, `✓ La journée ${dayNum} semble équilibrée.`)
     : (warnings.length === 0
-        ? `· Day ${dayNum} is light — fine for an arrival/departure day, add more stops for a regular day.`
+        ? dt(`· Day ${dayNum} is light — fine for an arrival/departure day, add more stops for a regular day.`, `· La journée ${dayNum} est légère — parfait pour un jour d'arrivée/départ, ajoutez des étapes pour une journée normale.`)
         : '')
   const warnsHtml = warnings.length
     ? warnings.map(w => `<div class="day-summary-warn day-summary-warn-${w.level}">${escapeHtml(w.text)}</div>`).join('')
@@ -19930,10 +20021,10 @@ function buildDaySummaryHtml(dayNum, summary) {
   // actually produced a state (planner has put at least one stop down).
   const profileHtml = (profileEnd && profileEnd.state)
     ? `<div class="day-summary-profile day-summary-profile-${profileEnd.state}">
-         <span class="dsp-label">Suggested end</span>
+         <span class="dsp-label">${dt('Suggested end','Fin suggérée')}</span>
          <span class="dsp-val">${escapeHtml(profileEnd.expectedStr)}</span>
          <span class="dsp-sep">·</span>
-         <span class="dsp-label">Actual</span>
+         <span class="dsp-label">${dt('Actual','Réel')}</span>
          <span class="dsp-val">${escapeHtml(profileEnd.actualStr || '—')}</span>
          <span class="dsp-tag">${escapeHtml(profileEnd.tagLabel)}</span>
        </div>`
@@ -19942,13 +20033,13 @@ function buildDaySummaryHtml(dayNum, summary) {
     <div class="day-summary" data-day-summary="${dayNum}">
       <div class="day-summary-head">
         <i class="ti ti-chart-bar" aria-hidden="true"></i>
-        <span>Day ${dayNum} summary · auto-computed</span>
+        <span>${dt(`Day ${dayNum} summary · auto-computed`, `Résumé de la journée ${dayNum} · calculé automatiquement`)}</span>
       </div>
       <div class="day-summary-grid">
-        <div><div class="dsg-label">Stops</div><div class="dsg-value">${stops}</div></div>
-        <div><div class="dsg-label">Active hours</div><div class="dsg-value">${escapeHtml(_fmtActiveHours(activeMin))}</div></div>
-        <div><div class="dsg-label">Walking</div><div class="dsg-value">${walkingKm > 0 ? walkingKm.toFixed(1) + ' km' : '—'}</div></div>
-        <div><div class="dsg-label">Est. spend / pax</div><div class="dsg-value">${spendEur ? '€' + spendEur : '—'}</div></div>
+        <div><div class="dsg-label">${dt('Stops','Étapes')}</div><div class="dsg-value">${stops}</div></div>
+        <div><div class="dsg-label">${dt('Active hours','Heures actives')}</div><div class="dsg-value">${escapeHtml(_fmtActiveHours(activeMin))}</div></div>
+        <div><div class="dsg-label">${dt('Walking','Marche')}</div><div class="dsg-value">${walkingKm > 0 ? walkingKm.toFixed(1) + ' km' : '—'}</div></div>
+        <div><div class="dsg-label">${dt('Est. spend / pax','Dépense est. / pers.')}</div><div class="dsg-value">${spendEur ? '€' + spendEur : '—'}</div></div>
       </div>
       ${profileHtml}
       ${warnsHtml}
@@ -20226,7 +20317,7 @@ function addSlot(dayNum, seed = null) {
            flows back into the plan row on every change. -->
       <label class="slot-hotel-bags-toggle" id="bags-toggle-${id}">
         <input type="checkbox" onchange="_onHotelStoresBagsChange(this)">
-        <span>🎒 Bags stored at hotel after check-out</span>
+        <span>🎒 ${dt('Bags stored at hotel after check-out',"Bagages gardés à l'hôtel après le départ")}</span>
       </label>
       <div class="img-upload-area" onclick="triggerImgUpload('${id}')">
         <div class="img-upload-icon">
@@ -20449,8 +20540,8 @@ function hideModalErrorBanner(){
 // ── SUBMIT PLAN ──────────────────────────────────────────────
 async function submitPlan() {
   const title = document.getElementById('itin-title').value.trim()
-  if (!title) { showToast('Please add an itinerary title first'); return }
-  if (!currentPlanId) { showToast('No active plan found'); return }
+  if (!title) { showToast(dt('Please add an itinerary title first','Ajoutez d’abord un titre à l’itinéraire')); return }
+  if (!currentPlanId) { showToast(dt('No active plan found','Aucun plan actif trouvé')); return }
   // Hard block: never allow submit on a bond-locked plan
   const activePlan = plans.find(p => p.id === currentPlanId)
   if (activePlan?.status === 'bond_pending') {
@@ -20459,7 +20550,7 @@ async function submitPlan() {
   }
   // Defense in depth: approved plans are read-only
   if (activePlan?.status === 'approved') {
-    showToast('This plan is already approved and cannot be edited')
+    showToast(dt('This plan is already approved and cannot be edited','Ce plan est déjà approuvé et ne peut pas être modifié'))
     return
   }
 
@@ -20836,16 +20927,16 @@ async function _wipePlanToFresh(planId) {
 // post-wipe state. Falls back to a hard reload if openItineraryForm
 // isn't accessible (e.g. unexpected error path).
 async function resetCurrentPlanToFresh() {
-  if (!currentPlanId) { showToast('No plan is currently open'); return }
-  const ok = confirm('Reset this plan to a fresh state? Every itinerary item, hotel pick, transport tip, and spend-breakdown note you added will be cleared. This cannot be undone.')
+  if (!currentPlanId) { showToast(dt('No plan is currently open','Aucun plan actuellement ouvert')); return }
+  const ok = confirm(dt('Reset this plan to a fresh state? Every itinerary item, hotel pick, transport tip, and spend-breakdown note you added will be cleared. This cannot be undone.','Réinitialiser ce plan à zéro ? Tous les éléments d’itinéraire, choix d’hôtel, conseils de transport et notes de dépenses que vous avez ajoutés seront effacés. Cette action est irréversible.'))
   if (!ok) return
   // Cancel any pending debounced autosave — otherwise it might fire
   // AFTER the wipe and write stale form contents back to the DB.
   if (_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null }
   const planId = currentPlanId
   const wiped = await _wipePlanToFresh(planId)
-  if (!wiped) { showToast('Reset failed — check console'); return }
-  showToast('Plan reset — starting fresh')
+  if (!wiped) { showToast(dt('Reset failed — check console','Échec de la réinitialisation — vérifiez la console')); return }
+  showToast(dt('Plan reset — starting fresh','Plan réinitialisé — nouveau départ'))
   // Re-open the same plan so the form rebuilds from the wiped DB rows.
   try {
     if (typeof openItineraryForm === 'function') {
