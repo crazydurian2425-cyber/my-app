@@ -4259,7 +4259,7 @@ async function loadPayments() {
         <div class="pay-av">${escapeHtml(ini)}</div>
         <div class="pay-info">
           <div class="pay-name">${escapeHtml(pr.name || '—')}</div>
-          <div class="pay-meta">${escapeHtml(pr.city || '—')} · ${escapeHtml(pr.bank_name || 'No bank')}${paidChip}${pendingChip}${retentionChip}</div>
+          <div class="pay-meta">${escapeHtml(pr.city || '—')} · ${escapeHtml(pr.bank_name || 'No wallet')}${paidChip}${pendingChip}${retentionChip}</div>
         </div>
         <div style="text-align:right;">
           <div class="pay-amount" style="color:var(--green-dark,#0f5240);">€${Math.round(p.available).toLocaleString()}</div>
@@ -5398,7 +5398,7 @@ function renderPlanners(planners, meta) {
           <div class="p-meta">${escapeHtml(p.city)} · ${escapeHtml(p.email)} · Joined ${joined}</div>
         </div>
         <div class="p-stats">
-          <div><div class="p-stat-val">${escapeHtml(p.bank_name||'—')}</div><div style="font-size:11px;color:var(--ink-3)">bank</div></div>
+          <div><div class="p-stat-val">${p.bank_account ? escapeHtml((p.bank_name||'USDT') + (p.bank_branch_code ? ' · ' + p.bank_branch_code : '')) : '—'}</div><div style="font-size:11px;color:var(--ink-3)">crypto</div></div>
           <div><div class="p-stat-val" style="font-size:12px;">${escapeHtml(p.phone||'—')}</div><div style="font-size:11px;color:var(--ink-3)">phone</div></div>
         </div>
         <span class="status ${statusColor}" style="margin-left:8px;"><span class="status-dot"></span>${statusLabel}</span>
