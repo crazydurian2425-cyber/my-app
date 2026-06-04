@@ -9347,7 +9347,7 @@ const BRIEF_LABEL_FR = {
   'Previous visits':'Visites précédentes', 'From':'Origine',
   'Daily / pax':'Par jour / pers.', 'Hotel / night':'Hôtel / nuit',
   'Splurge willingness':'Budget plaisir', 'Booking authority':'Décision de réservation',
-  'Type':'Type', 'Room':'Chambre', 'Must-haves':'Indispensables',
+  'Type':'Type', 'Room':'Chambre', 'Room type':'Type de chambre', 'Must-haves':'Indispensables',
   'Dietary':'Régime', 'Dining style':'Style de restauration', 'Cuisine interests':'Cuisines préférées',
   'Intensity':'Intensité', 'Daily timing':'Horaires de journée', 'Must avoid':'À éviter',
   'Interests':'Centres d’intérêt', 'Arrival':'Arrivée', 'Departure':'Départ',
@@ -12588,8 +12588,8 @@ async function renderTravelerBrief(plan, t, notes) {
   // (accommodation_preference / accommodation_room / accommodation_must_haves)
   // so older rows still render. Previously the brief read only the legacy
   // keys, so every traveler whose data used the canonical keys showed "—".
-  const _accomType = meta.accommodation_type || meta.accommodation_preference || ''
-  const accomTxt = _accomType ? titleCaseEnum(_accomType) : ''
+  // Accommodation "type" was removed (room_type already conveys it, and the
+  // old dropdown's "Airbnb" steered planners to listings Google can't link).
   const roomTxt = meta.room_type || meta.accommodation_room || ''
   const _mh = Array.isArray(meta.accommodation_musthaves) ? meta.accommodation_musthaves
             : (Array.isArray(meta.accommodation_must_haves) ? meta.accommodation_must_haves : null)
@@ -12598,8 +12598,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const sectionAccom = wrap(`
     ${sectionHeader('bed', 'Accommodation')}
     ${grid2(`
-      ${cell('Type', escapeHtml(accomTxt))}
-      ${cell('Room', escapeHtml(roomTxt))}
+      ${cell('Room type', escapeHtml(roomTxt), { span2: true })}
       ${cell('Must-haves', escapeHtml(accomMustHaves), { span2: true })}
     `)}
   `)

@@ -2016,18 +2016,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <summary style="padding:10px 14px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;">🛌 Accommodation</summary>
         <div style="padding:12px 14px;border-top:1px solid var(--border);">
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Type</label>
-              <select class="form-select" id="et-meta-accom-type">
-                <option value="">—</option>
-                <option value="hotel">Hotel</option>
-                <option value="airbnb">Airbnb</option>
-                <option value="hostel">Hostel</option>
-                <option value="boutique">Boutique inn</option>
-                <option value="villa">Villa / chateau</option>
-                <option value="mixed">Mixed</option>
-              </select>
-            </div>
-            <div class="form-group"><label class="form-label">Room type</label><input class="form-input" id="et-meta-room-type" placeholder="e.g. Private room with shared bath"></div>
+            <div class="form-group"><label class="form-label">Room type</label><input class="form-input" id="et-meta-room-type" placeholder="e.g. 1 suite · 2 guests, or Whole villa · 8 guests"></div>
           </div>
           <div class="form-group"><label class="form-label">Must-haves <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· comma-separated</span></label><input class="form-input" id="et-meta-accom-musthaves" placeholder="e.g. Central location, Wifi, Quiet street"></div>
         </div>
@@ -6582,7 +6571,6 @@ function editTraveler(id) {
   s('et-meta-daily-spend',      m.daily_spend_per_pax_eur || '')
   s('et-meta-hotel-night',      m.hotel_budget_per_night_eur || '')
   s('et-meta-booking-auth',     m.booking_authority || '')
-  s('et-meta-accom-type',       m.accommodation_type || '')
   s('et-meta-room-type',        m.room_type || '')
   s('et-meta-accom-musthaves',  arrToCsv(m.accommodation_musthaves))
   s('et-meta-dietary',          m.dietary_restrictions || '')
@@ -6687,7 +6675,6 @@ async function saveTravelerEdit() {
   set(patch, 'daily_spend_per_pax_eur',           num(g('et-meta-daily-spend')))
   set(patch, 'hotel_budget_per_night_eur',        num(g('et-meta-hotel-night')))
   set(patch, 'booking_authority',                 g('et-meta-booking-auth') || undefined)
-  set(patch, 'accommodation_type',                g('et-meta-accom-type') || undefined)
   set(patch, 'room_type',                         g('et-meta-room-type')?.trim() || undefined)
   set(patch, 'accommodation_musthaves',           csvToArr(g('et-meta-accom-musthaves')))
   set(patch, 'dietary_restrictions',              g('et-meta-dietary') || undefined)
