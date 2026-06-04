@@ -445,13 +445,13 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
         </div>
 
         <div class="field">
-          <label class="label" for="city" data-i18n="apply.cityLabel">City you're based in</label>
+          <label class="label" for="city" data-i18n="apply.cityLabel">Region you're based in</label>
           <select class="input" id="city" name="city" required onchange="onCityChange()">
             <!-- Populated by JS based on language -->
           </select>
           <div id="city-other-wrap" style="display:none;margin-top:10px;">
             <input class="input" id="city-other" type="text"
-                   placeholder="Saisissez votre ville" data-i18n-ph="apply.cityOtherPh"
+                   placeholder="Saisissez votre région" data-i18n-ph="apply.cityOtherPh"
                    autocomplete="address-level2" maxlength="40">
           </div>
         </div>
@@ -623,8 +623,8 @@ const APPLY_I18N = {
     'apply.pw.strong':'Strong password.',
     'apply.showPassword':'Show password',
     'apply.hidePassword':'Hide password',
-    'apply.cityLabel':"City you're based in",
-    'apply.cityOtherPh':'Type your city in English or French',
+    'apply.cityLabel':"Region you're based in",
+    'apply.cityOtherPh':'Type your region in English or French',
     'apply.depthLabel':'Your connection to France',
     'apply.depth.ph':'— Select one —',
     'apply.depth.native':'French native / grew up in France',
@@ -657,8 +657,8 @@ const APPLY_I18N = {
     'apply.success.checkEmail':'Watch your inbox',
     'err.name':'Please enter your full name',
     'err.email':'Please enter a valid email',
-    'err.city':'Please select your city',
-    'err.cityOther':'Please type your city',
+    'err.city':'Please select your region',
+    'err.cityOther':'Please type your region',
     'err.depth':'Please pick your connection to France',
     'err.lang':'Please pick at least one language',
     'err.heard':'Please tell us where you heard about Journey Junction',
@@ -699,8 +699,8 @@ const APPLY_I18N = {
     'apply.pw.strong':'Mot de passe robuste.',
     'apply.showPassword':'Afficher le mot de passe',
     'apply.hidePassword':'Masquer le mot de passe',
-    'apply.cityLabel':'Ville où vous résidez',
-    'apply.cityOtherPh':'Saisissez votre ville',
+    'apply.cityLabel':'Région où vous résidez',
+    'apply.cityOtherPh':'Saisissez votre région',
     'apply.depthLabel':'Votre lien avec la France',
     'apply.depth.ph':'— Sélectionnez —',
     'apply.depth.native':'Français de naissance / a grandi en France',
@@ -733,8 +733,8 @@ const APPLY_I18N = {
     'apply.success.checkEmail':'Surveillez votre boîte de réception',
     'err.name':'Veuillez saisir votre nom complet',
     'err.email':'Veuillez saisir une adresse e-mail valide',
-    'err.city':'Veuillez sélectionner votre ville',
-    'err.cityOther':'Veuillez saisir votre ville',
+    'err.city':'Veuillez sélectionner votre région',
+    'err.cityOther':'Veuillez saisir votre région',
     'err.depth':'Veuillez indiquer votre lien avec la France',
     'err.lang':'Veuillez choisir au moins une langue',
     'err.heard':'Dites-nous comment vous avez connu Journey Junction',
@@ -750,15 +750,15 @@ const APPLY_I18N = {
 
 const HERO_IMG = 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=1600&q=80&auto=format&fit=crop'
 
-// Major French cities a planner might be based in (alphabetical).
-// The canonical (French) name is both the stored value and the label —
-// no transliteration needed since the names are the same in FR + EN.
+// French regions a planner might be based in. Mirrors PREFECTURES_PROFILE in
+// dashboard.html (13 metropolitan + 5 overseas) so the value stored at
+// application time matches the planner-profile region dropdown exactly.
+// Same name in FR + EN — no transliteration needed.
 const FRENCH_CITIES = [
-  'Paris','Marseille','Lyon','Toulouse','Nice','Nantes','Strasbourg',
-  'Montpellier','Bordeaux','Lille','Rennes','Reims','Saint-Étienne',
-  'Toulon','Grenoble','Dijon','Angers','Nîmes','Aix-en-Provence',
-  'Saint-Malo','Mont-Saint-Michel','Avignon','Annecy','Cannes',
-  'Colmar','Biarritz','La Rochelle','Tours','Versailles'
+  'Île-de-France','Auvergne-Rhône-Alpes','Bourgogne-Franche-Comté','Bretagne',
+  'Centre-Val de Loire','Corse','Grand Est','Hauts-de-France','Normandie',
+  'Nouvelle-Aquitaine','Occitanie','Pays de la Loire',"Provence-Alpes-Côte d'Azur",
+  'Guadeloupe','Martinique','Guyane','La Réunion','Mayotte'
 ]
 const CITY_OPTIONS = {
   en: [...FRENCH_CITIES.map(c => ({ value:c, label:c })), { value:'Other', label:'Other' }],
@@ -769,7 +769,7 @@ function renderCityOptions(lang){
   const sel = document.getElementById('city')
   if (!sel) return
   const prev = sel.value
-  const placeholder = (lang === 'fr') ? '— Sélectionnez votre ville —' : '— Select your city —'
+  const placeholder = (lang === 'fr') ? '— Sélectionnez votre région —' : '— Select your region —'
   const list = CITY_OPTIONS[lang] || CITY_OPTIONS.en
   sel.innerHTML = '<option value="">' + placeholder + '</option>' +
     list.map(c => `<option value="${c.value}">${c.label}</option>`).join('')
