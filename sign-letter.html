@@ -12,16 +12,16 @@
   --green:#1a7a5e; --green-d:#0f5240; --amber:#b87333; --border:rgba(0,0,0,0.08); --border-med:rgba(0,0,0,0.18);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;padding:40px 20px;line-height:1.7;}
+body{font-family:'DM Sans','Helvetica Neue',Arial,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;padding:40px 20px;line-height:1.7;}
 .wrap{max-width:720px;margin:0 auto;}
 .card{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:36px 40px;box-shadow:0 4px 20px -8px rgba(0,0,0,0.10);}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:24px;}
 .brand img{width:36px;height:36px;border-radius:50%;}
-.brand-name{font-family:Georgia,'Noto Serif JP',serif;font-size:22px;color:var(--ink);}
+.brand-name{font-family:Georgia,serif;font-size:22px;color:var(--ink);}
 .brand-name em{color:var(--green);font-style:italic;}
-.title{font-family:Georgia,'Noto Serif JP',serif;font-size:24px;color:var(--ink);margin-bottom:6px;}
+.title{font-family:Georgia,serif;font-size:24px;color:var(--ink);margin-bottom:6px;}
 .subtitle{font-size:13px;color:var(--ink-3);margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:18px;}
-h3{font-family:'Noto Serif JP',Georgia,serif;font-size:17px;color:var(--ink);margin:22px 0 10px;font-weight:600;}
+h3{font-family:Georgia,serif;font-size:17px;color:var(--ink);margin:22px 0 10px;font-weight:600;}
 p{color:var(--ink-2);font-size:14px;margin-bottom:10px;}
 ul{padding-left:20px;margin-bottom:10px;}
 li{color:var(--ink-2);font-size:14px;margin-bottom:6px;}
@@ -155,16 +155,16 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
       </div>
     </div>
 
-    <div class="foot">Journey Junction · support@thejourneywise.com</div>
+    <div class="foot">Journey Junction · hello@thejourneyjunction.co.uk</div>
   </div>
 
   <!-- Already-signed state -->
   <div class="card" id="signed-card" style="display:none;">
     <div class="signed-state">
       <div class="check">✓</div>
-      <h2 style="font-family:'Noto Serif JP',Georgia,serif;font-size:22px;margin-bottom:10px;">Contrat signé</h2>
+      <h2 style="font-family:Georgia,serif;font-size:22px;margin-bottom:10px;">Contrat signé</h2>
       <p style="color:var(--ink-2);font-size:14px;">Ce contrat a déjà été signé. Nous vous remercions.</p>
-      <p style="color:var(--ink-3);font-size:12px;margin-top:14px;">Si vous avez besoin d'une copie, veuillez nous contacter à l'adresse <a href="mailto:support@thejourneywise.com" style="color:var(--green);">support@thejourneywise.com</a>.</p>
+      <p style="color:var(--ink-3);font-size:12px;margin-top:14px;">Si vous avez besoin d'une copie, veuillez nous contacter à l'adresse <a href="mailto:hello@thejourneyjunction.co.uk" style="color:var(--green);">hello@thejourneyjunction.co.uk</a>.</p>
     </div>
   </div>
 
@@ -172,7 +172,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
   <div class="card" id="error-card" style="display:none;">
     <div class="signed-state">
       <div class="check" style="background:rgba(192,57,43,0.10);color:#a83b2d;">!</div>
-      <h2 style="font-family:'Noto Serif JP',Georgia,serif;font-size:22px;margin-bottom:10px;" id="err-title">Contrat introuvable</h2>
+      <h2 style="font-family:Georgia,serif;font-size:22px;margin-bottom:10px;" id="err-title">Contrat introuvable</h2>
       <p style="color:var(--ink-2);font-size:14px;" id="err-detail">Le lien de signature est invalide ou a expiré. Veuillez contacter le support.</p>
     </div>
   </div>

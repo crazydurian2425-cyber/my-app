@@ -299,7 +299,7 @@ if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
 
 function t(k){ return TM_I18N[TM_LANG]?.[k] ?? TM_I18N.en[k] ?? k }
 function applyLang(){
-  document.documentElement.lang = TM_LANG
+  document.documentElement.lang = (TM_LANG === 'ja') ? 'fr' : TM_LANG
   // Order matters: set innerHTML first, then textContent on elements that
   // only have data-i18n (not data-i18n-html). :not() prevents textContent
   // from wiping an innerHTML we just set on dual-tagged elements.

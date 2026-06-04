@@ -217,7 +217,7 @@ a:hover{color:var(--green-d);}
 
     <div class="contact-card">
       <h3 data-i18n-html="contact.title">Contact</h3>
-      <p data-i18n-html="contact.body">Questions about these Terms? Reach out via the <a href="support.html">in-app support chat</a>, or email <strong>support@thejourneywise.com</strong>.</p>
+      <p data-i18n-html="contact.body">Questions about these Terms? Reach out via the <a href="support.html">in-app support chat</a>, or email <strong>hello@thejourneyjunction.co.uk</strong>.</p>
     </div>
 
     <div class="contact-card" style="margin-top:20px;font-size:12.5px;line-height:1.6;color:var(--ink-3);">
@@ -290,7 +290,7 @@ const TM_I18N = {
     's11.title':'Governing law',
     's11.p1':'These Terms are governed by the laws of <strong>France</strong>. Any dispute not resolved informally will be submitted to the exclusive jurisdiction of the Paris Commercial Court (Tribunal de commerce de Paris).',
     'contact.title':'Contact',
-    'contact.body':'Questions about these Terms? Reach out via the <a href="support.html">in-app support chat</a>, or email <strong>support@thejourneywise.com</strong>.',
+    'contact.body':'Questions about these Terms? Reach out via the <a href="support.html">in-app support chat</a>, or email <strong>hello@thejourneyjunction.co.uk</strong>.',
     'company.title':'Company information',
     'company.body':'<strong>Journey Junction Ltd</strong><br>Company number 15791277 · Incorporated 20 June 2024<br>Registered office: Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>Director: Midhun Peter'
   },
@@ -350,7 +350,7 @@ const TM_I18N = {
     's11.title':'Droit applicable',
     's11.p1':'Les présentes Conditions sont régies par le droit <strong>français</strong>. Tout litige non résolu à l\'amiable sera soumis à la compétence exclusive du Tribunal de commerce de Paris.',
     'contact.title':'Contact',
-    'contact.body':'Des questions sur les présentes Conditions ? Contactez-nous via le <a href="support.html">chat d\'assistance intégré à l\'application</a>, ou par e-mail à <strong>support@thejourneywise.com</strong>.',
+    'contact.body':'Des questions sur les présentes Conditions ? Contactez-nous via le <a href="support.html">chat d\'assistance intégré à l\'application</a>, ou par e-mail à <strong>hello@thejourneyjunction.co.uk</strong>.',
     'company.title':'Informations sur la société',
     'company.body':'<strong>Journey Junction Ltd</strong><br>Numéro de société : 15791277 · Constituée le 20 juin 2024<br>Siège social : Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, Royaume-Uni<br>Directeur : Midhun Peter'
   }
@@ -361,7 +361,7 @@ if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
 
 function t(k){ return TM_I18N[TM_LANG]?.[k] ?? TM_I18N.en[k] ?? k }
 function applyLang(){
-  document.documentElement.lang = TM_LANG
+  document.documentElement.lang = (TM_LANG === 'ja') ? 'fr' : TM_LANG
   // Order matters: set innerHTML first, then textContent on elements that
   // only have data-i18n (not data-i18n-html). :not() prevents textContent
   // from wiping an innerHTML we just set on dual-tagged elements.

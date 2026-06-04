@@ -316,7 +316,7 @@ async function handleSendApproval(request) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: from || 'Journey Junction <support@thejourneywise.com>',
+      from: from || 'Journey Junction <hello@thejourneyjunction.co.uk>',
       to,
       subject,
       html,
@@ -397,24 +397,26 @@ async function handleSendEmploymentLetter(request, url) {
   // 2. Build the signing link (origin from the request URL)
   const signUrl = `${url.protocol}//${url.host}/sign-letter.html?token=${row.signing_token}`
 
-  // 3. Email the planner (Resend) — Japanese only
+  // 3. Email the planner (Resend) — French (primary) + English
   const emailHtml = `
-    <div style="font-family:'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f5f4f0;">
+    <div style="font-family:'DM Sans','Helvetica Neue',Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f5f4f0;">
       <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid rgba(0,0,0,0.08);">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
           <img src="https://thejourneywise.com/jj.jpg?v=2" alt="JJ" width="32" height="32" style="border-radius:50%;display:block;">
           <div style="font-size:20px;color:#1a1a18;font-family:Georgia,serif;">Journey<span style="color:#1a7a5e;font-style:italic;">Junction</span></div>
         </div>
-        <h2 style="font-family:'Noto Serif JP',Georgia,serif;color:#1a1a18;margin:0 0 14px;">業務委託契約書のご確認</h2>
-        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 12px;">${escapeForEmail(planner_name)} 様</p>
-        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 12px;">この度はJourney Junctionのトラベルプランナーにご応募・ご登録いただき、誠にありがとうございます。</p>
-        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 22px;">下記リンクより業務委託契約書をご確認のうえ、ご署名・ご返送をお願いいたします。本リンクはお客様専用のため、第三者と共有しないようご注意ください。</p>
+        <h2 style="font-family:Georgia,serif;color:#1a1a18;margin:0 0 14px;">Confirmez votre contrat de prestation</h2>
+        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 12px;">Bonjour ${escapeForEmail(planner_name)},</p>
+        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 12px;">Merci de votre candidature et de votre inscription en tant que planificateur de voyages chez Journey Junction.</p>
+        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 22px;">Veuillez consulter votre contrat de prestation via le lien ci-dessous, puis le signer et nous le retourner. Ce lien vous est personnel — merci de ne pas le partager.</p>
         <p style="text-align:center;margin:28px 0;">
-          <a href="${signUrl}" style="display:inline-block;padding:12px 28px;background:#1a7a5e;color:#fff;text-decoration:none;border-radius:8px;font-family:'Noto Sans JP','DM Sans',sans-serif;font-weight:600;font-size:14px;">契約書を確認・署名する</a>
+          <a href="${signUrl}" style="display:inline-block;padding:12px 28px;background:#1a7a5e;color:#fff;text-decoration:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;">Consulter et signer le contrat</a>
         </p>
-        <p style="color:#7a7a74;line-height:1.6;font-size:12px;margin:22px 0 0;text-align:center;">ボタンが動作しない場合は、下記のURLをコピーしてブラウザに貼り付けてください：<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
+        <p style="color:#7a7a74;line-height:1.6;font-size:12px;margin:22px 0 0;">Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
+        <hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:24px 0;">
+        <p style="color:#9a9890;line-height:1.6;font-size:12px;margin:0;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a travel planner. Please review your service agreement using the button above, then sign and return it. This link is personal to you; please don't share it.</p>
       </div>
-      <p style="text-align:center;color:#9a9890;font-size:11px;margin-top:18px;">Journey Junction · support@thejourneywise.com</p>
+      <p style="text-align:center;color:#9a9890;font-size:11px;margin-top:18px;">Journey Junction · hello@thejourneyjunction.co.uk</p>
     </div>
   `
   const resendResp = await fetch('https://api.resend.com/emails', {
@@ -424,9 +426,9 @@ async function handleSendEmploymentLetter(request, url) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: 'Journey Junction <support@thejourneywise.com>',
+      from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
       to: planner_email,
-      subject: '【Journey Junction】業務委託契約書のご確認',
+      subject: 'Journey Junction — Votre contrat de prestation à signer',
       html: emailHtml
     })
   })
@@ -567,8 +569,8 @@ async function handleSignLetter(request, url) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Journey Junction <support@thejourneywise.com>',
-        to: 'support@thejourneywise.com',
+        from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
+        to: 'hello@thejourneyjunction.co.uk',
         subject: `Engagement letter signed by ${letter.planner_name}`,
         html
       })
@@ -595,7 +597,7 @@ function safeEqual(a, b) {
 }
 
 // POST /api/translate — Cloudflare Workers AI translation for the CS console.
-// Body: { text, source_lang?, target_lang? }   (defaults: japanese -> english)
+// Body: { text, source_lang?, target_lang? }   (defaults: french -> english)
 // Returns: { translated }
 // Same-origin only: gated by isProxyAuthorized which already accepts a
 // Referer from /supercs999 or admin Basic Auth.
@@ -615,7 +617,7 @@ async function handleTranslate(request, env) {
   if (!text) return jsonResp(400, { error: 'Missing text' })
   if (text.length > 5000) return jsonResp(413, { error: 'Text too long (max 5000 chars)' })
 
-  const source_lang = String(body?.source_lang || 'japanese').toLowerCase()
+  const source_lang = String(body?.source_lang || 'french').toLowerCase()
   const target_lang = String(body?.target_lang || 'english').toLowerCase()
   try {
     // m2m100 handles many language pairs; expects long-form names like 'japanese'.

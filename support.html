@@ -670,7 +670,7 @@ function supT(key, fb){
 }
 function SUP_I18N_PREFILL(k){ return supT('prefill.' + k.replace(/^qa\./,'')) }
 function supApplyLang(){
-  document.documentElement.lang = (SUP_LANG === 'ja') ? 'ja' : 'en'
+  document.documentElement.lang = (SUP_LANG === 'ja') ? 'fr' : 'en'
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const k = el.getAttribute('data-i18n')
     el.textContent = supT(k, el.textContent)

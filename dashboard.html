@@ -9415,7 +9415,7 @@ function applyLang(lang){
   if (lang !== 'en' && lang !== 'ja') lang = 'en'
   TM_LANG = lang
   try { localStorage.setItem('jj_planner_lang', lang) } catch(e){}
-  document.documentElement.lang = (lang === 'ja') ? 'ja' : 'en'
+  document.documentElement.lang = (lang === 'ja') ? 'fr' : 'en'
 
   // text nodes
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -11553,7 +11553,7 @@ function updateBriefCard(plan, trav) {
             </a>
             <div style="display:flex;align-items:center;gap:8px;color:var(--text-2);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              <a href="mailto:support@thejourneywise.com" style="color:var(--text-2);text-decoration:none;">support@thejourneywise.com</a>
+              <a href="mailto:hello@thejourneyjunction.co.uk" style="color:var(--text-2);text-decoration:none;">hello@thejourneyjunction.co.uk</a>
             </div>
           </div>
         </div>`
@@ -13383,7 +13383,7 @@ async function openPlanSummary(plan) {
         </a>
         <div style="display:flex;align-items:center;gap:8px;color:rgba(31,28,22,0.7);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          <a href="mailto:support@thejourneywise.com" style="color:rgba(31,28,22,0.7);text-decoration:none;">support@thejourneywise.com</a>
+          <a href="mailto:hello@thejourneyjunction.co.uk" style="color:rgba(31,28,22,0.7);text-decoration:none;">hello@thejourneyjunction.co.uk</a>
         </div>
       </div>
     </div>` : ''
@@ -16246,8 +16246,8 @@ function googlePhotoUrl(photoName, maxWidthPx = 120) {
 // "Malaysia", "United Kingdom"). Fallback is "$" — better to show *some*
 // price tier than to fall back to nothing.
 const CURRENCY_BY_COUNTRY = {
-  'Japan':'€','Malaysia':'RM','Singapore':'S$','Thailand':'฿','Indonesia':'Rp',
-  'Philippines':'₱','Vietnam':'₫','South Korea':'₩','Korea':'₩','China':'€',
+  'Japan':'¥','Malaysia':'RM','Singapore':'S$','Thailand':'฿','Indonesia':'Rp',
+  'Philippines':'₱','Vietnam':'₫','South Korea':'₩','Korea':'₩','China':'¥',
   'Hong Kong':'HK$','Taiwan':'NT$','India':'₹',
   'United Kingdom':'£','UK':'£','Ireland':'€',
   'France':'€','Germany':'€','Italy':'€','Spain':'€','Netherlands':'€',
