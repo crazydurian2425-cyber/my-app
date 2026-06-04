@@ -534,7 +534,7 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
       <span style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;">Language</span>
       <div style="display:inline-flex;gap:0;padding:2px;background:var(--cream);border:1px solid var(--border-med);border-radius:99px;">
         <button id="qr-mgr-en" onclick="setQrEditLang('en')" style="padding:4px 14px;border:none;background:var(--ink);color:#fff;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">EN</button>
-        <button id="qr-mgr-ja" onclick="setQrEditLang('ja')" style="padding:4px 14px;border:none;background:transparent;color:var(--ink-3);border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">日本語</button>
+        <button id="qr-mgr-ja" onclick="setQrEditLang('ja')" style="padding:4px 14px;border:none;background:transparent;color:var(--ink-3);border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Français</button>
       </div>
       <span id="qr-mgr-count" style="font-size:11px;color:var(--ink-3);margin-left:auto;">—</span>
     </div>
@@ -1770,22 +1770,22 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🎉 Plan approved', text: 'Plan approved! Nicely done {first_name}. The commission is logged and will be released to your wallet once the whole set is approved.' },
   ],
   ja: [
-    { label: '👋 ご挨拶', text: '{first_name}さん、こんにちは。本日はどのようなご用件でしょうか？' },
-    { label: '🏦 保証金の振込先', text: '{first_name}さん、保証金のお振込先は以下の通りです：\n\n銀行：[銀行名]\n口座番号：[口座番号]\n口座名義：Journey Junction\n振込照会：BOND-{set_num}-{planner_short}\n\nお振込後、こちらに明細のスクリーンショットをお送りください。確認後すぐにご連絡いたします。' },
-    { label: '💳 保証金の確認中', text: '{first_name}さん、承知いたしました。お振込の確認を進めております。営業時間内であれば通常30分以内に確認が完了し、ご連絡いたします。' },
-    { label: '✅ 保証金受領済み', text: '保証金のお振込を確認いたしました。プランのロックを解除しました。引き続きよろしくお願いいたします。' },
-    { label: '💰 出金のご案内', text: '{first_name}さん、€{pending_amt}の出金手続きを進めております。24時間以内にご登録の銀行口座に着金する予定です。' },
-    { label: '💰 出金処理完了', text: '出金処理が完了しました。ご登録の銀行口座への反映には1〜2営業日ほどかかります。' },
-    { label: '📋 セットの確認', text: '{first_name}さん、お住まいの都市で対応可能なセットを確認し、追ってアサインいたします。' },
-    { label: '⏰ 延長日数の確認', text: '{first_name}さん、承知いたしました。何日間の延長をご希望でしょうか？理由も簡単に共有いただけるとログに記録できます。' },
-    { label: '⏰ 延長を承認', text: '締切を延長いたしました。更新後の日付はダッシュボードでご確認いただけます。' },
-    { label: '🔍 詳細をお願いします', text: '恐れ入りますが、もう少し詳しく教えていただけますか？特定のプランについてであれば、プラン番号と旅行者名を教えていただけると助かります。' },
-    { label: '📸 スクリーンショットをお願いします', text: 'スクリーンショットを共有いただけますか？チャット画面の📎アイコンから画像を添付できます。' },
-    { label: '🙏 ありがとうございました', text: 'ご連絡ありがとうございました。他にご質問があればいつでもどうぞ。' },
-    { label: '📨 確認待ちに登録', text: '{first_name}さん、ありがとうございます。セット#{set_num}を管理者の確認待ちリストに登録しました。各プランの承認通知は通常24〜48時間以内にお送りします。引き続きよろしくお願いいたします。' },
-    { label: '✨ 新しいセット割り当て', text: '{first_name}さん、新しいセットを割り当てました。ダッシュボードで旅行者ブリーフをご確認ください。旅行者情報に不明点があればプラン作成前にお知らせください。' },
-    { label: '📝 修正のご案内', text: '{first_name}さん、管理者から一部プランの修正リクエストが入っております。ダッシュボードからプランを開き、コメントをご確認のうえ修正・再提出をお願いいたします。ご不明点があればいつでもご連絡ください。' },
-    { label: '🎉 プラン承認', text: 'プランが承認されました。お見事です、{first_name}さん。コミッションは記録され、セット全体が承認された時点でウォレットに反映されます。' },
+    { label: '👋 Salutation', text: 'Bonjour {first_name}, comment puis-je vous aider aujourd\'hui ?' },
+    { label: '🏦 Coordonnées pour la caution', text: 'Bonjour {first_name}, voici les coordonnées bancaires pour le versement de la caution :\n\nBanque : [Nom de la banque]\nNuméro de compte : [Numéro de compte]\nTitulaire du compte : Journey Junction\nRéférence du virement : BOND-{set_num}-{planner_short}\n\nUne fois le virement effectué, merci de nous envoyer ici une capture d\'écran du justificatif. Nous vous recontacterons dès vérification.' },
+    { label: '💳 Vérification de la caution', text: 'C\'est bien noté, {first_name}. Nous procédons à la vérification de votre virement. Pendant les heures ouvrées, la vérification est généralement terminée sous 30 minutes et nous vous recontacterons.' },
+    { label: '✅ Caution reçue', text: 'Nous avons bien confirmé le versement de votre caution. Vos plans ont été déverrouillés. Merci et bonne continuation.' },
+    { label: '💰 Information sur le retrait', text: 'Bonjour {first_name}, nous traitons votre retrait de {pending_amt} €. La somme devrait être créditée sur votre compte bancaire enregistré sous 24 heures.' },
+    { label: '💰 Retrait effectué', text: 'Le traitement de votre retrait est terminé. Comptez environ 1 à 2 jours ouvrés pour que la somme apparaisse sur votre compte bancaire enregistré.' },
+    { label: '📋 Vérification des sets', text: 'Bonjour {first_name}, je vérifie les sets disponibles dans votre ville et je vous en attribue un sous peu.' },
+    { label: '⏰ Combien de jours ?', text: 'Pas de problème {first_name} — de combien de jours supplémentaires avez-vous besoin ? Pourriez-vous aussi nous indiquer brièvement la raison afin que nous puissions la consigner ?' },
+    { label: '⏰ Prolongation accordée', text: 'C\'est fait — nous avons prolongé votre échéance. La nouvelle date figure sur votre tableau de bord.' },
+    { label: '🔍 Plus de détails svp', text: 'Pourriez-vous nous donner un peu plus de détails ? S\'il s\'agit d\'un plan en particulier, le numéro du plan et le nom du voyageur nous aideraient beaucoup.' },
+    { label: '📸 Envoyez une capture svp', text: 'Pourriez-vous partager une capture d\'écran ? Il vous suffit de cliquer sur l\'icône 📎 dans le chat pour joindre une image.' },
+    { label: '🙏 Merci', text: 'Merci de nous avoir contactés — n\'hésitez pas si vous avez besoin d\'autre chose !' },
+    { label: '📨 Mis en file de validation', text: 'C\'est noté {first_name}, merci — le set #{set_num} est désormais dans la file de validation de l\'administrateur. Vous serez notifié au fur et à mesure de l\'approbation de chaque plan (généralement sous 24 à 48 heures). Merci pour votre excellent travail !' },
+    { label: '✨ Nouveau set attribué', text: 'Bonne nouvelle {first_name} — un nouveau set vous a été attribué. Consultez les briefs des voyageurs sur votre tableau de bord. Prévenez-nous si certaines informations voyageur semblent incorrectes avant de commencer la planification.' },
+    { label: '📝 Révision demandée', text: 'C\'est noté {first_name} — l\'administrateur a signalé certains plans à réviser avec des commentaires. Ouvrez le plan depuis votre tableau de bord pour consulter la demande de révision, mettez-le à jour puis soumettez-le à nouveau. Contactez-nous si quoi que ce soit n\'est pas clair.' },
+    { label: '🎉 Plan approuvé', text: 'Plan approuvé ! Beau travail {first_name}. La commission est enregistrée et sera versée sur votre portefeuille une fois l\'ensemble du set approuvé.' },
   ]
 }
 // Current language for quick replies — persisted per agent session
@@ -1942,28 +1942,28 @@ loadQuickReplies()
 // after a CS agent reorders / inserts / deletes chips via the Manage modal.
 const PLANNER_INTENT_MATCHERS = [
   { key: 'bond_bank_details', keywords: [
-    'help paying the bond','help with the bond payment','need help paying','bond details','保証金支払い','保証金の支払い','保証金についてサポート'
+    'help paying the bond','help with the bond payment','need help paying','bond details','payer la caution','paiement de la caution','aide pour la caution','versement de la caution'
   ] },
   { key: 'verifying_bond', keywords: [
-    'paid the bond','please confirm my payment','confirm my payment','sent the payment','transfer done','保証金を支払いました','振込完了','支払いを確認','確認をお願い'
+    'paid the bond','please confirm my payment','confirm my payment','sent the payment','transfer done','caution payée','virement effectué','virement terminé','confirmer mon paiement','merci de confirmer'
   ] },
   { key: 'payout_update', keywords: [
-    'update on the payout','payout status','when is my payout','check payout','支払いの状況','出金状況','支払いはいつ','バッチが承認されました'
+    'update on the payout','payout status','when is my payout','check payout','statut du paiement','statut du retrait','où en est mon retrait','quand mon retrait','lot approuvé'
   ] },
   { key: 'checking_sets', keywords: [
-    'assign me a new set','take on a new set','assign me one','ready to take','request a new set','request a set','新しいセット','次のセット','セットをアサイン','セットを引き受ける'
+    'assign me a new set','take on a new set','assign me one','ready to take','request a new set','request a set','nouveau set','prochain set','attribuer un set','prendre un set'
   ] },
   { key: 'how_many_days', keywords: [
-    'request a deadline extension','deadline extension','need more time','extend my deadline','締切の延長','期限の延長','延長をお願い'
+    'request a deadline extension','deadline extension','need more time','extend my deadline','prolongation du délai','prolonger le délai','report de l\'échéance','demande de prolongation'
   ] },
   { key: 'please_screenshot', keywords: [
-    'screenshot','picture','image','proof','スクリーンショット','画像','証拠'
+    'screenshot','picture','image','proof','capture d\'écran','capture','justificatif','preuve'
   ] },
   { key: 'queued_for_review', keywords: [
-    'submitted all 15 plans','queue this for admin review','ready for review','queue for review','15プランを提出','管理者の確認をお願い','レビューをお願い'
+    'submitted all 15 plans','queue this for admin review','ready for review','queue for review','15 plans soumis','validation de l\'administrateur','demande de validation','prêt pour validation'
   ] },
   { key: 'revision_noted', keywords: [
-    'revision','revise','revisions','please fix','what does the admin want','修正リクエスト','修正をお願い','どう修正'
+    'revision','revise','revisions','please fix','what does the admin want','réviser','corriger','que veut l\'administrateur','comment corriger'
   ] },
 ]
 
@@ -1990,10 +1990,10 @@ function renderQuickReplies() {
   if (!box) return
   const suggestedIdx = detectIncomingIntent()
 
-  // Language toggle pill (EN / 日本語) — lives at the front of the bar
+  // Language toggle pill (EN / Français) — lives at the front of the bar
   const langPill = `<div style="display:inline-flex;gap:0;padding:2px;background:var(--cream);border:1px solid var(--border-med);border-radius:99px;margin-right:6px;flex-shrink:0;">
     <button onclick="setQuickReplyLang('en')" title="English quick replies" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='en'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='en'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.04em;">EN</button>
-    <button onclick="setQuickReplyLang('ja')" title="日本語のクイック返信" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='ja'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='ja'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">日本語</button>
+    <button onclick="setQuickReplyLang('ja')" title="Réponses rapides en français" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='ja'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='ja'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Français</button>
   </div>
   <button onclick="openQuickReplyEditor()" title="Add or edit quick replies" style="padding:3px 10px;background:transparent;border:1px solid var(--border-med);border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;color:var(--ink-3);font-family:'DM Sans',sans-serif;margin-right:6px;flex-shrink:0;">⚙ Manage</button>`
 
@@ -2005,7 +2005,7 @@ function renderQuickReplies() {
     const color  = isSuggested ? 'var(--green-dark,#0f5240)' : 'var(--ink-2)'
     const weight = isSuggested ? '600' : '400'
     const ring   = isSuggested ? 'box-shadow:0 0 0 3px rgba(26,122,94,0.08);' : ''
-    const hint   = isSuggested ? `<span style="font-size:9px;opacity:0.85;margin-left:4px;font-weight:700;letter-spacing:0.05em;">${CS_QR_LANG==='ja'?'· おすすめ':'· SUGGESTED'}</span>` : ''
+    const hint   = isSuggested ? `<span style="font-size:9px;opacity:0.85;margin-left:4px;font-weight:700;letter-spacing:0.05em;">${CS_QR_LANG==='ja'?'· SUGGÉRÉ':'· SUGGESTED'}</span>` : ''
     return `<button onclick="applyQuickReply(${i})" style="padding:5px 10px;background:${bg};border:1px solid ${border};border-radius:99px;font-size:11px;cursor:pointer;color:${color};font-weight:${weight};font-family:'DM Sans',sans-serif;white-space:nowrap;${ring}" onmouseover="this.style.background='var(--green-light)';this.style.borderColor='var(--green-mid)'" onmouseout="this.style.background='${bg}';this.style.borderColor='${border}'">${escapeHtml(q.label)}${hint}</button>`
   }).join('')
 
@@ -2057,7 +2057,7 @@ let editingMsgId = null
 // ── TRANSLATION (JA → EN) — Cloudflare Workers AI via /api/translate.
 // Cached per-message so re-renders from the 3s poller don't lose translations.
 const _msgTranslations = new Map()  // msg_id -> { translated, state, error }
-const _hasJapanese = (s) => /[぀-ゟ゠-ヿ一-鿿]/.test(s || '')
+const _hasJapanese = (s) => /[\u3040-\u30ff\u4e00-\u9fff]/.test(s || '')
 
 async function csTranslateMessage(msgId){
   const m = activeMessages.find(x => x.id === msgId)

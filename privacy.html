@@ -88,7 +88,7 @@ a:hover{color:var(--green-d);}
   <div class="lang-pill" role="group" aria-label="Language">
     <button type="button" class="active" data-lang="ja" onclick="setLang('ja')">
       <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="30" fill="#fff"/><circle cx="30" cy="15" r="9" fill="#BC002D"/></svg>
-      <span>日本語</span>
+      <span>Français</span>
     </button>
     <button type="button" data-lang="en" onclick="setLang('en')">
       <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><clipPath id="uk-p"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#uk-p)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
@@ -169,7 +169,7 @@ a:hover{color:var(--green-d);}
     <div class="contact-card">
       <h3 data-i18n-html="contact.title">Privacy contact</h3>
       <p data-i18n-html="contact.body">For data requests, deletion, or any privacy question, reach us via <a href="support.html">in-app support chat</a> or email <strong>privacy@journeyjunction.com</strong>.</p>
-      <p data-i18n-html="contact.body2" style="margin-top:10px;font-size:13px;color:var(--ink-3);">Regulatory authority: <strong>Personal Information Protection Commission (個人情報保護委員会)</strong> · <a href="https://www.ppc.go.jp/en/" target="_blank" rel="noopener">ppc.go.jp</a></p>
+      <p data-i18n-html="contact.body2" style="margin-top:10px;font-size:13px;color:var(--ink-3);">Regulatory authority: <strong>Personal Information Protection Commission (PPC)</strong> · <a href="https://www.ppc.go.jp/en/" target="_blank" rel="noopener">ppc.go.jp</a></p>
     </div>
 
     <div class="contact-card" style="margin-top:20px;font-size:12.5px;line-height:1.6;color:var(--ink-3);">
@@ -235,62 +235,62 @@ const TM_I18N = {
     's10.p1':'We may update this policy from time to time. Material changes will be posted on your dashboard at least 14 days before they take effect. The "Last updated" date at the top of this page always reflects the current version.',
     'contact.title':'Privacy contact',
     'contact.body':'For data requests, deletion, or any privacy question, reach us via <a href="support.html">in-app support chat</a> or email <strong>privacy@journeyjunction.com</strong>.',
-    'contact.body2':'Regulatory authority: <strong>Personal Information Protection Commission (個人情報保護委員会)</strong> · <a href="https://www.ppc.go.jp/en/" target="_blank" rel="noopener">ppc.go.jp</a>',
+    'contact.body2':'Regulatory authority: <strong>Personal Information Protection Commission (PPC)</strong> · <a href="https://www.ppc.go.jp/en/" target="_blank" rel="noopener">ppc.go.jp</a>',
     'company.title':'Data controller',
     'company.body':'<strong>Journey Junction Ltd</strong><br>Company number 15791277 · Incorporated 20 June 2024<br>Registered office: Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>Director: Midhun Peter'
   },
   ja: {
-    back:'戻る',
-    banner:'<strong>下書き版。</strong> 本ポリシーはJourney Junctionの作業版です。公開前に、個人情報保護法（APPI）および国境を越えるデータ規制への準拠について、必ず適格な法律専門家によるレビューを受けてください。',
-    eyebrow:'個人情報の取り扱いについて',
-    title:'プライバシー<em>ポリシー</em>',
-    lastUpdated:'最終更新日：2026年4月23日 · 日本国内運営（APPI適用）',
-    's1.title':'概要',
-    's1.p1':'Journey Junction（以下「当社」）は、日本を訪れる旅行者と旅程プランナーを結ぶマーケットプレイスを運営しています。本ポリシーは、<strong>プランナー</strong>として登録される際に収集する個人情報、その利用目的、お客様の管理方法について説明します。プランナーダッシュボード、サポートチャット、関連サービスの利用に適用されます。',
-    's2.title':'収集する情報',
-    'table.what':'項目','table.why':'目的',
-    'r1.what':'<strong>氏名、メール、電話番号</strong>','r1.why':'アカウント作成、ログイン、サポート連絡、出金確認。',
-    'r2.what':'<strong>都市、言語、得意分野</strong>','r2.why':'適切な旅行者ブリーフとのマッチング。',
-    'r3.what':'<strong>銀行名、口座番号、口座名義</strong>','r3.why':'コミッションおよび返金可能保証金のお支払い。',
-    'r4.what':'<strong>プランのコンテンツ（テキスト、アップロード画像）</strong>','r4.why':'作成対象の旅行者への提供。',
-    'r5.what':'<strong>サポートチャットのメッセージ・添付ファイル</strong>','r5.why':'ご質問への対応および監査記録の保持。',
-    'r6.what':'<strong>ダッシュボードの活動ログ</strong>','r6.why':'不正防止、パフォーマンス測定、デバッグ。',
-    's3.title':'利用目的',
-    's3.l1':'<strong>アカウント運営</strong> — 認証、アサイン済みセットの表示、出金処理。',
-    's3.l2':'<strong>業務マッチング</strong> — 管理者がセット配分時に言語・得意分野を参照。',
-    's3.l3':'<strong>プランの提供</strong> — セットを依頼した旅行者は、承認済みプランを作成者のファーストネームとともに閲覧します。',
-    's3.l4':'<strong>プラットフォームのサポートと保護</strong> — 紛争、不具合、不正報告があった場合のみチャットログを確認します。',
-    's3.p1':'当社はお客様のデータを第三者に販売せず、広告プロファイリングにも使用しません。',
-    's4.title':'共有先',
-    's4.l1':'<strong>旅行者</strong> — あなたのファーストネーム、アバター、当該旅行のために提出したプラン内容を閲覧できます。メール、電話、銀行情報は閲覧されません。',
-    's4.l2':'<strong>Supabase（データベース・認証ホスティング）</strong> — プロフィールデータおよびプランの保管を行う委託先。Supabaseのインフラ上でDPAに基づき保管されます。',
-    's4.l3':'<strong>当社の銀行・決済代行</strong> — コミッション送金に必要な最小限の情報（口座名義、番号、銀行名、金額）のみ受領します。',
-    's4.l4':'<strong>税務当局および法執行機関</strong> — 日本法で要求される場合。',
-    's4.p1':'委託先（例：Supabase）が標準契約条項に基づき国境を越えて運営する範囲を除き、日本国外にデータは移転されません。',
-    's5.title':'保持期間',
-    's5.p1':'<strong>アカウント情報：</strong>アカウントが有効な期間、保持します。退会の場合、個人識別情報は30日以内に削除しますが、監査ログおよび支払記録は日本の税法・会計法の要請により<strong>7年間</strong>保持することがあります。',
-    's5.p2':'<strong>プランのコンテンツ：</strong>旅行者がプランを閲覧できる期間（通常、旅行期間＋180日）保持し、その後アーカイブします。',
-    's5.p3':'<strong>サポートメッセージ：</strong>監査のため2年間保持し、その後削除します。',
-    's6.title':'お客様の権利',
-    's6.p1':'日本の個人情報保護法（APPI）および同等の国際的枠組みに基づき、以下の権利を有します：',
-    's6.l1':'<strong>アクセス権</strong> — 保有する個人情報のコピーをサポートチャット経由で請求できます。',
-    's6.l2':'<strong>訂正権</strong> — ほとんどの項目はプロフィールから直接編集できます。',
-    's6.l3':'<strong>削除権</strong> — サポート連絡にてアカウントおよび関連データの削除を請求できます（§5の保持期間の制約あり）。',
-    's6.l4':'<strong>同意撤回</strong> — 非必須処理への同意をいつでも撤回できます。',
-    's6.l5':'<strong>苦情申立</strong> — 取り扱いに問題があると判断された場合、日本の個人情報保護委員会（PPC）へ苦情を申し立てられます。',
-    's7.title':'クッキーとローカルストレージ',
-    's7.p1':'ログイン状態と設定（言語、通知トグル）の保持のため、ブラウザの<strong>localStorage</strong>を使用します。第三者トラッキングや広告クッキーは使用しません。ブラウザのストレージをクリアするとログアウトされます。',
-    's8.title':'セキュリティ',
-    's8.p1':'業界標準のセキュリティ対策を採用しています：暗号化通信（HTTPS）、Supabaseによる暗号化データベース保管、銀行情報へのアクセスを認可スタッフのみに制限するロールベース制御、アクセスログの定期レビュー。完全に安全なシステムは存在しないため、データに影響する情報漏洩を認知した場合、APPIの要件に従い72時間以内に通知します。',
-    's9.title':'18歳未満の方について',
-    's9.p1':'Journey Junctionは18歳未満の方の利用を想定していません。未成年者から意図的にデータを収集することはありません。18歳未満のユーザーがアカウントを作成していたことを確認した場合、速やかに削除します。',
-    's10.title':'本ポリシーの変更',
-    's10.p1':'本ポリシーは随時更新される場合があります。実質的な変更は、発効の少なくとも14日前にダッシュボードにて告知します。ページ上部の「最終更新日」が常に現行版を示します。',
-    'contact.title':'プライバシーに関するお問い合わせ',
-    'contact.body':'データに関する請求、削除、その他プライバシーに関するご質問は、<a href="support.html">アプリ内サポートチャット</a>またはメール<strong>privacy@journeyjunction.com</strong>までお寄せください。',
-    'contact.body2':'規制当局：<strong>個人情報保護委員会</strong> · <a href="https://www.ppc.go.jp/" target="_blank" rel="noopener">ppc.go.jp</a>',
-    'company.title':'データ管理者',
-    'company.body':'<strong>Journey Junction Ltd</strong><br>会社番号：15791277 ／ 設立日：2024年6月20日<br>登記上の住所：Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>代表者：Midhun Peter'
+    back:'Retour',
+    banner:'<strong>Modèle provisoire.</strong> Cette politique est une version de travail pour Journey Junction. Avant sa mise en ligne, veuillez la faire examiner par un conseil juridique qualifié afin de garantir sa conformité à la loi française sur la protection des données personnelles (APPI) et à toute règle applicable en matière de transferts transfrontaliers de données.',
+    eyebrow:'Comment nous traitons vos données',
+    title:'Politique de <em>confidentialité</em>',
+    lastUpdated:'Dernière mise à jour : 23 avril 2026 · Exploité depuis la France (l\'APPI s\'applique)',
+    's1.title':'Résumé',
+    's1.p1':'Journey Junction (« nous ») exploite une place de marché de planificateurs mettant en relation des rédacteurs d\'itinéraires avec des voyageurs visitant la France. Cette politique explique quelles données personnelles nous collectons lorsque vous vous inscrivez en tant que <strong>planificateur</strong>, pourquoi nous en avons besoin et comment vous pouvez les contrôler. Elle s\'applique à votre utilisation du tableau de bord des planificateurs, du chat d\'assistance et des services associés.',
+    's2.title':'Données que nous collectons',
+    'table.what':'Quoi','table.why':'Pourquoi',
+    'r1.what':'<strong>Nom, e-mail, téléphone</strong>','r1.why':'Création de compte, connexion, contact avec l\'assistance, confirmations de versement.',
+    'r2.what':'<strong>Ville, langues, spécialités</strong>','r2.why':'Vous associer aux briefs de voyageurs adaptés.',
+    'r3.what':'<strong>Nom de la banque, numéro de compte, nom du titulaire</strong>','r3.why':'Versement des commissions et des cautions remboursables sur votre compte.',
+    'r4.what':'<strong>Contenu de l\'itinéraire (texte, photos que vous téléversez)</strong>','r4.why':'Livraison du plan au voyageur pour qui vous l\'avez créé.',
+    'r5.what':'<strong>Messages du chat d\'assistance et pièces jointes</strong>','r5.why':'Répondre à vos questions et conserver une trace à des fins d\'audit.',
+    'r6.what':'<strong>Journaux d\'activité du tableau de bord</strong>','r6.why':'Prévention de la fraude, mesures de performance, débogage.',
+    's3.title':'Comment nous les utilisons',
+    's3.l1':'<strong>Pour gérer votre compte</strong> — vous authentifier, afficher les ensembles qui vous sont attribués, traiter les versements.',
+    's3.l2':'<strong>Pour vous attribuer du travail</strong> — l\'administration examine vos langues et spécialités lors de l\'attribution des ensembles.',
+    's3.l3':'<strong>Pour livrer les itinéraires</strong> — les voyageurs ayant commandé un ensemble voient le plan approuvé avec votre prénom indiqué en tant qu\'auteur.',
+    's3.l4':'<strong>Pour assister et protéger la plateforme</strong> — nous n\'examinons les journaux de chat qu\'en cas de litige, de bug ou de signalement d\'abus.',
+    's3.p1':'Nous ne vendons <strong>pas</strong> vos données à des tiers et nous ne les utilisons pas à des fins de profilage publicitaire.',
+    's4.title':'Avec qui nous les partageons',
+    's4.l1':'<strong>Voyageurs</strong> — voient votre prénom, votre avatar et le contenu de l\'itinéraire que vous soumettez pour leur voyage. Ils ne voient pas votre e-mail, votre téléphone ni vos coordonnées bancaires.',
+    's4.l2':'<strong>Supabase (hébergement de la base de données et de l\'authentification)</strong> — notre sous-traitant pour le stockage des données de profil et des itinéraires. Les données sont hébergées sur son infrastructure dans le cadre de son accord de traitement des données (DPA).',
+    's4.l3':'<strong>Notre banque / prestataire de paiement</strong> — ne reçoit que le minimum nécessaire pour transférer la commission (nom du compte, numéro, nom de la banque, montant).',
+    's4.l4':'<strong>Autorités fiscales et services répressifs</strong> — si la loi française l\'exige.',
+    's4.p1':'Aucune donnée n\'est transférée hors de France, sauf dans la mesure où nos sous-traitants (par ex. Supabase) opèrent de manière transfrontalière en vertu de clauses contractuelles types.',
+    's5.title':'Combien de temps nous les conservons',
+    's5.p1':'<strong>Données de compte :</strong> conservées tant que votre compte est actif. Si vous supprimez votre compte, nous retirons les identifiants personnels sous 30 jours, mais nous pouvons conserver les journaux d\'audit et les relevés de versement pendant <strong>7 ans</strong> afin de respecter la législation fiscale et comptable française.',
+    's5.p2':'<strong>Contenu de l\'itinéraire :</strong> conservé aussi longtemps que le voyageur a accès au plan (en général la durée de son voyage plus 180 jours), puis archivé.',
+    's5.p3':'<strong>Messages d\'assistance :</strong> conservés 2 ans à des fins d\'audit, puis supprimés.',
+    's6.title':'Vos droits',
+    's6.p1':'En vertu de l\'APPI française et des cadres internationaux équivalents, vous avez le droit de :',
+    's6.l1':'<strong>Accéder</strong> aux données personnelles que nous détenons à votre sujet — demandez-en une copie via le chat d\'assistance.',
+    's6.l2':'<strong>Corriger</strong> les données inexactes — la plupart des champs sont modifiables directement depuis votre profil.',
+    's6.l3':'<strong>Supprimer</strong> votre compte et les données associées — contactez l\'assistance ; sous réserve des durées de conservation indiquées au §5.',
+    's6.l4':'<strong>Retirer votre consentement</strong> au traitement non essentiel à tout moment.',
+    's6.l5':'<strong>Déposer une réclamation</strong> auprès de l\'autorité française de protection des données personnelles (PPC) si vous estimez que nous avons mal géré vos données.',
+    's7.title':'Cookies et stockage local',
+    's7.p1':'Nous utilisons le <strong>localStorage</strong> du navigateur pour vous garder connecté et mémoriser vos préférences (langue, paramètres de notification). Nous n\'utilisons pas de cookies tiers de suivi ou de publicité. Effacer le stockage de votre navigateur vous déconnectera.',
+    's8.title':'Sécurité',
+    's8.p1':'Nous appliquons des mesures de sécurité conformes aux normes du secteur : transport chiffré (HTTPS), stockage de base de données chiffré au repos via Supabase, contrôle d\'accès basé sur les rôles afin que seul le personnel autorisé puisse voir les coordonnées bancaires, et examen régulier des journaux d\'accès. Aucun système n\'est sûr à 100 % ; si nous avons connaissance d\'une violation affectant vos données, nous vous en informerons sous 72 heures, comme l\'exige l\'APPI.',
+    's9.title':'Mineurs',
+    's9.p1':'Journey Junction n\'est pas destiné à être utilisé par des personnes de moins de 18 ans. Nous ne collectons pas sciemment de données auprès de mineurs. Si nous apprenons qu\'un utilisateur de moins de 18 ans a créé un compte, nous le supprimerons rapidement.',
+    's10.title':'Modifications de cette politique',
+    's10.p1':'Nous pouvons mettre à jour cette politique de temps à autre. Les modifications importantes seront publiées sur votre tableau de bord au moins 14 jours avant leur entrée en vigueur. La date de « dernière mise à jour » en haut de cette page reflète toujours la version actuelle.',
+    'contact.title':'Contact pour la confidentialité',
+    'contact.body':'Pour toute demande relative aux données, suppression ou question de confidentialité, contactez-nous via le <a href="support.html">chat d\'assistance dans l\'application</a> ou par e-mail à <strong>privacy@journeyjunction.com</strong>.',
+    'contact.body2':'Autorité de régulation : <strong>Commission de protection des données personnelles (PPC)</strong> · <a href="https://www.ppc.go.jp/" target="_blank" rel="noopener">ppc.go.jp</a>',
+    'company.title':'Responsable du traitement des données',
+    'company.body':'<strong>Journey Junction Ltd</strong><br>Numéro d\'entreprise : 15791277 / Constituée le 20 juin 2024<br>Siège social : Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, Royaume-Uni<br>Directeur : Midhun Peter'
   }
 }
 
@@ -306,7 +306,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')) })
   document.querySelectorAll('[data-i18n]:not([data-i18n-html])').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')) })
   document.querySelectorAll('.lang-pill button').forEach(b => b.classList.toggle('active', b.dataset.lang === TM_LANG))
-  document.title = TM_LANG === 'ja' ? 'Journey Junction — プライバシーポリシー' : 'Journey Junction — Privacy Policy'
+  document.title = TM_LANG === 'ja' ? 'Journey Junction — Politique de confidentialité' : 'Journey Junction — Privacy Policy'
 }
 function setLang(l){ if (l === TM_LANG) return; TM_LANG = l; localStorage.setItem('jj_planner_lang', l); applyLang() }
 applyLang()

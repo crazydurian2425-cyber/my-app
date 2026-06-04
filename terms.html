@@ -131,8 +131,8 @@ a:hover{color:var(--green-d);}
   <div class="top-spacer"></div>
   <div class="lang-pill" role="group" aria-label="Language">
     <button type="button" class="active" data-lang="ja" onclick="setLang('ja')">
-      <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="60" height="30" fill="#fff"/><circle cx="30" cy="15" r="9" fill="#BC002D"/></svg>
-      <span>日本語</span>
+      <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="20" height="30" x="0" fill="#0055A4"/><rect width="20" height="30" x="20" fill="#fff"/><rect width="20" height="30" x="40" fill="#EF4135"/></svg>
+      <span>Français</span>
     </button>
     <button type="button" data-lang="en" onclick="setLang('en')">
       <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><clipPath id="uk-t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#uk-t)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg>
@@ -295,64 +295,64 @@ const TM_I18N = {
     'company.body':'<strong>Journey Junction Ltd</strong><br>Company number 15791277 · Incorporated 20 June 2024<br>Registered office: Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>Director: Midhun Peter'
   },
   ja: {
-    back:'戻る',
-    banner:'<strong>下書き版。</strong> 本書類はJourney Junctionプランナー向けプラットフォームの作業版です。公開前に日本の消費者契約法・業務委託契約法に基づき、必ず適格な法律専門家によるレビューを受けてください。',
-    eyebrow:'プランナー規約',
-    title:'利用<em>規約</em>',
-    lastUpdated:'最終更新日：2026年5月16日 · 日本法に準拠',
-    's1.title':'Journey Junctionについて',
-    's1.p1':'<strong>Journey Junction</strong>（以下「当社」「Journey Junction」）は、日本で運営される旅行プランマーケットプレイスです。独立したプランナー（以下「プランナー」「あなた」）と、日本を訪れる旅行者を結びつけます。本規約は、Journey Junctionのプランナー向けサービス、ダッシュボード、関連ツールの利用に適用されます。',
-    's1.p2':'プランナーアカウントを作成することにより、あなたは本規約および<a href="privacy.html">プライバシーポリシー</a>を読み、理解し、これに拘束されることに同意したものとみなされます。',
-    's2.title':'利用資格',
-    's2.p1':'プランナーとして登録するには、次の条件を満たす必要があります：',
-    's2.l1':'<strong>18歳以上</strong>であること；',
-    's2.l2':'居住国において独立した業務委託契約者として働く法的権利を有すること；',
-    's2.l3':'日本円建て送金を受領可能な、あなた本人名義の有効な銀行口座を保有していること；',
-    's2.l4':'登録時に正確かつ最新の情報を提供し、プロフィールを最新に保つこと。',
-    's3.title':'プランナーとしての役割',
-    's3.p1':'プランナーはJourney Junctionと<strong>業務委託契約</strong>の関係にあり、従業員ではありません。ダッシュボードから引き受けるセットを自ら選択し、公開された品質基準を満たすプランを提供する責任を負います。',
-    's3.h1':'義務事項',
-    's3.l1':'<strong>品質：</strong>すべてのプランはオリジナルで、事実に基づき、旅行者のブリーフに合わせて作成されなければなりません。',
-    's3.l2':'<strong>締切：</strong>ダッシュボードに表示された締切までにセットを完成させてください。間に合わない場合は、締切前に延長申請をしてください。',
-    's3.l3':'<strong>プロフェッショナリズム：</strong>旅行者およびサポートスタッフと敬意をもってコミュニケーションを取ってください。差別的、嫌がらせ的、誤解を招くコンテンツは禁止されています。',
-    's3.l4':'<strong>オリジナリティ：</strong>アップロードするプラン、画像、ノートはすべてあなた自身の制作物、または正当にライセンスされたものであることを保証します。',
-    's4.title':'コミッションと出金',
-    's4.p1':'各セットのコミッションは、引き受ける前にダッシュボードに表示されます。出金は<strong>日本円（€）</strong>で、プロフィールで設定された受取方法（銀行振込またはPayPay）にて行われます。',
-    's4.h1':'出金タイミング',
-    's4.p2':'セット内の全15プランが管理者によってレビュー・承認された後にコミッションが解放されます。通常の解放時間は<strong>最終承認から24時間以内</strong>ですが、銀行営業日の影響を受けます。',
-    's4.hW':'週給',
-    's4.pW':'ローリング7日サイクル中に<strong>1セット以上完成</strong>したプランナーには、サイクル終了後に<strong>週給€50,000</strong>がウォレットへ支給されます。最初のサイクルは、プランナーが初めてセット案件を完成された日を起点とし、その後は同日を起点とする連続した7日サイクルとなります。週給はプランごとのコミッションおよび保証金返金に加算されるものであり、セットを完成していないサイクルは対象外となります。',
-    's4.h2':'ウォレット保護バッファ',
-    's4.p3':'Journey Junctionは、承認後の調整（プラン異議、返金、保証金修正など）を銀行口座から取り戻すことなく対応するため、ウォレット内に<strong>保護バッファ</strong>を留保することがあります。バッファ額（ある場合）はプラットフォームが定め、ウォレット画面に随時表示されます。バッファを超える金額はすべて出金可能です。バッファ額は当社の裁量で随時変更される場合があります。',
-    's4.h3':'高額出金セキュリティデポジット',
-    's4.p4':'プラットフォームおよび旅行者を<strong>不正行為、チャージバック、連携型アカウント操作</strong>から保護するため、<strong>€1,000,000以上</strong>の出金には、Journey Junctionエスクローで保管する<strong>最低€600,000からの返金可能なプラットフォーム利用デポジット</strong>（出金額およびリスクプロファイルに応じて算定）が必要です。',
-    's4.p6':'デポジットは、対象プランに関する旅行者異議、チャージバック、コンプライアンス調査が発生していない場合、出金確定後<strong>1営業日以内</strong>に解放されます。デポジットに利息は付かず、解放時にご登録の銀行口座へ全額返金されます。',
-    's4.p7':'以下の場合、デポジットの全部または一部が<strong>没収</strong>される場合があります：(a) 不正行為、身分偽装、アカウント操作が確認された場合；(b) デポジット解放前にチャージバックまたは紛争がJourney Junctionに不利に解決された場合；(c) 調査中に資金を引き出してアカウントを閉鎖しようとした場合。',
-    's5.title':'コミットメント履行保証金',
-    's5.p1':'一部のプレミアムプラン（法人、VIP、大型グループ）では、プランを引き受ける前に<strong>返金可能な履行保証金</strong>が必要です。履行保証金はJourney Junctionのエスクローに保管され、プランが承認されるとコミッションとともに全額返金されます。',
-    's5.p2':'承認された延長なしに締切を過ぎた場合、または履行保証金対象のプランを実質的に提供できなかった場合、旅行者保護のため、履行保証金の全部または一部が没収されることがあります。',
-    's6.title':'知的財産',
-    's6.p1':'プランのコンテンツの著作権はあなたに帰属します。Journey Junctionに提出することにより、あなたは当社に対し、当該プランを作成対象の旅行者に保管・表示・提供するための全世界・非独占的・ロイヤリティフリーのライセンスを付与します。あなたの別途の同意なく、プラットフォーム外で作品を再公開することはありません。',
-    's7.title':'禁止行為',
-    's7.p1':'以下の行為を行わないことに同意します：',
-    's7.l1':'プラットフォーム外で旅行者を勧誘すること、またはJourney Junctionを回避するために連絡先を共有すること；',
-    's7.l2':'盗用コンテンツ、AI生成物をオリジナルと偽ること、または第三者の権利を侵害するコンテンツをアップロードすること；',
-    's7.l3':'身分、資格、居住地を偽ること；',
-    's7.l4':'違法行為や無資格サービスの宣伝にプラットフォームを使用すること；',
-    's7.l5':'Journey JunctionのAPIやダッシュボードをリバースエンジニアリング、スクレイピング、悪用すること。',
-    's8.title':'アカウント停止・解約',
-    's8.p1':'締切違反の繰り返し、低品質のアウトプット、サポートチャネルの悪用、禁止行為、または規制上の理由により、当社は事前通知の有無にかかわらず、あなたのプランナーアカウントを停止または解約する場合があります。',
-    's8.p2':'解約された場合、未引き受けセットへのアクセスおよび未解決の問題の判断待ちの未解放コミッションを失います。すでに承認・解放されたコミッションはあなたのものとして残ります。',
-    's9.title':'責任および免責',
-    's9.p1':'Journey Junctionは<strong>「現状有姿」</strong>で提供されます。利用可能なセットの量、得られる収入、無中断のサービスについて何ら保証するものではありません。法律で認められる最大限の範囲で、紛争に対する当社の総責任は、<strong>請求の直前3ヶ月間にあなたへ支払われたコミッション</strong>額を上限とします。',
-    's10.title':'本規約の変更',
-    's10.p1':'本規約は随時更新される場合があります。実質的な変更は、発効の少なくとも14日前にダッシュボードで告知されます。その日以降のプラットフォーム継続利用は、変更への同意とみなされます。',
-    's11.title':'準拠法',
-    's11.p1':'本規約は<strong>日本</strong>の法律に準拠します。非公式に解決されない紛争は、東京地方裁判所の専属管轄に服するものとします。',
-    'contact.title':'お問い合わせ',
-    'contact.body':'本規約についてご質問は、<a href="support.html">アプリ内サポートチャット</a>またはメール<strong>support@thejourneywise.com</strong>までお寄せください。',
-    'company.title':'運営会社情報',
-    'company.body':'<strong>Journey Junction Ltd</strong><br>会社番号：15791277 ／ 設立日：2024年6月20日<br>登記上の住所：Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom<br>代表者：Midhun Peter'
+    back:'Retour',
+    banner:'<strong>Modèle de brouillon.</strong> Ce document est une version de travail pour la plateforme de planificateurs de Journey Junction. Avant sa mise en ligne, veuillez le faire examiner par un conseiller juridique qualifié afin d\'assurer sa conformité avec le droit français de la consommation et des contrats de prestation.',
+    eyebrow:'Accord du planificateur',
+    title:'Conditions d\'<em>utilisation</em>',
+    lastUpdated:'Dernière mise à jour : 16 mai 2026 · Régi par le droit français',
+    's1.title':'Qui nous sommes',
+    's1.p1':'<strong>Journey Junction</strong> (« nous », « notre », « Journey Junction ») est une place de marché de planification de voyages exploitée depuis la France. Nous mettons en relation des planificateurs d\'itinéraires indépendants (« Planificateurs », « vous ») avec des voyageurs visitant la France. Les présentes Conditions régissent votre utilisation des services, du tableau de bord et de tous les outils associés de Journey Junction destinés aux planificateurs.',
+    's1.p2':'En créant un compte de planificateur, vous confirmez avoir lu, compris et accepté d\'être lié par les présentes Conditions ainsi que par notre <a href="privacy.html">Politique de confidentialité</a>.',
+    's2.title':'Conditions d\'admissibilité',
+    's2.p1':'Pour vous inscrire en tant que Planificateur, vous devez :',
+    's2.l1':'être âgé d\'au moins <strong>18 ans</strong> ;',
+    's2.l2':'disposer du droit légal de travailler en tant que prestataire indépendant dans votre pays de résidence ;',
+    's2.l3':'détenir un compte bancaire valide à votre nom, capable de recevoir des virements en EUR ;',
+    's2.l4':'fournir des informations exactes et à jour lors de l\'inscription et maintenir votre profil actualisé.',
+    's3.title':'Votre rôle en tant que Planificateur',
+    's3.p1':'Les Planificateurs collaborent avec Journey Junction en tant que <strong>prestataires indépendants</strong>, et non en tant que salariés. Vous choisissez les ensembles que vous acceptez depuis votre tableau de bord et êtes responsable de la livraison d\'itinéraires conformes à nos normes de qualité publiées.',
+    's3.h1':'Obligations',
+    's3.l1':'<strong>Qualité.</strong> Chaque itinéraire doit être original, factuellement exact et adapté au cahier des charges du voyageur.',
+    's3.l2':'<strong>Délais.</strong> Terminez les ensembles avant l\'échéance affichée sur votre tableau de bord. Si vous ne le pouvez pas, demandez une prolongation avant son expiration.',
+    's3.l3':'<strong>Professionnalisme.</strong> Communiquez avec respect avec les voyageurs et le personnel d\'assistance. Tout contenu discriminatoire, harcelant ou trompeur est interdit.',
+    's3.l4':'<strong>Originalité.</strong> Vous garantissez que les itinéraires, images et notes que vous téléversez sont votre propre travail ou dûment licenciés pour cet usage.',
+    's4.title':'Commission et versements',
+    's4.p1':'La commission de chaque ensemble est affichée sur votre tableau de bord avant que vous ne le réclamiez. Les versements sont effectués en <strong>euros (€)</strong> par virement bancaire SEPA, selon le mode de versement que vous définissez dans votre profil.',
+    's4.h1':'Calendrier des versements',
+    's4.p2':'La commission est libérée une fois que l\'ensemble des 15 plans d\'un ensemble ont été examinés et approuvés par l\'administrateur. Le délai de libération standard est de <strong>24 heures suivant l\'approbation finale</strong>, sous réserve des délais liés aux jours ouvrés bancaires.',
+    's4.hW':'Salaire hebdomadaire',
+    's4.pW':'Les Planificateurs qui terminent au moins <strong>1 ensemble par cycle glissant de 7 jours</strong> perçoivent un <strong>salaire hebdomadaire de 50 000 €</strong>, crédité sur leur portefeuille à la fin du cycle. Le premier cycle débute à la date à laquelle le planificateur termine son tout premier ensemble ; les cycles suivants se déroulent en fenêtres consécutives de 7 jours ancrées à cette même date. Le salaire s\'ajoute à la commission par plan et aux remboursements de caution. Les cycles au cours desquels aucun ensemble n\'est terminé ne sont pas éligibles.',
+    's4.h2':'Réserve de protection du portefeuille',
+    's4.p3':'Journey Junction peut conserver une <strong>réserve de protection</strong> dans votre portefeuille afin de couvrir les ajustements postérieurs à l\'approbation (plans contestés, annulations, corrections de caution) sans avoir à récupérer des fonds sur votre compte bancaire. Le montant de la réserve, le cas échéant, est fixé par la plateforme et affiché à tout moment dans votre Portefeuille. Tout montant gagné au-delà de la réserve est intégralement retirable. Nous pouvons réviser le montant de la réserve de temps à autre, à notre discrétion.',
+    's4.h3':'Dépôt de garantie pour versement élevé',
+    's4.p4':'Afin de protéger la plateforme et les voyageurs contre la <strong>fraude, les rétrofacturations et la manipulation coordonnée de comptes</strong>, tout retrait de <strong>1 000 000 € ou plus</strong> nécessite un <strong>Dépôt d\'utilisation de la plateforme remboursable, à partir de 600 000 €</strong> — proportionnel au montant du retrait et au profil de risque — conservé sous séquestre par Journey Junction.',
+    's4.p6':'Le dépôt est libéré <strong>dans un délai d\'un jour ouvré</strong> après le déblocage du retrait, à condition qu\'aucun litige de voyageur, rétrofacturation ou examen de conformité ne soit en cours concernant vos plans. Le dépôt ne produit aucun intérêt et est restitué intégralement sur votre compte bancaire enregistré au moment de sa libération.',
+    's4.p7':'Le dépôt peut être <strong>confisqué en tout ou en partie</strong> si : (a) une fraude avérée, une usurpation d\'identité ou une manipulation de compte est constatée ; (b) une rétrofacturation ou un litige est tranché en défaveur de Journey Junction avant la libération du dépôt ; ou (c) vous retirez des fonds et tentez de fermer le compte pour échapper à une enquête en cours.',
+    's5.title':'Cautions d\'engagement',
+    's5.p1':'Certains plans premium (entreprises, VIP ou grands groupes) exigent une <strong>caution remboursable</strong> avant que vous puissiez les réclamer. La caution est conservée sous séquestre par Journey Junction et restituée intégralement avec votre commission une fois le plan approuvé.',
+    's5.p2':'Si vous manquez une échéance sans prolongation approuvée, ou si vous manquez de manière substantielle à la livraison d\'un plan garanti par une caution, celle-ci peut être confisquée en tout ou en partie afin de protéger le voyageur.',
+    's6.title':'Propriété intellectuelle',
+    's6.p1':'Vous conservez la paternité du contenu de votre itinéraire. En le soumettant à Journey Junction, vous nous accordez une licence mondiale, non exclusive et libre de redevance pour stocker, afficher et livrer l\'itinéraire au voyageur pour lequel il a été préparé. Nous ne republierons pas votre travail en dehors de la plateforme sans votre consentement distinct.',
+    's7.title':'Conduite interdite',
+    's7.p1':'Vous vous engagez à ne pas :',
+    's7.l1':'démarcher des voyageurs en dehors de la plateforme, ni partager de coordonnées pour contourner Journey Junction ;',
+    's7.l2':'téléverser du contenu plagié, des productions d\'IA génériques présentées comme originales, ou du contenu portant atteinte aux droits de tiers ;',
+    's7.l3':'dénaturer votre identité, vos qualifications ou votre lieu de résidence ;',
+    's7.l4':'utiliser la plateforme pour promouvoir des activités illégales ou des services non autorisés ;',
+    's7.l5':'effectuer de la rétro-ingénierie, du scraping ou un usage abusif des API ou du tableau de bord de Journey Junction.',
+    's8.title':'Suspension et résiliation',
+    's8.p1':'Nous pouvons suspendre ou résilier votre compte de planificateur, avec ou sans préavis, en cas de manquements répétés aux échéances, de productions de faible qualité, d\'usage abusif du canal d\'assistance, de conduite interdite ou pour des motifs réglementaires.',
+    's8.p2':'En cas de résiliation, vous perdez l\'accès aux ensembles non réclamés ainsi qu\'à toute commission non libérée en attente du règlement des questions en suspens. Les commissions déjà approuvées et libérées vous restent acquises.',
+    's9.title':'Responsabilité et clauses de non-responsabilité',
+    's9.p1':'Journey Junction est fourni <strong>« en l\'état »</strong>. Nous ne donnons aucune garantie quant au volume d\'ensembles disponibles, aux revenus que vous pourriez réaliser, ou à un service ininterrompu. Dans la mesure maximale permise par la loi, notre responsabilité globale envers vous pour tout litige est limitée à la commission qui vous a été versée au cours des <strong>trois mois précédant la réclamation</strong>.',
+    's10.title':'Modifications des présentes Conditions',
+    's10.p1':'Nous pouvons mettre à jour les présentes Conditions de temps à autre. Les modifications substantielles seront annoncées via le tableau de bord au moins 14 jours avant leur entrée en vigueur. La poursuite de l\'utilisation de la plateforme après cette date vaut acceptation.',
+    's11.title':'Droit applicable',
+    's11.p1':'Les présentes Conditions sont régies par le droit <strong>français</strong>. Tout litige non résolu à l\'amiable sera soumis à la compétence exclusive du Tribunal de commerce de Paris.',
+    'contact.title':'Contact',
+    'contact.body':'Des questions sur les présentes Conditions ? Contactez-nous via le <a href="support.html">chat d\'assistance intégré à l\'application</a>, ou par e-mail à <strong>support@thejourneywise.com</strong>.',
+    'company.title':'Informations sur la société',
+    'company.body':'<strong>Journey Junction Ltd</strong><br>Numéro de société 15791277 · Constituée le 20 juin 2024<br>Siège social : Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, Royaume-Uni<br>Directeur : Midhun Peter'
   }
 }
 
@@ -368,7 +368,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = t(el.getAttribute('data-i18n-html')) })
   document.querySelectorAll('[data-i18n]:not([data-i18n-html])').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')) })
   document.querySelectorAll('.lang-pill button').forEach(b => b.classList.toggle('active', b.dataset.lang === TM_LANG))
-  document.title = TM_LANG === 'ja' ? 'Journey Junction — 利用規約' : 'Journey Junction — Terms of Service'
+  document.title = TM_LANG === 'ja' ? 'Journey Junction — Conditions d\'utilisation' : 'Journey Junction — Terms of Service'
 }
 function setLang(l){ if (l === TM_LANG) return; TM_LANG = l; localStorage.setItem('jj_planner_lang', l); applyLang() }
 applyLang()

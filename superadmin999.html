@@ -2397,7 +2397,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('bill-reason','bill-reason-ja',this)">EN → JA</button>
         </div>
         <input class="form-input" id="bill-reason" type="text" placeholder="e.g. Platform usage policy deposit" maxlength="200">
-        <input class="form-input" id="bill-reason-ja" type="text" placeholder="日本語（例：プラットフォーム利用保証金）" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
+        <input class="form-input" id="bill-reason-ja" type="text" placeholder="Français (ex. : dépôt de garantie d'utilisation de la plateforme)" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
         <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Short label shown to the planner. JA shown to Japanese-locale planners.</div>
       </div>
       <div class="form-group" style="margin-top:12px;">
@@ -2406,7 +2406,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('bill-description','bill-description-ja',this)">EN → JA</button>
         </div>
         <textarea class="form-textarea" id="bill-description" rows="3" placeholder="Longer context for the planner — what this is, why we're billing it." style="resize:vertical;min-height:64px;"></textarea>
-        <textarea class="form-textarea" id="bill-description-ja" rows="3" placeholder="日本語の説明（任意）" style="resize:vertical;min-height:64px;margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;"></textarea>
+        <textarea class="form-textarea" id="bill-description-ja" rows="3" placeholder="Description en français (facultatif)" style="resize:vertical;min-height:64px;margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;"></textarea>
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label class="form-label">How to pay (optional)</label>
@@ -2446,7 +2446,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('adj-reason','adj-reason-ja',this)">EN → JA</button>
         </div>
         <input class="form-input" id="adj-reason" type="text" placeholder="e.g. Platform usage policy refund · €600,000 deposit returned" maxlength="200">
-        <input class="form-input" id="adj-reason-ja" type="text" placeholder="日本語（例：プラットフォーム利用保証金の返金）" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
+        <input class="form-input" id="adj-reason-ja" type="text" placeholder="Français (ex. : remboursement du dépôt de garantie d'utilisation de la plateforme)" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label class="form-label">Internal notes (optional)</label>
@@ -4503,7 +4503,7 @@ async function payWeeklySalary(plannerId, cycleNumber, btn){
     planner_id: plannerId,
     amount: WEEKLY_SALARY_AMOUNT,
     reason: 'Weekly salary',
-    reason_ja: '週給',
+    reason_ja: 'Salaire hebdomadaire',
     notes: notesKey,
     bypass_retention: true,
     created_by: actor
@@ -4540,7 +4540,7 @@ async function payWeeklySalaryEarly(plannerId, cycleNumber, plannerName, btn){
     planner_id: plannerId,
     amount: WEEKLY_SALARY_AMOUNT,
     reason: 'Weekly salary (early)',
-    reason_ja: '週給(前払い)',
+    reason_ja: 'Salaire hebdomadaire (avance)',
     notes: notesKey,
     bypass_retention: true,
     created_by: actor
@@ -4591,7 +4591,7 @@ async function payAllWeeklySalaries(btn){
       planner_id: plannerId,
       amount: WEEKLY_SALARY_AMOUNT,
       reason: 'Weekly salary',
-      reason_ja: '週給',
+      reason_ja: 'Salaire hebdomadaire',
       notes: notesKey,
       bypass_retention: true,
       created_by: actor
@@ -4757,7 +4757,7 @@ async function markBillPaid(id, plannerName, amount){
       planner_id: bill.planner_id,
       amount: Number(amount),
       reason: `Invoice paid: ${bill.reason || 'Invoice'}`,
-      reason_ja: bill.reason_ja ? `請求書支払い済み：${bill.reason_ja}` : null,
+      reason_ja: bill.reason_ja ? `Facture payée : ${bill.reason_ja}` : null,
       notes: reference ? `Bank reference: ${reference}` : null,
       bypass_retention: true,
       created_by: actor
@@ -4798,7 +4798,7 @@ async function creditPaidInvoice(id, plannerName, amount){
     planner_id: bill.planner_id,
     amount: Number(amount),
     reason: `Invoice paid: ${bill.reason || 'Invoice'}`,
-    reason_ja: bill.reason_ja ? `請求書支払い済み：${bill.reason_ja}` : null,
+    reason_ja: bill.reason_ja ? `Facture payée : ${bill.reason_ja}` : null,
     notes: bill.paid_reference ? `Bank reference: ${bill.paid_reference} (retro credit)` : 'Retro credit for already-paid invoice',
     bypass_retention: true,
     created_by: actor
@@ -7922,17 +7922,14 @@ async function sendApprovalEmail(){
   // Pull first name out of the body's first line. Handles:
   //   French:   "Bonjour X,"
   //   English:  "Hi X,"
-  //   Japanese: "X 様,"  (legacy — kept so old drafts still parse)
   const firstLineMatch = body.match(/^Bonjour\s+([^,]+),/i)
                       || body.match(/^Hi\s+([^,]+),/i)
-                      || body.match(/^([^\n,]+?)\s*様[、,]/)
   const firstName = firstLineMatch ? firstLineMatch[1].trim() : 'planificateur'
 
   // Strip greeting opener + sign-off so we don't double them up with the template chrome.
   const middle = body
     .replace(/^Bonjour\s+[^,]+,\s*\n+/i, '')
     .replace(/^Hi\s+[^,]+,\s*\n+/i, '')
-    .replace(/^[^\n]+様[、,]\s*\n+/, '')
     .replace(/\n*—\s*Journey Junction\s*$/i, '')
     .trim()
 
