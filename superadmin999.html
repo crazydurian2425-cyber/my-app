@@ -1463,7 +1463,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     <div class="ph">
       <div>
         <div class="ph-title">Weekly salary</div>
-        <div class="ph-sub">€50,000 per rolling 7-day cycle if a planner completes ≥1 set · cycles anchored to each planner's first set completion</div>
+        <div class="ph-sub">€500 per rolling 7-day cycle if a planner completes ≥1 set · cycles anchored to each planner's first set completion</div>
       </div>
     </div>
     <div class="card" id="weekly-salaries-card">
@@ -1699,7 +1699,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     <div class="modal-header">
       <div>
         <div class="modal-title">Send approval email</div>
-        <div class="modal-sub">Sent from support@thejourneywise.com via Resend. Edit anything before sending.</div>
+        <div class="modal-sub">Sent from hello@thejourneyjunction.co.uk via Resend. Edit anything before sending.</div>
       </div>
       <button class="modal-close" onclick="closeModal('modal-welcome-email')">✕</button>
     </div>
@@ -2611,7 +2611,7 @@ const JJ_PLANNER_URL = 'https://thejourneywise.com'
 // with your real key from https://resend.com/api-keys. The admin page is
 // gated by Basic Auth so this key is only visible to admins.
 // Resend API key lives server-side in _worker.js. superadmin999.html never holds it.
-const APPROVAL_FROM = 'Journey Junction <support@thejourneywise.com>'
+const APPROVAL_FROM = 'Journey Junction <hello@thejourneyjunction.co.uk>'
 
 // Simple admin password protection
 const ADMIN_PASS = '168168'
@@ -4276,7 +4276,7 @@ async function loadPayments() {
 // [anchor+7d, anchor+14d), etc. Admin can pay a planner for cycle N only
 // after cycle N is fully ended (i.e. the planner is in cycle N+1).
 // Idempotency: notes = `weekly_salary_cycle_<N>` per (planner_id, cycle).
-const WEEKLY_SALARY_AMOUNT = 50000
+const WEEKLY_SALARY_AMOUNT = 500
 const WEEKLY_SALARY_WEEK_MS = 7 * 24 * 3600 * 1000
 
 const _fmtDayShort = (ms) => new Date(ms).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
