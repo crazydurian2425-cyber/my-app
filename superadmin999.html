@@ -2398,7 +2398,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         </div>
         <input class="form-input" id="bill-reason" type="text" placeholder="e.g. Platform usage policy deposit" maxlength="200">
         <input class="form-input" id="bill-reason-ja" type="text" placeholder="Français (ex. : dépôt de garantie d'utilisation de la plateforme)" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
-        <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Short label shown to the planner. JA shown to Japanese-locale planners.</div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Short label shown to the planner. FR shown to French-locale planners.</div>
       </div>
       <div class="form-group" style="margin-top:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -5392,7 +5392,7 @@ function renderPlanners(planners, meta) {
             ${p.last_login_country ? `<span title="Last login: ${escapeHtml(p.last_login_country)}${p.last_login_city?' · '+escapeHtml(p.last_login_city):''}" style="margin-right:5px;">${flagEmoji(p.last_login_country) || '🌐'}</span>` : ''}
             ${escapeHtml(p.name)}
             ${p.admin_created ? '<span title="Direct-create account (admin tool, bypassed application flow)" style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px;background:rgba(94,123,110,0.12);border:1px solid rgba(94,123,110,0.30);border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#4A6759;font-weight:700;font-family:\'DM Sans\',sans-serif;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Admin</span>' : ''}
-            ${p.last_login_country && p.last_login_country.toUpperCase() !== 'JP' ? '<span title="Last login outside Japan" style="margin-left:4px;color:#c0392b;font-size:11px;">⚠️</span>' : ''}
+            ${p.last_login_country && p.last_login_country.toUpperCase() !== 'FR' ? '<span title="Last login outside France" style="margin-left:4px;color:#c0392b;font-size:11px;">⚠️</span>' : ''}
             ${availChip}
           </div>
           <div class="p-meta">${escapeHtml(p.city)} · ${escapeHtml(p.email)} · Joined ${joined}</div>
@@ -7502,12 +7502,12 @@ let _appFilter = 'pending'
 let _lastInviteLink = ''
 
 const DEPTH_LABEL = {
-  native:     'Japanese native / grew up there',
-  resident:   'Living in Japan now',
-  frequent:   'Visited 3+ times',
+  native:     'French native / grew up in France',
+  resident:   'Living in France now',
+  frequent:   'Visited 3+ times / deep travel experience',
   occasional: 'Visited once or twice'
 }
-const LANG_LABEL = { ja:'Japanese', en:'English', zh:'Chinese', ko:'Korean', other:'Other' }
+const LANG_LABEL = { fr:'French', en:'English', es:'Spanish', de:'German', it:'Italian', other:'Other', ja:'Japanese', zh:'Chinese', ko:'Korean' }
 const HEARD_LABEL = {
   referral: 'Friend or referral',
   facebook: 'Facebook or Instagram',
@@ -7540,10 +7540,10 @@ function geoBlock(kind, row){
   if (!ip && !country && !city) return ''  // nothing captured (legacy row)
 
   const cc = (country || '').toUpperCase()
-  const isJapan = cc === 'JP' || cc === 'JAPAN'
+  const isFrance = cc === 'FR' || cc === 'FRANCE'
   const flag = flagEmoji(cc) || '🌐'
-  const warn = (cc && !isJapan)
-    ? `<div style="margin-top:6px;padding:6px 10px;background:rgba(192,57,43,0.08);color:#a23d2e;border:1px solid rgba(192,57,43,0.2);border-radius:6px;font-size:11.5px;font-weight:500;">⚠️ Country mismatch — applicant claims Japan but signed up from ${escapeHtml(country)}</div>`
+  const warn = (cc && !isFrance)
+    ? `<div style="margin-top:6px;padding:6px 10px;background:rgba(192,57,43,0.08);color:#a23d2e;border:1px solid rgba(192,57,43,0.2);border-radius:6px;font-size:11.5px;font-weight:500;">⚠️ Country mismatch — applicant claims France but signed up from ${escapeHtml(country)}</div>`
     : ''
 
   const heading = kind === 'signup' ? 'Signup connection' : 'Last login'
@@ -7671,7 +7671,7 @@ function openApplicationDetail(id){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div>
-          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:4px;">Connection to Japan</div>
+          <div style="font-size:10.5px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.1em;font-weight:600;margin-bottom:4px;">Connection to France</div>
           <div>${escapeHtml(depthTxt)}</div>
         </div>
         <div>
