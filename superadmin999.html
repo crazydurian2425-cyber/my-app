@@ -3925,11 +3925,39 @@ async function saveSetRemark(setId, input){
 }
 
 async function closeSet(setId) {
-  if (!confirm('Close this set? It will be removed from Active Sets and no new planners can be assigned.')) return
-  await sb.from('sets').update({status:'completed', completed_at: new Date().toISOString()}).eq('id', setId)
-  auditLog('set.close', 'set', setId)
-  showToast('Set closed')
+  if (!confirm('Close this set and release its travellers back to the Unassigned pool?\n\nThe draft plans for this set are discarded and the assigned planner is unassigned. This cannot be undone.')) return
+  try {
+    // 1. Plans in this set (+ the travellers they belong to). Covers both the
+    //    template plans created at set-build and the planner copies made on assign.
+    const { data: plans, error: pErr } = await sb.from('plans').select('id, traveler_id').eq('set_id', setId)
+    if (pErr) throw pErr
+    const planIds = (plans || []).map(p => p.id)
+    const travIds = [...new Set((plans || []).map(p => p.traveler_id).filter(Boolean))]
+    // 2. itinerary_items reference plans with RESTRICT — delete them first.
+    if (planIds.length) {
+      const { error: iErr } = await sb.from('itinerary_items').delete().in('plan_id', planIds)
+      if (iErr) throw iErr
+    }
+    // 3. Delete the plans, then 4. the planner assignment(s) for this set.
+    const { error: dpErr } = await sb.from('plans').delete().eq('set_id', setId)
+    if (dpErr) throw dpErr
+    const { error: saErr } = await sb.from('set_assignments').delete().eq('set_id', setId)
+    if (saErr) throw saErr
+    // 5. Release the travellers — back to "Waiting set" / Unassigned pool.
+    if (travIds.length) {
+      const { error: tErr } = await sb.from('travelers').update({ status: 'unassigned' }).in('id', travIds)
+      if (tErr) throw tErr
+    }
+    // 6. Mark the set closed (kept for history; drops off Active sets).
+    await sb.from('sets').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', setId)
+    auditLog('set.close', 'set', setId, { released_travellers: travIds.length, deleted_plans: planIds.length })
+    showToast(`Set closed — ${travIds.length} traveller${travIds.length === 1 ? '' : 's'} released to the Unassigned pool`)
+  } catch (e) {
+    showToast('Close failed: ' + (e?.message || 'unknown'))
+    return
+  }
   loadActiveSets()
+  if (typeof loadTravelers === 'function') loadTravelers()
 }
 
 // ── FINANCE (renamed from Payments) ───────────────────────────
