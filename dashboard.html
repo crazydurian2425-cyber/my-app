@@ -12526,10 +12526,17 @@ async function renderTravelerBrief(plan, t, notes) {
   `)
 
   // ── SECTION 4: accommodation [NEW SECTION] ──
-  const accomTxt = meta.accommodation_preference ? titleCaseEnum(meta.accommodation_preference) : ''
-  const roomTxt = meta.accommodation_room || ''                         // optional future field
-  const accomMustHaves = Array.isArray(meta.accommodation_must_haves)
-    ? meta.accommodation_must_haves.join(' · ') : ''
+  // Read the CANONICAL keys the admin edit form writes (accommodation_type /
+  // room_type / accommodation_musthaves), falling back to the legacy variants
+  // (accommodation_preference / accommodation_room / accommodation_must_haves)
+  // so older rows still render. Previously the brief read only the legacy
+  // keys, so every traveler whose data used the canonical keys showed "—".
+  const _accomType = meta.accommodation_type || meta.accommodation_preference || ''
+  const accomTxt = _accomType ? titleCaseEnum(_accomType) : ''
+  const roomTxt = meta.room_type || meta.accommodation_room || ''
+  const _mh = Array.isArray(meta.accommodation_musthaves) ? meta.accommodation_musthaves
+            : (Array.isArray(meta.accommodation_must_haves) ? meta.accommodation_must_haves : null)
+  const accomMustHaves = _mh ? _mh.join(' · ') : ''
   // Accommodation always renders — keeps the brief structurally consistent.
   const sectionAccom = wrap(`
     ${sectionHeader('bed', 'Accommodation')}
