@@ -7780,7 +7780,7 @@ async function sendApprovalEmailAuto(app){
   }
   const loginUrl = buildPlannerLoginUrl()
   const firstName = (app.name || '').split(' ')[0] || 'planificateur'
-  const subject = `Votre candidature planificateur Journey Junction est approuvée`
+  const subject = `Votre candidature de planificateur Journey Junction est approuvée`
   // Use the same branded template as the manual send so the auto-fired email
   // also includes the logo + consistent footer. `middle` is empty since we
   // don't have an admin-edited body in the auto path.
@@ -7833,7 +7833,7 @@ function openApprovalEmail(id){
   if (!app) return
   const loginUrl = buildPlannerLoginUrl()
   document.getElementById('welcome-to').textContent = app.email
-  document.getElementById('welcome-subject').value = `Votre candidature planificateur Journey Junction est approuvée`
+  document.getElementById('welcome-subject').value = `Votre candidature de planificateur Journey Junction est approuvée`
   document.getElementById('welcome-body').value =
 `Bonjour ${app.name.split(' ')[0]},
 

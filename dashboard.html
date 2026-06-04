@@ -8953,7 +8953,7 @@ const TM_I18N = {
     'guide.tip.dayTrip':'Regroupez les visites par quartier pour limiter les trajets. Pas de surcharge.',
     'guide.tip.fullDay':'Alternez activités et pauses. Gardez les marches sous 1,5 km entre sites.',
     'guide.tip.fullDay.1':'Mélangez visites actives et pauses. Marches entre sites < 1,5 km.',
-    'guide.tip.fullDay.2':'Groupez les visites proches pour éviter d\'aller-retours dans la ville.',
+    'guide.tip.fullDay.2':'Regroupez les visites proches pour éviter les allers-retours dans la ville.',
     'guide.tip.fullDay.3':'Prévoyez une pause café de 15 min toutes les 2 à 3 activités.',
     'guide.tip.fullDay.4':'Placez l\'expérience phare en fin de matinée ou début d\'après-midi.',
     'seed.hotelIn':'Check-in hôtel',
@@ -16446,7 +16446,7 @@ function renderLinkedChip(slot) {
     } else if (conflict.kind === 'late_arrival') {
       head = dt('⏰ <strong>Late arrival</strong>','⏰ <strong>Arrivée tardive</strong>')
       tone = ' is-amber'
-      const noun = conflict.isMeal ? dt('kitchen','cuisine') : dt('venue','lieu')
+      const noun = conflict.isMeal ? dt('kitchen','cuisine') : dt('venue','établissement')
       msg = dt(`Arriving at <strong>${escapeHtml(slotTimeFriendly)}</strong> — closes at <strong>${escapeHtml(conflict.closeTime)}</strong>. Most ${noun}s stop ${conflict.bufferMin} min before close (orders / last entry).`, `Arrivée à <strong>${escapeHtml(slotTimeFriendly)}</strong> — ferme à <strong>${escapeHtml(conflict.closeTime)}</strong>. La plupart des ${noun}s s’arrêtent ${conflict.bufferMin} min avant la fermeture (commandes / dernière entrée).`)
     } else {
       msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`, `L’heure choisie <strong>${escapeHtml(slotTimeFriendly)}</strong> est en dehors des horaires d’ouverture${escapeHtml(dayBit)}`)
@@ -18909,7 +18909,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
         title: `${formatTimeDisplay(arrTime)} · ${methodLabel} ${dt('arrives','arrive')}${locBit}`,
         subtitle: arrFrom && arrFrom !== 'origin'
           ? dt(`from ${arrFrom} · Day 1 begins on arrival`, `de ${arrFrom} · la journée 1 commence à l'arrivée`)
-          : dt(`Day 1 begins on arrival`, `la journée 1 commence à l'arrivée`),
+          : dt(`Day 1 begins on arrival`, `La journée 1 commence à l'arrivée`),
       })
       // Hang the resolved station coords on the anchor so getSlotLatLng
       // works for the universal gap-fill pass downstream (auto-insert
@@ -18935,7 +18935,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     topAnchor = _buildLockedAnchor({
       type: 'morning',
       title: `${formatTimeDisplay(wakeTime)} · ${dt('Morning at','Matinée à')} ${morningHotelName}`,
-      subtitle: `${dt(`Day ${dayNum} starts here`, `journée ${dayNum} commence ici`)} · ${breakfastBit}`,
+      subtitle: `${dt(`Day ${dayNum} starts here`, `La journée ${dayNum} commence ici`)} · ${breakfastBit}`,
     })
     // Attach hotel _placeData so the gap-fill can compute the first
     // transport's distance from this anchor on Day 2+ if needed.
@@ -18960,7 +18960,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
         type: 'departure',
         method,
         title: `${formatTimeDisplay(depTime)} · ${methodLabel} ${dt('to','vers')} ${depTo}`,
-        subtitle: dt(`Day ${dayNum} ends with departure`, `la journée ${dayNum} se termine par le départ`),
+        subtitle: dt(`Day ${dayNum} ends with departure`, `La journée ${dayNum} se termine par le départ`),
       })
     }
   } else {
@@ -18994,7 +18994,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     bottomAnchor = _buildLockedAnchor({
       type: 'end_of_day',
       title: titleStr,
-      subtitle: dt(`Day ${dayNum} ends here`, `la journée ${dayNum} se termine ici`),
+      subtitle: dt(`Day ${dayNum} ends here`, `La journée ${dayNum} se termine ici`),
       badge,
       footer,
     })

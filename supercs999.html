@@ -1774,18 +1774,18 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🏦 Coordonnées pour la caution', text: 'Bonjour {first_name}, voici les coordonnées bancaires pour le versement de la caution :\n\nBanque : [Nom de la banque]\nNuméro de compte : [Numéro de compte]\nTitulaire du compte : Journey Junction\nRéférence du virement : BOND-{set_num}-{planner_short}\n\nUne fois le virement effectué, merci de nous envoyer ici une capture d\'écran du justificatif. Nous vous recontacterons dès vérification.' },
     { label: '💳 Vérification de la caution', text: 'C\'est bien noté, {first_name}. Nous procédons à la vérification de votre virement. Pendant les heures ouvrées, la vérification est généralement terminée sous 30 minutes et nous vous recontacterons.' },
     { label: '✅ Caution reçue', text: 'Nous avons bien confirmé le versement de votre caution. Vos plans ont été déverrouillés. Merci et bonne continuation.' },
-    { label: '💰 Information sur le retrait', text: 'Bonjour {first_name}, nous traitons votre retrait de {pending_amt} €. La somme devrait être créditée sur votre compte bancaire enregistré sous 24 heures.' },
-    { label: '💰 Retrait effectué', text: 'Le traitement de votre retrait est terminé. Comptez environ 1 à 2 jours ouvrés pour que la somme apparaisse sur votre compte bancaire enregistré.' },
-    { label: '📋 Vérification des sets', text: 'Bonjour {first_name}, je vérifie les sets disponibles dans votre ville et je vous en attribue un sous peu.' },
+    { label: '💰 Information sur le paiement', text: 'Bonjour {first_name}, nous traitons votre retrait de {pending_amt} €. Les fonds (USDT/USDC) seront envoyés vers votre portefeuille crypto enregistré sous 24 heures.' },
+    { label: '💰 Paiement effectué', text: 'Le traitement de votre retrait est terminé. Comptez environ 1 à 2 jours ouvrés pour que les fonds (USDT/USDC) apparaissent dans votre portefeuille crypto enregistré.' },
+    { label: '📋 Vérification des lots', text: 'Bonjour {first_name}, je vérifie les lots disponibles dans votre ville et je vous en attribue un sous peu.' },
     { label: '⏰ Combien de jours ?', text: 'Pas de problème {first_name} — de combien de jours supplémentaires avez-vous besoin ? Pourriez-vous aussi nous indiquer brièvement la raison afin que nous puissions la consigner ?' },
-    { label: '⏰ Prolongation accordée', text: 'C\'est fait — nous avons prolongé votre échéance. La nouvelle date figure sur votre tableau de bord.' },
+    { label: '⏰ Prolongation accordée', text: 'C\'est fait : nous avons prolongé votre délai. La nouvelle date figure sur votre tableau de bord.' },
     { label: '🔍 Plus de détails svp', text: 'Pourriez-vous nous donner un peu plus de détails ? S\'il s\'agit d\'un plan en particulier, le numéro du plan et le nom du voyageur nous aideraient beaucoup.' },
     { label: '📸 Envoyez une capture svp', text: 'Pourriez-vous partager une capture d\'écran ? Il vous suffit de cliquer sur l\'icône 📎 dans le chat pour joindre une image.' },
     { label: '🙏 Merci', text: 'Merci de nous avoir contactés — n\'hésitez pas si vous avez besoin d\'autre chose !' },
-    { label: '📨 Mis en file de validation', text: 'C\'est noté {first_name}, merci — le set #{set_num} est désormais dans la file de validation de l\'administrateur. Vous serez notifié au fur et à mesure de l\'approbation de chaque plan (généralement sous 24 à 48 heures). Merci pour votre excellent travail !' },
-    { label: '✨ Nouveau set attribué', text: 'Bonne nouvelle {first_name} — un nouveau set vous a été attribué. Consultez les briefs des voyageurs sur votre tableau de bord. Prévenez-nous si certaines informations voyageur semblent incorrectes avant de commencer la planification.' },
+    { label: '📨 Mis en file de validation', text: 'C\'est bien noté {first_name}, merci — le lot n° {set_num} est désormais dans la file de validation de l\'administrateur. Vous serez notifié au fur et à mesure de la validation de chaque plan (généralement sous 24 à 48 heures). Merci pour votre excellent travail !' },
+    { label: '✨ Nouveau lot attribué', text: 'Bonne nouvelle {first_name} : un nouveau lot vous a été attribué. Consultez les briefs des voyageurs sur votre tableau de bord. Prévenez-nous si certaines informations voyageur vous semblent incorrectes avant de commencer la planification.' },
     { label: '📝 Révision demandée', text: 'C\'est noté {first_name} — l\'administrateur a signalé certains plans à réviser avec des commentaires. Ouvrez le plan depuis votre tableau de bord pour consulter la demande de révision, mettez-le à jour puis soumettez-le à nouveau. Contactez-nous si quoi que ce soit n\'est pas clair.' },
-    { label: '🎉 Plan approuvé', text: 'Plan approuvé ! Beau travail {first_name}. La commission est enregistrée et sera versée sur votre portefeuille une fois l\'ensemble du set approuvé.' },
+    { label: '🎉 Plan approuvé', text: 'Plan approuvé ! Beau travail, {first_name}. La commission est enregistrée et sera versée sur votre portefeuille une fois l\'ensemble du lot validé.' },
   ]
 }
 // Current language for quick replies — persisted per agent session
@@ -1951,7 +1951,7 @@ const PLANNER_INTENT_MATCHERS = [
     'update on the payout','payout status','when is my payout','check payout','statut du paiement','statut du retrait','où en est mon retrait','quand mon retrait','lot approuvé'
   ] },
   { key: 'checking_sets', keywords: [
-    'assign me a new set','take on a new set','assign me one','ready to take','request a new set','request a set','nouveau set','prochain set','attribuer un set','prendre un set'
+    'assign me a new set','take on a new set','assign me one','ready to take','request a new set','request a set','nouveau lot','prochain lot','attribuer un lot','prendre un lot'
   ] },
   { key: 'how_many_days', keywords: [
     'request a deadline extension','deadline extension','need more time','extend my deadline','prolongation du délai','prolonger le délai','report de l\'échéance','demande de prolongation'
@@ -1960,7 +1960,7 @@ const PLANNER_INTENT_MATCHERS = [
     'screenshot','picture','image','proof','capture d\'écran','capture','justificatif','preuve'
   ] },
   { key: 'queued_for_review', keywords: [
-    'submitted all 15 plans','queue this for admin review','ready for review','queue for review','15 plans soumis','validation de l\'administrateur','demande de validation','prêt pour validation'
+    'submitted all 15 plans','queue this for admin review','ready for review','queue for review','15 plans soumis','validation de l\'administrateur','demande de validation','prêt pour la validation'
   ] },
   { key: 'revision_noted', keywords: [
     'revision','revise','revisions','please fix','what does the admin want','réviser','corriger','que veut l\'administrateur','comment corriger'

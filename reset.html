@@ -121,7 +121,7 @@ let userEmail = null
     // Magic-link path failed (token consumed by email scanner, expired, etc.).
     // Show OTP code entry instead — user can paste the code from the email
     // body if the template carries both link + token.
-    showError(decodeURIComponent(errDesc).replace(/\+/g,' ') + ' — enter the code from the email instead.')
+    showError(decodeURIComponent(errDesc).replace(/\+/g,' ') + ' — saisissez plutôt le code reçu par e-mail.')
     history.replaceState(null, '', window.location.pathname + window.location.search)
     return showStep(userEmail ? 'code' : 'email')
   }
@@ -241,7 +241,7 @@ async function setPassword() {
 
   hideMessages()
   btn.disabled = true
-  btn.textContent = 'Enregistrement...'
+  btn.textContent = 'Enregistrement…'
 
   // Skip OTP exchange if we already established the session via the magic-link
   // hash earlier. Otherwise, exchange the 6-digit code for a session first.
