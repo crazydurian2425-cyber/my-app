@@ -7282,7 +7282,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
       <div>
         <div class="card"><div class="card-header"><div class="card-title" data-i18n="profile.personal">Personal info</div></div><div class="card-body">
           <div class="profile-avatar-big" id="profile-avatar">?</div>
-          <div class="form-row" style="margin-bottom:14px;"><div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.fullName">Full name</label><input class="form-input" id="profile-name" placeholder="Your full name" data-i18n-ph="profile.ph.fullName"></div><div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.city">City</label><select class="form-input profile-city-select" id="profile-city" onchange="onProfileCityChange()"><!-- populated by JS based on lang --></select><input type="text" class="form-input profile-city-other" id="profile-city-other" placeholder="Type your city…" data-i18n-ph="profile.ph.cityOther" style="display:none;margin-top:8px;" oninput="onProfileCityOtherInput()"></div></div>
+          <div class="form-row" style="margin-bottom:14px;"><div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.fullName">Full name</label><input class="form-input" id="profile-name" placeholder="Your full name" data-i18n-ph="profile.ph.fullName"></div><div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.city">Region</label><select class="form-input profile-city-select" id="profile-city" onchange="onProfileCityChange()"><!-- populated by JS based on lang --></select><input type="text" class="form-input profile-city-other" id="profile-city-other" placeholder="Type your region…" data-i18n-ph="profile.ph.cityOther" style="display:none;margin-top:8px;" oninput="onProfileCityOtherInput()"></div></div>
           <div class="form-group"><label class="form-label" data-i18n="profile.email">Email</label><input class="form-input" id="profile-email" type="email" placeholder="your@email.com" readonly style="background:var(--bg);color:var(--text-3)"></div>
           <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.phone">Phone</label><input class="form-input" id="profile-phone" placeholder="+81 90-xxxx-xxxx" data-i18n-ph="profile.ph.phone"></div>
         </div></div>
@@ -7383,7 +7383,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <div class="settings-account-val" id="settings-email-val">—</div>
         </div>
         <div class="settings-account-cell">
-          <div class="settings-row-label" data-i18n="settings.city">City</div>
+          <div class="settings-row-label" data-i18n="settings.city">Region</div>
           <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
             <div class="settings-account-val" id="settings-city-val">—</div>
             <a href="#profile" class="settings-row-link" onclick="showPage('profile', document.querySelector('[onclick*=profile]')); return false;" data-i18n="settings.edit">Edit in profile →</a>
@@ -8043,7 +8043,7 @@ const TM_I18N = {
     'profile.save.hint':'Changes are saved to your planner profile — visible to admin.',
     'profile.personal':'Personal info',
     'profile.fullName':'Full name',
-    'profile.city':'City',
+    'profile.city':'Region',
     'profile.email':'Email',
     'profile.phone':'Phone',
     'profile.payment':'Payment details',
@@ -8064,14 +8064,14 @@ const TM_I18N = {
     'profile.cities':'Cities you cover',
     'profile.types':'Travel types you excel at',
     'profile.ph.fullName':'Your full name',
-    'profile.ph.city':'Your city',
+    'profile.ph.city':'Your region',
     'profile.ph.bank':'e.g. BNP Paribas, Société Générale, Crédit Agricole',
     'profile.ph.account':'FR76 xxxx xxxx xxxx xxxx xxxx xxx',
     'profile.ph.holder':'Name as per bank account',
     'profile.ph.cities':'e.g. Paris, Lyon, Marseille',
     'profile.ph.types':'e.g. Street food tours, family trips, corporate events...',
     'profile.ph.phone':'+33 6 xx xx xx xx',
-    'profile.ph.cityOther':'Type your city…',
+    'profile.ph.cityOther':'Type your region…',
     // First-time rules popup
     'rules.title':'Welcome to Journey Junction',
     'rules.sub':'A quick look at what you can do here.',
@@ -8095,7 +8095,7 @@ const TM_I18N = {
     'profile.strength.title':'Profile strength',
     'profile.strength.sub':'Complete your profile to get more set assignments',
     'ps.name':'Add your full name',
-    'ps.city':'Set your home city',
+    'ps.city':'Set your home region',
     'ps.phone':'Add a contact phone',
     'ps.bank':'Add your crypto payout wallet',
     'ps.langs':'Pick at least one language you speak',
@@ -8136,7 +8136,7 @@ const TM_I18N = {
     'settings.account':'Account',
     'settings.account.sub':'Sign-in details and password',
     'settings.email':'Email',
-    'settings.city':'City',
+    'settings.city':'Region',
     'settings.password':'Password',
     'settings.password.sub':"We'll email you a code to set a new password",
     'settings.edit':'Edit in profile →',
@@ -8751,7 +8751,7 @@ const TM_I18N = {
     'profile.save.hint':'Enregistré dans votre profil planificateur (visible uniquement par les administrateurs).',
     'profile.personal':'Informations personnelles',
     'profile.fullName':'Nom complet',
-    'profile.city':'Ville',
+    'profile.city':'Région',
     'profile.email':'E-mail',
     'profile.phone':'Téléphone',
     'profile.payment':'Coordonnées de paiement',
@@ -8772,14 +8772,14 @@ const TM_I18N = {
     'profile.cities':'Villes couvertes',
     'profile.types':'Types de voyage',
     'profile.ph.fullName':'Votre nom complet',
-    'profile.ph.city':'Votre ville de résidence',
+    'profile.ph.city':'Votre région de résidence',
     'profile.ph.bank':'ex : BNP Paribas, Société Générale, Crédit Agricole',
     'profile.ph.account':'IBAN (FR76…)',
     'profile.ph.holder':'Titulaire du compte',
     'profile.ph.cities':'ex : Paris, Lyon, Marseille',
     'profile.ph.types':'ex : food tours, voyages famille, événements pro…',
     'profile.ph.phone':'+33 6 xx xx xx xx',
-    'profile.ph.cityOther':'Saisissez votre ville…',
+    'profile.ph.cityOther':'Saisissez votre région…',
     // Pop-up d\'acceptation des règles (première connexion)
     'rules.title':'Bienvenue chez Journey Junction',
     'rules.sub':'Voici en bref ce que vous pouvez faire ici.',
@@ -8801,7 +8801,7 @@ const TM_I18N = {
     'profile.strength.title':'Complétude du profil',
     'profile.strength.sub':'Un profil complet reçoit plus d\'attributions',
     'ps.name':'Renseigner votre nom',
-    'ps.city':'Définir votre ville',
+    'ps.city':'Définir votre région',
     'ps.phone':'Ajouter un numéro de téléphone',
     'ps.bank':'Ajoutez votre portefeuille crypto',
     'ps.langs':'Sélectionner au moins une langue',
@@ -8841,7 +8841,7 @@ const TM_I18N = {
     'settings.account':'Compte',
     'settings.account.sub':'Identifiants et mot de passe',
     'settings.email':'Adresse e-mail',
-    'settings.city':'Ville',
+    'settings.city':'Région',
     'settings.password':'Mot de passe',
     'settings.password.sub':'Un code de vérification est envoyé à votre e-mail',
     'settings.edit':'Modifier dans le profil →',
