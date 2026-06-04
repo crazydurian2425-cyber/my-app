@@ -12292,7 +12292,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // Plan rows are RLS-gated to the planner who owns them, so this select
   // only returns rows where planner_id = me. Used to:
   //   1) Decide which sibling rows show full info vs locked card
-  //   2) Compute continuity bonus
+  //      (commission is now a flat rate by duration — no continuity bonus)
   let myTravelerIds = new Set()
   if (siblings.length > 1 && planner?.id) {
     const sibIds = siblings.map(s => s.id).filter(Boolean)
@@ -12346,13 +12346,10 @@ async function renderTravelerBrief(plan, t, notes) {
     ? `${fmtBriefDateShort(t.arrival_date)}${unitEnd ? '–' + fmtBriefDateShort(unitEnd) : ''}`
     : ''
 
-  // ── commission: rule-based base + continuity (override on plan still wins) ──
-  const thisUnitOrder = Number(meta.unit_order || 1)
-  const hasContinuity = siblings.some(s =>
-    myTravelerIds.has(s.id) && Number(s.meta?.unit_order || 0) < thisUnitOrder
-  )
-  const baseFee = baseCommissionForDuration(t.duration)
-  const computedFee = baseFee + (hasContinuity ? 10 : 0)
+  // ── commission: flat rate by duration (3D2N €40 / 2D1N €30), override wins ──
+  // No continuity bonus — the rate is flat per duration to match the stored
+  // planner_payout the wallet actually credits.
+  const computedFee = baseCommissionForDuration(t.duration)
   const commission = plan.planner_payout_override != null
     ? plan.planner_payout_override
     : computedFee
@@ -12636,7 +12633,8 @@ async function renderTravelerBrief(plan, t, notes) {
       const INK_TERTIARY = 'var(--color-text-tertiary,#8a958f)'
       if (isMine) {
         // Full info — green border, "YOU ARE HERE" or "Unit N · yours"
-        const myFee = baseCommissionForDuration(s.duration) + (Number(s.meta?.unit_order || 0) > 1 ? 10 : 0)
+        // Flat rate by duration (no continuity bonus) — matches stored payout.
+        const myFee = baseCommissionForDuration(s.duration)
         return `
           <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(63,186,115,0.10);border:1px solid rgba(63,186,115,0.45);margin-bottom:6px;">
             ${isCurrent
@@ -12686,9 +12684,8 @@ async function renderTravelerBrief(plan, t, notes) {
   }
 
   // ── COMMISSION BOX (per spec: #2a2a2a bg, large green amount) ──
-  const breakdownTxt = (commission === computedFee && hasContinuity)
-    ? `${fmtEur(baseFee)} base + ${fmtEur(10)} continuity bonus`
-    : (commission === computedFee ? `${fmtEur(baseFee)} base` : '')
+  // Flat rate by duration — show "€X base" unless an admin override applies.
+  const breakdownTxt = (commission === computedFee) ? `${fmtEur(computedFee)} base` : ''
   // ── COMMISSION BOX (subdued per mockup: secondary bg, small €, no icon) ──
   const sectionCommission = commission > 0 ? `
     <div style="background:var(--color-background-secondary);padding:12px 14px;border-radius:var(--border-radius-md);display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
