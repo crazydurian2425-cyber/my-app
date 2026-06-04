@@ -12645,7 +12645,7 @@ async function renderTravelerBrief(plan, t, notes) {
     // Helpful context tip — derived from adjacent units only.
     const tipParts = []
     if (prevUnit) {
-      tipParts.push(`Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — plan check-in near transit.`)
+      tipParts.push(`Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — keep the arrival day relaxed.`)
     }
     if (nextUnit && unitEnd) {
       tipParts.push(`Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — leave time on the last day.`)
