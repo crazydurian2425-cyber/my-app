@@ -20897,33 +20897,9 @@ async function submitPlan() {
     }
   }
 
-  // Two-step image confirm: any slot with zero images shows a yellow toast
-  // and BLOCKS the first submit attempt. Planner can either add images
-  // (then submit again) OR click submit a second time to bypass — the
-  // toast was their notice. Bypass flag is reset on submit success and
-  // when the modal closes.
-  //
-  // SUB-ACCOUNT EXEMPTION: training planners only own Day 1; Day 2+ is the
-  // mentor's job. They shouldn't be nagged about photos missing on slots
-  // they were never going to fill. Their Day-1 rule above already requires
-  // a photo on each of the 3 completed slots, so the photo bar IS enforced
-  // — just scoped to Day 1.
-  // Photo floor: photos are OPTIONAL per stop (no per-slot nagging), but a
-  // plan must carry at least PHOTO_MIN photographed stops — or all of them if
-  // the plan has fewer — so the traveler always gets some visuals. Transport
-  // rows can't hold a photo and don't count. Sub-accounts are exempt (their
-  // Day-1 rule already requires a photo on each of the 3 completed stops).
-  if (!window._isSubaccount) {
-    const PHOTO_MIN = 3
-    const photoStops = items.filter(it => it.type !== 'transport')
-    const required   = Math.min(PHOTO_MIN, photoStops.length)
-    const withPhoto  = photoStops.filter(it => it._hasImage).length
-    if (required > 0 && withPhoto < required) {
-      showToast(t('plan.submit.needPhotos','Add a photo to at least {n} stops before submitting — {have} so far.')
-        .replace('{n}', required).replace('{have}', withPhoto), { tone: 'warn' })
-      return
-    }
-  }
+  // Photos are fully OPTIONAL — no floor, no block. Planners are encouraged to
+  // add visuals but a plan submits without them. (Sub-accounts still have their
+  // Day-1 per-stop photo rule above; that's a separate training requirement.)
 
   // Strip helper flags before sending to DB.
   for (const it of items) { delete it._seedUnchanged; delete it._hasImage; delete it._slotEl }
