@@ -13424,6 +13424,15 @@ async function openPlanSummary(plan) {
     .select('*, item_images(id,url)')
     .eq('plan_id', plan.id).order('day_number').order('sort_order')
 
+  // Stats the planner's Review tab computed at save time. When present we show
+  // these EXACT numbers (incl. transit-walking, which can't be recomputed from
+  // saved data); otherwise we fall back to recomputing below. Null/ignored if
+  // the stats_json column doesn't exist yet.
+  let _savedStats = plan.stats_json || null
+  if (!_savedStats) {
+    try { const _r = await sb.from('plans').select('stats_json').eq('id', plan.id).maybeSingle(); _savedStats = _r?.data?.stats_json || null } catch (e) {}
+  }
+
   // Group by day
   const byDay = {}
   for (const it of (items || [])) {
@@ -13702,17 +13711,21 @@ async function openPlanSummary(plan) {
       <div class="ps-note-body">${escapeHtml(_noteMsg)}</div>
     </div>` : ''
   // Per-day averages — SAME units as the Review tab (avg walking/day, avg
-  // spend/day). Spend = stop costs + transport fares, matching computeDaySummary.
-  const _days = Math.max(totalDays, 1)
-  const _avgWalk  = totalWalkKm / _days
-  const _avgSpend = Math.round((totalStopSpend + totalTransitSpend) / _days)
+  // spend/day). Prefer the stats the Review tab persisted at save time (exact
+  // match, incl. transit-walking); otherwise fall back to recomputed figures.
+  const _statsDays = Math.max((_savedStats && _savedStats.days) || totalDays, 1)
+  const _statStops = (_savedStats && Number.isFinite(_savedStats.stops)) ? _savedStats.stops : totalStops
+  const _walkTotal = (_savedStats && Number.isFinite(_savedStats.walking_km)) ? _savedStats.walking_km : totalWalkKm
+  const _spendTotal = (_savedStats && Number.isFinite(_savedStats.spend_eur)) ? _savedStats.spend_eur : (totalStopSpend + totalTransitSpend)
+  const _avgWalk  = _walkTotal / _statsDays
+  const _avgSpend = Math.round(_spendTotal / _statsDays)
   const _spendOver = budgetDay != null && _avgSpend > budgetDay
   const _statTile = (num, label, over) => `<div class="ps-stat"><div class="ps-stat-num${over ? ' ps-stat-num--over' : ''}">${num}</div><div class="ps-stat-label">${label}</div></div>`
   const _statsHtml = `
     <div class="ps-stats">
-      ${_statTile(totalStops, tPrime('ps.stat.stops','Stops'), false)}
-      ${_statTile(totalWalkKm > 0 ? _avgWalk.toFixed(1) + ' km' : '—', tPrime('ps.stat.walkingAvg','Avg walking / day'), false)}
-      ${_statTile((totalStopSpend + totalTransitSpend) > 0 ? fmtMoney(_avgSpend) : '—', tPrime('ps.stat.spendAvg','Avg spend / day'), _spendOver)}
+      ${_statTile(_statStops, tPrime('ps.stat.stops','Stops'), false)}
+      ${_statTile(_walkTotal > 0 ? _avgWalk.toFixed(1) + ' km' : '—', tPrime('ps.stat.walkingAvg','Avg walking / day'), false)}
+      ${_statTile(_spendTotal > 0 ? fmtMoney(_avgSpend) : '—', tPrime('ps.stat.spendAvg','Avg spend / day'), _spendOver)}
     </div>`
 
   // Extras (transport / spend / local tips) — only render blocks that have content
@@ -21307,11 +21320,19 @@ async function submitPlan() {
   // the admin's original feedback. Wiping them on resubmit destroys the audit
   // trail and forces both sides to re-derive context from chat. Admin's own
   // approve flow clears the field when the plan is finally accepted.
-  const { data, error: submitErr } = await sb.from('plans').update({
+  const _submitBody = {
     itin_title: body.itin_title, start_date: body.start_date, end_date: body.end_date,
     transport_tips: body.transport_tips, spend_breakdown: body.spend_breakdown,
-    local_tips: body.local_tips, status: 'submitted', submitted_at: new Date().toISOString()
-  }).eq('id', currentPlanId).select().single()
+    local_tips: body.local_tips, status: 'submitted', submitted_at: new Date().toISOString(),
+    stats_json: _computeFormStats(),
+  }
+  let { data, error: submitErr } = await sb.from('plans').update(_submitBody).eq('id', currentPlanId).select().single()
+  if (submitErr && /stats_json/i.test(submitErr.message || '')) {
+    console.warn('[submit] stats_json column missing — run docs/schema/add-plan-stats.sql. Retrying without it.')
+    delete _submitBody.stats_json
+    const _r = await sb.from('plans').update(_submitBody).eq('id', currentPlanId).select().single()
+    data = _r.data; submitErr = _r.error
+  }
   if (submitErr) {
     showToast(submitErr.message)
     if (submitBtn) submitBtn.disabled = false
@@ -21490,6 +21511,19 @@ async function resetCurrentPlanToFresh() {
   }
 }
 
+// Compute the SAME trip stats the Review tab shows (computeDaySummary summed
+// across day containers) so we can PERSIST them and the read-only summary can
+// display the exact same numbers later — no live Routes data needed there.
+function _computeFormStats() {
+  try {
+    const dcs = [...document.querySelectorAll('[id^="slots-day-"]')]
+    if (!dcs.length || typeof computeDaySummary !== 'function') return null
+    let stops = 0, walkingKm = 0, spendEur = 0
+    dcs.forEach(dc => { const s = computeDaySummary(dc); stops += s.stops||0; walkingKm += s.walkingKm||0; spendEur += s.spendEur||0 })
+    return { stops, walking_km: Math.round(walkingKm*10)/10, spend_eur: Math.round(spendEur), days: dcs.length }
+  } catch (e) { console.warn('[stats] computeFormStats failed', e); return null }
+}
+
 async function _persistDraft(planId) {
   planId = planId || currentPlanId
   console.log('[autosave] _persistDraft start', { planId, title: document.getElementById('itin-title')?.value })
@@ -21551,19 +21585,29 @@ async function _persistDraft(planId) {
     start_date: document.getElementById('itin-start')?.value || null,
     end_date:   document.getElementById('itin-end')?.value   || null,
   }
-  let { error: planErr } = await sb.from('plans').update({
+  // Persist the computed trip stats alongside the plan so the read-only
+  // summary shows the SAME numbers as the Review tab (it can't recompute
+  // transit-walking from saved data).
+  const _attemptBody = {
     ..._baseBody,
     personal_message_to_traveler: _personalMessage,
-  }).eq('id', planId).select('id, itin_title')
-  // Graceful degrade: if the personal_message_to_traveler column doesn't
-  // exist yet (user hasn't run docs/schema/add-personal-message.sql),
-  // retry the update WITHOUT that field so the rest of the autosave
-  // still persists. Surfaces a console warning + non-blocking toast so
-  // the admin sees the remediation step.
+    stats_json: _computeFormStats(),
+  }
+  let { error: planErr } = await sb.from('plans').update(_attemptBody).eq('id', planId).select('id, itin_title')
+  // Graceful degrade: strip whichever optional column the schema is missing
+  // (user hasn't run the add-column SQL yet) and retry, so the core autosave
+  // still persists. Each missing column is handled independently.
+  if (planErr && /stats_json/i.test(planErr.message || '')) {
+    console.warn('[autosave] stats_json column missing — run docs/schema/add-plan-stats.sql in Supabase. Retrying without it.')
+    delete _attemptBody.stats_json
+    const retry = await sb.from('plans').update(_attemptBody).eq('id', planId).select('id, itin_title')
+    planErr = retry.error
+  }
   if (planErr && /personal_message_to_traveler/i.test(planErr.message || '')) {
     console.warn('[autosave] personal_message column missing — run docs/schema/add-personal-message.sql in Supabase. Retrying without that field.')
     if (typeof showToast === 'function') showToast('Run docs/schema/add-personal-message.sql in Supabase to enable the personal note field')
-    const retry = await sb.from('plans').update(_baseBody).eq('id', planId).select('id, itin_title')
+    delete _attemptBody.personal_message_to_traveler
+    const retry = await sb.from('plans').update(_attemptBody).eq('id', planId).select('id, itin_title')
     planErr = retry.error
   }
   console.log('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
