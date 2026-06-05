@@ -1463,7 +1463,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     <div class="ph">
       <div>
         <div class="ph-title">Weekly salary</div>
-        <div class="ph-sub">€500 per rolling 7-day cycle if a planner completes ≥1 set · cycles anchored to each planner's first set completion</div>
+        <div class="ph-sub">€1,000 per rolling 7-day cycle if a planner completes ≥1 set · cycles anchored to each planner's first set completion</div>
       </div>
     </div>
     <div class="card" id="weekly-salaries-card">
@@ -4293,7 +4293,7 @@ async function loadPayments() {
 // [anchor+7d, anchor+14d), etc. Admin can pay a planner for cycle N only
 // after cycle N is fully ended (i.e. the planner is in cycle N+1).
 // Idempotency: notes = `weekly_salary_cycle_<N>` per (planner_id, cycle).
-const WEEKLY_SALARY_AMOUNT = 500
+const WEEKLY_SALARY_AMOUNT = 1000
 const WEEKLY_SALARY_WEEK_MS = 7 * 24 * 3600 * 1000
 
 const _fmtDayShort = (ms) => new Date(ms).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
