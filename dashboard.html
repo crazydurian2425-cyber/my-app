@@ -2715,6 +2715,17 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.slot-type-freetime .slot-row-duration{display:flex;align-items:center;gap:10px;}
 .slot-row-duration .slot-row-label{font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;}
 
+/* Optional per-pax cost box — only on spend-bearing venue types (not hotels/transport). */
+.activity-slot .slot-row-cost{display:none;margin-top:8px;}
+.activity-slot.slot-type-activity .slot-row-cost,
+.activity-slot.slot-type-meal .slot-row-cost,
+.activity-slot.slot-type-shopping .slot-row-cost,
+.activity-slot.slot-type-entertainment .slot-row-cost,
+.activity-slot.slot-type-freetime .slot-row-cost{display:flex;align-items:center;gap:10px;}
+.slot-row-cost .slot-row-label{font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.04em;flex:1;}
+.slot-cost-input{width:96px;padding:7px 10px;border:1px solid var(--border-med);border-radius:6px;font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;text-align:right;}
+.slot-cost-input:focus{border-color:var(--green-mid);}
+
 /* IMAGE UPLOAD */
 .img-upload-area{border:1.5px dashed var(--border-med);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:border-color 0.15s;display:flex;align-items:center;gap:10px;}
 .img-upload-area:hover{border-color:var(--green-mid);background:var(--green-light);}
@@ -13628,6 +13639,9 @@ function fillItineraryItems(items) {
       if (titleInput) titleInput.value = it.title || ''
       const notesInput = slot.querySelector('.slot-notes-input')
       if (notesInput) notesInput.value = it.notes || ''
+      // Restore the optional "Est. cost / pax" box from the notes JSON.
+      const costInput = slot.querySelector('.slot-cost-input')
+      if (costInput) { const _cst = _parseTipsValue(it.notes || ''); costInput.value = (_cst.cost != null ? _cst.cost : '') }
       // Activity / transport / shopping / meal render the loaded notes as
       // quick-tip chips. (Runs after the value is set; updateSlotFieldLabels
       // ran before.)
@@ -15495,6 +15509,7 @@ function _parseTipsValue(raw) {
           .map(tp => ({ cat: TIP_CAT_BY_KEY[tp.cat] ? tp.cat : 'note', text: String(tp.text).slice(0, 120) }))
           .slice(0, TIP_MAX)
         out.legacy = o.legacy ? String(o.legacy) : ''
+        if (o.cost != null && Number.isFinite(Number(o.cost))) out.cost = Math.round(Number(o.cost))
         return out
       }
     } catch (e) { /* fall through to legacy */ }
@@ -15505,10 +15520,19 @@ function _parseTipsValue(raw) {
 function _serializeTips(state) {
   const hasTips = state.tips && state.tips.length
   const hasLegacy = state.legacy && state.legacy.trim()
-  if (!hasTips && !hasLegacy) return ''
+  const hasCost = state.cost != null && state.cost !== '' && Number.isFinite(Number(state.cost))
+  if (!hasTips && !hasLegacy && !hasCost) return ''
   const o = { tips: state.tips || [] }
   if (hasLegacy) o.legacy = state.legacy
+  if (hasCost) o.cost = Math.round(Number(state.cost))   // est. cost / pax (€)
   return JSON.stringify(o)
+}
+// Live handler for the per-pax cost box — persist (autosave) + refresh the
+// day summary so "Est. spend / pax" and the budget badge update immediately.
+function _onSlotCostInput(el) {
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
+  const dc = el.closest('[id^="slots-day-"]')
+  if (dc && typeof refreshDaySummary === 'function') refreshDaySummary(dc)
 }
 
 // Render the chip UI into a slot's .slot-tips host from the textarea JSON.
@@ -20694,7 +20718,19 @@ async function submitPlan() {
     const addressVal = slot.querySelector('.slot-address-input')?.value?.trim() || ''
     const durRaw     = slot.querySelector('.slot-duration-input')?.value?.trim() || ''
     const durMins    = durRaw ? parseInt(durRaw, 10) : null
-    const notes      = slot.querySelector('.slot-notes-input')?.value?.trim() || ''
+    let notes        = slot.querySelector('.slot-notes-input')?.value?.trim() || ''
+    // Fold the optional "Est. cost / pax" box into the notes JSON so it
+    // persists on the existing notes column (no schema change). ONLY for the
+    // tippable venue types whose notes are already JSON — never for hotels
+    // (plain-text notes) or transport. Clearing the box removes the cost.
+    const _costType = slot.querySelector('.slot-type-select')?.value || ''
+    if (['activity','meal','shopping','entertainment','freetime'].includes(_costType)) {
+      const _costRaw = slot.querySelector('.slot-cost-input')?.value
+      const _costNum = (_costRaw != null && String(_costRaw).trim() !== '') ? Math.round(parseFloat(_costRaw)) : null
+      const _st = _parseTipsValue(notes)
+      if (Number.isFinite(_costNum)) _st.cost = _costNum; else delete _st.cost
+      notes = _serializeTips(_st)
+    }
     if (titleVal) {
       const sortOrder = items.length
       // Pending uploads (newly picked files)
