@@ -1447,11 +1447,14 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
         <div style="flex:1;min-width:240px;">
           <div style="font-size:13px;font-weight:600;color:var(--ink);">Wallet retention buffer</div>
-          <div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.45;">Held on every withdrawal to cover post-approval adjustments. Set to <strong>0</strong> to disable. Currently disclosed in your <a href="terms.html" target="_blank" rel="noopener" style="color:var(--green);text-decoration:none;">Terms</a>.</div>
+          <div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.45;">Held until the planner completes the set count below, to cover post-approval adjustments. Set amount to <strong>0</strong> to disable. Currently disclosed in your <a href="terms.html" target="_blank" rel="noopener" style="color:var(--green);text-decoration:none;">Terms</a>.</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
           <span style="font-size:13px;font-weight:600;color:var(--ink-3);">€</span>
-          <input type="number" id="set-retention-min" class="form-input" min="0" step="1" style="width:110px;text-align:right;font-family:'DM Sans',sans-serif;font-size:14px;" value="200">
+          <input type="number" id="set-retention-min" class="form-input" min="0" step="1" style="width:100px;text-align:right;font-family:'DM Sans',sans-serif;font-size:14px;" value="200">
+          <span style="font-size:12px;color:var(--ink-3);margin-left:4px;">release after</span>
+          <input type="number" id="set-retention-sets" class="form-input" min="1" step="1" style="width:64px;text-align:right;font-family:'DM Sans',sans-serif;font-size:14px;" value="3">
+          <span style="font-size:12px;color:var(--ink-3);">sets</span>
           <button class="btn btn-primary btn-sm" onclick="saveRetentionSetting()" style="padding:8px 14px;">Save</button>
         </div>
       </div>
@@ -4277,7 +4280,7 @@ async function loadPayments() {
   //
   //   "Available to withdraw" displayed = effectiveMax (what planner can actually request).
   //   Bonds-held metric = bond_amount across plans still in escrow (not yet approved).
-  const [{ data: allPlanners }, { data: approvedPlans }, { data: wallet }, { data: bondPlans }, adjResult, retentionResult] = await Promise.all([
+  const [{ data: allPlanners }, { data: approvedPlans }, { data: wallet }, { data: bondPlans }, adjResult, retentionResult, setsResult] = await Promise.all([
     sb.from('planners').select('id'),
     sb.from('plans')
       .select('planner_id, planner_payout_override, bond_amount_override, requires_bond_override, travelers(planner_payout, bond_amount, requires_bond)')
@@ -4287,11 +4290,21 @@ async function loadPayments() {
       .select('bond_amount_override, travelers(bond_amount, requires_bond)')
       .in('status', ['in_progress','submitted','bond_pending']),
     sb.from('wallet_adjustments').select('planner_id, amount, bypass_retention'),
-    sb.from('platform_settings').select('value_num').eq('key','first_payout_retention_min').maybeSingle()
+    sb.from('platform_settings').select('key, value_num').in('key', ['first_payout_retention_min','first_payout_retention_sets']),
+    sb.from('set_assignments').select('planner_id, status').in('status', ['completed','paid'])
   ])
   // wallet_adjustments table may not exist yet — degrade gracefully
   const adjustments = adjResult?.error ? [] : (adjResult?.data || [])
-  const retentionMin = (retentionResult?.data?.value_num != null) ? Number(retentionResult.data.value_num) : 200
+  const _retRows = retentionResult?.error ? [] : (retentionResult?.data || [])
+  const _retMinRow  = _retRows.find(r => r.key === 'first_payout_retention_min')
+  const _retSetsRow = _retRows.find(r => r.key === 'first_payout_retention_sets')
+  const retentionMin  = (_retMinRow?.value_num != null) ? Number(_retMinRow.value_num) : 200
+  const retentionSets = (_retSetsRow?.value_num != null) ? Math.max(1, Math.round(Number(_retSetsRow.value_num))) : 3
+  // Completed-set count per planner — the buffer releases once this hits the threshold.
+  const completedSetsBy = {}
+  for (const sa of (setsResult?.error ? [] : (setsResult?.data || []))) {
+    completedSetsBy[sa.planner_id] = (completedSetsBy[sa.planner_id] || 0) + 1
+  }
 
   const payoutOf = p => (p.planner_payout_override != null ? p.planner_payout_override : (p.travelers?.planner_payout || 0))
   const bondOf   = p => {
@@ -4336,11 +4349,11 @@ async function loadPayments() {
     // total available so the protection buffer is always honoured (matches
     // dashboard's planner-side loadWallet formula).
     const totalAvailable = Math.max(0, earnedTotal - locked)
-    // Retention only applies before the planner's FIRST paid withdrawal —
-    // once they've been paid out, the buffer unlocks for future payouts.
-    // Mirrors the planner-side dashboard rule.
+    // Retention releases once the planner has COMPLETED the configured number
+    // of sets (not on first payout). Mirrors the planner-side dashboard rule.
     const hasBeenPaid    = paid > 0
-    const retainHeld     = hasBeenPaid ? 0 : Math.min(retentionMin, totalAvailable)
+    const retainReleased = (completedSetsBy[pl.id] || 0) >= retentionSets
+    const retainHeld     = retainReleased ? 0 : Math.min(retentionMin, totalAvailable)
     const effectiveMax   = Math.max(0, totalAvailable - retainHeld)
     const pendingAmt = locked - paid  // wallet_requests pending only (not yet paid)
     if (earnedTotal > 0 || paid > 0 || pendingAmt > 0) {
@@ -5093,41 +5106,52 @@ async function submitWalletAdjustment(){
   }
 }
 
-// Load the first-payout retention setting into the admin settings input
+// Load the retention settings (amount + release-after-N-sets) into the inputs
 async function loadRetentionSetting(){
   const input = document.getElementById('set-retention-min')
+  const setsInput = document.getElementById('set-retention-sets')
   const stamp = document.getElementById('set-retention-last')
   if (!input) return
   const { data, error } = await sb.from('platform_settings')
-    .select('value_num, updated_at, updated_by').eq('key','first_payout_retention_min').maybeSingle()
+    .select('key, value_num, updated_at, updated_by').in('key', ['first_payout_retention_min','first_payout_retention_sets'])
   if (error) {
     if (stamp) stamp.textContent = 'Settings table missing — run phase_a_platform_settings.sql to enable.'
     input.value = 200
     return
   }
-  input.value = (data?.value_num != null) ? Number(data.value_num) : 200
+  const rows = Array.isArray(data) ? data : []
+  const minRow  = rows.find(r => r.key === 'first_payout_retention_min')
+  const setsRow = rows.find(r => r.key === 'first_payout_retention_sets')
+  input.value = (minRow?.value_num != null) ? Number(minRow.value_num) : 200
+  if (setsInput) setsInput.value = (setsRow?.value_num != null) ? Number(setsRow.value_num) : 3
+  const last = [minRow, setsRow].filter(r => r?.updated_at).sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at))[0]
   if (stamp) {
-    if (data?.updated_at) {
-      const when = new Date(data.updated_at).toLocaleString('en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
-      stamp.textContent = `Last updated ${when}` + (data.updated_by ? ` by ${data.updated_by}` : '')
+    if (last?.updated_at) {
+      const when = new Date(last.updated_at).toLocaleString('en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+      stamp.textContent = `Last updated ${when}` + (last.updated_by ? ` by ${last.updated_by}` : '')
     } else {
-      stamp.textContent = 'Default value · never saved'
+      stamp.textContent = 'Default values · never saved'
     }
   }
 }
 
-// Save the retention value back to platform_settings
+// Save both retention settings back to platform_settings
 async function saveRetentionSetting(){
   const input = document.getElementById('set-retention-min')
+  const setsInput = document.getElementById('set-retention-sets')
   if (!input) return
   const val = Math.round(Number(input.value))
   if (!Number.isFinite(val) || val < 0) { showToast('Enter a valid non-negative amount'); return }
+  const sets = Math.round(Number(setsInput?.value))
+  if (!Number.isFinite(sets) || sets < 1) { showToast('Release-after must be at least 1 set'); return }
   const actor = (window.currentAdmin?.email) || (sessionStorage.getItem('admin_email') || 'admin')
-  const { error } = await sb.from('platform_settings')
-    .upsert({ key:'first_payout_retention_min', value_num: val, updated_by: actor }, { onConflict: 'key' })
+  const { error } = await sb.from('platform_settings').upsert([
+    { key:'first_payout_retention_min',  value_num: val,  updated_by: actor },
+    { key:'first_payout_retention_sets', value_num: sets, updated_by: actor },
+  ], { onConflict: 'key' })
   if (error) { showToast('Save failed: ' + error.message); return }
-  if (typeof auditLog === 'function') auditLog('settings.update', 'platform_settings', 'first_payout_retention_min', { value: val })
-  showToast(`Retention updated · €${Number(val).toLocaleString('ja-JP')}`)
+  if (typeof auditLog === 'function') auditLog('settings.update', 'platform_settings', 'retention', { value: val, sets })
+  showToast(`Retention updated · €${Number(val).toLocaleString('ja-JP')} · release after ${sets} sets`)
   loadRetentionSetting()
 }
 
@@ -5752,10 +5776,11 @@ async function viewPlanner(id) {
       const earnedEl  = document.getElementById('mp-earned')
       if (walletEl) walletEl.textContent  = '…'
       if (paidEl)   paidEl.textContent    = '…'
-      const [reqRes, adjRes, settingRes] = await Promise.all([
+      const [reqRes, adjRes, settingRes, setsRes] = await Promise.all([
         sb.from('wallet_requests').select('amount, status').eq('planner_id', id),
         sb.from('wallet_adjustments').select('amount').eq('planner_id', id),
-        sb.from('platform_settings').select('value_num').eq('key','first_payout_retention_min').maybeSingle()
+        sb.from('platform_settings').select('key, value_num').in('key', ['first_payout_retention_min','first_payout_retention_sets']),
+        sb.from('set_assignments').select('*', { count:'exact', head:true }).eq('planner_id', id).in('status', ['completed','paid'])
       ])
       const requests   = reqRes.data || []
       // Only pending + paid count as locked. Cancelled / rejected requests
@@ -5767,9 +5792,13 @@ async function viewPlanner(id) {
       const adjTotal   = (adjRes.data || []).reduce((s,a) => s + Number(a.amount || 0), 0)
       const earnedNet  = _approvedCommission + _approvedBondRefund + adjTotal
       const totalAvail = Math.max(0, earnedNet - locked)
-      const hasBeenPaid = paid > 0
-      const buffer     = (settingRes?.data?.value_num != null) ? Number(settingRes.data.value_num) : 200
-      const retainHeld = hasBeenPaid ? 0 : Math.min(buffer, totalAvail)
+      const _sRows     = Array.isArray(settingRes?.data) ? settingRes.data : []
+      const _bRow      = _sRows.find(r => r.key === 'first_payout_retention_min')
+      const _sRow      = _sRows.find(r => r.key === 'first_payout_retention_sets')
+      const buffer     = (_bRow?.value_num != null) ? Number(_bRow.value_num) : 200
+      const retSets    = (_sRow?.value_num != null) ? Math.max(1, Math.round(Number(_sRow.value_num))) : 3
+      const retainReleased = (setsRes?.count || 0) >= retSets
+      const retainHeld = retainReleased ? 0 : Math.min(buffer, totalAvail)
       const walletBal  = Math.max(0, totalAvail - retainHeld)
       // Overwrite the Total earned card with the net-of-adjustments figure
       // so admin's view matches the planner's "Earned total" exactly.

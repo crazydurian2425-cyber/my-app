@@ -7397,8 +7397,8 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--e-amber,#c17d2a);flex-shrink:0;"><path d="M10 1.5l7 3.5v5c0 4-3 7.5-7 9-4-1.5-7-5-7-9v-5l7-3.5z"/></svg>
               <div data-i18n="wallet.protection.badge" style="font-size:13.5px;font-weight:600;color:var(--e-ink,#1f1c16);">Fraud &amp; chargeback buffer</div>
             </div>
-            <p data-i18n-html="wallet.protection.body1" style="margin:0 0 10px;">On your <strong>first withdrawal</strong> we hold a one-time <strong><span id="w-protection-min">€100,000</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. Once that first payout clears, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.</p>
-            <p data-i18n-html="wallet.protection.body2" style="margin:0;">Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. After your first payout the buffer releases — anything earned then becomes fully withdrawable.</p>
+            <p data-i18n-html="wallet.protection.body1" style="margin:0 0 10px;">We hold a one-time <strong><span id="w-protection-min">€500</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. It stays held until you have <strong>completed <span id="w-protection-sets">3</span> sets</strong>; until then you can still withdraw anything earned <strong>above</strong> the buffer. Once you reach that, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.</p>
+            <p data-i18n-html="wallet.protection.body2" style="margin:0;">Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. You have completed <strong><span id="w-protection-done">0</span></strong> set(s) so far — once you reach the target the buffer releases and everything becomes fully withdrawable.</p>
           </div>
         </div>
         <div class="card" style="margin-top:16px;">
@@ -8165,8 +8165,8 @@ const TM_I18N = {
     'profile.bic':'BIC / SWIFT (optional)',
     'profile.ph.bic':'e.g. BNPAFRPP',
     'wallet.protection.badge':'Fraud & chargeback buffer',
-    'wallet.protection.body1':'On your <strong>first withdrawal</strong> we hold a one-time <strong><span id="w-protection-min">€100,000</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. Once that first payout clears, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
-    'wallet.protection.body2':'Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. After your first payout the buffer releases — anything earned then becomes fully withdrawable.',
+    'wallet.protection.body1':'We hold a one-time <strong><span id="w-protection-min">€500</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. It stays held until you have <strong>completed <span id="w-protection-sets">3</span> sets</strong>; until then you can still withdraw anything earned <strong>above</strong> the buffer. Once you reach that, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
+    'wallet.protection.body2':'Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. You have completed <strong><span id="w-protection-done">0</span></strong> set(s) so far — once you reach the target the buffer releases and everything becomes fully withdrawable.',
     'wallet.bank.title':'Payout wallet',
     'wallet.bank.label':'Bank',
     'wallet.account.label':'Account',
@@ -8658,12 +8658,13 @@ const TM_I18N = {
     'wallet.acctNotSet':'Wallet not set',
     'wallet.btn.noFunds':'No funds yet',
     'wallet.btn.needMore':'Need {amt}+ above the buffer to withdraw',
-    'wallet.btn.lockedUntilNext':'Locked until next set approved',
+    'wallet.btn.lockedUntilSets':'Complete {n} sets to release buffer',
     'wallet.noFundsYet':'No funds available to withdraw yet',
     'wallet.bufferLockedUntilNext':'No withdrawable balance — your current €{min} balance is fully held as retention buffer.',
+    'wallet.bufferLockedUntilSets':'{min} stays held as a safety buffer until you complete {n} sets ({done}/{n} done). Only earnings above {min} can be withdrawn for now.',
     'wallet.needFirstBuffer':'First withdrawal needs at least {min} to remain in wallet. Balance: {bal}.',
-    'pr.firstBufferHtml':'🛡️ First-payout buffer: <strong>{min}</strong> stays in your wallet to cover any disputes or plan adjustments. Max this round: <strong>{max}</strong>. Released once your next set is approved.',
-    'pr.firstBufferShort':'🛡️ {amt} retention buffer — held on every payout to cover chargebacks, kept until you stop taking sets.',
+    'pr.firstBufferHtml':'🛡️ Safety buffer: <strong>{min}</strong> stays in your wallet to cover any disputes or plan adjustments. Max this round: <strong>{max}</strong>. Releases once you complete {n} sets.',
+    'pr.firstBufferShort':'🛡️ {amt} stays held until you complete {n} sets ({done}/{n}).',
     // ── Invoices owed to platform ────────────────────────────────
     'pp.banner.title.one':'Invoice due to platform',
     'pp.banner.title.many':'{n} invoices due to platform',
@@ -8877,8 +8878,8 @@ const TM_I18N = {
     'profile.bic':'BIC / SWIFT (optionnel)',
     'profile.ph.bic':'ex : BNPAFRPP',
     'wallet.protection.badge':'Réserve fraude / litiges',
-    'wallet.protection.body1':'Lors de votre <strong>premier retrait uniquement</strong>, nous retenons <strong><span id="w-protection-min">€1 000</span></strong> en réserve temporaire pour couvrir d\'éventuels ajustements post-approbation (litiges, corrections de caution, annulations de validation). Une fois le premier retrait effectué, la réserve est <strong>définitivement levée</strong> et tous les retraits suivants peuvent vider le portefeuille.',
-    'wallet.protection.body2':'Plafond actuel : <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. Après le premier retrait, la réserve est levée et tout ce que vous gagnez devient librement retirable.',
+    'wallet.protection.body1':'Nous retenons une seule fois <strong><span id="w-protection-min">€500</span></strong> en réserve de sécurité pour couvrir d\'éventuels ajustements post-approbation (litiges, corrections de caution, annulations de validation). Elle reste retenue jusqu\'à ce que vous ayez <strong>terminé <span id="w-protection-sets">3</span> lots</strong> ; d\'ici là, vous pouvez tout de même retirer ce que vous gagnez <strong>au-dessus</strong> de la réserve. Une fois ce seuil atteint, la réserve est <strong>définitivement levée</strong> et tous les retraits suivants peuvent vider le portefeuille.',
+    'wallet.protection.body2':'Plafond actuel : <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">€0</span></strong>. Vous avez terminé <strong><span id="w-protection-done">0</span></strong> lot(s) jusqu\'ici — une fois le seuil atteint, la réserve est levée et tout devient librement retirable.',
     'wallet.bank.title':'Portefeuille de paiement',
     'wallet.bank.label':'Banque',
     'wallet.account.label':'Compte',
@@ -9337,12 +9338,13 @@ const TM_I18N = {
     'wallet.acctNotSet':'Portefeuille non défini',
     'wallet.btn.noFunds':'Aucun fonds disponible',
     'wallet.btn.needMore':'Retrait possible à partir de {amt} au-dessus de la réserve',
-    'wallet.btn.lockedUntilNext':'Bloqué jusqu\'à la prochaine validation de lot',
+    'wallet.btn.lockedUntilSets':'Terminez {n} lots pour libérer la réserve',
     'wallet.noFundsYet':'Aucun fonds disponible pour retrait',
     'wallet.bufferLockedUntilNext':'Rien à retirer — le solde actuel de €{min} est entièrement retenu en réserve de sécurité.',
+    'wallet.bufferLockedUntilSets':'{min} reste retenu en réserve de sécurité jusqu\'à ce que vous ayez terminé {n} lots ({done}/{n} faits). Pour l\'instant, seuls les gains au-dessus de {min} sont retirables.',
     'wallet.needFirstBuffer':'Premier retrait : il faut laisser au moins {min} dans le portefeuille. Solde : {bal}.',
-    'pr.firstBufferHtml':'🛡️ Réserve du premier retrait : <strong>{min}</strong> est retenue pour couvrir les litiges et ajustements. Plafond actuel de retrait : <strong>{max}</strong>. Levée à la validation du prochain lot.',
-    'pr.firstBufferShort':'🛡️ {amt} retenu — couverture des litiges de paiement, conservé à chaque retrait tant que vous acceptez de nouveaux lots.',
+    'pr.firstBufferHtml':'🛡️ Réserve de sécurité : <strong>{min}</strong> est retenue pour couvrir les litiges et ajustements. Plafond actuel de retrait : <strong>{max}</strong>. Levée une fois {n} lots terminés.',
+    'pr.firstBufferShort':'🛡️ {amt} reste retenu jusqu\'à ce que vous terminiez {n} lots ({done}/{n}).',
     // Factures plateforme
     'pp.banner.title.one':'Vous avez une facture plateforme en attente',
     'pp.banner.title.many':'{n} factures plateforme en attente',
@@ -10078,15 +10080,22 @@ async function autoCreateMissingPlans(setId, plannerId) {
 // (default €200, overridden once loadRetentionSetting() fetches from DB).
 // Declared `let` so we can hot-swap it before loadWallet() recomputes caps.
 let FIRST_PAYOUT_RETENTION_MIN = 200
+// Number of COMPLETED sets after which the retention buffer releases
+// permanently. Admin-editable via platform_settings (key
+// 'first_payout_retention_sets'); defaults to 3.
+let FIRST_PAYOUT_RETENTION_SETS = 3
 
 async function loadRetentionSetting(){
   try {
     const { data, error } = await sb.from('platform_settings')
-      .select('value_num').eq('key','first_payout_retention_min').maybeSingle()
-    if (!error && data?.value_num != null) {
-      FIRST_PAYOUT_RETENTION_MIN = Number(data.value_num)
+      .select('key,value_num').in('key', ['first_payout_retention_min','first_payout_retention_sets'])
+    if (!error && Array.isArray(data)) {
+      for (const row of data) {
+        if (row.key === 'first_payout_retention_min' && row.value_num != null) FIRST_PAYOUT_RETENTION_MIN = Number(row.value_num)
+        if (row.key === 'first_payout_retention_sets' && row.value_num != null) FIRST_PAYOUT_RETENTION_SETS = Math.max(1, Math.round(Number(row.value_num)))
+      }
     }
-  } catch (e) { /* table not yet migrated — keep the 200 default */ }
+  } catch (e) { /* table not yet migrated — keep defaults */ }
 }
 
 let _walletState = { earned: 0, locked: 0, available: 0, approvedPlansCount: 0, hasBeenPaid: false, effectiveMax: 0 }
@@ -10306,7 +10315,11 @@ async function loadWallet() {
       .in('status', ['completed', 'paid'])
     completedSetsCount = count || 0
   } catch(e) { /* table might be missing in old schemas — treat as 0 */ }
-  const bufferReleased = false   // legacy flag, kept for downstream UI checks
+  // Buffer releases permanently once the planner has completed the configured
+  // number of sets (default 3) — NOT on the first payout. Until then the €500
+  // stays held and only earnings ABOVE it are withdrawable.
+  const retentionReleased = completedSetsCount >= FIRST_PAYOUT_RETENTION_SETS
+  const bufferReleased = retentionReleased   // drives downstream UI checks
 
   // Allocate past withdrawals against the BYPASS pool first (bond refund).
   // This keeps the retainable pool — the only thing the retention buffer
@@ -10327,7 +10340,7 @@ async function loadWallet() {
   // they've cleared one payout, the retained pool unlocks and they can
   // drain everything on the next withdrawal. Bond refund + bypass
   // adjustments sit on top and are always withdrawable.
-  const retentionHeld = hasBeenPaid ? 0 : Math.min(FIRST_PAYOUT_RETENTION_MIN, retainableRemaining)
+  const retentionHeld = retentionReleased ? 0 : Math.min(FIRST_PAYOUT_RETENTION_MIN, retainableRemaining)
   const effectiveMax  = bypassRemaining + Math.max(0, retainableRemaining - retentionHeld)
 
   // Per-set breakdown for the request modal — the "Includes X bond + Y commission"
@@ -10354,7 +10367,7 @@ async function loadWallet() {
     }
   } catch(e) { /* set_assignments missing — fall back to lifetime in modal */ }
 
-  _walletState = { earned, commissionEarned, bondEarned, locked, _pendingAmt: pending, available, retentionHeld, approvedPlansCount: (approvedPlans || []).length, hasBeenPaid, bufferReleased, completedSetsCount, effectiveMax, pendingBondRefund, pendingCommission }
+  _walletState = { earned, commissionEarned, bondEarned, locked, _pendingAmt: pending, available, retentionHeld, approvedPlansCount: (approvedPlans || []).length, hasBeenPaid, bufferReleased, retentionReleased, retentionSets: FIRST_PAYOUT_RETENTION_SETS, completedSetsCount, effectiveMax, pendingBondRefund, pendingCommission }
 
   // Paid-out total (lifetime, for the new metric card)
   const paidOut = (requests || [])
@@ -10420,6 +10433,9 @@ async function loadWallet() {
       protectionCard.style.display = 'block'
       set('w-protection-min', fmtMoney(FIRST_PAYOUT_RETENTION_MIN))
       set('w-protection-max', fmtMoney(effectiveMax))
+      set('w-protection-sets', String(FIRST_PAYOUT_RETENTION_SETS))
+      set('w-protection-done', String(completedSetsCount))
+      set('w-protection-left', String(Math.max(0, FIRST_PAYOUT_RETENTION_SETS - completedSetsCount)))
     } else {
       protectionCard.style.display = 'none'
     }
@@ -10436,11 +10452,13 @@ async function loadWallet() {
     if (!canRequest) {
       if (available <= 0) {
         btn.textContent = t('wallet.btn.noFunds','No funds yet')
-      } else if (hasBeenPaid && !bufferReleased) {
-        // €200 buffer is sitting locked after first withdrawal
-        btn.textContent = t('wallet.btn.lockedUntilNext','Locked until next set approved')
+      } else if (!bufferReleased) {
+        // Buffer still held — only earnings ABOVE it are withdrawable, and
+        // the whole thing stays locked until the planner completes N sets.
+        btn.textContent = t('wallet.btn.lockedUntilSets','Complete {n} sets to release buffer')
+          .replace('{n}', String(FIRST_PAYOUT_RETENTION_SETS))
       } else {
-        btn.textContent = t('wallet.btn.needMore','Need {amt}+ to unlock first payout').replace('{amt}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN + 1))
+        btn.textContent = t('wallet.btn.needMore','Need {amt}+ above the buffer to withdraw').replace('{amt}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN + 1))
       }
     } else {
       btn.textContent = t('wallet.btn.request','Request payout')
@@ -10483,11 +10501,13 @@ function openPayoutRequestModal() {
     let msg
     if (_walletState.available <= 0) {
       msg = t('wallet.noFundsYet','No funds available to withdraw yet')
-    } else if (_walletState.hasBeenPaid && !_walletState.bufferReleased) {
-      // Already cashed out once; the {min} buffer stays held until the next
-      // set is approved. Distinguish this from a "haven't earned enough yet"
-      // first-time scenario.
-      msg = t('wallet.bufferLockedUntilNext','Buffer locked until your next set is approved. Held: {min}.').replace('{min}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN))
+    } else if (!_walletState.bufferReleased) {
+      // Buffer still held: the {min} stays locked until the planner completes
+      // the required number of sets. Only earnings above {min} are withdrawable.
+      msg = t('wallet.bufferLockedUntilSets','{min} stays held as a safety buffer until you complete {n} sets ({done}/{n} done). Only earnings above {min} can be withdrawn for now.')
+        .replace(/{min}/g, fmtMoney(FIRST_PAYOUT_RETENTION_MIN))
+        .replace(/{n}/g, String(FIRST_PAYOUT_RETENTION_SETS))
+        .replace('{done}', String(_walletState.completedSetsCount || 0))
     } else {
       msg = t('wallet.needFirstBuffer','First withdrawal needs at least {min} to remain in wallet. Balance: {bal}.').replace('{min}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN)).replace('{bal}', fmtMoney(_walletState.available))
     }
@@ -10546,8 +10566,10 @@ function openPayoutRequestModal() {
         .replace('{comm}', fmtMoney(commissionPart)))
     }
     if (!_walletState.bufferReleased && (_walletState.retentionHeld || 0) > 0) {
-      lines.push(t('pr.firstBufferShort','🛡️ {amt} stays locked until your next set is approved.')
-        .replace('{amt}', `<strong>${fmtMoney(_walletState.retentionHeld)}</strong>`))
+      lines.push(t('pr.firstBufferShort','🛡️ {amt} stays held until you complete {n} sets ({done}/{n}).')
+        .replace('{amt}', `<strong>${fmtMoney(_walletState.retentionHeld)}</strong>`)
+        .replace(/{n}/g, String(_walletState.retentionSets || FIRST_PAYOUT_RETENTION_SETS))
+        .replace('{done}', String(_walletState.completedSetsCount || 0)))
     }
     if (!lines.length) lines.push(t('pr.amountHint','Enter any amount up to your available balance.'))
     hint.innerHTML = lines.join('<br>')
@@ -10577,9 +10599,9 @@ async function submitPayoutRequest() {
   const note   = (noteInput?.value || '').trim()
   if (!Number.isFinite(amount) || amount <= 0) { showToast(t('toast.validAmount','Enter a valid amount')); amtInput?.focus(); return }
   if (amount > _walletState.effectiveMax + 0.001) {
-    const reason = _walletState.hasBeenPaid
+    const reason = _walletState.retentionReleased
       ? t('toast.exceedsBalance','Cannot exceed available balance ({amt})').replace('{amt}', fmtMoney(_walletState.available))
-      : t('toast.firstMinBuffer','First payout must leave at least {min} in wallet — max this round: {max}').replace('{min}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN)).replace('{max}', fmtMoney(_walletState.effectiveMax))
+      : t('toast.bufferMaxThisRound','{min} stays held until you complete {n} sets — max this round: {max}').replace('{min}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN)).replace('{n}', String(_walletState.retentionSets || FIRST_PAYOUT_RETENTION_SETS)).replace('{max}', fmtMoney(_walletState.effectiveMax))
     showToast(reason); return
   }
   // Either PayPay OR bank is enough — PayPay is preferred when both are set.
