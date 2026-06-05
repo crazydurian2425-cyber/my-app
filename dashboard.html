@@ -19839,6 +19839,13 @@ function computeDaySummary(dayContainer) {
         state: cmp.state,
         expectedStr: cmp.expectedStr,
         actualStr: cmp.actualStr,
+        gapMin: cmp.gapMin,
+        // Departure-day context so the summary can warn about a flight/train
+        // being missed when the day overshoots the airport/station cut-off.
+        isDepartureDay,
+        departureMethod: window._currentDepartureMethod || null,
+        departureTime: window._currentDepartureTime || null,
+        departureTo: window._currentDepartureTo || null,
         tagLabel: cmp.state === 'on_profile' ? dt('✓ on track','✓ dans les temps')
                : cmp.state === 'late'        ? dt('⚠ too late','⚠ trop tard')
                : cmp.state === 'early'       ? dt('⚠ too early','⚠ trop tôt')
@@ -20029,19 +20036,57 @@ async function submitFromReviewPage() {
 
 function buildDaySummaryHtml(dayNum, summary) {
   const { stops, activeMin, walkingKm, spendEur, warnings, profileEnd } = summary
-  // "Looks balanced" only when:
-  //   - no warnings of any level
-  //   - at least 2 stops (otherwise it's an arrival/departure stub)
-  //   - active span ≥ 90 min (otherwise the day is too light to be a day)
-  const looksBalanced = warnings.length === 0 && stops >= 2 && activeMin >= 90
-  const okText = looksBalanced
-    ? dt(`✓ Day ${dayNum} looks balanced.`, `✓ La journée ${dayNum} semble équilibrée.`)
-    : (warnings.length === 0
-        ? dt(`· Day ${dayNum} is light — fine for an arrival/departure day, add more stops for a regular day.`, `· La journée ${dayNum} est légère — parfait pour un jour d'arrivée/départ, ajoutez des étapes pour une journée normale.`)
-        : '')
-  const warnsHtml = warnings.length
-    ? warnings.map(w => `<div class="day-summary-warn day-summary-warn-${w.level}">${escapeHtml(w.text)}</div>`).join('')
-    : `<div class="day-summary-ok">${escapeHtml(okText)}</div>`
+  // ── Single, severity-ranked verdict ─────────────────────────────────────
+  // The day-end timing (profileEnd) used to be ignored by the "balanced"
+  // check, so a day could read "✓ balanced" AND "⚠ too late" at once. We now
+  // fold timing into one prioritised verdict so the planner gets one clear
+  // takeaway: flight/train-risk → other warnings → overshoot / ends-early →
+  // balanced → light. Each line is styled red / amber / info / ok.
+  const lines = []   // { level:'red'|'amber'|'info'|'ok', text }
+  const pe = profileEnd
+  const lateMin  = (pe && pe.gapMin != null) ? Math.max(0,  pe.gapMin) : 0
+  const earlyMin = (pe && pe.gapMin != null) ? Math.max(0, -pe.gapMin) : 0
+
+  if (pe && pe.state === 'late') {
+    if (pe.isDepartureDay && pe.departureMethod) {
+      // Hard departure-risk: the last stop runs past the airport/station cut-off.
+      const ride  = (pe.departureMethod === 'flight') ? dt('flight','vol') : dt('train','train')
+      const toBit = pe.departureTo ? (dt(' to ',' vers ') + pe.departureTo) : ''
+      const depAt = pe.departureTime ? (' ' + formatTimeDisplay(pe.departureTime)) : ''
+      lines.push({ level:'red', text: dt(
+        `⚠ Last stop ends ${pe.actualStr} — ${lateMin} min past the ${pe.expectedStr} departure cut-off. Move or trim it, or they may miss the${depAt} ${ride}${toBit}.`,
+        `⚠ La dernière étape finit à ${pe.actualStr} — ${lateMin} min après l'heure limite de départ de ${pe.expectedStr}. Déplacez-la ou raccourcissez-la, sinon ils risquent de manquer le ${ride}${depAt}${toBit}.`
+      )})
+    } else {
+      lines.push({ level:'amber', text: dt(
+        `⚠ Day ${dayNum} runs ${lateMin} min past the suggested end (${pe.expectedStr}) — trim or move the last stop.`,
+        `⚠ La journée ${dayNum} dépasse de ${lateMin} min la fin suggérée (${pe.expectedStr}) — raccourcissez ou déplacez la dernière étape.`
+      )})
+    }
+  } else if (pe && pe.state === 'early' && !pe.isDepartureDay) {
+    // Early on a normal day = room for one more. (Early on a departure day is
+    // GOOD — extra airport buffer — so it isn't flagged.)
+    lines.push({ level:'info', text: dt(
+      `· Day ${dayNum} ends ${earlyMin} min early (suggested ${pe.expectedStr}) — room for another stop.`,
+      `· La journée ${dayNum} finit ${earlyMin} min plus tôt (suggéré ${pe.expectedStr}) — de la place pour une étape de plus.`
+    )})
+  }
+
+  // Other content warnings (walking / budget / day-length / stop-count …).
+  warnings.forEach(w => lines.push(w))
+
+  // Green "balanced" / light-day note ONLY when nothing above fired.
+  if (lines.length === 0) {
+    const balanced = stops >= 2 && activeMin >= 90
+    lines.push(balanced
+      ? { level:'ok',   text: dt(`✓ Day ${dayNum} looks balanced.`, `✓ La journée ${dayNum} semble équilibrée.`) }
+      : { level:'info', text: dt(`· Day ${dayNum} is light — fine for an arrival/departure day, add more stops for a regular day.`, `· La journée ${dayNum} est légère — parfait pour un jour d'arrivée/départ, ajoutez des étapes pour une journée normale.`) })
+  }
+
+  const warnsHtml = lines.map(l => l.level === 'ok'
+    ? `<div class="day-summary-ok">${escapeHtml(l.text)}</div>`
+    : `<div class="day-summary-warn day-summary-warn-${l.level}">${escapeHtml(l.text)}</div>`
+  ).join('')
   // Expected-vs-actual end-of-day row — only renders when the comparison
   // actually produced a state (planner has put at least one stop down).
   const profileHtml = (profileEnd && profileEnd.state)
