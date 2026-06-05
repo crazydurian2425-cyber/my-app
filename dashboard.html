@@ -7698,12 +7698,9 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
             <div class="review-submit-earn-label">You will earn</div>
             <div class="review-submit-earn-amount" id="review-commission">€—</div>
           </div>
-          <button type="button" id="review-submit-btn"
-                  class="review-submit-btn"
-                  onclick="submitFromReviewPage()">
-            <span class="rsb-icon">✓</span>
-            <span>Submit itinerary</span>
-          </button>
+          <!-- Submit happens via the footer "Submit plan" button, which runs the
+               full name/address/photo validation. (The old in-bar "Submit
+               itinerary" button bypassed those checks and was removed.) -->
         </div>
       </div><!-- /#wiz-page-final -->
 
@@ -8309,6 +8306,7 @@ const TM_I18N = {
     'slot.duration.240':'Half day',
     'slot.duration.480':'Full day',
     'plan.submit.imgWarning':'{n} slot(s) have no photo — add a photo to each, or click Submit again to submit anyway.',
+    'plan.submit.needPhotos':'Add a photo to at least {n} stops before submitting — {have} so far.',
     'plan.submit.transportRequired':'Please fill in Transport tips before submitting',
     'plan.submit.localRequired':'Please fill in Local tips & hidden gems before submitting',
     // Itinerary modal header
@@ -9162,6 +9160,7 @@ const TM_I18N = {
     'plan.submit.needActivities':'Ajoutez au moins une activité avant de soumettre',
     'plan.submit.needDay1Three':'Le Jour 1 doit contenir au moins 3 activités avec un nom de lieu réel, une adresse et au moins une photo. Remplacez les libellés génériques comme « Check-in hôtel », « Déjeuner », « Dîner » par les vrais noms, et ajoutez adresse + photo.',
     'plan.submit.needDay1Template':'Le Jour 1 nécessite 5 entrées : 2 visites, déjeuner, hébergement, dîner — chacune avec nom réel, adresse et photo. Remplacez les libellés génériques par les vrais noms.',
+    'plan.submit.needPhotos':'Ajoutez une photo à au moins {n} étapes avant de soumettre — {have} pour l\'instant.',
     'sub.needAnySlot':'Le Jour 1 est vide — ajoutez au moins 3 activités avec nom, adresse et photo',
     'sub.needName':'Jour {d} · {t} — remplacez le placeholder par le vrai nom du lieu (encore {n})',
     'sub.needAddr':'Jour {d} · {t} — saisissez une adresse (encore {n})',
@@ -20801,11 +20800,19 @@ async function submitPlan() {
   // they were never going to fill. Their Day-1 rule above already requires
   // a photo on each of the 3 completed slots, so the photo bar IS enforced
   // — just scoped to Day 1.
+  // Photo floor: photos are OPTIONAL per stop (no per-slot nagging), but a
+  // plan must carry at least PHOTO_MIN photographed stops — or all of them if
+  // the plan has fewer — so the traveler always gets some visuals. Transport
+  // rows can't hold a photo and don't count. Sub-accounts are exempt (their
+  // Day-1 rule already requires a photo on each of the 3 completed stops).
   if (!window._isSubaccount) {
-    const itemsMissingImg = items.filter(it => !it._hasImage)
-    if (itemsMissingImg.length > 0 && !window._imgWarningAcknowledged) {
-      window._imgWarningAcknowledged = true
-      showToast(t('plan.submit.imgWarning','{n} slot(s) have no photos — add a photo to each, or click Submit again to submit anyway').replace('{n}', itemsMissingImg.length), { tone: 'warn' })
+    const PHOTO_MIN = 3
+    const photoStops = items.filter(it => it.type !== 'transport')
+    const required   = Math.min(PHOTO_MIN, photoStops.length)
+    const withPhoto  = photoStops.filter(it => it._hasImage).length
+    if (required > 0 && withPhoto < required) {
+      showToast(t('plan.submit.needPhotos','Add a photo to at least {n} stops before submitting — {have} so far.')
+        .replace('{n}', required).replace('{have}', withPhoto), { tone: 'warn' })
       return
     }
   }
