@@ -18079,7 +18079,12 @@ const _MODE_ICONS = {
 // planner never loses a deliberate choice.
 function _sensibleModes(km) {
   if (km == null)    return ['walk','taxi','transit','hsr','flight']
-  if (km < 1)        return ['walk','taxi']
+  // NOTE: km here is straight-line (haversine), not the road/route distance.
+  // Two stops can be <1 km apart as the crow flies yet need public transport —
+  // e.g. Fourvière sits on the hill directly above Vieux Lyon (~0.9 km
+  // straight-line, 5.2 km by road) and Google routes you on the funicular.
+  // So ALWAYS offer transit for any in-city hop, even the very short ones.
+  if (km < 1)        return ['walk','taxi','transit']
   if (km < 3)        return ['walk','taxi','transit']
   if (km < 10)       return ['taxi','transit']
   if (km < 30)       return ['taxi','transit']
