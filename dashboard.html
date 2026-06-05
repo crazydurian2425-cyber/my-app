@@ -19871,6 +19871,9 @@ function refreshDayDistances(dayContainer) {
   // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
   // API races, mode swaps with cached results).
   _enforceTimeChain(dayContainer)
+  // Remove any duplicate back-to-back transport block (two legs for the same
+  // A→B gap — a race between the gap-fill / snap / load refresh triggers).
+  _dedupeConsecutiveTransports(dayContainer)
   // Sweep orphan transports — when the planner deletes every venue, the
   // arrival → first-venue taxi is left behind (its × button is replaced
   // with the AUTO lock badge, so they can't delete it manually). Any
@@ -19946,6 +19949,31 @@ function refreshAllDistances() {
 // × button so they can't clean it up manually. Called at the tail of
 // refreshDayDistances so every mutation path (delete, type change,
 // time edit, plan-open hydrate) sweeps stale transports.
+// Collapse duplicate consecutive transport blocks. Two transport slots with
+// nothing (no real venue or anchor) between them describe the SAME A→B hop —
+// the gap-fill / snap / load paths can occasionally insert a second leg for
+// one gap when several day-refresh triggers fire close together. Keep the
+// FIRST, drop the rest, and persist so the dup can't survive a save (this is
+// the form-side counterpart to the summary's render-time collapse).
+function _dedupeConsecutiveTransports(dayContainer) {
+  if (!dayContainer) return false
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  let removed = false, prevWasTransport = false
+  for (const s of slots) {
+    const isT = s.classList.contains('slot-type-transport')
+    if (isT && prevWasTransport) {
+      // Never sweep the protected auto-seeded arrival taxi.
+      if (s.dataset.autoSeededArrivalTaxi === 'true') { prevWasTransport = true; continue }
+      console.log('[dedupe-transport] removing consecutive duplicate', s.id)
+      s.remove(); removed = true
+      continue   // keep prevWasTransport=true; the retained first leg is still "prev"
+    }
+    prevWasTransport = isT
+  }
+  if (removed && typeof autoSaveDraft === 'function') autoSaveDraft()
+  return removed
+}
+
 function _sweepOrphanTransports(dayContainer) {
   if (!dayContainer) return false
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
@@ -19984,6 +20012,9 @@ function _sweepOrphanTransports(dayContainer) {
 function _gapFillTransportsForDay(dayContainer) {
   console.log('[gap-fill] ENTERED for', dayContainer?.id, '· children:', dayContainer?.children?.length)
   if (!dayContainer) return
+  // Clear any pre-existing duplicate legs FIRST, so the scan below sees a
+  // clean single transport between each pair and won't add yet another.
+  _dedupeConsecutiveTransports(dayContainer)
   const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10) || 1
   // Re-scan on each iteration because addSlot mutates the DOM. Cap at the
   // number of (a, b) pairs we could possibly need so a pathological case
