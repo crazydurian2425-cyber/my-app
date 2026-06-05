@@ -8660,7 +8660,7 @@ const TM_I18N = {
     'wallet.btn.needMore':'Need {amt}+ above the buffer to withdraw',
     'wallet.btn.lockedUntilSets':'Complete {n} sets to release buffer',
     'wallet.noFundsYet':'No funds available to withdraw yet',
-    'wallet.bufferLockedUntilNext':'No withdrawable balance — your current €{min} balance is fully held as retention buffer.',
+    'wallet.bufferLockedUntilNext':'No withdrawable balance — your current {min} balance is fully held as retention buffer.',
     'wallet.bufferLockedUntilSets':'{min} stays held as a safety buffer until you complete {n} sets ({done}/{n} done). Only earnings above {min} can be withdrawn for now.',
     'wallet.needFirstBuffer':'First withdrawal needs at least {min} to remain in wallet. Balance: {bal}.',
     'pr.firstBufferHtml':'🛡️ Safety buffer: <strong>{min}</strong> stays in your wallet to cover any disputes or plan adjustments. Max this round: <strong>{max}</strong>. Releases once you complete {n} sets.',
@@ -8668,7 +8668,7 @@ const TM_I18N = {
     // ── Invoices owed to platform ────────────────────────────────
     'pp.banner.title.one':'Invoice due to platform',
     'pp.banner.title.many':'{n} invoices due to platform',
-    'pp.banner.amount':'€{amt} total — see wallet for details',
+    'pp.banner.amount':'{amt} total — see wallet for details',
     'pp.banner.cta':'View in wallet',
     'pp.card.title':'Invoices due to platform',
     'pp.card.sub':'Issued by Journey Junction · pay via your bank to clear',
@@ -8696,7 +8696,7 @@ const TM_I18N = {
     'chatPrefill.requestSet':"Hi support, I'm ready to take on a new set. Can you assign me one? Thanks!",
     'chatPrefill.requestNewSet':"Hi support, I've wrapped up my current set and would love to take on another one. Can you assign me a new set? Thanks!",
     'chatPrefill.payoutStatus':'Hi support, my batch for Set #{n} was approved. Any update on the payout? Thanks!',
-    'chatPrefill.invoicePay':'Hi support, I would like to pay invoice "{reason}" (€{amt}). Could you share the bank transfer details and confirm the reference I should use? Thanks!',
+    'chatPrefill.invoicePay':'Hi support, I would like to pay invoice "{reason}" ({amt}). Could you share the bank transfer details and confirm the reference I should use? Thanks!',
     // Assignment / idle state
     'assign.pending.short':'Our team will assign you a set based on your city and expertise.',
     'assign.btn.requestSet':'Request a set',
@@ -8860,7 +8860,7 @@ const TM_I18N = {
     'walletSnap.lifetime':'Total retiré',
     'walletSnap.lastPayout':'Dernier retrait',
     'walletSnap.payoutRule':'Le retrait est possible une fois que tous les plans du lot actif sont approuvés par l\'administrateur.',
-    'walletSnap.weeklyRule':'<strong>Salaire hebdomadaire de €1 000</strong> — versé chaque cycle glissant de 7 jours si vous terminez au moins 1 lot.',
+    'walletSnap.weeklyRule':'<strong>Salaire hebdomadaire de 1 000 €</strong> — versé chaque cycle glissant de 7 jours si vous terminez au moins 1 lot.',
     'walletSnap.cta':'Ouvrir le portefeuille',
     'wallet.m.available':'Disponible',
     'wallet.m.earnedTotal':'Total gagné',
@@ -9340,7 +9340,7 @@ const TM_I18N = {
     'wallet.btn.needMore':'Retrait possible à partir de {amt} au-dessus de la réserve',
     'wallet.btn.lockedUntilSets':'Terminez {n} lots pour libérer la réserve',
     'wallet.noFundsYet':'Aucun fonds disponible pour retrait',
-    'wallet.bufferLockedUntilNext':'Rien à retirer — le solde actuel de €{min} est entièrement retenu en réserve de sécurité.',
+    'wallet.bufferLockedUntilNext':'Rien à retirer — le solde actuel de {min} est entièrement retenu en réserve de sécurité.',
     'wallet.bufferLockedUntilSets':'{min} reste retenu en réserve de sécurité jusqu\'à ce que vous ayez terminé {n} lots ({done}/{n} faits). Pour l\'instant, seuls les gains au-dessus de {min} sont retirables.',
     'wallet.needFirstBuffer':'Premier retrait : il faut laisser au moins {min} dans le portefeuille. Solde : {bal}.',
     'pr.firstBufferHtml':'🛡️ Réserve de sécurité : <strong>{min}</strong> est retenue pour couvrir les litiges et ajustements. Plafond actuel de retrait : <strong>{max}</strong>. Levée une fois {n} lots terminés.',
@@ -9348,7 +9348,7 @@ const TM_I18N = {
     // Factures plateforme
     'pp.banner.title.one':'Vous avez une facture plateforme en attente',
     'pp.banner.title.many':'{n} factures plateforme en attente',
-    'pp.banner.amount':'Total €{amt} — détails dans le portefeuille',
+    'pp.banner.amount':'Total {amt} — détails dans le portefeuille',
     'pp.banner.cta':'Voir dans le portefeuille',
     'pp.card.title':'Facture plateforme à régler',
     'pp.card.sub':'Émise par Journey Junction · à régler par virement bancaire',
@@ -9372,7 +9372,7 @@ const TM_I18N = {
     'chatPrefill.requestSet':'Je suis prêt à accepter un nouveau lot. Pouvez-vous me l\'attribuer ?',
     'chatPrefill.requestNewSet':'J\'ai terminé mon lot en cours. Pouvez-vous m\'attribuer le suivant ?',
     'chatPrefill.payoutStatus':'Le lot #{n} a été approuvé. Quel est le statut du paiement ?',
-    'chatPrefill.invoicePay':'Bonjour, je souhaite régler la facture « {reason} » (€{amt}). Pouvez-vous m\'envoyer les coordonnées bancaires et la référence ?',
+    'chatPrefill.invoicePay':'Bonjour, je souhaite régler la facture « {reason} » ({amt}). Pouvez-vous m\'envoyer les coordonnées bancaires et la référence ?',
     'assign.pending.short':'L\'équipe vous attribuera un lot correspondant à votre ville et spécialités.',
     'assign.btn.requestSet':'Demander un lot',
     'idle.title':'Prêt à travailler',
@@ -9743,14 +9743,18 @@ function applyDashHero(city){
 // Currency: EUR (€) everywhere. Stored values are treated as euros directly.
 // Both EN and JA locales render € with en-GB digit grouping (comma thousands).
 // ═══════════════════════════════════════════════════════════
+// Locale-aware euro formatting. French puts the € AFTER the amount with a
+// non-breaking space and uses a space as the thousands separator ("1 000 €");
+// English keeps the symbol in front ("€1,000").
+function _isFrMoney(){ try { return typeof isPlannerFR === 'function' && isPlannerFR() } catch(e){ return false } }
 function fmtMoney(amount){
-  const n = Number(amount) || 0
-  return '€' + Math.round(n).toLocaleString('en-GB')
+  const n = Math.round(Number(amount) || 0)
+  return _isFrMoney() ? n.toLocaleString('fr-FR') + ' €' : '€' + n.toLocaleString('en-GB')
 }
 // Short variant used where a raw currency string is needed without rounding noise
 function fmtMoneyRaw(amount){
   const n = Number(amount) || 0
-  return '€' + n.toLocaleString('en-GB')
+  return _isFrMoney() ? n.toLocaleString('fr-FR') + ' €' : '€' + n.toLocaleString('en-GB')
 }
 
 // Apply on load (early, before main render)
@@ -9845,16 +9849,17 @@ function preserveItinScroll(fn) {
 function animateCount(el, target, opts={}){
   if(!el) return;
   const prefix = opts.prefix || '';
+  const suffix = opts.suffix || '';
   const duration = opts.duration || 900;
   const prev = parseFloat(el.getAttribute('data-count-val'));
   const from = Number.isFinite(prev) ? prev : 0;
   const to = Number(target) || 0;
-  if (from === to) { el.textContent = prefix + Math.round(to); el.setAttribute('data-count-val', to); return; }
+  if (from === to) { el.textContent = prefix + Math.round(to) + suffix; el.setAttribute('data-count-val', to); return; }
   const start = performance.now();
   const ease = t => 1 - Math.pow(1 - t, 3);
   (function tick(now){
     const t = Math.min(1, ((now||performance.now()) - start) / duration);
-    el.textContent = prefix + Math.round(from + (to - from) * ease(t));
+    el.textContent = prefix + Math.round(from + (to - from) * ease(t)) + suffix;
     if (t < 1) requestAnimationFrame(tick);
     else el.setAttribute('data-count-val', to);
   })(start);
@@ -10144,7 +10149,7 @@ async function loadPendingPayments() {
         <div style="flex:1;min-width:0;">
           <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:2px;" data-i18n="pp.banner.title">${rows.length === 1 ? t('pp.banner.title.one','Payment due to platform') : t('pp.banner.title.many','{n} payments due to platform').replace('{n}', rows.length)}</div>
           <div style="font-size:12px;color:var(--text-2);">
-            ${t('pp.banner.amount','€{amt} total — see wallet for details').replace('{amt}', Math.round(totalDue).toLocaleString())}
+            ${t('pp.banner.amount','{amt} total — see wallet for details').replace('{amt}', fmtMoney(totalDue))}
           </div>
         </div>
         <button onclick="showPage('wallet', document.querySelector('[onclick*=\\'wallet\\']'))" style="flex-shrink:0;padding:8px 14px;background:#D4913D;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
@@ -10173,7 +10178,7 @@ async function loadPendingPayments() {
             const reasonShow = (isJa && r.reason_ja) ? r.reason_ja : (r.reason || '')
             const descShow   = (isJa && r.description_ja) ? r.description_ja : (r.description || '')
             const reasonEsc  = jsEsc(reasonShow)
-            const amtFmt     = Math.round(Number(r.amount || 0)).toLocaleString()
+            const amtFmt     = fmtMoney(Number(r.amount || 0))
             return `
             <div style="padding:14px 18px;border-top:1px solid var(--border);">
               <div style="display:flex;align-items:flex-start;gap:14px;">
@@ -10187,7 +10192,7 @@ async function loadPendingPayments() {
                   </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
-                  <span style="padding:7px 14px;background:rgba(212,145,61,0.16);border:1px solid rgba(212,145,61,0.32);color:#D4913D;font-size:13px;font-weight:700;letter-spacing:0.02em;border-radius:99px;font-variant-numeric:tabular-nums;">€${amtFmt}</span>
+                  <span style="padding:7px 14px;background:rgba(212,145,61,0.16);border:1px solid rgba(212,145,61,0.32);color:#D4913D;font-size:13px;font-weight:700;letter-spacing:0.02em;border-radius:99px;font-variant-numeric:tabular-nums;">${amtFmt}</span>
                   <button onclick="openSupportChat(t('chatPrefill.invoicePay').replace('{reason}','${reasonEsc}').replace('{amt}','${amtFmt}'))" style="display:inline-flex;align-items:center;gap:7px;padding:8px 16px;background:#D4913D;color:#fff;border:none;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;box-shadow:0 2px 8px -3px rgba(212,145,61,0.4);">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     ${t('pp.card.payNow','Pay now')}
@@ -10840,9 +10845,10 @@ async function initDashboard() {
   const mCurrent = document.getElementById('m-current')
   const mBond = document.getElementById('m-bond')
   const mPendingPlans = document.getElementById('m-pending-plans')
-  const moneyPrefix = '€'
+  const moneyPrefix = _isFrMoney() ? '' : '€'
+  const moneySuffix = _isFrMoney() ? ' €' : ''
   const moneyMult   = 1
-  if (mEarned) animateCount(mEarned, Math.round(earnings.total_earned * moneyMult), {prefix: moneyPrefix})
+  if (mEarned) animateCount(mEarned, Math.round(earnings.total_earned * moneyMult), {prefix: moneyPrefix, suffix: moneySuffix})
   if (mSets)   animateCount(mSets,   earnings.sets_completed)
 
   // Current-set derived metrics
@@ -10859,8 +10865,8 @@ async function initDashboard() {
     .filter(p => p.travelers?.requires_bond && ['in_progress','submitted','approved','revision'].includes(p.status))
     .reduce((s,p) => s + (p.travelers?.bond_amount || 0), 0)
   const pendingLeft = activePlans.filter(p => !['submitted','approved'].includes(p.status)).length
-  if (mCurrent) animateCount(mCurrent, Math.round(currentEarning * moneyMult), {prefix: moneyPrefix})
-  if (mBond)    animateCount(mBond,    Math.round(bondOnHold * moneyMult),     {prefix: moneyPrefix})
+  if (mCurrent) animateCount(mCurrent, Math.round(currentEarning * moneyMult), {prefix: moneyPrefix, suffix: moneySuffix})
+  if (mBond)    animateCount(mBond,    Math.round(bondOnHold * moneyMult),     {prefix: moneyPrefix, suffix: moneySuffix})
   if (mPendingPlans) animateCount(mPendingPlans, activePlans.length ? pendingLeft : 0)
   // Update right col — new wallet model (commission earnings + withdrawals)
   loadWallet().catch(e => console.warn('wallet load failed', e))
@@ -12480,7 +12486,8 @@ function titleCaseEnum(s) {
 }
 function fmtEur(n) {
   if (n == null || n === '' || isNaN(Number(n))) return ''
-  return '€' + Math.round(Number(n)).toLocaleString('en-GB')
+  const v = Math.round(Number(n))
+  return _isFrMoney() ? v.toLocaleString('fr-FR') + ' €' : '€' + v.toLocaleString('en-GB')
 }
 function fmtBriefDateShort(s) {
   if (!s) return ''
@@ -17841,13 +17848,13 @@ function applyRouteDataToSlot(slot, data) {
   // (correctly updated) road distance.
   if (cells[2]) {
     if (data.costEur != null) {
-      cells[2].textContent = `~€${data.costEur}`
+      cells[2].textContent = _isFrMoney() ? `~${data.costEur} €` : `~€${data.costEur}`
       cells[2].classList.remove('tg-blank')
     } else {
       const mode = slot.dataset.transportMode || 'taxi'
       const cost = _costFromRealKm(mode, data.distanceKm)
       if (cost != null) {
-        cells[2].textContent = (cost === 0) ? 'free' : `~€${cost}`
+        cells[2].textContent = (cost === 0) ? 'free' : (_isFrMoney() ? `~${cost} €` : `~€${cost}`)
         cells[2].classList.remove('tg-blank')
       }
     }
@@ -18286,7 +18293,7 @@ function refreshTransportSlot(slot) {
   const costTxt = (tooFar) ? '—'
                 : (est.costEur == null) ? '—'
                 : (est.costEur === 0) ? 'free'
-                : `~€${est.costEur}`
+                : (_isFrMoney() ? `~${est.costEur} €` : `~€${est.costEur}`)
   // Depart time recomputes from the PREVIOUS slot's start + its stay
   // duration so a "2 hour" prev stay → transport leaves 2 hours later.
   // Auto-syncs back into the hidden time-input so save/sort see the
@@ -20375,12 +20382,12 @@ function buildReviewPage() {
   const dailyBudget = Number(window._currentDailyBudget) || null
   let budgetTone = 'ok'
   let budgetLabel = '✓ in budget'
-  let budgetDetail = dailyBudget ? `€${dailyBudget} limit` : ''
+  let budgetDetail = dailyBudget ? `${fmtMoney(dailyBudget)} limit` : ''
   if (dailyBudget && avgSpendEur > dailyBudget) {
     const overPct = ((avgSpendEur - dailyBudget) / dailyBudget) * 100
     if (overPct > 15) { budgetTone = 'red';   budgetLabel = '✗ over'   }
     else              { budgetTone = 'amber'; budgetLabel = '⚠ over'   }
-    budgetDetail = `€${dailyBudget} limit`
+    budgetDetail = `${fmtMoney(dailyBudget)} limit`
   } else if (!dailyBudget) {
     budgetTone = 'ok'
     budgetLabel = '—'
@@ -20403,7 +20410,7 @@ function buildReviewPage() {
         <div class="review-stat-label">avg walking/day</div>
       </div>
       <div class="${tileClassFor('spend')}">
-        <div class="review-stat-value">€${Math.round(avgSpendEur)}</div>
+        <div class="review-stat-value">${fmtMoney(Math.round(avgSpendEur))}</div>
         <div class="review-stat-label">avg spend/day</div>
       </div>
       <div class="${tileClassFor('budget')}">
@@ -20486,7 +20493,7 @@ async function _refreshReviewCommission() {
       if (Number.isFinite(sAmt) && sAmt > 0) amount = sAmt
     }
     amountEl.textContent = (Number.isFinite(amount) && amount > 0)
-      ? `€${Math.round(amount)}` : '€—'
+      ? fmtMoney(Math.round(amount)) : '—'
   } catch (e) {
     console.warn('[review] commission fetch threw', e)
     amountEl.textContent = '€—'
@@ -20592,7 +20599,7 @@ function buildDaySummaryHtml(dayNum, summary) {
         <div><div class="dsg-label">${dt('Stops','Étapes')}</div><div class="dsg-value">${stops}</div></div>
         <div><div class="dsg-label">${dt('Active hours','Heures actives')}</div><div class="dsg-value">${escapeHtml(_fmtActiveHours(activeMin))}</div></div>
         <div><div class="dsg-label">${dt('Walking','Marche')}</div><div class="dsg-value">${walkingKm > 0 ? walkingKm.toFixed(1) + ' km' : '—'}</div></div>
-        <div><div class="dsg-label">${dt('Est. spend / pax','Dépense est. / pers.')}</div><div class="dsg-value">${spendEur ? '€' + spendEur : '—'}</div></div>
+        <div><div class="dsg-label">${dt('Est. spend / pax','Dépense est. / pers.')}</div><div class="dsg-value">${spendEur ? fmtMoney(spendEur) : '—'}</div></div>
       </div>
       ${profileHtml}
       ${warnsHtml}
