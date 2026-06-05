@@ -8296,6 +8296,8 @@ const TM_I18N = {
     'slot.label.notes.freetime':'Suggested activities for free time',
     'slot.duration.label':'How long to stay',
     'slot.duration.choose':'Choose…',
+    'slot.cost.label':'Est. cost / pax (€)',
+    'slot.cost.ph':'auto',
     'slot.duration.15':'15 min',
     'slot.duration.30':'30 min',
     'slot.duration.45':'45 min',
@@ -8991,6 +8993,8 @@ const TM_I18N = {
     'slot.label.notes.freetime':'Suggestions pour le temps libre',
     'slot.duration.label':'Durée sur place',
     'slot.duration.choose':'Choisir…',
+    'slot.cost.label':'Coût est. / pers. (€)',
+    'slot.cost.ph':'auto',
     'slot.duration.15':'15 min',
     'slot.duration.30':'30 min',
     'slot.duration.45':'45 min',
@@ -16487,7 +16491,7 @@ function renderLinkedChip(slot) {
   // daily budget. Severity scales with their splurge_willingness so a
   // luxury-trip planner doesn't see red warnings on every premium stop.
   let budgetHtml = ''
-  const stopCost = estimatePerPaxCost(d)
+  const stopCost = estimatePerPaxCost(d, slot)
   const budgetTier = budgetTierForCost(stopCost)
   if (budgetTier) {
     const dailyTxt = fmtEur(budgetTier.budget)
@@ -16630,28 +16634,56 @@ function minsToHHMM(mins) {
 // "From €X" priceRange when present (multiplied by 1.8 to approximate the
 // real average meal/visit spend), fall back to the discrete price_level
 // enum, return null if neither is set.
-function estimatePerPaxCost(placeData) {
-  if (!placeData) return null
-  // Hotels are NOT a daily per-pax activity cost — the room is billed
-  // per-night, per-room and tracked separately as hotel_budget_per_night.
-  // Google's price_level/price_range on a lodging reflects the room rate,
-  // so counting it here would dump €100-200 into the day's food+activity
-  // spend and trigger false "over budget" badges. Skip lodging entirely.
-  const types = Array.isArray(placeData.place_types)
+// Estimate the per-pax spend for a stop. Priority:
+//   0. Planner's manual "Est. cost / pax" box (their real ticket knowledge)
+//   1. Google explicit price range / price level (reliable when present)
+//   2. Category fallback from Google place_types (so an un-priced museum
+//      isn't counted as €0)
+//   3. Slot-type fallback (when the stop isn't Google-linked at all)
+// `slot` is the slot DOM element (optional) — used for 0 and 3.
+function estimatePerPaxCost(placeData, slot) {
+  // 0. Manual override — the planner typed a real ticket/entry price.
+  if (slot) {
+    const raw = slot.querySelector('.slot-cost-input')?.value
+    if (raw != null && String(raw).trim() !== '') {
+      const m = parseFloat(raw)
+      if (Number.isFinite(m) && m >= 0) return Math.round(m)
+    }
+  }
+  const types = Array.isArray(placeData?.place_types)
     ? placeData.place_types.map(x => String(x).toLowerCase()) : []
+  // Hotels: the room is a separate per-night budget, never a daily per-pax cost.
   if (types.some(t => ['lodging','hotel','resort_hotel','bed_and_breakfast','motel','guest_house','extended_stay_hotel'].includes(t))) return null
-  const pr = placeData.price_range_json
+  // 1. Google explicit pricing.
+  const pr = placeData?.price_range_json
   if (pr?.startPrice) {
     const units = parseInt(pr.startPrice.units || '0', 10) || 0
     const nanos = (pr.startPrice.nanos || 0) / 1e9
     const start = units + nanos
     if (start > 0) return Math.round(start * 1.8)
   }
-  const lvl = String(placeData.price_level || '')
+  const lvl = String(placeData?.price_level || '')
   if (lvl === 'PRICE_LEVEL_INEXPENSIVE')    return 15
   if (lvl === 'PRICE_LEVEL_MODERATE')       return 40
   if (lvl === 'PRICE_LEVEL_EXPENSIVE')      return 100
   if (lvl === 'PRICE_LEVEL_VERY_EXPENSIVE') return 200
+  // 2. Category fallback from Google place_types.
+  const hasAny = (...arr) => arr.some(x => types.includes(x))
+  if (hasAny('park','natural_feature','place_of_worship','church','hindu_temple','mosque','synagogue','tourist_information','plaza','cemetery','city_hall')) return 0
+  if (hasAny('store','shopping_mall','clothing_store','department_store','shopping_center','market')) return 0
+  if (hasAny('cafe','coffee_shop','bakery')) return 8
+  if (hasAny('bar','night_club','pub','liquor_store')) return 20
+  if (hasAny('amusement_park','water_park','zoo','aquarium','casino')) return 30
+  if (hasAny('museum','art_gallery','tourist_attraction','monument','historical_landmark','observation_deck','landmark','performing_arts_theater','movie_theater')) return 15
+  if (hasAny('restaurant','meal_takeaway','meal_delivery','food')) return 25
+  // 3. Slot-type fallback (no Google place at all).
+  const st   = slot?.querySelector('.slot-type-select')?.value || ''
+  const seed = slot?.dataset?.seedIcon || ''
+  if (st === 'meal')          return seed === 'breakfast' ? 10 : seed === 'lunch' ? 20 : seed === 'dinner' ? 35 : 25
+  if (st === 'entertainment') return 30
+  if (st === 'shopping')      return 0
+  if (st === 'freetime')      return 0
+  if (st === 'activity')      return 15
   return null
 }
 
@@ -19778,7 +19810,7 @@ function computeDaySummary(dayContainer) {
     if (s.classList.contains('slot-type-hotel_checkin') ||
         s.classList.contains('slot-type-hotel_checkout') ||
         s.classList.contains('slot-type-accommodation')) return
-    const c = estimatePerPaxCost(s._placeData)
+    const c = estimatePerPaxCost(s._placeData, s)
     if (c) stopSpend += c
   })
   const spendEur = Math.round(stopSpend + transportSpend)
@@ -20372,6 +20404,14 @@ function addSlot(dayNum, seed = null) {
             ${buildDurationOptions()}
           </div>
         </div>
+      </div>
+      <!-- Optional per-pax cost (ticket / entry). Blank = auto-estimate from
+           Google category. Hidden for hotels/transport via CSS. Feeds the day
+           summary "Est. spend / pax" + the Review "in budget" check. -->
+      <div class="slot-row-cost">
+        <span class="slot-row-label">${escapeHtml(t('slot.cost.label','Est. cost / pax (€)'))}</span>
+        <input type="number" class="slot-cost-input" min="0" step="1" inputmode="numeric"
+               placeholder="${escapeHtml(t('slot.cost.ph','auto'))}" oninput="_onSlotCostInput(this)">
       </div>
       <!-- Hotel-specific notes label. Hidden via CSS for non-hotel types;
            shown above the notes textarea for hotel_checkin / hotel_checkout.
