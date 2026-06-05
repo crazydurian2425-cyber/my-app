@@ -1111,7 +1111,42 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
 }
 .ps-leg-ico{width:13px;height:13px;flex-shrink:0;opacity:0.85;}
 .ps-leg span{min-width:0;}
-/* Smart day warning banner */
+/* Category icon before a stop name */
+.ps-name-ico{display:inline-block;margin-right:7px;font-size:14px;line-height:1;vertical-align:-1px;}
+
+/* ── Top blocks: quality warnings → personal note → quick stats ── */
+.ps-issues{
+  margin:0 0 14px;padding:12px 14px;border-radius:9px;
+  background:#FFEBE5;border:1px solid rgba(163,45,45,0.22);border-left:3px solid #A32D2D;
+}
+.ps-issues-head{
+  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.10em;
+  text-transform:uppercase;color:#A32D2D;margin-bottom:8px;
+}
+.ps-issues-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;}
+.ps-issue{
+  font-family:'DM Sans',sans-serif;font-size:12.5px;line-height:1.45;color:#7a2420;
+  padding:6px 9px 6px 22px;position:relative;border-radius:6px;background:rgba(255,255,255,0.55);cursor:pointer;
+  transition:background .12s ease;
+}
+.ps-issue:hover{background:#fff;}
+.ps-issue::before{content:'•';position:absolute;left:9px;top:6px;color:#A32D2D;font-weight:700;}
+.ps-note-card{
+  margin:0 0 14px;padding:12px 14px;border-radius:9px;
+  background:#FFFFFF;border:1px solid var(--e-rule,rgba(27,31,28,0.09));border-left:3px solid #2C5F2D;
+}
+.ps-note-head{
+  font-family:'DM Sans',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:0.12em;
+  text-transform:uppercase;color:#2C5F2D;margin-bottom:5px;
+}
+.ps-note-body{font-family:'Lora',serif;font-style:italic;font-size:13px;line-height:1.55;color:var(--e-ink-2,#4A524C);white-space:pre-wrap;word-wrap:break-word;}
+html[lang="ja"] .ps-note-body{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
+.ps-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 18px;}
+.ps-stat{background:#FFFFFF;border:1px solid var(--e-rule,rgba(27,31,28,0.08));border-radius:8px;padding:10px;text-align:center;}
+.ps-stat-num{font-family:'Fraunces','DM Serif Display',serif;font-size:18px;font-weight:600;color:#2C5F2D;line-height:1.1;letter-spacing:-0.01em;}
+.ps-stat-num--over{color:#A32D2D;}
+.ps-stat-label{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--e-ink-3,#8B908A);margin-top:4px;}
+/* Smart day warning banner (legacy) */
 .ps-warn{
   margin:8px 16px 14px;padding:9px 12px;border-radius:8px;
   background:rgba(193,125,42,0.09);border:1px solid rgba(193,125,42,0.20);
@@ -5406,6 +5441,29 @@ body.theme-dark #modal-plan-summary .ps-chip,
 body.theme-dark.theme-premium #modal-plan-summary .ps-chip{
   color:#e9e2d2!important;background:rgba(255,255,255,0.06)!important;border-color:rgba(255,255,255,0.14)!important;
 }
+/* Top blocks on dark surface */
+body.theme-dark #modal-plan-summary .ps-issues,
+body.theme-dark.theme-premium #modal-plan-summary .ps-issues{background:rgba(163,45,45,0.18)!important;border-color:rgba(220,90,80,0.40)!important;}
+body.theme-dark #modal-plan-summary .ps-issues-head,
+body.theme-dark.theme-premium #modal-plan-summary .ps-issues-head{color:#f0a39a!important;}
+body.theme-dark #modal-plan-summary .ps-issue,
+body.theme-dark.theme-premium #modal-plan-summary .ps-issue{color:#f0cfca!important;background:rgba(255,255,255,0.05)!important;}
+body.theme-dark #modal-plan-summary .ps-issue:hover,
+body.theme-dark.theme-premium #modal-plan-summary .ps-issue:hover{background:rgba(255,255,255,0.10)!important;}
+body.theme-dark #modal-plan-summary .ps-note-card,
+body.theme-dark.theme-premium #modal-plan-summary .ps-note-card{background:#2a231b!important;border-color:rgba(255,255,255,0.08)!important;border-left-color:#4f9d52!important;}
+body.theme-dark #modal-plan-summary .ps-note-head,
+body.theme-dark.theme-premium #modal-plan-summary .ps-note-head{color:#7bc47f!important;}
+body.theme-dark #modal-plan-summary .ps-note-body,
+body.theme-dark.theme-premium #modal-plan-summary .ps-note-body{color:#bdb19c!important;}
+body.theme-dark #modal-plan-summary .ps-stat,
+body.theme-dark.theme-premium #modal-plan-summary .ps-stat{background:#2a231b!important;border-color:rgba(255,255,255,0.08)!important;}
+body.theme-dark #modal-plan-summary .ps-stat-num,
+body.theme-dark.theme-premium #modal-plan-summary .ps-stat-num{color:#7bc47f!important;}
+body.theme-dark #modal-plan-summary .ps-stat-num--over,
+body.theme-dark.theme-premium #modal-plan-summary .ps-stat-num--over{color:#f0a39a!important;}
+body.theme-dark #modal-plan-summary .ps-stat-label,
+body.theme-dark.theme-premium #modal-plan-summary .ps-stat-label{color:#9a9384!important;}
 body.theme-dark #modal-plan-summary .ps-extra,
 body.theme-dark.theme-premium #modal-plan-summary .ps-extra{
   background:#2a231b!important;border-color:rgba(255,255,255,0.06)!important;
@@ -13314,12 +13372,20 @@ async function openPlanSummary(plan) {
   const duration = trav.duration || plan.duration || ''
   const tPrime = window.t || ((k,f)=>f)
 
-  // Header
-  document.getElementById('ps-title').textContent =
-    tPrime('ps.title','Plan {n} — summary').replace('{n}', planNum)
+  // Header — "{traveler}'s {destination}" + "Solo · N nights · curated by {planner}"
+  const _first = (s) => String(s||'').trim().split(/\s+/)[0] || ''
+  const travFirst = _first(trav.name)
+  const destName  = trav.destination || tPrime('brief.destination','the trip')
   const typeLabel = travType ? tPrime('travelerType.'+travType.toLowerCase(), travType.charAt(0).toUpperCase()+travType.slice(1)) : tPrime('brief.traveler','Traveler')
-  const groupPart = (trav.group_size && trav.group_size > 1) ? ` · ${trav.group_size} ${tPrime('brief.pax','pax')}` : ''
-  document.getElementById('ps-sub').textContent = `${typeLabel} · ${duration}${groupPart}`
+  const nightsN   = (() => { const m = String(duration).match(/(\d+)\s*N/i); return m ? parseInt(m[1],10) : null })()
+  const plannerFirst = _first((typeof planner !== 'undefined' && planner) ? planner.name : '')
+  document.getElementById('ps-title').textContent = travFirst ? `${travFirst}'s ${destName}` : destName
+  const _subParts = [typeLabel]
+  if (nightsN != null) _subParts.push(`${nightsN} ${nightsN === 1 ? tPrime('ps.night','night') : tPrime('ps.nights','nights')}`)
+  else if (duration) _subParts.push(duration)
+  if (trav.group_size && trav.group_size > 1) _subParts.push(`${trav.group_size} ${tPrime('brief.pax','pax')}`)
+  if (plannerFirst) _subParts.push(tPrime('ps.curatedBy','curated by {p}').replace('{p}', plannerFirst))
+  document.getElementById('ps-sub').textContent = _subParts.join(' · ')
 
   // Compute departure date from arrival + duration
   let departureDate = null
@@ -13445,26 +13511,95 @@ async function openPlanSummary(plan) {
     for (const p of (pts||[])) if (M[p]) return M[p]
     return ''
   }
-  // Quiet monochrome line-icon for a transit leg.
+  // Quiet monochrome line-icon for a transit leg — distinct per mode.
   const _legIcon = (mode) => {
     const m = String(mode||'').toLowerCase()
     const w = (inner) => `<svg class="ps-leg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
-    if (m==='walk') return w('<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>')
-    if (m==='taxi') return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/>')
-    if (m==='train'||m==='hsr') return w('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>')
-    return w('<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12"/><path d="M8.5 21 7 23M15.5 21 17 23"/>')
+    if (/walk|foot/.test(m))            return w('<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>')
+    if (/taxi|uber|car|cab|drive/.test(m)) return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/>')
+    if (/bus|coach/.test(m))            return w('<rect x="4" y="5" width="16" height="11" rx="2"/><path d="M4 11h16"/><path d="M7 16v2M17 16v2"/>')
+    if (/flight|plane|air/.test(m))     return w('<path d="M17.8 19.2 16 11l3.6-3.6a2 2 0 1 0-2.8-2.8L13.2 8 5 6.2a1 1 0 0 0-.9 1.6l4.9 4-2 2-2.4-.5a1 1 0 0 0-.9 1.5L6.8 19l2 2 1.6-1.7.7-2.4 4 4.9a1 1 0 0 0 1.6-.9z"/>')
+    if (/ferry|boat|ship/.test(m))      return w('<path d="M3 17h18l-2 4H5z"/><path d="M5 17V9l7-3 7 3v8"/><path d="M12 4v2"/>')
+    if (/train|tgv|ter|rail|hsr/.test(m)) return w('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>')
+    return w('<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12"/><path d="M8.5 21 7 23M15.5 21 17 23"/>')   // metro / public transit
+  }
+  // Small emoji icon for a stop's category — shown BEFORE the name (no text label).
+  const _catIcon = (s) => {
+    const t = String(s.type||'').toLowerCase()
+    if (t === 'meal') return '🍽'
+    if (t === 'shopping') return '🛍'
+    if (t === 'entertainment') return '🎭'
+    if (t === 'freetime') return '☕'
+    if (t === 'hotel_checkin' || t === 'hotel_checkout' || t === 'accommodation') return '🏨'
+    let pts = s.place_types; if (typeof pts === 'string') pts = pts.split(',').map(x=>x.trim())
+    const PM = { cafe:'☕', bakery:'🥐', bar:'🍸', restaurant:'🍽', museum:'🏛', art_gallery:'🖼', park:'🌳', tourist_attraction:'📸', church:'⛪', book_store:'📚', shopping_mall:'🛍', department_store:'🛍', store:'🛍', night_club:'🎶', spa:'💆', zoo:'🦁', amusement_park:'🎡' }
+    if (Array.isArray(pts)) for (const p of pts) if (PM[p]) return PM[p]
+    return '📍'
   }
   const _fmtLower = (tm) => tm ? formatTimeDisplay(tm).toLowerCase() : ''
   const _fmtBare  = (tm) => _fmtLower(tm).replace(/\s*(am|pm)\s*$/i,'')   // transit: drop the meridiem
   const _toMin = (tm) => { const m = String(tm||'').match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]*60 + +m[2]) : null }
   const _travFirst = String(trav.name || '').trim().split(/\s+/)[0] || dt('your traveller','le voyageur')
 
+  // ── Quality-scan helpers ────────────────────────────────────────────────
+  // A stop is something the traveller spends time at — NOT transport, hotel
+  // check-in/out, or any locked anchor.
+  const _isStop = (s) => { const t=String(s.type||'').toLowerCase(); return t!=='transport' && t!=='hotel_checkin' && t!=='hotel_checkout' && t!=='accommodation' && !s.anchor_type }
+  // Google opening_hours periods → open at (weekday 0=Sun, minute-of-day)?
+  // true / false / null(unknown). Handles split services, overnight, 24h.
+  const _venueOpenAt = (oh, wd, mins) => {
+    let o = oh; if (typeof o === 'string') { try { o = JSON.parse(o) } catch(e){ return null } }
+    const periods = o && Array.isArray(o.periods) ? o.periods : null
+    if (!periods || !periods.length) return null
+    if (periods.length === 1 && periods[0].open && !periods[0].close && (periods[0].open.hour||0) === 0) return true  // 24h
+    const tAbs = wd*1440 + mins
+    for (const p of periods) {
+      if (!p.open) continue
+      const oAbs = p.open.day*1440 + (p.open.hour||0)*60 + (p.open.minute||0)
+      let cAbs = p.close ? (p.close.day*1440 + (p.close.hour||0)*60 + (p.close.minute||0)) : oAbs + 1440
+      if (cAbs <= oAbs) cAbs += 7*1440
+      if ((tAbs >= oAbs && tAbs < cAbs) || (tAbs + 7*1440 >= oAbs && tAbs + 7*1440 < cAbs)) return true
+    }
+    return false
+  }
+  const _venueHoursText = (oh, wd) => {
+    let o = oh; if (typeof o === 'string') { try { o = JSON.parse(o) } catch(e){ return '' } }
+    const periods = o && Array.isArray(o.periods) ? o.periods : null
+    if (!periods) return ''
+    const hh = (x) => `${String(x.hour||0).padStart(2,'0')}:${String(x.minute||0).padStart(2,'0')}`
+    return periods.filter(p => p.open && p.open.day === wd && p.close).map(p => `${hh(p.open)}–${hh(p.close)}`).join(', ')
+  }
+  // Rough €/pax: manual cost (notes) → Google price level → 0.
+  const _PRICE_EST = { PRICE_LEVEL_INEXPENSIVE:15, PRICE_LEVEL_MODERATE:35, PRICE_LEVEL_EXPENSIVE:75, PRICE_LEVEL_VERY_EXPENSIVE:120, 1:15, 2:35, 3:75, 4:120 }
+  const _estCost = (s) => { const st=_parseTipsValue(s.notes); if (st.cost) return Number(st.cost)||0; const pl=s.price_level; return (pl!=null && _PRICE_EST[pl]!=null) ? _PRICE_EST[pl] : 0 }
+  const _arrD = trav.arrival_date ? new Date(trav.arrival_date) : null
+  const _weekdayOf = (n) => { if(!_arrD||isNaN(_arrD.getTime())) return null; const x=new Date(_arrD); x.setDate(x.getDate()+(n-1)); return x.getDay() }
+  const _depMin = _toMin(trav.departure_time)
+  const budgetDay = Number(trav.budget_per_day) || null
+  const issues = []
+  let totalStops = 0, totalWalkKm = 0, totalCost = 0
+
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
     const slots = _psNormalizeTransport(byDay[d] || [])
-    const stops = slots.filter(s => String(s.type||'').toLowerCase() !== 'transport')
-    let daySpend = 0
-    for (const s of slots) { const st = _parseTipsValue(s.notes); if (st.cost) daySpend += Number(st.cost) || 0 }
+    const stops = slots.filter(_isStop)
+    const wd = _weekdayOf(d)
+    let dayCost = 0
+    for (const s of stops) dayCost += _estCost(s)
+    totalStops += stops.length
+    totalCost  += dayCost
+    // Walking distance: haversine the stops flanking each walk leg.
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i]; if (String(s.type||'').toLowerCase() !== 'transport') continue
+      if (!/walk|foot/.test(String(s.transport_mode||'').toLowerCase())) continue
+      let p=null, nx=null
+      for (let j=i-1;j>=0;j--){ if(String(slots[j].type||'').toLowerCase()!=='transport'){ p=slots[j]; break } }
+      for (let j=i+1;j<slots.length;j++){ if(String(slots[j].type||'').toLowerCase()!=='transport'){ nx=slots[j]; break } }
+      if (p && nx && p.latitude!=null && nx.latitude!=null) {
+        const km = haversineKm(+p.latitude, +p.longitude, +nx.latitude, +nx.longitude)
+        if (Number.isFinite(km)) totalWalkKm += km
+      }
+    }
 
     const rowsHtml = slots.length ? slots.map(s => {
       const _type = String(s.type||'').toLowerCase()
@@ -13475,7 +13610,6 @@ async function openPlanSummary(plan) {
           <div class="ps-cell"><div class="ps-leg">${_legIcon(s.transport_mode)}<span>${escapeHtml(s.title || '')}</span></div></div>
         </li>`
       }
-      const cat = _placeCat(s)
       const metaBits = [_shortAddr(s.address), formatDurationLabel(s.duration_minutes)].filter(Boolean).join(' · ')
       const st = _parseTipsValue(s.notes)
       const chips = (st.tips && st.tips.length)
@@ -13491,7 +13625,7 @@ async function openPlanSummary(plan) {
       <li class="ps-row">
         <div class="ps-time">${escapeHtml(_fmtLower(s.time) || '—')}</div>
         <div class="ps-cell">
-          <div class="ps-name">${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}${cat ? `<span class="ps-cat"> · ${escapeHtml(cat)}</span>` : ''}</div>
+          <div class="ps-name"><span class="ps-name-ico" aria-hidden="true">${_catIcon(s)}</span>${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</div>
           ${metaBits ? `<div class="ps-meta">${escapeHtml(metaBits)}</div>` : ''}
           ${chips}${legacy}${imgHtml}
         </div>
@@ -13499,18 +13633,41 @@ async function openPlanSummary(plan) {
     }).join('')
       : `<li class="ps-empty">${tPrime('ps.emptyDay','No activities logged for this day.')}</li>`
 
-    // Smart warning: a day that runs through midday with no meal stop.
-    let warnHtml = ''
-    const hasMeal = stops.some(s => String(s.type||'').toLowerCase() === 'meal')
-    let lastEnd = null
-    for (const s of stops) { const mm = _toMin(s.time); if (mm == null) continue; lastEnd = Math.max(lastEnd ?? 0, mm + (parseInt(s.duration_minutes,10) || 0)) }
-    if (stops.length >= 2 && !hasMeal && lastEnd != null && lastEnd >= 12*60 + 30) {
-      warnHtml = `<div class="ps-warn">⚠ ${escapeHtml(dt(`No lunch scheduled — ${_travFirst} will be hungry by 1 PM`, `Aucun déjeuner prévu — ${_travFirst} aura faim vers 13 h`))}</div>`
+    // ── Quality scan for this day → push into the shared `issues` list ──
+    const meals = stops.filter(s => String(s.type||'').toLowerCase() === 'meal')
+    let lastEnd = null, earliest = null
+    for (const s of stops) { const mm = _toMin(s.time); if (mm == null) continue; lastEnd = Math.max(lastEnd ?? 0, mm + (parseInt(s.duration_minutes,10) || 0)); earliest = (earliest==null||mm<earliest)?mm:earliest }
+    // A) closed venues
+    for (const s of stops) {
+      if (!s.opening_hours_json) continue
+      const mm = _toMin(s.time); if (mm == null || wd == null) continue
+      if (_venueOpenAt(s.opening_hours_json, wd, mm) === false) {
+        const hrs = _venueHoursText(s.opening_hours_json, wd)
+        issues.push({ sev:'closed', text: `${s.title} at ${_fmtLower(s.time)} (Day ${d}) — closed at this time${hrs ? ` · open ${hrs}` : ''}. Move or cancel.` })
+      }
+    }
+    // B) no breakfast — day starts before 11:00 with no meal before 11:00
+    if (stops.length >= 1 && earliest != null && earliest < 11*60 && !meals.some(s => { const mm=_toMin(s.time); return mm!=null && mm < 11*60 })) {
+      issues.push({ sev:'meal', text: `No breakfast on Day ${d} — ${_travFirst} starts the day with no food. Add a coffee or bakery stop.` })
+    }
+    // C) no lunch — nothing to eat midday on a day that runs through it
+    if (stops.length >= 2 && lastEnd != null && lastEnd >= 12*60+30 && !meals.some(s => { const mm=_toMin(s.time); return mm!=null && mm >= 11*60+30 && mm <= 14*60+30 })) {
+      issues.push({ sev:'meal', text: `No lunch before 2 PM on Day ${d}. Add a quick meal.` })
+    }
+    // D) budget — a single stop blows the daily limit
+    if (budgetDay) for (const s of stops) { const c = _estCost(s); if (c > budgetDay) issues.push({ sev:'budget', text: `${s.title} ≈ €${c}/pax exceeds ${_travFirst}'s €${budgetDay}/day budget — confirm splurge or rebalance.` }) }
+    // E) geographic — same place visited twice in one day
+    const _seen = {}
+    for (const s of slots) { const t=String(s.type||'').toLowerCase(); if (t==='transport') continue; const k=String(s.title||'').toLowerCase().trim(); if (!k) continue; _seen[k]=(_seen[k]||0)+1 }
+    for (const k in _seen) { if (_seen[k] > 1) { issues.push({ sev:'geo', text: `Day ${d} revisits the same place twice — consider reordering stops to flow geographically.` }); break } }
+    // F) departure timing — last day, a stop can't finish before the flight
+    if (d === totalDays && _depMin != null) {
+      for (const s of stops) { const mm=_toMin(s.time); if (mm==null) continue; const end = mm + (parseInt(s.duration_minutes,10) || 90); if (end > _depMin - 120) { issues.push({ sev:'time', text: `${s.title} at ${_fmtLower(s.time)} may not finish before your ${_fmtLower(trav.departure_time)} departure. Move earlier or remove.` }); break } }
     }
 
     const stopWord = stops.length === 1 ? dt('stop','arrêt') : dt('stops','arrêts')
     const statBits = [`${stops.length} ${stopWord}`]
-    if (daySpend > 0) statBits.push(fmtMoney(daySpend))
+    if (dayCost > 0) statBits.push(fmtMoney(dayCost))
     const dateStr = _dayDate(d)
     daysHtml += `
       <div class="ps-day ps-day--${dayTone(d)}">
@@ -13522,9 +13679,33 @@ async function openPlanSummary(plan) {
           <div class="ps-day-stats">${escapeHtml(statBits.join(' · '))}</div>
         </div>
         <ul class="ps-rows">${rowsHtml}</ul>
-        ${warnHtml}
       </div>`
   }
+
+  // ── Build the top blocks: warnings banner → personal note → quick stats ──
+  const _editable = plan.status === 'submitted' || plan.status === 'draft' || !plan.status
+  const _issueBanner = issues.length ? `
+    <div class="ps-issues">
+      <div class="ps-issues-head">⚠ ${issues.length} ${issues.length === 1 ? 'ISSUE' : 'ISSUES'} TO FIX BEFORE SUBMIT</div>
+      <ul class="ps-issues-list">
+        ${issues.map(it => `<li class="ps-issue ps-issue--${it.sev}"${_editable ? ` onclick="editSubmittedPlan('${jsEsc(plan.id)}')" title="Open the editor to fix"` : ''}>${escapeHtml(it.text)}</li>`).join('')}
+      </ul>
+    </div>` : ''
+  const _noteMsg = (plan.personal_message_to_traveler || '').trim()
+  const _noteCard = _noteMsg ? `
+    <div class="ps-note-card">
+      <div class="ps-note-head">${escapeHtml(tPrime('ps.noteFrom','A note from {p}').replace('{p}', (plannerFirst || tPrime('ps.yourPlanner','your planner')).toUpperCase()))}</div>
+      <div class="ps-note-body">${escapeHtml(_noteMsg)}</div>
+    </div>` : ''
+  const _budgetCap = budgetDay ? budgetDay * totalDays : null
+  const _costOver = _budgetCap != null && totalCost > _budgetCap
+  const _statTile = (num, label, over) => `<div class="ps-stat"><div class="ps-stat-num${over ? ' ps-stat-num--over' : ''}">${num}</div><div class="ps-stat-label">${label}</div></div>`
+  const _statsHtml = `
+    <div class="ps-stats">
+      ${_statTile(totalStops, tPrime('ps.stat.stops','Stops'), false)}
+      ${_statTile(totalWalkKm > 0 ? totalWalkKm.toFixed(1) + ' km' : '—', tPrime('ps.stat.walking','Walking / total'), false)}
+      ${_statTile(totalCost > 0 ? fmtMoney(totalCost) : '—', tPrime('ps.stat.cost','Est. cost / pax'), _costOver)}
+    </div>`
 
   // Extras (transport / spend / local tips) — only render blocks that have content
   const extra = (label, val) => val && String(val).trim()
@@ -13595,6 +13776,7 @@ async function openPlanSummary(plan) {
         <span>${chipText}${dateLabel && !isBondLocked ? ' · '+dateLabel : ''}</span>
       </div>
       ${plan.itin_title && !isBondLocked ? `<h2 class="ps-itin-title">${escapeHtml(plan.itin_title)}</h2>` : ''}
+      ${isBondLocked ? '' : _issueBanner + _noteCard + _statsHtml}
       ${briefHtml}
       ${isBondLocked ? bondBlockHtml : `<div class="ps-days">${daysHtml}</div>${extrasHtml}`}
     </div>`
@@ -13608,7 +13790,7 @@ async function openPlanSummary(plan) {
         <button class="btn-main" style="flex:none;padding:11px 24px;background:linear-gradient(135deg,#c17d2a,#a86820);box-shadow:0 4px 14px -4px rgba(193,125,42,0.45);" onclick="closeModal('modal-plan-summary'); openBondPayModal('${jsEsc(plan.id)}', ${plan.plan_number || 0})">${tPrime('bond.formCta.btn','Pay bond')} ${bondAmtFmt}</button>`
     } else if (isSubmitted) {
       footer.innerHTML = `<button class="btn-ghost" onclick="closeModal('modal-plan-summary')">${tPrime('common.close','Close')}</button>
-         <button class="btn-main" style="flex:none;padding:11px 24px;" onclick="editSubmittedPlan('${jsEsc(plan.id)}')">${tPrime('ps.editSubmission','Edit submission')}</button>`
+         <button class="btn-main" style="flex:none;padding:11px 24px;text-transform:none;letter-spacing:normal;" onclick="editSubmittedPlan('${jsEsc(plan.id)}')">${tPrime('ps.editPlan','Edit plan')}</button>`
     } else {
       footer.innerHTML = `<button class="btn-ghost" onclick="closeModal('modal-plan-summary')">${tPrime('common.close','Close')}</button>`
     }
