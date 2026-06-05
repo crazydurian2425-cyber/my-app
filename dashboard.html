@@ -6976,7 +6976,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
       <div class="metric-card">
         <div class="metric-label" data-i18n="dash.m.earned">Paid out</div>
         <div class="metric-val green" id="m-earned">€0</div>
-        <div class="metric-note" data-i18n="dash.m.earned.note">lifetime · to your bank</div>
+        <div class="metric-note" data-i18n="dash.m.earned.note">lifetime · to your wallet</div>
       </div>
       <div class="metric-card">
         <div class="metric-label" data-i18n="dash.m.bond">Bond on hold</div>
@@ -6989,7 +6989,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
         <div class="metric-note" data-i18n="dash.m.sets.note">all time</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label" data-i18n="dash.m.pending">Pending</div>
+        <div class="metric-label" data-i18n="dash.m.pending">Plans left</div>
         <div class="metric-val" id="m-pending-plans">0</div>
         <div class="metric-note" data-i18n="dash.m.pending.note">plans left</div>
       </div>
@@ -7219,7 +7219,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
       <div class="metric-card">
         <div class="metric-label" data-i18n="wallet.m.paid">Paid out</div>
         <div class="metric-val" id="w-paid" style="color:var(--e-ink-2,#554e3f);">€0</div>
-        <div class="metric-note" data-i18n="wallet.m.paid.note">to your bank, lifetime</div>
+        <div class="metric-note" data-i18n="wallet.m.paid.note">to your wallet, lifetime</div>
       </div>
     </div>
 
@@ -7766,7 +7766,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
     <div class="modal-header">
       <div>
         <div class="modal-title" data-i18n="pr.title">Request payout</div>
-        <div class="modal-sub" data-i18n="pr.sub">Funds will be transferred to your bank on record</div>
+        <div class="modal-sub" data-i18n="pr.sub">Funds are sent to your crypto wallet on record (USDT / USDC)</div>
       </div>
       <button class="modal-close" onclick="closeModal('modal-payout-request')">✕</button>
     </div>
@@ -7926,13 +7926,13 @@ const TM_I18N = {
     'dash.m.currentEarning':'Current earning',
     'dash.m.currentEarning.note':'unpaid — current set',
     'dash.m.earned':'Paid out',
-    'dash.m.earned.note':'lifetime · to your bank',
+    'dash.m.earned.note':'lifetime · to your wallet',
     'dash.m.bond':'Bond on hold',
     'dash.m.bond.note':'held until set complete',
     'dash.m.sets':'Sets completed',
     'dash.m.sets.note':'all time',
-    'dash.m.pending':'Pending',
-    'dash.m.pending.note':'plans left',
+    'dash.m.pending':'Plans left',
+    'dash.m.pending.note':'remaining in this set',
     'dash.revisions.title':'Revisions requested',
     'dash.activeSet':'Active set',
     'dash.btn.submitPlan':'Submit plan',
@@ -8012,11 +8012,11 @@ const TM_I18N = {
     'walletSnap.cta':'Open wallet',
     'wallet.m.available':'Available',
     'wallet.m.earnedTotal':'Earned total',
-    'wallet.m.earnedTotal.note':'lifetime payouts',
+    'wallet.m.earnedTotal.note':'lifetime earnings',
     'wallet.m.pending':'Pending',
     'wallet.m.pending.note':'awaiting admin release',
     'wallet.m.paid':'Paid out',
-    'wallet.m.paid.note':'to your bank, lifetime',
+    'wallet.m.paid.note':'to your wallet, lifetime',
     'wallet.requests.title':'Payout requests',
     'wallet.requests.sub':'Your recent and pending withdrawals',
     'wallet.btn.request':'Request payout',
@@ -8203,7 +8203,7 @@ const TM_I18N = {
     'deposit.text':'This traveler has made a significant up-front commitment. Their flights and travel dates are fixed, and they\'ve allocated a premium budget for the hotels and experiences you\'ll arrange on their behalf. To accept this plan, a refundable bond is held from your payout. If you deliver on time and the itinerary is approved, the bond is returned in full along with your higher commission. If you miss the deadline or fail to deliver, the bond is forfeited to protect the traveler from losing their fixed travel costs.',
     // payout request modal
     'pr.title':'Request payout',
-    'pr.sub':'Funds will be transferred to your bank on record',
+    'pr.sub':'Funds are sent to your crypto wallet on record (USDT / USDC)',
     'pr.earned':'Earned',
     'pr.remaining':'Remaining',
     'pr.locked':'Locked',
@@ -8580,13 +8580,13 @@ const TM_I18N = {
     'common.close':'Close',
     'completed.bondAndCommission':'Your commission plus the bond deposits you paid will all be released together.',
     'completed.youEarned':'You earned <strong style="color:var(--green-dark);">{amt}</strong> on this set.',
-    'completed.payoutEta':'Payout releases to your bank once admin clears the queue — usually within 1hr.',
+    'completed.payoutEta':'Payout is sent to your crypto wallet once admin clears the queue — usually within 1hr.',
     'completed.availableInWallet':'Your earnings are now available in your wallet — withdraw anytime.',
     'completed.availableLabel':'Available to withdraw',
     'completed.breakdown':'Breakdown',
     'between.title':'Batch paid out',
     'between.sub':'Well done — request a new set and we\'ll appoint one to you shortly.',
-    'completed.walletHint':'Head to your wallet to request a payout — funds transfer to your bank within 1–2 business days.',
+    'completed.walletHint':'Head to your wallet to request a payout — funds are sent to your crypto wallet, usually within an hour.',
     'completed.btn.checkPayout':'Check payout status',
     'completed.btn.requestNew':'Request new set',
     'completed.btn.goToWallet':'Go to wallet',
@@ -8643,13 +8643,13 @@ const TM_I18N = {
     'dash.m.currentEarning':'Revenus en cours',
     'dash.m.currentEarning.note':'Non payés — lot en cours',
     'dash.m.earned':'Versé',
-    'dash.m.earned.note':'Cumulé · vers votre compte',
+    'dash.m.earned.note':'Cumulé · vers votre portefeuille',
     'dash.m.bond':'Caution (en attente)',
     'dash.m.bond.note':'Retenue jusqu\'à la fin du lot',
     'dash.m.sets':'Lots terminés',
     'dash.m.sets.note':'Cumulé',
-    'dash.m.pending':'En attente',
-    'dash.m.pending.note':'Plans restants',
+    'dash.m.pending':'Plans restants',
+    'dash.m.pending.note':'restants dans ce lot',
     'dash.revisions.title':'Demandes de révision',
     'dash.activeSet':'Lot en cours',
     'dash.btn.submitPlan':'Soumettre le plan',
@@ -8721,11 +8721,11 @@ const TM_I18N = {
     'walletSnap.cta':'Ouvrir le portefeuille',
     'wallet.m.available':'Disponible',
     'wallet.m.earnedTotal':'Total gagné',
-    'wallet.m.earnedTotal.note':'Cumulé tous paiements',
+    'wallet.m.earnedTotal.note':'Cumulé · total des gains',
     'wallet.m.pending':'En cours',
     'wallet.m.pending.note':'Approbation administrateur',
     'wallet.m.paid':'Versé',
-    'wallet.m.paid.note':'Cumulé · vers votre compte',
+    'wallet.m.paid.note':'Cumulé · vers votre portefeuille',
     'wallet.requests.title':'Demandes de retrait',
     'wallet.requests.sub':'Retraits récents et en attente',
     'wallet.btn.request':'Demander un retrait',
@@ -8901,7 +8901,7 @@ const TM_I18N = {
     'deposit.title':'Voyage premium — caution remboursable requise.',
     'deposit.text':'Ce voyageur a déjà investi de manière importante dans son séjour. Le vol et les dates sont confirmés, et un budget premium est prévu pour les hôtels et les expériences que vous allez organiser. Pour accepter ce plan, une caution remboursable sera retenue sur votre paiement. Si vous livrez dans les délais et que l\'itinéraire est approuvé, la caution est intégralement restituée avec une commission plus élevée. En cas de retard ou de non-livraison, la caution est perdue pour protéger les frais déjà engagés par le voyageur.',
     'pr.title':'Demander un retrait',
-    'pr.sub':'Versé sur votre compte bancaire enregistré',
+    'pr.sub':'Envoyé sur votre portefeuille crypto enregistré (USDT / USDC)',
     'pr.earned':'Gagné',
     'pr.remaining':'Solde',
     'pr.locked':'Bloqué',
@@ -9250,13 +9250,13 @@ const TM_I18N = {
     'common.close':'Fermer',
     'completed.bondAndCommission':'Commission et caution versées ensemble.',
     'completed.youEarned':'Vous avez gagné <strong style="color:var(--green-dark);">{amt}</strong> sur ce lot.',
-    'completed.payoutEta':'Versé sur votre compte après traitement administrateur — sous 1 heure en général.',
+    'completed.payoutEta':'Envoyé sur votre portefeuille crypto après traitement administrateur — sous 1 heure en général.',
     'completed.availableInWallet':'Vos revenus sont arrivés dans le portefeuille — retrait possible à tout moment.',
     'completed.availableLabel':'Disponible au retrait',
     'completed.breakdown':'Détail',
     'between.title':'Lot payé',
     'between.sub':'Bravo — demandez un nouveau lot et nous vous en attribuerons un rapidement.',
-    'completed.walletHint':'Demandez un retrait depuis le portefeuille — 1 à 2 jours ouvrés pour réception bancaire.',
+    'completed.walletHint':'Demandez un retrait depuis le portefeuille — envoi sur votre portefeuille crypto, sous 1 heure en général.',
     'completed.btn.checkPayout':'Vérifier le paiement',
     'completed.btn.requestNew':'Demander un nouveau lot',
     'completed.btn.goToWallet':'Aller au portefeuille',
@@ -10925,7 +10925,7 @@ async function renderDemoSet() {
             <span class="bp-break-total-label">${t('completed.totalPayout','Total payout')}</span>
             <span class="bp-break-total-value">${fmtMoney(pendingPayout)}</span>
           </div>
-          <p class="bp-fineprint">${t('completed.walletHint','Head to your wallet to request a payout — funds transfer to your bank within 1–2 business days.')}</p>
+          <p class="bp-fineprint">${t('completed.walletHint','Head to your wallet to request a payout — funds are sent to your crypto wallet, usually within an hour.')}</p>
         </aside>
       </div>
 
