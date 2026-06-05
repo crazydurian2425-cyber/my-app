@@ -1060,29 +1060,56 @@ html[lang="ja"] .ps-itin-title{font-family:'Noto Serif JP','DM Serif Display',se
 .ps-day--departure .ps-day-tag{color:#A26821;}
 html[lang="ja"] .ps-day-tag{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
 
-.ps-slots{list-style:none;padding:6px 0;margin:0;}
+.ps-slots{list-style:none;padding:10px 0 12px;margin:0;}
 .ps-slot{
-  display:grid;grid-template-columns:72px 28px 1fr;gap:10px;align-items:start;
-  padding:10px 16px;
-  border-bottom:1px solid var(--e-rule,rgba(27,31,28,0.04));
+  display:grid;grid-template-columns:60px 30px 1fr;gap:12px;align-items:stretch;
+  padding:7px 18px;position:relative;
 }
-.ps-slot:last-child{border-bottom:none;}
 .ps-slot-time{
   font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
   color:var(--e-ink-2,#4A524C);letter-spacing:-0.01em;
-  font-variant-numeric:tabular-nums;padding-top:1px;
+  font-variant-numeric:tabular-nums;padding-top:5px;white-space:nowrap;
 }
-.ps-slot-icon{font-size:16px;line-height:1.3;text-align:center;padding-top:0;}
-.ps-slot-body{min-width:0;}
+/* Timeline rail: a continuous vertical line down the icon column, with a
+   round marker per row sitting on top of it. The marker's opaque fill masks
+   the line so it reads as connected dots. */
+.ps-slot-icon{
+  position:relative;display:flex;justify-content:center;align-items:flex-start;
+}
+.ps-slot-icon::before{
+  content:'';position:absolute;left:50%;top:-7px;bottom:-7px;width:2px;
+  transform:translateX(-50%);background:var(--e-rule,rgba(27,31,28,0.12));z-index:0;
+}
+.ps-slot:first-child .ps-slot-icon::before{top:14px;}
+.ps-slot:last-child  .ps-slot-icon::before{bottom:calc(100% - 14px);}
+.ps-slot:first-child:last-child .ps-slot-icon::before{display:none;}
+.ps-slot-icon > span{
+  position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;font-size:14px;line-height:1;
+  background:#FFFDF8;border:1px solid var(--e-rule,rgba(27,31,28,0.12));
+  box-shadow:0 1px 2px rgba(27,31,28,0.04);
+}
+.ps-slot-body{min-width:0;padding:3px 0;}
 .ps-slot-title{
-  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;
-  color:var(--e-ink,#1B1F1C);line-height:1.35;
+  font-family:'DM Sans',sans-serif;font-size:14.5px;font-weight:600;
+  color:var(--e-ink,#1B1F1C);line-height:1.35;letter-spacing:-0.01em;
 }
 .ps-slot-notes{
   font-family:'Lora',serif;font-style:italic;
   font-size:13px;line-height:1.55;
   color:var(--e-ink-2,#4A524C);margin-top:4px;
   white-space:pre-wrap;word-wrap:break-word;
+}
+/* Transport legs are connectors, not destinations — subdue them so the eye
+   groups [stop] → travel → [stop]. Smaller borderless marker, muted text. */
+.ps-slot--transport{padding-top:2px;padding-bottom:2px;}
+.ps-slot--transport .ps-slot-time{font-size:11px;font-weight:500;color:var(--e-ink-3,#9aa09a);}
+.ps-slot--transport .ps-slot-icon > span{
+  width:22px;height:22px;font-size:11.5px;border:none;box-shadow:none;
+  background:#FFFDF8;opacity:0.92;
+}
+.ps-slot--transport .ps-slot-title{
+  font-size:12.5px;font-weight:500;color:var(--e-ink-3,#7C817B);letter-spacing:0;
 }
 html[lang="ja"] .ps-slot-notes{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
 .ps-empty{
@@ -1115,7 +1142,7 @@ html[lang="ja"] .ps-slot-notes{font-style:normal;font-family:'Noto Sans JP',sans
   .ps-itin-title{font-size:22px;}
   .ps-brief{grid-template-columns:1fr;gap:10px;padding:14px 14px;}
   .ps-brief-val{font-size:13.5px;}
-  .ps-slot{grid-template-columns:60px 24px 1fr;gap:8px;padding:9px 14px;}
+  .ps-slot{grid-template-columns:52px 30px 1fr;gap:10px;padding:7px 14px;}
   .ps-slot-time{font-size:11.5px;}
   .ps-slot-title{font-size:13.5px;}
   .ps-slot-notes{font-size:12.5px;}
@@ -5246,6 +5273,16 @@ body.theme-premium #modal-plan-summary .ps-slot-notes{
   font-family:'Cormorant Garamond',serif!important;font-style:italic!important;
   font-size:13.5px!important;color:var(--p-ink-2)!important;line-height:1.55!important;
 }
+/* Keep the timeline rail coherent under the premium theme (it forces
+   align-items:start + a border that would otherwise break the connector). */
+body.theme-premium #modal-plan-summary .ps-slot{align-items:stretch!important;border-bottom:none!important;}
+body.theme-premium #modal-plan-summary .ps-slot-icon::before{background:rgba(198,165,100,0.30)!important;}
+body.theme-premium #modal-plan-summary .ps-slot-icon>span{
+  background:var(--p-paper-2)!important;border-color:rgba(198,165,100,0.35)!important;box-shadow:none!important;
+}
+body.theme-premium #modal-plan-summary .ps-slot--transport .ps-slot-title{
+  font-size:13.5px!important;font-weight:500!important;color:var(--p-ink-2)!important;
+}
 
 /* Extras blocks */
 body.theme-premium #modal-plan-summary .ps-extra{
@@ -5333,6 +5370,15 @@ body.theme-dark #modal-plan-summary .ps-slot-title,
 body.theme-dark.theme-premium #modal-plan-summary .ps-slot-title{color:#FFFFFF!important;}
 body.theme-dark #modal-plan-summary .ps-slot-notes,
 body.theme-dark.theme-premium #modal-plan-summary .ps-slot-notes{color:#bdb19c!important;}
+/* Timeline rail on dark surface */
+body.theme-dark #modal-plan-summary .ps-slot-icon::before,
+body.theme-dark.theme-premium #modal-plan-summary .ps-slot-icon::before{background:rgba(255,255,255,0.13)!important;}
+body.theme-dark #modal-plan-summary .ps-slot-icon>span,
+body.theme-dark.theme-premium #modal-plan-summary .ps-slot-icon>span{
+  background:#2a231b!important;border-color:rgba(255,255,255,0.16)!important;box-shadow:none!important;
+}
+body.theme-dark #modal-plan-summary .ps-slot--transport .ps-slot-title,
+body.theme-dark.theme-premium #modal-plan-summary .ps-slot--transport .ps-slot-title{color:#9a9384!important;}
 body.theme-dark #modal-plan-summary .ps-extra,
 body.theme-dark.theme-premium #modal-plan-summary .ps-extra{
   background:#2a231b!important;border-color:rgba(255,255,255,0.06)!important;
@@ -13295,7 +13341,17 @@ async function openPlanSummary(plan) {
   const totalDays = parseInt(String(duration).match(/(\d+)D/i)?.[1] || 1, 10) || Object.keys(byDay).length || 1
 
   const typeIcons = {
-    activity:'📍', meal:'🍽', transport:'🚕', accommodation:'🏨', freetime:'☕', note:'📝'
+    activity:'📍', meal:'🍽', transport:'🚕', accommodation:'🏨', freetime:'☕', note:'📝',
+    hotel_checkin:'🏨', hotel_checkout:'🏨', shopping:'🛍', entertainment:'🎭', sightseeing:'📸'
+  }
+  // Mode-specific glyph for transport legs (the generic 🚕 made every leg look
+  // the same). Falls back to the metro glyph for unknown / public transport.
+  const _transportIcon = (mode) => {
+    const m = String(mode||'').toLowerCase()
+    if (m === 'walk') return '🚶'
+    if (m === 'taxi') return '🚕'
+    if (m === 'train' || m === 'hsr') return '🚆'
+    return '🚇'
   }
   // Transport rows store a FROZEN "Mode · A → B" title written once when the leg
   // was first inserted; it goes stale the moment the planner reorders/adds stops
@@ -13349,10 +13405,13 @@ async function openPlanSummary(plan) {
       const durHtml = durLabel
         ? `<div class="ps-slot-meta" style="font-size:11.5px;color:var(--text-3);margin-top:2px;"><span style="margin-right:4px;">⏱</span>${escapeHtml(durLabel)}</div>`
         : ''
+      const _type = String(s.type||'').toLowerCase()
+      const _isT = _type === 'transport'
+      const icon = _isT ? _transportIcon(s.transport_mode) : (typeIcons[_type] || '📍')
       return `
-      <li class="ps-slot">
+      <li class="ps-slot${_isT ? ' ps-slot--transport' : ''}">
         <div class="ps-slot-time">${s.time ? formatTimeDisplay(s.time) : '—'}</div>
-        <div class="ps-slot-icon" aria-hidden="true">${typeIcons[String(s.type||'').toLowerCase()] || '•'}</div>
+        <div class="ps-slot-icon" aria-hidden="true"><span>${icon}</span></div>
         <div class="ps-slot-body">
           <div class="ps-slot-title">${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</div>
           ${addrHtml}

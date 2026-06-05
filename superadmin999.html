@@ -488,17 +488,34 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 .ps-day--arrival .ps-day-tag  {color:var(--blue,#1a5fa8);}
 .ps-day--full .ps-day-tag     {color:var(--green-dark);}
 .ps-day--departure .ps-day-tag{color:var(--amber);}
-.ps-slots{list-style:none;padding:4px 0;margin:0;}
+.ps-slots{list-style:none;padding:8px 0 10px;margin:0;}
 .ps-slot{
-  display:grid;grid-template-columns:64px 24px 1fr;gap:10px;align-items:start;
-  padding:9px 14px;border-bottom:1px solid var(--border);
+  display:grid;grid-template-columns:56px 30px 1fr;gap:12px;align-items:stretch;
+  padding:6px 16px;position:relative;
 }
-.ps-slot:last-child{border-bottom:none;}
-.ps-slot-time{font-size:11.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:1px;}
-.ps-slot-icon{font-size:14px;text-align:center;}
-.ps-slot-body{min-width:0;}
+.ps-slot-time{font-size:11.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:5px;white-space:nowrap;}
+/* Timeline rail — continuous line down the icon column with a marker per row */
+.ps-slot-icon{position:relative;display:flex;justify-content:center;align-items:flex-start;}
+.ps-slot-icon::before{
+  content:'';position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;
+  transform:translateX(-50%);background:var(--border);z-index:0;
+}
+.ps-slot:first-child .ps-slot-icon::before{top:14px;}
+.ps-slot:last-child  .ps-slot-icon::before{bottom:calc(100% - 14px);}
+.ps-slot:first-child:last-child .ps-slot-icon::before{display:none;}
+.ps-slot-icon > span{
+  position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;font-size:14px;line-height:1;
+  background:var(--surface);border:1px solid var(--border);
+}
+.ps-slot-body{min-width:0;padding:3px 0;}
 .ps-slot-title{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.35;}
 .ps-slot-notes{font-size:12.5px;line-height:1.5;color:var(--ink-3);margin-top:3px;white-space:pre-wrap;word-wrap:break-word;}
+/* Transport legs subdued as connectors between the real stops */
+.ps-slot--transport{padding-top:1px;padding-bottom:1px;}
+.ps-slot--transport .ps-slot-time{font-size:10.5px;font-weight:500;color:var(--ink-3);}
+.ps-slot--transport .ps-slot-icon > span{width:22px;height:22px;font-size:11.5px;border:none;background:var(--surface);}
+.ps-slot--transport .ps-slot-title{font-size:12px;font-weight:500;color:var(--ink-3);}
 .ps-slot-imgs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
 .ps-slot-imgs img{width:58px;height:58px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:zoom-in;}
 .ps-empty{padding:14px;text-align:center;color:var(--ink-4);font-size:12px;font-style:italic;}
@@ -511,7 +528,7 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 .ps-extra-val{font-size:13px;line-height:1.55;color:var(--ink-2);white-space:pre-wrap;word-wrap:break-word;}
 @media (max-width:640px){
   .ps-brief{grid-template-columns:1fr;}
-  .ps-slot{grid-template-columns:54px 22px 1fr;gap:8px;padding:8px 12px;}
+  .ps-slot{grid-template-columns:50px 30px 1fr;gap:10px;padding:6px 12px;}
 }
 
 /* REVIEW ACTIONS */
@@ -3475,7 +3492,15 @@ function renderPlanSummary(plan){
     byDay[d].push(it)
   }
 
-  const typeIcons = { activity:'📍', meal:'🍽', transport:'🚕', accommodation:'🏨', freetime:'☕', note:'📝' }
+  const typeIcons = { activity:'📍', meal:'🍽', transport:'🚕', accommodation:'🏨', freetime:'☕', note:'📝',
+    hotel_checkin:'🏨', hotel_checkout:'🏨', shopping:'🛍', entertainment:'🎭', sightseeing:'📸' }
+  const _transportIcon = (mode) => {
+    const m = String(mode||'').toLowerCase()
+    if (m === 'walk') return '🚶'
+    if (m === 'taxi') return '🚕'
+    if (m === 'train' || m === 'hsr') return '🚆'
+    return '🚇'
+  }
   const dayLabel = (n) => n === 1 ? 'Arrival day' : (n === totalDays && totalDays > 1) ? 'Departure day' : 'Full day'
   const dayTone = (n) => n === 1 ? 'arrival' : (n === totalDays && totalDays > 1) ? 'departure' : 'full'
 
@@ -3522,10 +3547,13 @@ function renderPlanSummary(plan){
       const durHtml = durLabel
         ? `<div class="ps-slot-meta" style="font-size:12px;color:var(--ink-3);margin-top:2px;"><span style="margin-right:4px;">⏱</span>${escapeHtml(durLabel)}</div>`
         : ''
+      const _type = String(s.type||'').toLowerCase()
+      const _isT = _type === 'transport'
+      const icon = _isT ? _transportIcon(s.transport_mode) : (typeIcons[_type] || '📍')
       return `
-      <li class="ps-slot">
+      <li class="ps-slot${_isT ? ' ps-slot--transport' : ''}">
         <div class="ps-slot-time">${escapeHtml(fmtTime(s.time))}</div>
-        <div class="ps-slot-icon" aria-hidden="true">${typeIcons[String(s.type||'').toLowerCase()] || '•'}</div>
+        <div class="ps-slot-icon" aria-hidden="true"><span>${icon}</span></div>
         <div class="ps-slot-body">
           <div class="ps-slot-title">${escapeHtml(s.title || '(untitled)')}</div>
           ${addrHtml}
