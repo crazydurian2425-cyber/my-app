@@ -13576,7 +13576,6 @@ async function openPlanSummary(plan) {
   const _weekdayOf = (n) => { if(!_arrD||isNaN(_arrD.getTime())) return null; const x=new Date(_arrD); x.setDate(x.getDate()+(n-1)); return x.getDay() }
   const _depMin = _toMin(trav.departure_time)
   const budgetDay = Number(trav.budget_per_day) || null
-  const issues = []
   let totalStops = 0, totalWalkKm = 0, totalCost = 0
 
   let daysHtml = ''
@@ -13633,38 +13632,6 @@ async function openPlanSummary(plan) {
     }).join('')
       : `<li class="ps-empty">${tPrime('ps.emptyDay','No activities logged for this day.')}</li>`
 
-    // ── Quality scan for this day → push into the shared `issues` list ──
-    const meals = stops.filter(s => String(s.type||'').toLowerCase() === 'meal')
-    let lastEnd = null, earliest = null
-    for (const s of stops) { const mm = _toMin(s.time); if (mm == null) continue; lastEnd = Math.max(lastEnd ?? 0, mm + (parseInt(s.duration_minutes,10) || 0)); earliest = (earliest==null||mm<earliest)?mm:earliest }
-    // A) closed venues
-    for (const s of stops) {
-      if (!s.opening_hours_json) continue
-      const mm = _toMin(s.time); if (mm == null || wd == null) continue
-      if (_venueOpenAt(s.opening_hours_json, wd, mm) === false) {
-        const hrs = _venueHoursText(s.opening_hours_json, wd)
-        issues.push({ sev:'closed', text: `${s.title} at ${_fmtLower(s.time)} (Day ${d}) — closed at this time${hrs ? ` · open ${hrs}` : ''}. Move or cancel.` })
-      }
-    }
-    // B) no breakfast — day starts before 11:00 with no meal before 11:00
-    if (stops.length >= 1 && earliest != null && earliest < 11*60 && !meals.some(s => { const mm=_toMin(s.time); return mm!=null && mm < 11*60 })) {
-      issues.push({ sev:'meal', text: `No breakfast on Day ${d} — ${_travFirst} starts the day with no food. Add a coffee or bakery stop.` })
-    }
-    // C) no lunch — nothing to eat midday on a day that runs through it
-    if (stops.length >= 2 && lastEnd != null && lastEnd >= 12*60+30 && !meals.some(s => { const mm=_toMin(s.time); return mm!=null && mm >= 11*60+30 && mm <= 14*60+30 })) {
-      issues.push({ sev:'meal', text: `No lunch before 2 PM on Day ${d}. Add a quick meal.` })
-    }
-    // D) budget — a single stop blows the daily limit
-    if (budgetDay) for (const s of stops) { const c = _estCost(s); if (c > budgetDay) issues.push({ sev:'budget', text: `${s.title} ≈ €${c}/pax exceeds ${_travFirst}'s €${budgetDay}/day budget — confirm splurge or rebalance.` }) }
-    // E) geographic — same place visited twice in one day
-    const _seen = {}
-    for (const s of slots) { const t=String(s.type||'').toLowerCase(); if (t==='transport') continue; const k=String(s.title||'').toLowerCase().trim(); if (!k) continue; _seen[k]=(_seen[k]||0)+1 }
-    for (const k in _seen) { if (_seen[k] > 1) { issues.push({ sev:'geo', text: `Day ${d} revisits the same place twice — consider reordering stops to flow geographically.` }); break } }
-    // F) departure timing — last day, a stop can't finish before the flight
-    if (d === totalDays && _depMin != null) {
-      for (const s of stops) { const mm=_toMin(s.time); if (mm==null) continue; const end = mm + (parseInt(s.duration_minutes,10) || 90); if (end > _depMin - 120) { issues.push({ sev:'time', text: `${s.title} at ${_fmtLower(s.time)} may not finish before your ${_fmtLower(trav.departure_time)} departure. Move earlier or remove.` }); break } }
-    }
-
     const stopWord = stops.length === 1 ? dt('stop','arrêt') : dt('stops','arrêts')
     const statBits = [`${stops.length} ${stopWord}`]
     if (dayCost > 0) statBits.push(fmtMoney(dayCost))
@@ -13682,15 +13649,7 @@ async function openPlanSummary(plan) {
       </div>`
   }
 
-  // ── Build the top blocks: warnings banner → personal note → quick stats ──
-  const _editable = plan.status === 'submitted' || plan.status === 'draft' || !plan.status
-  const _issueBanner = issues.length ? `
-    <div class="ps-issues">
-      <div class="ps-issues-head">⚠ ${issues.length} ${issues.length === 1 ? 'ISSUE' : 'ISSUES'} TO FIX BEFORE SUBMIT</div>
-      <ul class="ps-issues-list">
-        ${issues.map(it => `<li class="ps-issue ps-issue--${it.sev}"${_editable ? ` onclick="editSubmittedPlan('${jsEsc(plan.id)}')" title="Open the editor to fix"` : ''}>${escapeHtml(it.text)}</li>`).join('')}
-      </ul>
-    </div>` : ''
+  // ── Build the top blocks: personal note → quick stats ──
   const _noteMsg = (plan.personal_message_to_traveler || '').trim()
   const _noteCard = _noteMsg ? `
     <div class="ps-note-card">
@@ -13776,7 +13735,7 @@ async function openPlanSummary(plan) {
         <span>${chipText}${dateLabel && !isBondLocked ? ' · '+dateLabel : ''}</span>
       </div>
       ${plan.itin_title && !isBondLocked ? `<h2 class="ps-itin-title">${escapeHtml(plan.itin_title)}</h2>` : ''}
-      ${isBondLocked ? '' : _issueBanner + _noteCard + _statsHtml}
+      ${isBondLocked ? '' : _noteCard + _statsHtml}
       ${briefHtml}
       ${isBondLocked ? bondBlockHtml : `<div class="ps-days">${daysHtml}</div>${extrasHtml}`}
     </div>`
