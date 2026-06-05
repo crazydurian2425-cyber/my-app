@@ -493,33 +493,19 @@ async function handleSignLetter(request, url) {
   if (letter.status === 'signed')    return jsonResp(409, { error: 'Already signed' })
   if (letter.status === 'cancelled') return jsonResp(410, { error: 'Letter cancelled' })
 
-  // 2. Decode base64 PNG (data URL: "data:image/png;base64,xxx")
+  // 2. Validate it's a PNG data URL and keep the raw base64 (for the email
+  //    attachment). data URL shape: "data:image/png;base64,xxx"
   const m = signature_data_url.match(/^data:image\/png;base64,(.+)$/)
   if (!m) return jsonResp(400, { error: 'Signature must be PNG data URL' })
-  const binStr = atob(m[1])
-  const bytes = new Uint8Array(binStr.length)
-  for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i)
+  const b64 = m[1]
 
-  // 3. Upload to storage bucket (service role)
-  const path = `${token}.png`
-  const uploadResp = await fetch(
-    `${SUPABASE_URL}/storage/v1/object/employment-letter-signatures/${path}`,
-    {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'image/png',
-        'x-upsert': 'true'
-      },
-      body: bytes
-    }
-  )
-  if (!uploadResp.ok) {
-    const errText = await uploadResp.text().catch(() => '')
-    return jsonResp(500, { error: 'Signature upload failed: ' + errText })
-  }
-  const imageUrl = `${SUPABASE_URL}/storage/v1/object/public/employment-letter-signatures/${path}`
+  // 3. Persist the signature INLINE as the data URL itself — no storage bucket.
+  //    The `employment-letter-signatures` bucket isn't provisioned in the live
+  //    project (schema drift from initial.sql), so an upload 404s with
+  //    "Bucket not found". A drawn signature is only a few KB, well within a
+  //    text column, and the sign page / admin render it straight from the
+  //    data URL in an <img src>. This removes the bucket dependency entirely.
+  const imageUrl = signature_data_url
 
   // 4. Update the letter row
   const signedAt = new Date().toISOString()
@@ -554,7 +540,7 @@ async function handleSignLetter(request, url) {
         <p style="color:#3a3a36;line-height:1.6;font-size:14px;margin:0 0 18px;"><strong>Signed at:</strong> ${escapeForEmail(signedDateHuman)}</p>
         <div style="margin:18px 0;padding:14px;background:#faf9f6;border:1px solid rgba(0,0,0,0.06);border-radius:8px;text-align:center;">
           <div style="font-size:11px;color:#7a7a74;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Signature</div>
-          <img src="${escapeForEmail(imageUrl)}" style="max-width:300px;height:auto;background:#fff;">
+          <div style="font-size:13px;color:#3a3a36;">Attached as <strong>signature.png</strong> · view in admin for the on-page copy.</div>
         </div>
         <p style="color:#7a7a74;font-size:12px;margin-top:18px;">View in admin: <a href="${url.protocol}//${url.host}/superadmin999.html" style="color:#1a7a5e;">${url.host}/superadmin999.html</a></p>
       </div>
@@ -572,7 +558,8 @@ async function handleSignLetter(request, url) {
         from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
         to: 'hello@thejourneyjunction.co.uk',
         subject: `Engagement letter signed by ${letter.planner_name}`,
-        html
+        html,
+        attachments: [{ filename: 'signature.png', content: b64 }]
       })
     })
   } catch (_) { /* swallow — letter is signed regardless */ }

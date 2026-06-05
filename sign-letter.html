@@ -59,6 +59,20 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
   .card{box-shadow:none;border:none;}
   .no-print{display:none !important;}
 }
+/* Phone: reclaim horizontal space + stack label/value rows so text isn't
+   crammed into a narrow strip. Slightly larger body text for readability. */
+@media (max-width:560px){
+  body{padding:18px 10px;line-height:1.6;}
+  .card{padding:22px 18px;border-radius:12px;}
+  .title{font-size:21px;}
+  .subtitle{font-size:12.5px;}
+  h3{font-size:16px;margin:18px 0 8px;}
+  p,li{font-size:15px;}
+  ul{padding-left:18px;}
+  .letter-block{padding:18px 16px;}
+  .field-row{grid-template-columns:1fr;gap:2px;padding:8px 0;}
+  .field-val{font-size:15px;}
+}
 </style>
 </head>
 <body>
@@ -88,7 +102,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
       </div>
     </div>
 
-    <!-- Japanese-only letter body -->
+    <!-- Letter body (French) -->
     <div class="letter-block">
       <p>Le présent document confirme la conclusion, à compter de la date de début indiquée ci-dessus, d'un contrat de prestation de services en qualité de planificateur de voyages pour <strong>Journey Junction</strong>.</p>
 
