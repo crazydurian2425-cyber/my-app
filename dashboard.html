@@ -13586,46 +13586,64 @@ async function openPlanSummary(plan) {
     const hh = (x) => `${String(x.hour||0).padStart(2,'0')}:${String(x.minute||0).padStart(2,'0')}`
     return periods.filter(p => p.open && p.open.day === wd && p.close).map(p => `${hh(p.open)}–${hh(p.close)}`).join(', ')
   }
-  // Rough €/pax: manual cost (notes) → Google price level → 0.
-  const _PRICE_EST = { PRICE_LEVEL_INEXPENSIVE:15, PRICE_LEVEL_MODERATE:35, PRICE_LEVEL_EXPENSIVE:75, PRICE_LEVEL_VERY_EXPENSIVE:120, 1:15, 2:35, 3:75, 4:120 }
-  const _estCost = (s) => { const st=_parseTipsValue(s.notes); if (st.cost) return Number(st.cost)||0; const pl=s.price_level; return (pl!=null && _PRICE_EST[pl]!=null) ? _PRICE_EST[pl] : 0 }
-  const _arrD = trav.arrival_date ? new Date(trav.arrival_date) : null
-  const _weekdayOf = (n) => { if(!_arrD||isNaN(_arrD.getTime())) return null; const x=new Date(_arrD); x.setDate(x.getDate()+(n-1)); return x.getDay() }
-  const _depMin = _toMin(trav.departure_time)
+  // Per-pax stop cost — SAME estimator the Review tab uses (manual cost →
+  // Google price range/level → category fallback). Hotels return null (room is
+  // a separate per-night budget, excluded from daily spend).
+  const _itemPlaceData = (s) => ({
+    place_types: (typeof s.place_types==='string') ? s.place_types.split(',').map(x=>x.trim()) : (Array.isArray(s.place_types)?s.place_types:[]),
+    price_range_json: s.price_range_json, price_level: s.price_level
+  })
+  const _estStopCost = (s) => {
+    const st = _parseTipsValue(s.notes); if (st.cost) return Number(st.cost)||0
+    const c = estimatePerPaxCost(_itemPlaceData(s), null)
+    return Number.isFinite(c) ? c : 0
+  }
+  // Count venues the way the Review tab does: everything except transport,
+  // free time, and locked anchors — so the HOTEL check-in counts as a stop.
+  const _isVenueCount = (s) => { const t=String(s.type||'').toLowerCase(); return t!=='transport' && t!=='freetime' && !s.is_locked && !s.anchor_type }
   const budgetDay = Number(trav.budget_per_day) || null
-  let totalStops = 0, totalWalkKm = 0, totalCost = 0
+  let totalStops = 0, totalWalkKm = 0, totalStopSpend = 0, totalTransitSpend = 0
 
-  // Walking distance: a transport leg stores no coords of its own, but its
-  // title is "Mode · <from> → <to>" and those names match real stop/hotel rows
-  // (which DO carry lat/lng). Build a name→coords map, then for each walk leg
-  // resolve both endpoints by name and haversine them. This also catches the
-  // back-to-hotel leg (its "→ Hôtel …" matches the hotel check-in row), which a
-  // flanking-row scan misses because the hotel isn't a following item.
+  // A transport leg stores no coords of its own, but its title is
+  // "Mode · <from> → <to>" and those names match real stop/hotel rows (which DO
+  // carry lat/lng). Resolve endpoints by name → haversine for distance, then
+  // feed the SAME _transportEstimates the Review tab uses for the fare. Walk
+  // legs add to walking; every leg adds its fare to spend. Resolving by name
+  // also catches the back-to-hotel leg the flanking-row scan would miss.
   const _coordByName = {}
   for (const it of (items || [])) {
     if (it.latitude == null || it.longitude == null) continue
     const k = String(it.title || '').toLowerCase().trim()
     if (k && !_coordByName[k]) _coordByName[k] = { lat:+it.latitude, lng:+it.longitude }
   }
-  for (const it of (items || [])) {
-    if (String(it.type||'').toLowerCase() !== 'transport') continue
-    if (!/walk|foot/.test(_modeOf(it))) continue
-    const title = String(it.title || '')
+  const _legKm = (leg) => {
+    const title = String(leg.title || '')
     const seg = title.includes(' · ') ? title.slice(title.indexOf(' · ') + 3) : title
     const parts = seg.split('→').map(x => x.trim().toLowerCase())
-    if (parts.length < 2) continue
+    if (parts.length < 2) return null
     const a = _coordByName[parts[0]], b = _coordByName[parts[1]]
-    if (a && b) { const km = haversineKm(a.lat, a.lng, b.lat, b.lng); if (Number.isFinite(km)) totalWalkKm += km }
+    return (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
+  }
+  for (const it of (items || [])) {
+    if (String(it.type||'').toLowerCase() !== 'transport') continue
+    const mode = _modeOf(it)
+    const km = _legKm(it)
+    if (/walk|foot/.test(mode) && Number.isFinite(km)) totalWalkKm += km
+    if (km != null && typeof _transportEstimates === 'function') {
+      const est = _transportEstimates(mode || 'taxi', km)
+      if (est && Number.isFinite(est.costEur)) totalTransitSpend += est.costEur
+    }
   }
 
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
     const slots = _psNormalizeTransport(byDay[d] || [])
-    const stops = slots.filter(_isStop)
+    const venues = slots.filter(_isVenueCount)            // count incl. hotel (matches Review)
+    const stops = slots.filter(_isStop)                   // real stops for per-day cost (excl. hotel)
     let dayCost = 0
-    for (const s of stops) dayCost += _estCost(s)
-    totalStops += stops.length
-    totalCost  += dayCost
+    for (const s of stops) dayCost += _estStopCost(s)
+    totalStops     += venues.length
+    totalStopSpend += dayCost
 
     const rowsHtml = slots.length ? slots.map(s => {
       const _type = String(s.type||'').toLowerCase()
@@ -13659,8 +13677,8 @@ async function openPlanSummary(plan) {
     }).join('')
       : `<li class="ps-empty">${tPrime('ps.emptyDay','No activities logged for this day.')}</li>`
 
-    const stopWord = stops.length === 1 ? dt('stop','arrêt') : dt('stops','arrêts')
-    const statBits = [`${stops.length} ${stopWord}`]
+    const stopWord = venues.length === 1 ? dt('stop','arrêt') : dt('stops','arrêts')
+    const statBits = [`${venues.length} ${stopWord}`]
     if (dayCost > 0) statBits.push(fmtMoney(dayCost))
     const dateStr = _dayDate(d)
     daysHtml += `
@@ -13683,14 +13701,18 @@ async function openPlanSummary(plan) {
       <div class="ps-note-head">${escapeHtml(tPrime('ps.noteFrom','A note from {p}').replace('{p}', (plannerFirst || tPrime('ps.yourPlanner','your planner')).toUpperCase()))}</div>
       <div class="ps-note-body">${escapeHtml(_noteMsg)}</div>
     </div>` : ''
-  const _budgetCap = budgetDay ? budgetDay * totalDays : null
-  const _costOver = _budgetCap != null && totalCost > _budgetCap
+  // Per-day averages — SAME units as the Review tab (avg walking/day, avg
+  // spend/day). Spend = stop costs + transport fares, matching computeDaySummary.
+  const _days = Math.max(totalDays, 1)
+  const _avgWalk  = totalWalkKm / _days
+  const _avgSpend = Math.round((totalStopSpend + totalTransitSpend) / _days)
+  const _spendOver = budgetDay != null && _avgSpend > budgetDay
   const _statTile = (num, label, over) => `<div class="ps-stat"><div class="ps-stat-num${over ? ' ps-stat-num--over' : ''}">${num}</div><div class="ps-stat-label">${label}</div></div>`
   const _statsHtml = `
     <div class="ps-stats">
       ${_statTile(totalStops, tPrime('ps.stat.stops','Stops'), false)}
-      ${_statTile(totalWalkKm > 0 ? totalWalkKm.toFixed(1) + ' km' : '—', tPrime('ps.stat.walking','Walking / total'), false)}
-      ${_statTile(totalCost > 0 ? fmtMoney(totalCost) : '—', tPrime('ps.stat.cost','Est. cost / pax'), _costOver)}
+      ${_statTile(totalWalkKm > 0 ? _avgWalk.toFixed(1) + ' km' : '—', tPrime('ps.stat.walkingAvg','Avg walking / day'), false)}
+      ${_statTile((totalStopSpend + totalTransitSpend) > 0 ? fmtMoney(_avgSpend) : '—', tPrime('ps.stat.spendAvg','Avg spend / day'), _spendOver)}
     </div>`
 
   // Extras (transport / spend / local tips) — only render blocks that have content
