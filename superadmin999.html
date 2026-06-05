@@ -480,44 +480,52 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 .ps-day--full      { border-left-color:var(--green); }
 .ps-day--departure { border-left-color:var(--amber); }
 .ps-day-head{
-  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  padding:10px 14px 8px;border-bottom:1px dashed var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  padding:13px 16px 11px;border-bottom:1px solid var(--border);
 }
-.ps-day-num{font-size:10.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3);}
-.ps-day-tag{font-size:12.5px;color:var(--ink-2);font-style:italic;}
-.ps-day--arrival .ps-day-tag  {color:var(--blue,#1a5fa8);}
-.ps-day--full .ps-day-tag     {color:var(--green-dark);}
-.ps-day--departure .ps-day-tag{color:var(--amber);}
-.ps-slots{list-style:none;padding:8px 0 10px;margin:0;}
-.ps-slot{
-  display:grid;grid-template-columns:56px 30px 1fr;gap:12px;align-items:stretch;
-  padding:6px 16px;position:relative;
+.ps-day-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.01em;line-height:1.2;}
+.ps-day-sub{font-size:12px;color:var(--ink-3);font-style:italic;margin-top:3px;}
+.ps-day--arrival .ps-day-sub  {color:var(--blue,#1a5fa8);}
+.ps-day--departure .ps-day-sub{color:var(--amber);}
+.ps-day-stats{font-size:11.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;padding-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+
+/* Rows — clean two-column timeline (time | content) */
+.ps-rows{list-style:none;padding:2px 0 4px;margin:0;}
+.ps-row{
+  display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:start;
+  padding:10px 16px;border-bottom:1px solid color-mix(in srgb, var(--border) 55%, transparent);
 }
-.ps-slot-time{font-size:11.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:5px;white-space:nowrap;}
-/* Timeline rail — continuous line down the icon column with a marker per row */
-.ps-slot-icon{position:relative;display:flex;justify-content:center;align-items:flex-start;}
-.ps-slot-icon::before{
-  content:'';position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;
-  transform:translateX(-50%);background:var(--border);z-index:0;
+.ps-row:last-child{border-bottom:none;}
+.ps-time{font-size:11.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:1px;white-space:nowrap;}
+.ps-cell{min-width:0;}
+.ps-name{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3;letter-spacing:-0.01em;}
+.ps-cat{color:var(--ink-3);font-weight:500;}
+.ps-meta{font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.4;}
+.ps-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin-top:5px;font-style:italic;white-space:pre-wrap;word-wrap:break-word;}
+.ps-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+.ps-chip{
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;line-height:1.3;font-weight:500;
+  color:color-mix(in srgb, var(--c,#6b6b6b) 72%, var(--ink));
+  background:color-mix(in srgb, var(--c,#6b6b6b) 12%, var(--surface));
+  border:1px solid color-mix(in srgb, var(--c,#6b6b6b) 28%, transparent);
+  border-radius:99px;padding:3px 9px 3px 8px;
 }
-.ps-slot:first-child .ps-slot-icon::before{top:14px;}
-.ps-slot:last-child  .ps-slot-icon::before{bottom:calc(100% - 14px);}
-.ps-slot:first-child:last-child .ps-slot-icon::before{display:none;}
-.ps-slot-icon > span{
-  position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;border-radius:50%;font-size:14px;line-height:1;
-  background:var(--surface);border:1px solid var(--border);
+.ps-imgs{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;}
+.ps-imgs img{width:60px;height:60px;border-radius:7px;object-fit:cover;border:1px solid var(--border);cursor:zoom-in;}
+/* Transit legs — quiet connector line */
+.ps-row--transit{padding-top:6px;padding-bottom:6px;}
+.ps-time--t{color:var(--ink-3);font-weight:500;font-size:10.5px;}
+.ps-leg{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:500;color:var(--ink-3);line-height:1.35;}
+.ps-leg-ico{width:13px;height:13px;flex-shrink:0;opacity:0.85;}
+.ps-leg span{min-width:0;}
+/* Smart day warning banner */
+.ps-warn{
+  margin:8px 16px 13px;padding:9px 12px;border-radius:8px;
+  background:color-mix(in srgb, var(--amber,#C17D2A) 10%, var(--surface));
+  border:1px solid color-mix(in srgb, var(--amber,#C17D2A) 26%, transparent);
+  border-left:3px solid var(--amber,#C17D2A);
+  font-size:12px;font-weight:500;color:color-mix(in srgb, var(--amber,#C17D2A) 60%, var(--ink));line-height:1.45;
 }
-.ps-slot-body{min-width:0;padding:3px 0;}
-.ps-slot-title{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.35;}
-.ps-slot-notes{font-size:12.5px;line-height:1.5;color:var(--ink-3);margin-top:3px;white-space:pre-wrap;word-wrap:break-word;}
-/* Transport legs subdued as connectors between the real stops */
-.ps-slot--transport{padding-top:1px;padding-bottom:1px;}
-.ps-slot--transport .ps-slot-time{font-size:10.5px;font-weight:500;color:var(--ink-3);}
-.ps-slot--transport .ps-slot-icon > span{width:22px;height:22px;font-size:11.5px;border:none;background:var(--surface);}
-.ps-slot--transport .ps-slot-title{font-size:12px;font-weight:500;color:var(--ink-3);}
-.ps-slot-imgs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
-.ps-slot-imgs img{width:58px;height:58px;border-radius:6px;object-fit:cover;border:1px solid var(--border);cursor:zoom-in;}
 .ps-empty{padding:14px;text-align:center;color:var(--ink-4);font-size:12px;font-style:italic;}
 .ps-extra{
   padding:12px 14px;margin-bottom:10px;
@@ -528,7 +536,9 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 .ps-extra-val{font-size:13px;line-height:1.55;color:var(--ink-2);white-space:pre-wrap;word-wrap:break-word;}
 @media (max-width:640px){
   .ps-brief{grid-template-columns:1fr;}
-  .ps-slot{grid-template-columns:50px 30px 1fr;gap:10px;padding:6px 12px;}
+  .ps-row{grid-template-columns:58px 1fr;gap:10px;padding:9px 12px;}
+  .ps-day-head{padding:11px 12px 9px;}
+  .ps-warn{margin:8px 12px 11px;}
 }
 
 /* REVIEW ACTIONS */
@@ -3427,7 +3437,7 @@ async function openReviewModal(planId, planner, plan, traveler, isBond) {
 
   // Load full plan details
   const { data: planData } = await sb.from('plans')
-    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,transport_mode,item_images(id,url))')
+    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,transport_mode,place_types,item_images(id,url))')
     .eq('id', planId).single()
   const data = { plan: planData }
   if (data?.plan?.sets) {
@@ -3492,24 +3502,47 @@ function renderPlanSummary(plan){
     byDay[d].push(it)
   }
 
-  const typeIcons = { activity:'📍', meal:'🍽', transport:'🚕', accommodation:'🏨', freetime:'☕', note:'📝',
-    hotel_checkin:'🏨', hotel_checkout:'🏨', shopping:'🛍', entertainment:'🎭', sightseeing:'📸' }
-  const _transportIcon = (mode) => {
-    const m = String(mode||'').toLowerCase()
-    if (m === 'walk') return '🚶'
-    if (m === 'taxi') return '🚕'
-    if (m === 'train' || m === 'hsr') return '🚆'
-    return '🚇'
-  }
   const dayLabel = (n) => n === 1 ? 'Arrival day' : (n === totalDays && totalDays > 1) ? 'Departure day' : 'Full day'
   const dayTone = (n) => n === 1 ? 'arrival' : (n === totalDays && totalDays > 1) ? 'departure' : 'full'
+  const dayHint = (n) => n === 1 ? 'take it easy' : (n === totalDays && totalDays > 1) ? 'travel day' : ''
+  const _dayDate = (n) => {
+    if (!trav.arrival_date) return ''
+    const dd = new Date(trav.arrival_date); if (isNaN(dd.getTime())) return ''
+    dd.setDate(dd.getDate() + (n - 1))
+    return dd.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' })
+  }
+  const _shortAddr = (a) => String(a||'').replace(/,?\s*France\s*$/i,'').replace(/\b\d{4,5}\b\s*/g,'').replace(/\s*,\s*,/g,',').replace(/\s{2,}/g,' ').replace(/\s*,\s*$/,'').trim()
+  const _placeCat = (s) => {
+    let pts = s.place_types
+    if (typeof pts === 'string') pts = pts.split(',').map(x=>x.trim())
+    if (!Array.isArray(pts)) return ''
+    const M = { cafe:'café', bakery:'bakery', bar:'bar', restaurant:'restaurant', museum:'museum', art_gallery:'gallery', park:'park', tourist_attraction:'sight', church:'church', book_store:'bookshop', shopping_mall:'mall', department_store:'store', store:'shop', night_club:'nightlife', spa:'spa', amusement_park:'park' }
+    for (const p of (pts||[])) if (M[p]) return M[p]
+    return ''
+  }
+  const _legIcon = (mode) => {
+    const m = String(mode||'').toLowerCase()
+    const w = (inner) => `<svg class="ps-leg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
+    if (m==='walk') return w('<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>')
+    if (m==='taxi') return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/>')
+    if (m==='train'||m==='hsr') return w('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>')
+    return w('<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12"/><path d="M8.5 21 7 23M15.5 21 17 23"/>')
+  }
+  const _t = (t) => { if (!t) return ''; const [h,m]=String(t).split(':').map(Number); if(!Number.isFinite(h)) return ''; const ap=h>=12?'pm':'am'; const h12=((h+11)%12)+1; return `${h12}:${String(m||0).padStart(2,'0')} ${ap}` }
+  const _tBare = (t) => _t(t).replace(/\s*(am|pm)\s*$/i,'')
+  const _toMin = (t) => { const m=String(t||'').match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]*60 + +m[2]) : null }
+  const _parseTips = (raw) => {
+    const s=(raw==null?'':String(raw)).trim(); const out={tips:[],legacy:'',cost:null}
+    if(!s) return out
+    if(s.charAt(0)==='{'){ try{ const o=JSON.parse(s); if(o&&Array.isArray(o.tips)){ out.tips=o.tips.filter(t=>t&&t.text); out.legacy=o.legacy?String(o.legacy):''; if(o.cost!=null&&Number.isFinite(Number(o.cost))) out.cost=Math.round(Number(o.cost)); return out } }catch(e){} }
+    out.legacy=s; return out
+  }
+  const _travFirst = String(trav.name||'').trim().split(/\s+/)[0] || 'the traveller'
 
   // Transport rows carry a FROZEN "Mode · A → B" title written when the leg was
-  // first inserted; it goes stale when the planner reorders/adds stops (you see
-  // a wrong "A → B", or an airport taxi stuck mid-day). Rebuild the label from
-  // the real adjacent venues at render time + collapse redundant back-to-back
-  // transport rows. Legs with a venue on only one side (arrival / final airport
-  // leg) keep their original title.
+  // first inserted; it goes stale when the planner reorders/adds stops. Rebuild
+  // the label from the real adjacent venues + collapse redundant back-to-back
+  // transport rows. Legs with a venue on only one side keep their original title.
   const _normalizeTransport = (dayItems) => {
     const isT = it => String(it.type||'').toLowerCase() === 'transport'
     const vName = it => String(it.title||'').trim()
@@ -3526,7 +3559,7 @@ function renderPlanSummary(plan){
     for (let i = 0; i < dayItems.length; i++) {
       const it = dayItems[i]
       if (!isT(it)) { out.push(it); continue }
-      if (out.length && isT(out[out.length - 1])) continue   // collapse consecutive transports
+      if (out.length && isT(out[out.length - 1])) continue
       let prev = null, next = null
       for (let j = i - 1; j >= 0; j--) { if (!isT(dayItems[j])) { prev = dayItems[j]; break } }
       for (let j = i + 1; j < dayItems.length; j++) { if (!isT(dayItems[j])) { next = dayItems[j]; break } }
@@ -3539,38 +3572,60 @@ function renderPlanSummary(plan){
   let daysHtml = ''
   for (let d = 1; d <= Math.max(totalDays, Object.keys(byDay).length); d++) {
     const slots = _normalizeTransport((byDay[d] || []).sort((a,b) => (a.sort_order||0) - (b.sort_order||0)))
-    const slotRows = slots.length ? slots.map(s => {
-      const addrHtml = s.address && String(s.address).trim()
-        ? `<div class="ps-slot-meta" style="font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.45;"><span style="margin-right:4px;">📍</span>${escapeHtml(String(s.address).trim())}</div>`
-        : ''
-      const durLabel = _fmtDurMinsAdmin(s.duration_minutes)
-      const durHtml = durLabel
-        ? `<div class="ps-slot-meta" style="font-size:12px;color:var(--ink-3);margin-top:2px;"><span style="margin-right:4px;">⏱</span>${escapeHtml(durLabel)}</div>`
-        : ''
+    const stops = slots.filter(s => String(s.type||'').toLowerCase() !== 'transport')
+    let daySpend = 0
+    for (const s of slots) { const st = _parseTips(s.notes); if (st.cost) daySpend += Number(st.cost) || 0 }
+
+    const rowsHtml = slots.length ? slots.map(s => {
       const _type = String(s.type||'').toLowerCase()
-      const _isT = _type === 'transport'
-      const icon = _isT ? _transportIcon(s.transport_mode) : (typeIcons[_type] || '📍')
+      if (_type === 'transport') {
+        return `
+        <li class="ps-row ps-row--transit">
+          <div class="ps-time ps-time--t">${escapeHtml(_tBare(s.time) || '·')}</div>
+          <div class="ps-cell"><div class="ps-leg">${_legIcon(s.transport_mode)}<span>${escapeHtml(s.title||'')}</span></div></div>
+        </li>`
+      }
+      const cat = _placeCat(s)
+      const metaBits = [_shortAddr(s.address), _fmtDurMinsAdmin(s.duration_minutes)].filter(Boolean).join(' · ')
+      const st = _parseTips(s.notes)
+      const chips = (st.tips && st.tips.length)
+        ? `<div class="ps-chips">${st.tips.map(tp => { const c=_ADMIN_TIP_CATS[tp.cat]||_ADMIN_TIP_CATS.note; return `<span class="ps-chip" style="--c:${c.color};">${c.icon} ${escapeHtml(String(tp.text))}</span>` }).join('')}</div>`
+        : ''
+      const legacy = st.legacy ? `<div class="ps-note">${escapeHtml(st.legacy)}</div>` : ''
+      const imgHtml = s.item_images?.length ? `<div class="ps-imgs">${s.item_images.map(img => `<img src="${escapeHtml(img.url)}" alt="" onclick="openImageLightbox('${jsEsc(img.url)}')">`).join('')}</div>` : ''
       return `
-      <li class="ps-slot${_isT ? ' ps-slot--transport' : ''}">
-        <div class="ps-slot-time">${escapeHtml(fmtTime(s.time))}</div>
-        <div class="ps-slot-icon" aria-hidden="true"><span>${icon}</span></div>
-        <div class="ps-slot-body">
-          <div class="ps-slot-title">${escapeHtml(s.title || '(untitled)')}</div>
-          ${addrHtml}
-          ${durHtml}
-          ${s.notes ? renderNotesReadonly(s.notes) : ''}
-          ${s.item_images?.length ? `<div class="ps-slot-imgs">${s.item_images.map(img => `<img src="${escapeHtml(img.url)}" alt="" onclick="openImageLightbox('${jsEsc(img.url)}')" style="cursor:zoom-in;">`).join('')}</div>` : ''}
+      <li class="ps-row">
+        <div class="ps-time">${escapeHtml(_t(s.time) || '—')}</div>
+        <div class="ps-cell">
+          <div class="ps-name">${escapeHtml(s.title || '(untitled)')}${cat ? `<span class="ps-cat"> · ${escapeHtml(cat)}</span>` : ''}</div>
+          ${metaBits ? `<div class="ps-meta">${escapeHtml(metaBits)}</div>` : ''}
+          ${chips}${legacy}${imgHtml}
         </div>
       </li>`
-    }).join('')
-      : `<li class="ps-empty">No activities logged for this day.</li>`
+    }).join('') : `<li class="ps-empty">No activities logged for this day.</li>`
+
+    let warnHtml = ''
+    const hasMeal = stops.some(s => String(s.type||'').toLowerCase() === 'meal')
+    let lastEnd = null
+    for (const s of stops) { const mm = _toMin(s.time); if (mm == null) continue; lastEnd = Math.max(lastEnd ?? 0, mm + (parseInt(s.duration_minutes,10) || 0)) }
+    if (stops.length >= 2 && !hasMeal && lastEnd != null && lastEnd >= 12*60 + 30) {
+      warnHtml = `<div class="ps-warn">⚠ ${escapeHtml(`No lunch scheduled — ${_travFirst} will be hungry by 1 PM`)}</div>`
+    }
+
+    const statBits = [`${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`]
+    if (daySpend > 0) statBits.push('€' + daySpend.toLocaleString('en-GB'))
+    const dateStr = _dayDate(d)
     daysHtml += `
       <div class="ps-day ps-day--${dayTone(d)}">
         <div class="ps-day-head">
-          <div class="ps-day-num">Day ${d}</div>
-          <div class="ps-day-tag">${dayLabel(d)}</div>
+          <div class="ps-day-headl">
+            <div class="ps-day-title">Day ${d}${dateStr ? ` · ${escapeHtml(dateStr)}` : ''}</div>
+            <div class="ps-day-sub">${escapeHtml(dayLabel(d))}${dayHint(d) ? ` · ${dayHint(d)}` : ''}</div>
+          </div>
+          <div class="ps-day-stats">${escapeHtml(statBits.join(' · '))}</div>
         </div>
-        <ul class="ps-slots">${slotRows}</ul>
+        <ul class="ps-rows">${rowsHtml}</ul>
+        ${warnHtml}
       </div>`
   }
 

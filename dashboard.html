@@ -1043,75 +1043,82 @@ html[lang="ja"] .ps-itin-title{font-family:'Noto Serif JP','DM Serif Display',se
 .ps-day--full      { border-left-color:#5E7B6E; }
 .ps-day--departure { border-left-color:#D4913D; }
 .ps-day-head{
-  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
-  padding:12px 16px 10px;
-  border-bottom:1px dashed var(--e-rule,rgba(27,31,28,0.08));
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:14px 18px 12px;
+  border-bottom:1px solid var(--e-rule,rgba(27,31,28,0.09));
 }
-.ps-day-num{
-  font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;
-  letter-spacing:0.14em;text-transform:uppercase;color:var(--e-ink-3,#8B908A);
+.ps-day-title{
+  font-family:'Fraunces','DM Serif Display',serif;font-size:16.5px;font-weight:600;
+  color:var(--e-ink,#1B1F1C);letter-spacing:-0.01em;line-height:1.2;
 }
-.ps-day-tag{
-  font-family:'Lora',serif;font-style:italic;font-size:13px;
-  color:var(--e-ink-2,#4A524C);
+.ps-day-sub{
+  font-family:'Lora',serif;font-style:italic;font-size:12.5px;
+  color:var(--e-ink-3,#8B908A);margin-top:3px;
 }
-.ps-day--arrival .ps-day-tag  {color:#B8665A;}
-.ps-day--full .ps-day-tag     {color:var(--e-green-d,#3E5448);}
-.ps-day--departure .ps-day-tag{color:#A26821;}
-html[lang="ja"] .ps-day-tag{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
+.ps-day--arrival .ps-day-sub  {color:#B8665A;}
+.ps-day--departure .ps-day-sub{color:#A26821;}
+.ps-day-stats{
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
+  color:var(--e-ink-2,#4A524C);white-space:nowrap;padding-top:4px;
+  letter-spacing:-0.01em;font-variant-numeric:tabular-nums;
+}
+html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
 
-.ps-slots{list-style:none;padding:10px 0 12px;margin:0;}
-.ps-slot{
-  display:grid;grid-template-columns:60px 30px 1fr;gap:12px;align-items:stretch;
-  padding:7px 18px;position:relative;
+/* Rows — clean two-column timeline (time | content), light dividers */
+.ps-rows{list-style:none;padding:2px 0 4px;margin:0;}
+.ps-row{
+  display:grid;grid-template-columns:74px 1fr;gap:14px;align-items:start;
+  padding:11px 18px;border-bottom:1px solid var(--e-rule,rgba(27,31,28,0.05));
 }
-.ps-slot-time{
+.ps-row:last-child{border-bottom:none;}
+.ps-time{
   font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
   color:var(--e-ink-2,#4A524C);letter-spacing:-0.01em;
-  font-variant-numeric:tabular-nums;padding-top:5px;white-space:nowrap;
+  font-variant-numeric:tabular-nums;padding-top:1px;white-space:nowrap;
 }
-/* Timeline rail: a continuous vertical line down the icon column, with a
-   round marker per row sitting on top of it. The marker's opaque fill masks
-   the line so it reads as connected dots. */
-.ps-slot-icon{
-  position:relative;display:flex;justify-content:center;align-items:flex-start;
-}
-.ps-slot-icon::before{
-  content:'';position:absolute;left:50%;top:-7px;bottom:-7px;width:2px;
-  transform:translateX(-50%);background:var(--e-rule,rgba(27,31,28,0.12));z-index:0;
-}
-.ps-slot:first-child .ps-slot-icon::before{top:14px;}
-.ps-slot:last-child  .ps-slot-icon::before{bottom:calc(100% - 14px);}
-.ps-slot:first-child:last-child .ps-slot-icon::before{display:none;}
-.ps-slot-icon > span{
-  position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:28px;border-radius:50%;font-size:14px;line-height:1;
-  background:#FFFDF8;border:1px solid var(--e-rule,rgba(27,31,28,0.12));
-  box-shadow:0 1px 2px rgba(27,31,28,0.04);
-}
-.ps-slot-body{min-width:0;padding:3px 0;}
-.ps-slot-title{
+.ps-cell{min-width:0;}
+.ps-name{
   font-family:'DM Sans',sans-serif;font-size:14.5px;font-weight:600;
-  color:var(--e-ink,#1B1F1C);line-height:1.35;letter-spacing:-0.01em;
+  color:var(--e-ink,#1B1F1C);line-height:1.3;letter-spacing:-0.01em;
 }
-.ps-slot-notes{
-  font-family:'Lora',serif;font-style:italic;
-  font-size:13px;line-height:1.55;
-  color:var(--e-ink-2,#4A524C);margin-top:4px;
-  white-space:pre-wrap;word-wrap:break-word;
+.ps-cat{color:var(--e-ink-3,#9aa09a);font-weight:500;}
+.ps-meta{
+  font-family:'DM Sans',sans-serif;font-size:12px;color:var(--e-ink-3,#8B908A);
+  margin-top:2px;line-height:1.4;
 }
-/* Transport legs are connectors, not destinations — subdue them so the eye
-   groups [stop] → travel → [stop]. Smaller borderless marker, muted text. */
-.ps-slot--transport{padding-top:2px;padding-bottom:2px;}
-.ps-slot--transport .ps-slot-time{font-size:11px;font-weight:500;color:var(--e-ink-3,#9aa09a);}
-.ps-slot--transport .ps-slot-icon > span{
-  width:22px;height:22px;font-size:11.5px;border:none;box-shadow:none;
-  background:#FFFDF8;opacity:0.92;
+.ps-note{
+  font-family:'Lora',serif;font-style:italic;font-size:12.5px;line-height:1.5;
+  color:var(--e-ink-2,#4A524C);margin-top:5px;white-space:pre-wrap;word-wrap:break-word;
 }
-.ps-slot--transport .ps-slot-title{
-  font-size:12.5px;font-weight:500;color:var(--e-ink-3,#7C817B);letter-spacing:0;
+.ps-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+.ps-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:'DM Sans',sans-serif;font-size:11.5px;line-height:1.3;font-weight:500;
+  color:color-mix(in srgb, var(--c,#6b6b6b) 80%, #1B1F1C);
+  background:color-mix(in srgb, var(--c,#6b6b6b) 11%, #FFFDF8);
+  border:1px solid color-mix(in srgb, var(--c,#6b6b6b) 26%, transparent);
+  border-radius:99px;padding:3px 9px 3px 8px;
 }
-html[lang="ja"] .ps-slot-notes{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
+.ps-imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.ps-imgs img{width:74px;height:74px;object-fit:cover;border-radius:8px;border:1px solid rgba(0,0,0,0.08);display:block;}
+/* Transit legs — quiet connector line between the real stops */
+.ps-row--transit{padding-top:6px;padding-bottom:6px;}
+.ps-time--t{color:var(--e-ink-3,#9aa09a);font-weight:500;font-size:11px;}
+.ps-leg{
+  display:flex;align-items:center;gap:7px;
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;
+  color:var(--e-ink-3,#8B908A);line-height:1.35;
+}
+.ps-leg-ico{width:13px;height:13px;flex-shrink:0;opacity:0.85;}
+.ps-leg span{min-width:0;}
+/* Smart day warning banner */
+.ps-warn{
+  margin:8px 16px 14px;padding:9px 12px;border-radius:8px;
+  background:rgba(193,125,42,0.09);border:1px solid rgba(193,125,42,0.20);
+  border-left:3px solid #C17D2A;
+  font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:500;color:#8a5a1e;line-height:1.45;
+}
+html[lang="ja"] .ps-note{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
 .ps-empty{
   padding:16px;text-align:center;
   font-family:'Lora',serif;font-style:italic;
@@ -1142,10 +1149,12 @@ html[lang="ja"] .ps-slot-notes{font-style:normal;font-family:'Noto Sans JP',sans
   .ps-itin-title{font-size:22px;}
   .ps-brief{grid-template-columns:1fr;gap:10px;padding:14px 14px;}
   .ps-brief-val{font-size:13.5px;}
-  .ps-slot{grid-template-columns:52px 30px 1fr;gap:10px;padding:7px 14px;}
-  .ps-slot-time{font-size:11.5px;}
-  .ps-slot-title{font-size:13.5px;}
-  .ps-slot-notes{font-size:12.5px;}
+  .ps-row{grid-template-columns:60px 1fr;gap:10px;padding:10px 14px;}
+  .ps-time{font-size:11.5px;}
+  .ps-name{font-size:13.5px;}
+  .ps-note{font-size:12.5px;}
+  .ps-day-head{padding:12px 14px 10px;}
+  .ps-warn{margin:8px 12px 12px;}
 }
 
 /* ─── Itinerary summary strip (inside .batch-payout celebration) ─────
@@ -5370,15 +5379,33 @@ body.theme-dark #modal-plan-summary .ps-slot-title,
 body.theme-dark.theme-premium #modal-plan-summary .ps-slot-title{color:#FFFFFF!important;}
 body.theme-dark #modal-plan-summary .ps-slot-notes,
 body.theme-dark.theme-premium #modal-plan-summary .ps-slot-notes{color:#bdb19c!important;}
-/* Timeline rail on dark surface */
-body.theme-dark #modal-plan-summary .ps-slot-icon::before,
-body.theme-dark.theme-premium #modal-plan-summary .ps-slot-icon::before{background:rgba(255,255,255,0.13)!important;}
-body.theme-dark #modal-plan-summary .ps-slot-icon>span,
-body.theme-dark.theme-premium #modal-plan-summary .ps-slot-icon>span{
-  background:#2a231b!important;border-color:rgba(255,255,255,0.16)!important;box-shadow:none!important;
+/* Editorial summary rows on dark surface */
+body.theme-dark #modal-plan-summary .ps-day-title,
+body.theme-dark.theme-premium #modal-plan-summary .ps-day-title{color:#FFFFFF!important;}
+body.theme-dark #modal-plan-summary .ps-day-sub,
+body.theme-dark.theme-premium #modal-plan-summary .ps-day-sub{color:#bdb19c!important;}
+body.theme-dark #modal-plan-summary .ps-day-stats,
+body.theme-dark.theme-premium #modal-plan-summary .ps-day-stats{color:#d7cdb7!important;}
+body.theme-dark #modal-plan-summary .ps-row,
+body.theme-dark.theme-premium #modal-plan-summary .ps-row{border-bottom-color:rgba(255,255,255,0.06)!important;}
+body.theme-dark #modal-plan-summary .ps-time,
+body.theme-dark.theme-premium #modal-plan-summary .ps-time{color:#d7cdb7!important;}
+body.theme-dark #modal-plan-summary .ps-name,
+body.theme-dark.theme-premium #modal-plan-summary .ps-name{color:#FFFFFF!important;}
+body.theme-dark #modal-plan-summary .ps-cat,
+body.theme-dark #modal-plan-summary .ps-meta,
+body.theme-dark #modal-plan-summary .ps-leg,
+body.theme-dark #modal-plan-summary .ps-time--t,
+body.theme-dark.theme-premium #modal-plan-summary .ps-cat,
+body.theme-dark.theme-premium #modal-plan-summary .ps-meta,
+body.theme-dark.theme-premium #modal-plan-summary .ps-leg,
+body.theme-dark.theme-premium #modal-plan-summary .ps-time--t{color:#9a9384!important;}
+body.theme-dark #modal-plan-summary .ps-note,
+body.theme-dark.theme-premium #modal-plan-summary .ps-note{color:#bdb19c!important;}
+body.theme-dark #modal-plan-summary .ps-chip,
+body.theme-dark.theme-premium #modal-plan-summary .ps-chip{
+  color:#e9e2d2!important;background:rgba(255,255,255,0.06)!important;border-color:rgba(255,255,255,0.14)!important;
 }
-body.theme-dark #modal-plan-summary .ps-slot--transport .ps-slot-title,
-body.theme-dark.theme-premium #modal-plan-summary .ps-slot--transport .ps-slot-title{color:#9a9384!important;}
 body.theme-dark #modal-plan-summary .ps-extra,
 body.theme-dark.theme-premium #modal-plan-summary .ps-extra{
   background:#2a231b!important;border-color:rgba(255,255,255,0.06)!important;
@@ -13389,46 +13416,113 @@ async function openPlanSummary(plan) {
   const dayLabel = (n) => n === 1 ? tPrime('guide.arrivalDay','Arrival day')
                         : (n === totalDays && totalDays > 1) ? tPrime('guide.departureDay','Departure day')
                         : tPrime('guide.fullDay','Full day')
+  const _dayHint = (n) => n === 1 ? dt('take it easy','en douceur')
+                        : (n === totalDays && totalDays > 1) ? dt('travel day','jour de départ') : ''
+  const _locale = isPlannerFR() ? 'fr-FR' : 'en-GB'
+  // Each day's calendar date = arrival date + (n-1) days → "Sat 12 Jul".
+  const _dayDate = (n) => {
+    if (!trav.arrival_date) return ''
+    const dd = new Date(trav.arrival_date); if (isNaN(dd.getTime())) return ''
+    dd.setDate(dd.getDate() + (n - 1))
+    return dd.toLocaleDateString(_locale, { weekday:'short', day:'numeric', month:'short' })
+  }
+  // Trim postal code + country so addresses read like "8 Rue Lanterne, Lyon".
+  const _shortAddr = (a) => String(a||'')
+    .replace(/,?\s*France\s*$/i,'').replace(/\b\d{4,5}\b\s*/g,'')
+    .replace(/\s*,\s*,/g,',').replace(/\s{2,}/g,' ').replace(/\s*,\s*$/,'').trim()
+  // Friendly one-word category from Google place_types ("· café", "· museum").
+  const _placeCat = (s) => {
+    let pts = s.place_types
+    if (typeof pts === 'string') pts = pts.split(',').map(x=>x.trim())
+    if (!Array.isArray(pts)) return ''
+    const M = { cafe:dt('café','café'), bakery:dt('bakery','boulangerie'), bar:'bar',
+      restaurant:dt('restaurant','restaurant'), meal_takeaway:dt('eatery','traiteur'),
+      museum:dt('museum','musée'), art_gallery:dt('gallery','galerie'), park:dt('park','parc'),
+      tourist_attraction:dt('sight','site'), church:dt('church','église'),
+      book_store:dt('bookshop','librairie'), shopping_mall:dt('mall','centre commercial'),
+      department_store:dt('store','grand magasin'), store:dt('shop','boutique'),
+      night_club:dt('nightlife','club'), spa:'spa', amusement_park:dt('park','parc') }
+    for (const p of (pts||[])) if (M[p]) return M[p]
+    return ''
+  }
+  // Quiet monochrome line-icon for a transit leg.
+  const _legIcon = (mode) => {
+    const m = String(mode||'').toLowerCase()
+    const w = (inner) => `<svg class="ps-leg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
+    if (m==='walk') return w('<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>')
+    if (m==='taxi') return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/>')
+    if (m==='train'||m==='hsr') return w('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>')
+    return w('<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12"/><path d="M8.5 21 7 23M15.5 21 17 23"/>')
+  }
+  const _fmtLower = (tm) => tm ? formatTimeDisplay(tm).toLowerCase() : ''
+  const _fmtBare  = (tm) => _fmtLower(tm).replace(/\s*(am|pm)\s*$/i,'')   // transit: drop the meridiem
+  const _toMin = (tm) => { const m = String(tm||'').match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]*60 + +m[2]) : null }
+  const _travFirst = String(trav.name || '').trim().split(/\s+/)[0] || dt('your traveller','le voyageur')
 
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
     const slots = _psNormalizeTransport(byDay[d] || [])
-    const slotRows = slots.length ? slots.map(s => {
-      const imgs = (s.item_images || []).filter(im => im?.url)
-      const imgHtml = imgs.length ? `<div class="ps-slot-imgs" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${
-        imgs.map(im => `<a href="${escapeHtml(im.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(im.url)}" alt="" style="width:78px;height:78px;object-fit:cover;border-radius:8px;border:1px solid rgba(0,0,0,0.08);display:block;"></a>`).join('')
-      }</div>` : ''
-      const addrHtml = s.address && s.address.trim()
-        ? `<div class="ps-slot-meta" style="font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.45;"><span style="margin-right:4px;">📍</span>${escapeHtml(s.address.trim())}</div>`
-        : ''
-      const durLabel = formatDurationLabel(s.duration_minutes)
-      const durHtml = durLabel
-        ? `<div class="ps-slot-meta" style="font-size:11.5px;color:var(--text-3);margin-top:2px;"><span style="margin-right:4px;">⏱</span>${escapeHtml(durLabel)}</div>`
-        : ''
+    const stops = slots.filter(s => String(s.type||'').toLowerCase() !== 'transport')
+    let daySpend = 0
+    for (const s of slots) { const st = _parseTipsValue(s.notes); if (st.cost) daySpend += Number(st.cost) || 0 }
+
+    const rowsHtml = slots.length ? slots.map(s => {
       const _type = String(s.type||'').toLowerCase()
-      const _isT = _type === 'transport'
-      const icon = _isT ? _transportIcon(s.transport_mode) : (typeIcons[_type] || '📍')
+      if (_type === 'transport') {
+        return `
+        <li class="ps-row ps-row--transit">
+          <div class="ps-time ps-time--t">${escapeHtml(_fmtBare(s.time) || '·')}</div>
+          <div class="ps-cell"><div class="ps-leg">${_legIcon(s.transport_mode)}<span>${escapeHtml(s.title || '')}</span></div></div>
+        </li>`
+      }
+      const cat = _placeCat(s)
+      const metaBits = [_shortAddr(s.address), formatDurationLabel(s.duration_minutes)].filter(Boolean).join(' · ')
+      const st = _parseTipsValue(s.notes)
+      const chips = (st.tips && st.tips.length)
+        ? `<div class="ps-chips">${st.tips.map(tp => {
+            const c = TIP_CAT_BY_KEY[tp.cat] || _TIP_NOTE_CAT
+            return `<span class="ps-chip" style="--c:${c.color};">${c.icon} ${escapeHtml(tp.text)}</span>`
+          }).join('')}</div>`
+        : ''
+      const legacy = st.legacy ? `<div class="ps-note">${escapeHtml(st.legacy)}</div>` : ''
+      const imgs = (s.item_images || []).filter(im => im?.url)
+      const imgHtml = imgs.length ? `<div class="ps-imgs">${imgs.map(im => `<a href="${escapeHtml(im.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(im.url)}" alt=""></a>`).join('')}</div>` : ''
       return `
-      <li class="ps-slot${_isT ? ' ps-slot--transport' : ''}">
-        <div class="ps-slot-time">${s.time ? formatTimeDisplay(s.time) : '—'}</div>
-        <div class="ps-slot-icon" aria-hidden="true"><span>${icon}</span></div>
-        <div class="ps-slot-body">
-          <div class="ps-slot-title">${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</div>
-          ${addrHtml}
-          ${durHtml}
-          ${s.notes ? renderNotesReadonly(s.notes) : ''}
-          ${imgHtml}
+      <li class="ps-row">
+        <div class="ps-time">${escapeHtml(_fmtLower(s.time) || '—')}</div>
+        <div class="ps-cell">
+          <div class="ps-name">${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}${cat ? `<span class="ps-cat"> · ${escapeHtml(cat)}</span>` : ''}</div>
+          ${metaBits ? `<div class="ps-meta">${escapeHtml(metaBits)}</div>` : ''}
+          ${chips}${legacy}${imgHtml}
         </div>
       </li>`
     }).join('')
       : `<li class="ps-empty">${tPrime('ps.emptyDay','No activities logged for this day.')}</li>`
+
+    // Smart warning: a day that runs through midday with no meal stop.
+    let warnHtml = ''
+    const hasMeal = stops.some(s => String(s.type||'').toLowerCase() === 'meal')
+    let lastEnd = null
+    for (const s of stops) { const mm = _toMin(s.time); if (mm == null) continue; lastEnd = Math.max(lastEnd ?? 0, mm + (parseInt(s.duration_minutes,10) || 0)) }
+    if (stops.length >= 2 && !hasMeal && lastEnd != null && lastEnd >= 12*60 + 30) {
+      warnHtml = `<div class="ps-warn">⚠ ${escapeHtml(dt(`No lunch scheduled — ${_travFirst} will be hungry by 1 PM`, `Aucun déjeuner prévu — ${_travFirst} aura faim vers 13 h`))}</div>`
+    }
+
+    const stopWord = stops.length === 1 ? dt('stop','arrêt') : dt('stops','arrêts')
+    const statBits = [`${stops.length} ${stopWord}`]
+    if (daySpend > 0) statBits.push(fmtMoney(daySpend))
+    const dateStr = _dayDate(d)
     daysHtml += `
       <div class="ps-day ps-day--${dayTone(d)}">
         <div class="ps-day-head">
-          <div class="ps-day-num">${tPrime('day.headerN','Day {n}').replace('{n}', d)}</div>
-          <div class="ps-day-tag">${dayLabel(d)}</div>
+          <div class="ps-day-headl">
+            <div class="ps-day-title">${tPrime('day.headerN','Day {n}').replace('{n}', d)}${dateStr ? ` · ${escapeHtml(dateStr)}` : ''}</div>
+            <div class="ps-day-sub">${escapeHtml(dayLabel(d))}${_dayHint(d) ? ` · ${escapeHtml(_dayHint(d))}` : ''}</div>
+          </div>
+          <div class="ps-day-stats">${escapeHtml(statBits.join(' · '))}</div>
         </div>
-        <ul class="ps-slots">${slotRows}</ul>
+        <ul class="ps-rows">${rowsHtml}</ul>
+        ${warnHtml}
       </div>`
   }
 
