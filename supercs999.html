@@ -1788,6 +1788,15 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🎉 Plan approuvé', text: 'Plan approuvé ! Beau travail, {first_name}. La commission est enregistrée et sera versée sur votre portefeuille une fois l\'ensemble du lot validé.' },
   ]
 }
+// Stable keys for the default chips, by position (en & ja arrays are parallel).
+// These power the planner-intent matcher and let auto-seed dedupe by key so we
+// never insert a default twice.
+const QR_DEFAULT_KEYS = [
+  'greeting', 'bond_bank_details', 'verifying_bond', 'bond_received',
+  'payout_update', 'payout_processed', 'checking_sets', 'how_many_days',
+  'extension_granted', 'need_more_info', 'please_screenshot', 'thank_you',
+  'queued_for_review', 'new_set_assigned', 'revision_noted', 'plan_approved'
+]
 // Current language for quick replies — persisted per agent session
 let CS_QR_LANG = localStorage.getItem('jj_cs_qr_lang') || 'en'
 if (CS_QR_LANG !== 'en' && CS_QR_LANG !== 'ja') CS_QR_LANG = 'en'
@@ -1803,6 +1812,30 @@ function setQuickReplyLang(lang){
 // missing / empty / errors, the getter falls back to QUICK_REPLIES_DEFAULTS
 // so the console keeps working even before the migration is run.
 let _qrCache = { en: null, ja: null }
+let _qrSeedChecked = false
+
+// One-time: if the table has NO system chips yet (defaults were never seeded),
+// insert all the hardcoded defaults as real rows. Without this, the defaults
+// only exist as an in-memory fallback that the getter drops the moment ANY row
+// exists — so adding a single custom chip made every default chip "disappear".
+// Guard on "no system chips at all" so a CS agent's intentional deletes stick.
+async function _ensureDefaultQuickReplies() {
+  if (_qrSeedChecked) return false
+  _qrSeedChecked = true
+  const hasSystem = ['en', 'ja'].some(l => (_qrCache[l] || []).some(r => r.is_system))
+  if (hasSystem) return false
+  const rows = []
+  for (const lang of ['en', 'ja']) {
+    (QUICK_REPLIES_DEFAULTS[lang] || []).forEach((c, i) => {
+      const key = QR_DEFAULT_KEYS[i] || null
+      rows.push({ lang, key, label: c.label, body: c.text, sort_order: i, is_system: true })
+    })
+  }
+  if (!rows.length) return false
+  const { error } = await sb.from('cs_quick_replies').insert(rows)
+  if (error) { console.warn('cs_quick_replies seed failed', error); return false }
+  return true
+}
 
 async function loadQuickReplies() {
   try {
@@ -1812,6 +1845,8 @@ async function loadQuickReplies() {
     if (error) { console.warn('cs_quick_replies load failed', error); return }
     _qrCache.en = (data || []).filter(r => r.lang === 'en').map(r => ({ id: r.id, key: r.key, label: r.label, text: r.body, sort_order: r.sort_order, is_system: r.is_system }))
     _qrCache.ja = (data || []).filter(r => r.lang === 'ja').map(r => ({ id: r.id, key: r.key, label: r.label, text: r.body, sort_order: r.sort_order, is_system: r.is_system }))
+    // Seed defaults if they've never been persisted, then reload to pick them up.
+    if (await _ensureDefaultQuickReplies()) return loadQuickReplies()
     if (typeof renderQuickReplies === 'function') renderQuickReplies()
   } catch (e) { console.warn('cs_quick_replies load threw', e) }
 }
@@ -1862,7 +1897,7 @@ function renderQrEditList() {
   const list = _qrCache[_qrEditLang] || []
   if (countEl) countEl.textContent = `${list.length} chip${list.length === 1 ? '' : 's'}`
   if (!list.length) {
-    listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-3);font-size:12.5px;">No chips yet — click "+ Add new chip" to create one. Or run <code>phase_a_cs_quick_replies.sql</code> to seed the defaults.</div>'
+    listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-3);font-size:12.5px;">No chips yet — click "+ Add new chip" to create one. (The default chips seed automatically; if none appear, reload the page.)</div>'
     return
   }
   listEl.innerHTML = list.map(r => `
@@ -1903,7 +1938,7 @@ async function qrDeleteRow(id, btn) {
   if (!row) return
   // Confirm — system chips deletable too, but warn that the intent matcher
   // will lose its target until the SQL seed re-creates it.
-  if (!confirm('Delete this chip? It can only be restored by re-running the SQL seed.')) return
+  if (!confirm('Delete this chip? Default chips only auto-restore if ALL of them are removed.')) return
   btn.disabled = true; btn.textContent = 'Deleting…'
   const { error } = await sb.from('cs_quick_replies').delete().eq('id', id)
   btn.disabled = false; btn.textContent = 'Delete'
