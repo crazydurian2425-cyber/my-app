@@ -13511,6 +13511,23 @@ async function openPlanSummary(plan) {
     for (const p of (pts||[])) if (M[p]) return M[p]
     return ''
   }
+  // Resolve a transport leg's mode. Many legs have an EMPTY transport_mode
+  // column (the mode only lives in the title prefix, e.g. "Walk · A → B"), so
+  // fall back to parsing the title — EN + FR keywords.
+  const _modeOf = (s) => {
+    const m = String(s.transport_mode||'').toLowerCase().trim()
+    if (m) return m
+    const t = String(s.title||'').toLowerCase()
+    if (/\bwalk\b|à pied|\bfoot\b|\bpied\b/.test(t)) return 'walk'
+    if (/taxi|uber/.test(t))                          return 'taxi'
+    if (/\btgv\b|high-speed|grande vitesse/.test(t))  return 'hsr'
+    if (/\btrain\b|\bter\b|\brail\b/.test(t))          return 'train'
+    if (/\bbus\b|coach|autocar/.test(t))               return 'bus'
+    if (/flight|plane|\bvol\b|avion/.test(t))          return 'flight'
+    if (/ferry|boat|\bship\b|bateau/.test(t))          return 'ferry'
+    if (/metro|métro|transit|tram|\brer\b|funicul|transport|commun/.test(t)) return 'transit'
+    return ''
+  }
   // Quiet monochrome line-icon for a transit leg — distinct per mode.
   const _legIcon = (mode) => {
     const m = String(mode||'').toLowerCase()
@@ -13578,27 +13595,37 @@ async function openPlanSummary(plan) {
   const budgetDay = Number(trav.budget_per_day) || null
   let totalStops = 0, totalWalkKm = 0, totalCost = 0
 
+  // Walking distance: a transport leg stores no coords of its own, but its
+  // title is "Mode · <from> → <to>" and those names match real stop/hotel rows
+  // (which DO carry lat/lng). Build a name→coords map, then for each walk leg
+  // resolve both endpoints by name and haversine them. This also catches the
+  // back-to-hotel leg (its "→ Hôtel …" matches the hotel check-in row), which a
+  // flanking-row scan misses because the hotel isn't a following item.
+  const _coordByName = {}
+  for (const it of (items || [])) {
+    if (it.latitude == null || it.longitude == null) continue
+    const k = String(it.title || '').toLowerCase().trim()
+    if (k && !_coordByName[k]) _coordByName[k] = { lat:+it.latitude, lng:+it.longitude }
+  }
+  for (const it of (items || [])) {
+    if (String(it.type||'').toLowerCase() !== 'transport') continue
+    if (!/walk|foot/.test(_modeOf(it))) continue
+    const title = String(it.title || '')
+    const seg = title.includes(' · ') ? title.slice(title.indexOf(' · ') + 3) : title
+    const parts = seg.split('→').map(x => x.trim().toLowerCase())
+    if (parts.length < 2) continue
+    const a = _coordByName[parts[0]], b = _coordByName[parts[1]]
+    if (a && b) { const km = haversineKm(a.lat, a.lng, b.lat, b.lng); if (Number.isFinite(km)) totalWalkKm += km }
+  }
+
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
     const slots = _psNormalizeTransport(byDay[d] || [])
     const stops = slots.filter(_isStop)
-    const wd = _weekdayOf(d)
     let dayCost = 0
     for (const s of stops) dayCost += _estCost(s)
     totalStops += stops.length
     totalCost  += dayCost
-    // Walking distance: haversine the stops flanking each walk leg.
-    for (let i = 0; i < slots.length; i++) {
-      const s = slots[i]; if (String(s.type||'').toLowerCase() !== 'transport') continue
-      if (!/walk|foot/.test(String(s.transport_mode||'').toLowerCase())) continue
-      let p=null, nx=null
-      for (let j=i-1;j>=0;j--){ if(String(slots[j].type||'').toLowerCase()!=='transport'){ p=slots[j]; break } }
-      for (let j=i+1;j<slots.length;j++){ if(String(slots[j].type||'').toLowerCase()!=='transport'){ nx=slots[j]; break } }
-      if (p && nx && p.latitude!=null && nx.latitude!=null) {
-        const km = haversineKm(+p.latitude, +p.longitude, +nx.latitude, +nx.longitude)
-        if (Number.isFinite(km)) totalWalkKm += km
-      }
-    }
 
     const rowsHtml = slots.length ? slots.map(s => {
       const _type = String(s.type||'').toLowerCase()
@@ -13606,7 +13633,7 @@ async function openPlanSummary(plan) {
         return `
         <li class="ps-row ps-row--transit">
           <div class="ps-time ps-time--t">${escapeHtml(_fmtBare(s.time) || '·')}</div>
-          <div class="ps-cell"><div class="ps-leg">${_legIcon(s.transport_mode)}<span>${escapeHtml(s.title || '')}</span></div></div>
+          <div class="ps-cell"><div class="ps-leg">${_legIcon(_modeOf(s))}<span>${escapeHtml(s.title || '')}</span></div></div>
         </li>`
       }
       const metaBits = [_shortAddr(s.address), formatDurationLabel(s.duration_minutes)].filter(Boolean).join(' · ')
