@@ -3410,7 +3410,7 @@ async function openReviewModal(planId, planner, plan, traveler, isBond) {
 
   // Load full plan details
   const { data: planData } = await sb.from('plans')
-    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,item_images(id,url))')
+    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,transport_mode,item_images(id,url))')
     .eq('id', planId).single()
   const data = { plan: planData }
   if (data?.plan?.sets) {
@@ -3479,9 +3479,41 @@ function renderPlanSummary(plan){
   const dayLabel = (n) => n === 1 ? 'Arrival day' : (n === totalDays && totalDays > 1) ? 'Departure day' : 'Full day'
   const dayTone = (n) => n === 1 ? 'arrival' : (n === totalDays && totalDays > 1) ? 'departure' : 'full'
 
+  // Transport rows carry a FROZEN "Mode · A → B" title written when the leg was
+  // first inserted; it goes stale when the planner reorders/adds stops (you see
+  // a wrong "A → B", or an airport taxi stuck mid-day). Rebuild the label from
+  // the real adjacent venues at render time + collapse redundant back-to-back
+  // transport rows. Legs with a venue on only one side (arrival / final airport
+  // leg) keep their original title.
+  const _normalizeTransport = (dayItems) => {
+    const isT = it => String(it.type||'').toLowerCase() === 'transport'
+    const vName = it => String(it.title||'').trim()
+    const modeLabel = (it) => {
+      const m = String(it.transport_mode||'').toLowerCase()
+      if (m === 'walk') return 'Walk'
+      if (m === 'taxi') return 'Taxi'
+      if (m === 'train' || m === 'hsr') return 'Train'
+      if (m === 'transit') return 'Metro'
+      const tt = String(it.title||''); const ix = tt.indexOf(' · ')
+      return ix > 0 ? tt.slice(0, ix) : 'Transport'
+    }
+    const out = []
+    for (let i = 0; i < dayItems.length; i++) {
+      const it = dayItems[i]
+      if (!isT(it)) { out.push(it); continue }
+      if (out.length && isT(out[out.length - 1])) continue   // collapse consecutive transports
+      let prev = null, next = null
+      for (let j = i - 1; j >= 0; j--) { if (!isT(dayItems[j])) { prev = dayItems[j]; break } }
+      for (let j = i + 1; j < dayItems.length; j++) { if (!isT(dayItems[j])) { next = dayItems[j]; break } }
+      if (prev && next) out.push({ ...it, title: `${modeLabel(it)} · ${vName(prev)} → ${vName(next)}` })
+      else out.push(it)
+    }
+    return out
+  }
+
   let daysHtml = ''
   for (let d = 1; d <= Math.max(totalDays, Object.keys(byDay).length); d++) {
-    const slots = (byDay[d] || []).sort((a,b) => (a.sort_order||0) - (b.sort_order||0))
+    const slots = _normalizeTransport((byDay[d] || []).sort((a,b) => (a.sort_order||0) - (b.sort_order||0)))
     const slotRows = slots.length ? slots.map(s => {
       const addrHtml = s.address && String(s.address).trim()
         ? `<div class="ps-slot-meta" style="font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.45;"><span style="margin-right:4px;">📍</span>${escapeHtml(String(s.address).trim())}</div>`

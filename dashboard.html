@@ -13297,6 +13297,38 @@ async function openPlanSummary(plan) {
   const typeIcons = {
     activity:'📍', meal:'🍽', transport:'🚕', accommodation:'🏨', freetime:'☕', note:'📝'
   }
+  // Transport rows store a FROZEN "Mode · A → B" title written once when the leg
+  // was first inserted; it goes stale the moment the planner reorders/adds stops
+  // (you end up with "Hôtel de Ville → Confluence" sitting between Confluence and
+  // a different stop, or an airport taxi stranded mid-day). So we DON'T trust the
+  // stored title — we rebuild the "A → B" from the real adjacent venues at render
+  // time, and drop redundant back-to-back transport rows. Legs with a venue on
+  // only one side (arrival taxi, final airport leg) keep their original title.
+  const _psNormalizeTransport = (dayItems) => {
+    const isT = it => String(it.type||'').toLowerCase() === 'transport'
+    const vName = it => String(it.title||'').trim()
+    const modeLabel = (it) => {
+      const m = String(it.transport_mode||'').toLowerCase()
+      if (m === 'walk') return dt('Walk','À pied')
+      if (m === 'taxi') return 'Taxi'
+      if (m === 'train' || m === 'hsr') return dt('Train','Train')
+      if (m === 'transit') return dt('Metro','Métro')
+      const tt = String(it.title||''); const ix = tt.indexOf(' · ')
+      return ix > 0 ? tt.slice(0, ix) : dt('Transport','Transport')
+    }
+    const out = []
+    for (let i = 0; i < dayItems.length; i++) {
+      const it = dayItems[i]
+      if (!isT(it)) { out.push(it); continue }
+      if (out.length && isT(out[out.length - 1])) continue   // collapse consecutive transports
+      let prev = null, next = null
+      for (let j = i - 1; j >= 0; j--) { if (!isT(dayItems[j])) { prev = dayItems[j]; break } }
+      for (let j = i + 1; j < dayItems.length; j++) { if (!isT(dayItems[j])) { next = dayItems[j]; break } }
+      if (prev && next) out.push({ ...it, title: `${modeLabel(it)} · ${vName(prev)} → ${vName(next)}` })
+      else out.push(it)   // arrival / final airport leg — keep stored title
+    }
+    return out
+  }
   const dayTone = (n) => n === 1 ? 'arrival' : (n === totalDays && totalDays > 1) ? 'departure' : 'full'
   const dayLabel = (n) => n === 1 ? tPrime('guide.arrivalDay','Arrival day')
                         : (n === totalDays && totalDays > 1) ? tPrime('guide.departureDay','Departure day')
@@ -13304,7 +13336,7 @@ async function openPlanSummary(plan) {
 
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
-    const slots = (byDay[d] || [])
+    const slots = _psNormalizeTransport(byDay[d] || [])
     const slotRows = slots.length ? slots.map(s => {
       const imgs = (s.item_images || []).filter(im => im?.url)
       const imgHtml = imgs.length ? `<div class="ps-slot-imgs" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${
