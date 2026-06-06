@@ -3542,22 +3542,31 @@ function renderPlanSummary(plan){
   }
   const _travFirst = String(trav.name||'').trim().split(/\s+/)[0] || 'the traveller'
 
-  // Transport rows carry a FROZEN "Mode · A → B" title written when the leg was
-  // first inserted; it goes stale when the planner reorders/adds stops. Rebuild
-  // the label from the real adjacent venues + collapse redundant back-to-back
-  // transport rows. Legs with a venue on only one side keep their original title.
+  // Resolve a leg's mode: the transport_mode column when set, else parse the
+  // title (legs often store mode only in the title, e.g. "Walk · A → B").
+  const _modeOf = (s) => {
+    const m = String(s.transport_mode||'').toLowerCase().trim()
+    if (m) return m
+    const t = String(s.title||'').toLowerCase()
+    if (/\bwalk\b|à pied|\bfoot\b|\bpied\b/.test(t)) return 'walk'
+    if (/taxi|uber/.test(t))                          return 'taxi'
+    if (/\btgv\b|high-speed|grande vitesse/.test(t))  return 'hsr'
+    if (/\btrain\b|\bter\b|\brail\b/.test(t))          return 'train'
+    if (/\bbus\b|coach|autocar/.test(t))               return 'bus'
+    if (/flight|plane|\bvol\b|avion/.test(t))          return 'flight'
+    if (/ferry|boat|\bship\b|bateau/.test(t))          return 'ferry'
+    if (/metro|métro|transit|tram|\brer\b|funicul|transport|commun/.test(t)) return 'transit'
+    return ''
+  }
+  const _modeWord = (m) => ({ walk:'Walk', taxi:'Taxi', transit:'Public transport', train:'Train', hsr:'TGV', bus:'Bus', flight:'Flight', ferry:'Ferry' }[m] || 'Transport')
+  // Transport titles go stale (the arrival leg keeps "Taxi to hotel" even after
+  // it's switched to Public transport; mid-day legs drift when stops reorder).
+  // Rebuild EVERY leg from its real mode + actual neighbours; collapse dups.
   const _normalizeTransport = (dayItems) => {
     const isT = it => String(it.type||'').toLowerCase() === 'transport'
     const vName = it => String(it.title||'').trim()
-    const modeLabel = (it) => {
-      const m = String(it.transport_mode||'').toLowerCase()
-      if (m === 'walk') return 'Walk'
-      if (m === 'taxi') return 'Taxi'
-      if (m === 'train' || m === 'hsr') return 'Train'
-      if (m === 'transit') return 'Metro'
-      const tt = String(it.title||''); const ix = tt.indexOf(' · ')
-      return ix > 0 ? tt.slice(0, ix) : 'Transport'
-    }
+    const _word = (it) => { const m = _modeOf(it); if (m) return _modeWord(m); const tt=String(it.title||''); const ix=tt.indexOf(' · '); return ix>0?tt.slice(0,ix):'Transport' }
+    const _destFromTitle = (it) => { const t=String(it.title||''); const k=t.indexOf('→'); return k>=0?t.slice(k+1).trim():'' }
     const out = []
     for (let i = 0; i < dayItems.length; i++) {
       const it = dayItems[i]
@@ -3566,8 +3575,13 @@ function renderPlanSummary(plan){
       let prev = null, next = null
       for (let j = i - 1; j >= 0; j--) { if (!isT(dayItems[j])) { prev = dayItems[j]; break } }
       for (let j = i + 1; j < dayItems.length; j++) { if (!isT(dayItems[j])) { next = dayItems[j]; break } }
-      if (prev && next) out.push({ ...it, title: `${modeLabel(it)} · ${vName(prev)} → ${vName(next)}` })
-      else out.push(it)
+      const w = _word(it)
+      let title
+      if (prev && next) title = `${w} · ${vName(prev)} → ${vName(next)}`
+      else if (next)    title = `${w} to ${vName(next)}`
+      else if (prev) { const d = _destFromTitle(it); title = d ? `${w} · ${vName(prev)} → ${d}` : `${w} · ${vName(prev)}` }
+      else              title = it.title
+      out.push({ ...it, title })
     }
     return out
   }
@@ -3585,7 +3599,7 @@ function renderPlanSummary(plan){
         return `
         <li class="ps-row ps-row--transit">
           <div class="ps-time ps-time--t">${escapeHtml(_tBare(s.time) || '·')}</div>
-          <div class="ps-cell"><div class="ps-leg">${_legIcon(s.transport_mode)}<span>${escapeHtml(s.title||'')}</span></div></div>
+          <div class="ps-cell"><div class="ps-leg">${_legIcon(_modeOf(s))}<span>${escapeHtml(s.title||'')}</span></div></div>
         </li>`
       }
       const cat = _placeCat(s)

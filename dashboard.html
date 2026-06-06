@@ -13472,25 +13472,24 @@ async function openPlanSummary(plan) {
     if (m === 'train' || m === 'hsr') return '🚆'
     return '🚇'
   }
-  // Transport rows store a FROZEN "Mode · A → B" title written once when the leg
-  // was first inserted; it goes stale the moment the planner reorders/adds stops
-  // (you end up with "Hôtel de Ville → Confluence" sitting between Confluence and
-  // a different stop, or an airport taxi stranded mid-day). So we DON'T trust the
-  // stored title — we rebuild the "A → B" from the real adjacent venues at render
-  // time, and drop redundant back-to-back transport rows. Legs with a venue on
-  // only one side (arrival taxi, final airport leg) keep their original title.
+  // Transport rows store a FROZEN title written once when the leg was inserted
+  // (e.g. the arrival leg keeps "Taxi to hotel" even after the planner switches
+  // it to Public transport, and mid-day legs go stale when stops are reordered).
+  // So we DON'T trust the stored title — we rebuild EVERY leg's label at render
+  // time from its REAL mode (using the same labels as the day-form picker) and
+  // its actual neighbours, and collapse redundant back-to-back transport rows.
   const _psNormalizeTransport = (dayItems) => {
     const isT = it => String(it.type||'').toLowerCase() === 'transport'
     const vName = it => String(it.title||'').trim()
-    const modeLabel = (it) => {
-      const m = String(it.transport_mode||'').toLowerCase()
-      if (m === 'walk') return dt('Walk','À pied')
-      if (m === 'taxi') return 'Taxi'
-      if (m === 'train' || m === 'hsr') return dt('Train','Train')
-      if (m === 'transit') return dt('Metro','Métro')
+    // Mode word — identical to the day-form picker (Public transport, Uber,
+    // Walk, TGV…). Falls back to the title's leading token.
+    const _word = (it) => {
+      const m = _modeOf(it)
+      if (m && typeof modeLabel === 'function') return modeLabel(m)
       const tt = String(it.title||''); const ix = tt.indexOf(' · ')
       return ix > 0 ? tt.slice(0, ix) : dt('Transport','Transport')
     }
+    const _destFromTitle = (it) => { const t = String(it.title||''); const k = t.indexOf('→'); return k >= 0 ? t.slice(k+1).trim() : '' }
     const out = []
     for (let i = 0; i < dayItems.length; i++) {
       const it = dayItems[i]
@@ -13499,8 +13498,13 @@ async function openPlanSummary(plan) {
       let prev = null, next = null
       for (let j = i - 1; j >= 0; j--) { if (!isT(dayItems[j])) { prev = dayItems[j]; break } }
       for (let j = i + 1; j < dayItems.length; j++) { if (!isT(dayItems[j])) { next = dayItems[j]; break } }
-      if (prev && next) out.push({ ...it, title: `${modeLabel(it)} · ${vName(prev)} → ${vName(next)}` })
-      else out.push(it)   // arrival / final airport leg — keep stored title
+      const w = _word(it)
+      let title
+      if (prev && next) title = `${w} · ${vName(prev)} → ${vName(next)}`
+      else if (next)    title = `${w} ${dt('to','vers')} ${vName(next)}`            // arrival leg → first stop / hotel
+      else if (prev) { const d = _destFromTitle(it); title = d ? `${w} · ${vName(prev)} → ${d}` : `${w} · ${vName(prev)}` } // departure / airport leg
+      else              title = it.title                                            // unanchored — keep as-is
+      out.push({ ...it, title })
     }
     return out
   }
