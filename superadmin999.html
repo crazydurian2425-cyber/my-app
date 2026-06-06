@@ -354,6 +354,9 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 .btn-sm{padding:6px 12px;font-size:11.5px;}
 
 /* TABLE */
+/* Wide data tables scroll inside their card at ALL widths, so they never force
+   page-level horizontal scroll on desktop (the mobile block also sets this). */
+.card:has(.tbl){overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .tbl{width:100%;border-collapse:collapse;}
 .tbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-4);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--cream);}
 .tbl th[data-sort-key]:hover{color:var(--ink-2);background:rgba(0,0,0,0.025);}

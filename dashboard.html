@@ -2529,6 +2529,16 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   margin-bottom:18px;
 }
 @media (max-width:640px){.review-stats{grid-template-columns:repeat(2,minmax(0,1fr));}}
+/* Phone stacking for grids inside the itinerary / day-form modals that lacked a
+   mobile rule (4-col day summary, 2-col form rows + brief grid would squeeze on
+   a 360–430px screen). Base selectors — themed overrides, if any, still win. */
+@media (max-width:520px){
+  .day-summary-grid{grid-template-columns:repeat(2,1fr);row-gap:10px;}
+  .day-summary-grid > div{border-right:none;padding-left:0;padding-right:0;}
+  .form-row{grid-template-columns:1fr;}
+  .brief-grid{grid-template-columns:1fr;}
+  .modal-body{padding:16px 14px;}
+}
 .review-stat{
   background:var(--surface);
   border:1px solid var(--border);
