@@ -21268,12 +21268,20 @@ async function submitPlan() {
       // _hasImage: any pending upload OR any saved url already attached. Used
       // by the missing-image warning AND the sub-account Day-1 rule.
       const _hasImage = pending.length > 0 || existingUrls.length > 0
+      // Mirror _persistDraft so the FINAL save doesn't wipe these. Submit used
+      // to omit transport_mode + is_locked, so on the next open every transport
+      // reverted to the 'taxi' default and the auto-seeded Day-1 hotel/arrival
+      // taxi lost their lock (× button reappeared, orphan-sweep exemption gone).
+      const transportMode = (type === 'transport') ? (slot.dataset.transportMode || null) : null
+      const isLockedRow   = slot.dataset.isLocked === 'true'
       items.push({
         day_number: dayNum, time, type,
         title: titleVal,
         address: addressVal || null,
         duration_minutes: Number.isFinite(durMins) ? durMins : null,   // persist 'how long to stay' for ANY timed slot (hotel/meal/shopping/…), not just activity/freetime
         notes,
+        transport_mode: transportMode,
+        is_locked: isLockedRow,
         sort_order: sortOrder,
         ...getPlaceFieldsForSlot(slot),
         _seedUnchanged, _hasImage,
@@ -21651,6 +21659,18 @@ async function _persistDraft(planId) {
       // across close + reopen. Re-uses the is_locked column already
       // added by docs/schema/add-day-bookends.sql.
       const isLockedRow = slot.dataset.isLocked === 'true'
+      // Fold the optional "Est. cost / pax" box into the notes JSON, EXACTLY as
+      // submitPlan does — autosave used to skip this, so a typed cost was lost
+      // on close/reopen (it only survived a full Submit). Tippable venue types
+      // store JSON notes; hotels/transport keep plain-text notes untouched.
+      let notes = slot.querySelector('.slot-notes-input')?.value?.trim() || ''
+      if (['activity','meal','shopping','entertainment','freetime'].includes(slotType)) {
+        const _costRaw = slot.querySelector('.slot-cost-input')?.value
+        const _costNum = (_costRaw != null && String(_costRaw).trim() !== '') ? Math.round(parseFloat(_costRaw)) : null
+        const _st = _parseTipsValue(notes)
+        if (Number.isFinite(_costNum)) _st.cost = _costNum; else delete _st.cost
+        notes = _serializeTips(_st)
+      }
       items.push({
         day_number: dayNum,
         time:       slot.querySelector('.slot-time-input')?.value || null,
@@ -21658,7 +21678,7 @@ async function _persistDraft(planId) {
         title:      titleVal,
         address:    slot.querySelector('.slot-address-input')?.value?.trim() || null,
         duration_minutes: Number.isFinite(durMins) ? durMins : null,   // persist 'how long to stay' for ANY timed slot, not just activity/freetime
-        notes:      slot.querySelector('.slot-notes-input')?.value?.trim() || '',
+        notes,
         transport_mode: transportMode,
         is_locked:  isLockedRow,
         sort_order: sortOrder,
