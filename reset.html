@@ -39,6 +39,9 @@ body{font-family:'DM Sans',sans-serif;background:#f5f4f0;min-height:100vh;displa
 .success{background:#e8f5f0;color:#0f5240;border-radius:8px;padding:14px;font-size:13px;margin-bottom:14px;display:none;line-height:1.5;}
 .foot{font-size:12px;color:#9a9a94;margin-top:14px;text-align:center;}
 .foot a{color:#1a7a5e;text-decoration:none;}
+/* Mobile: 16px form fields so iOS Safari doesn't zoom-in on focus. Keep the
+   OTP code field at 18px (already >16, no zoom) so it isn't shrunk. */
+@media (max-width:640px){ input,select,textarea{ font-size:16px !important; } .input.code{ font-size:18px !important; } }
 </style>
 </head>
 <body>

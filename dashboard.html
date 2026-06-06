@@ -2540,6 +2540,11 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 @media (max-width:520px){
   .day-summary-grid{grid-template-columns:repeat(2,1fr);row-gap:10px;}
   .day-summary-grid > div{border-right:none;padding-left:0;padding-right:0;}
+  /* Transport stats (Distance / Duration / Cper-pax) crush into 3 columns on a
+     phone — stack them and drop the vertical dividers so French station names
+     and "RER A · 2 stops" don't wrap into each other. */
+  .transport-grid{grid-template-columns:1fr;row-gap:8px;}
+  .transport-grid > div{border-right:none;padding-left:0;padding-right:0;}
   .form-row{grid-template-columns:1fr;}
   .brief-grid{grid-template-columns:1fr;}
   .modal-body{padding:16px 14px;}
