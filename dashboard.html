@@ -17832,8 +17832,8 @@ function applyRouteDataToSlot(slot, data) {
     }
   }
   const cells = host.querySelectorAll('.transport-grid .tg-value')
-  if (cells[0]) { cells[0].textContent = `${data.distanceKm.toFixed(1)} km`; cells[0].classList.remove('tg-blank') }
-  if (cells[1]) { cells[1].textContent = `${data.durationMin} min`;          cells[1].classList.remove('tg-blank') }
+  if (cells[0]) { cells[0].textContent = Number.isFinite(data.distanceKm) ? `${data.distanceKm.toFixed(1)} km` : '—'; cells[0].classList.remove('tg-blank') }
+  if (cells[1]) { cells[1].textContent = Number.isFinite(data.durationMin) ? `${data.durationMin} min` : '—'; cells[1].classList.remove('tg-blank') }
   // Cost: if Routes API gave us a fare (transit only), use that. Otherwise
   // recompute from the REAL road km the API returned — previously we were
   // showing the Haversine-based heuristic cost which lagged behind the
@@ -19618,10 +19618,13 @@ function endDayBackToHotel(dayContainerId) {
     ? { lat: parseFloat(hotel.latitude), lng: parseFloat(hotel.longitude) }
     : null
   const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : null
-  // Already at the hotel (e.g. a "Rest at hotel" free-time block) — no
-  // back-to-hotel transport needed. Skip inserting a pointless 0-km leg;
-  // the locked "Back at hotel" anchor already shows they're there.
-  if (km != null && km < 0.05) {
+  // Already at the hotel (e.g. the only stop IS the hotel, or a "Rest at hotel"
+  // free-time block) — no back-to-hotel transport needed. Skip the pointless
+  // 0-km leg. Also catch the case where coords haven't resolved yet but the
+  // last venue's Google place_id matches the hotel's.
+  const _samePlace = !!(lastVenue?._placeData?.google_place_id && hotel?.google_place_id
+                        && lastVenue._placeData.google_place_id === hotel.google_place_id)
+  if ((km != null && km < 0.05) || _samePlace) {
     if (typeof refreshDayDistances === 'function') refreshDayDistances(dayContainer)
     if (typeof autoSaveDraft === 'function') autoSaveDraft()
     if (typeof showToast === 'function') showToast(dt('Already at the hotel — no transport needed',"Déjà à l'hôtel — aucun transport nécessaire"))
@@ -19898,6 +19901,9 @@ function refreshDayDistances(dayContainer) {
   // Remove any duplicate back-to-back transport block (two legs for the same
   // A→B gap — a race between the gap-fill / snap / load refresh triggers).
   _dedupeConsecutiveTransports(dayContainer)
+  // Remove pointless same-place legs (e.g. a back-to-hotel ride when the only
+  // stop IS the hotel → "Hotel → Hotel, 0.0 km").
+  _sweepSelfLoopTransports(dayContainer)
   // Sweep orphan transports — when the planner deletes every venue, the
   // arrival → first-venue taxi is left behind (its × button is replaced
   // with the AUTO lock badge, so they can't delete it manually). Any
@@ -19979,6 +19985,42 @@ function refreshAllDistances() {
 // one gap when several day-refresh triggers fire close together. Keep the
 // FIRST, drop the rest, and persist so the dup can't survive a save (this is
 // the form-side counterpart to the summary's render-time collapse).
+// Remove transport legs whose two ends are the SAME place (origin === dest).
+// Happens when the day's only stop is the hotel and a "back to hotel" leg gets
+// inserted → "Hotel → Hotel · 0.0 km · null min". Detect by coords (flanking
+// venue/anchor within 50 m) with a title "A → B" same-name fallback.
+function _sweepSelfLoopTransports(dayContainer) {
+  if (!dayContainer) return false
+  const isFlank = el => el && el.classList.contains('activity-slot') && !el.classList.contains('slot-type-transport')
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  let removed = false
+  for (const t of slots) {
+    if (!t.classList.contains('slot-type-transport')) continue
+    if (t.dataset.autoSeededArrivalTaxi === 'true') continue
+    let prev = t.previousElementSibling; while (prev && !isFlank(prev)) prev = prev.previousElementSibling
+    let next = t.nextElementSibling;     while (next && !isFlank(next)) next = next.nextElementSibling
+    const a = prev ? getSlotLatLng(prev) : null
+    const b = next ? getSlotLatLng(next) : null
+    let isSelf = false
+    if (a && b) {
+      const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
+      if (Number.isFinite(km) && km < 0.05) isSelf = true
+    } else {
+      const tt = String(t.querySelector('.slot-title-input')?.value || '')
+      const arrow = tt.indexOf('→')
+      if (arrow >= 0) {
+        const right = tt.slice(arrow + 1).trim().toLowerCase()
+        let left = tt.slice(0, arrow); const dot = left.lastIndexOf('·'); if (dot >= 0) left = left.slice(dot + 1)
+        left = left.trim().toLowerCase()
+        if (left && left === right) isSelf = true
+      }
+    }
+    if (isSelf) { console.log('[self-loop-sweep] removing same-place transport', t.id); t.remove(); removed = true }
+  }
+  if (removed && typeof autoSaveDraft === 'function') autoSaveDraft()
+  return removed
+}
+
 function _dedupeConsecutiveTransports(dayContainer) {
   if (!dayContainer) return false
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
@@ -20036,9 +20078,10 @@ function _sweepOrphanTransports(dayContainer) {
 function _gapFillTransportsForDay(dayContainer) {
   console.log('[gap-fill] ENTERED for', dayContainer?.id, '· children:', dayContainer?.children?.length)
   if (!dayContainer) return
-  // Clear any pre-existing duplicate legs FIRST, so the scan below sees a
-  // clean single transport between each pair and won't add yet another.
+  // Clear any pre-existing duplicate / same-place legs FIRST, so the scan below
+  // sees a clean single transport between each pair and won't add yet another.
   _dedupeConsecutiveTransports(dayContainer)
+  _sweepSelfLoopTransports(dayContainer)
   const dayNum = parseInt(dayContainer.id.replace('slots-day-', ''), 10) || 1
   // Re-scan on each iteration because addSlot mutates the DOM. Cap at the
   // number of (a, b) pairs we could possibly need so a pathological case
