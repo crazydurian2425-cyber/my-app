@@ -19376,9 +19376,11 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       }
     }
   } else {
-    const breakfastBit = window._currentHotelBreakfast
-      ? dt('Breakfast at hotel (45 min included)', "Petit-déjeuner à l'hôtel (45 min inclus)")
-      : dt('Breakfast on the way', 'Petit-déjeuner en chemin')
+    // Every unit assumes breakfast is had at the hotel, and the day starts at
+    // the default wake time (no extra time reserved). The per-unit
+    // hotel_includes_breakfast flag is intentionally ignored here for a
+    // consistent morning line across all units.
+    const breakfastBit = dt('Breakfast at hotel', "Petit-déjeuner à l'hôtel")
     // Use the itinerary's hotel name (one per trip) — same as end-of-day.
     const morningHotel = _findItineraryHotel()
     const morningHotelName = morningHotel?.name || hotelName
