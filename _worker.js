@@ -22,15 +22,14 @@ const CREDENTIALS = [
 // No hardcoded fallback — the key must never live in committed source.
 let RESEND_API_KEY = ''
 
-// Supabase project — service role key kept server-side only.
-// Used by /api/create-planner to create auth users + insert planner rows.
-// SECURITY: prefer the Worker secret env.SUPABASE_SERVICE_KEY (loaded in fetch()
-// below). The hardcoded value is a TEMPORARY fallback only — it is committed to
-// git, so it is COMPROMISED and must be rotated in Supabase, set as a Worker
-// secret (`wrangler secret put SUPABASE_SERVICE_KEY` or the Cloudflare dashboard),
-// and then this literal removed entirely.
+// Supabase project — service-role / secret key kept server-side only.
+// Used by the /api/sb proxy + /api/create-planner. Loaded ONLY from the Worker
+// secret env.SUPABASE_SERVICE_KEY (set in the Cloudflare dashboard). The old
+// literal that used to live here was committed to git (compromised) and has
+// been removed; the legacy service_role key it held should be disabled in
+// Supabase. If the secret is unset the handlers fail loud with a 500.
 const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
-let SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqY2h5cWFma3Bicnl6bHFocHhjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM1NDg5MSwiZXhwIjoyMDk0OTMwODkxfQ.tn2ovF385cdAtjyyKfEYE5HkLQUkUbpKKp8Hc4LFEcg'
+let SUPABASE_SERVICE_KEY = ''
 
 export default {
   async fetch(request, env) {
