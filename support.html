@@ -699,6 +699,23 @@ const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_EQBMG6WS1qd1F9jMNrog1g_gU1n9grr'
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// Broadcast channel to ping the CS console INSTANTLY when this planner sends a
+// message. The CS console connects with the public key and can't receive
+// `messages` postgres_changes under RLS, so it relies on this broadcast for
+// real-time delivery (vs a 3-5s poll). Broadcast isn't subject to table RLS.
+const csNotify = sb.channel('conv-inbox')
+csNotify.subscribe()
+function pingCs(msg) {
+  try {
+    csNotify.send({ type: 'broadcast', event: 'new_message', payload: {
+      conversation_id: msg.conversation_id,
+      id: msg.id,
+      sender_type: 'planner',
+      body: (msg.body || '📷 Image').slice(0, 140),
+    }})
+  } catch (e) { /* best-effort — the CS poll still catches it within a few seconds */ }
+}
+
 // Validate the auth session matches the localStorage planner. Without this
 // check, editing `jj_planner` in DevTools would let someone load this page
 // as a different user. If the auth session disagrees, sign out and bounce.
@@ -849,6 +866,7 @@ async function handleImagePick(e) {
     const idx = messages.findIndex(m => m.id === tempId)
     if (idx >= 0) messages[idx] = inserted
     renderMessages()
+    pingCs(inserted)   // instant nudge to the CS console
   } catch (err) {
     messages = messages.filter(m => m.id !== tempId)
     renderMessages()
@@ -897,6 +915,7 @@ async function sendMessage(e) {
   const idx = messages.findIndex(m => m.id === tempId)
   if (idx >= 0) messages[idx] = inserted
   renderMessages()
+  pingCs(inserted)   // instant nudge to the CS console
 }
 
 // Enter to send, Shift+Enter for newline

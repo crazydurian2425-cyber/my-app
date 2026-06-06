@@ -2538,6 +2538,16 @@ function attachInboxChannel() {
       upsertConvFromRealtime(p.new?.conversation_id)
       _csOnIncomingMessage(p.new)  // beep + notify for any planner msg, even outside active conv
     })
+    // INSTANT planner→CS delivery via BROADCAST. postgres_changes above is
+    // RLS-denied for the anon-role CS console (it can't read `messages`), so
+    // the planner pings this channel right after inserting. Broadcast isn't
+    // subject to table RLS, so it always arrives — no 3-5s poll wait.
+    .on('broadcast', { event: 'new_message' }, ({ payload }) => {
+      if (!payload?.conversation_id) return
+      upsertConvFromRealtime(payload.conversation_id)
+      if (activeConv?.id === payload.conversation_id) loadMessages(payload.conversation_id)
+      if (payload.sender_type === 'planner') _csOnIncomingMessage(payload)
+    })
     .subscribe(status => updateRealtimeStatus(status))
   // Polling fallback: if realtime is down, refetch the inbox every 30s. Cheap
   // safety net for the case where the publication isn't configured or the
