@@ -3,6 +3,14 @@ wrangler.toml
 .assetsignore
 _dev_*.sql
 jj-deploy.zip
+# Never serve SQL/schema as public static assets — docs/schema/*.sql exposes the
+# full DB schema, RLS policies and RPC bodies to anyone hitting /docs/schema/...
+*.sql
+docs
+docs/
+/docs
+/docs/
+**/docs/**
 
 # CI / build artifacts — wrangler-action installs into ./node_modules
 # Belt-and-braces patterns to cover gitignore-style implementations

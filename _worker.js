@@ -319,11 +319,15 @@ function isProxyTargetAllowed(method, targetPath) {
   // Auth admin: ONLY delete-user (DELETE /auth/v1/admin/users/<id>). Block
   // create/list and every other /auth path.
   if (targetPath.startsWith('/auth/v1/admin/users')) return m === 'DELETE'
-  // Storage: only the allowed buckets (any object/list/sign/render path).
-  if (targetPath.startsWith('/storage/v1/')) {
-    return [...PROXY_ALLOWED_BUCKETS].some(b =>
-      targetPath.includes('/' + b + '/') || targetPath.endsWith('/' + b))
-  }
+  // Storage: ONLY object operations on an allowed bucket. Parse the actual
+  // bucket SEGMENT (the part right after object/[public|sign|info|upload|
+  // authenticated]/) instead of a loose substring match — a substring check
+  // like includes('/chat-media/') let a crafted path target a different bucket
+  // by smuggling the literal into an object key. This also blocks the
+  // bucket-management API (/storage/v1/bucket).
+  const stor = targetPath.match(
+    /^\/storage\/v1\/object\/(?:(?:public|sign|info|authenticated|upload|list)\/)*([a-z0-9][a-z0-9._-]*)(?:\/|$)/i)
+  if (stor) return PROXY_ALLOWED_BUCKETS.has(stor[1])
   return false
 }
 
@@ -562,6 +566,12 @@ async function handleSignLetter(request, url) {
   try { body = await request.json() } catch (_) { return jsonResp(400, { error: 'Invalid JSON' }) }
   const { token, signature_data_url, user_agent } = body || {}
   if (!token || !signature_data_url) return jsonResp(400, { error: 'Missing token or signature' })
+  // Cap the inline signature (stored in a text column + emailed as an attachment)
+  // to ~1.5 MB of data-URL — a drawn signature is only a few KB, so this stops
+  // storage-bloat / payload abuse on this public endpoint.
+  if (typeof signature_data_url !== 'string' || signature_data_url.length > 1_500_000) {
+    return jsonResp(413, { error: 'Signature too large' })
+  }
 
   const sbHeaders = {
     'apikey': SUPABASE_SERVICE_KEY,
@@ -580,6 +590,9 @@ async function handleSignLetter(request, url) {
   if (!letter)                       return jsonResp(404, { error: 'Letter not found' })
   if (letter.status === 'signed')    return jsonResp(409, { error: 'Already signed' })
   if (letter.status === 'cancelled') return jsonResp(410, { error: 'Letter cancelled' })
+  // Positively require 'pending' — don't allow signing a letter in any other/
+  // unknown/null state (e.g. a future 'expired'/'revoked').
+  if (letter.status !== 'pending')   return jsonResp(409, { error: 'Letter is not awaiting signature' })
 
   // 2. Validate it's a PNG data URL and keep the raw base64 (for the email
   //    attachment). data URL shape: "data:image/png;base64,xxx"
@@ -612,8 +625,8 @@ async function handleSignLetter(request, url) {
     }
   )
   if (!updateResp.ok) {
-    const errText = await updateResp.text().catch(() => '')
-    return jsonResp(500, { error: 'Row update failed: ' + errText })
+    console.error('letter sign update failed:', await updateResp.text().catch(() => ''))
+    return jsonResp(500, { error: 'Could not record signature' })
   }
 
   // 5. Email support@ with the signed details
