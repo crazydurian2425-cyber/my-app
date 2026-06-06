@@ -17076,9 +17076,9 @@ function minsToHHMM(mins) {
 //   }
 // ── Budget warning helpers ─────────────────────────────────────────────────
 // Estimate the per-pax cost for a linked Google Place. Prefer Google's
-// "From €X" priceRange when present (multiplied by 1.8 to approximate the
-// real average meal/visit spend), fall back to the discrete price_level
-// enum, return null if neither is set.
+// Google priceRange when present: a real range (€40–80) → midpoint (€60); a
+// "From €X" floor (no upper bound) → X × 1.5 to approximate the real average
+// spend. Falls back to the discrete price_level enum, returns null if neither.
 // Estimate the per-pax spend for a stop. Priority:
 //   0. Planner's manual "Est. cost / pax" box (their real ticket knowledge)
 //   1. Google explicit price range / price level (reliable when present)
@@ -17102,10 +17102,16 @@ function estimatePerPaxCost(placeData, slot) {
   // 1. Google explicit pricing.
   const pr = placeData?.price_range_json
   if (pr?.startPrice) {
-    const units = parseInt(pr.startPrice.units || '0', 10) || 0
-    const nanos = (pr.startPrice.nanos || 0) / 1e9
-    const start = units + nanos
-    if (start > 0) return Math.round(start * 1.8)
+    const _money = (mny) => (parseInt(mny?.units || '0', 10) || 0) + ((mny?.nanos || 0) / 1e9)
+    const start = _money(pr.startPrice)
+    const end   = _money(pr.endPrice)
+    // A REAL range (both ends, e.g. €40–80) → use the MIDPOINT (the honest
+    // average), instead of throwing the upper bound away. Only a "From €X" floor
+    // (no upper bound) gets a multiplier — the floor badly understates a real
+    // sit-down spend — and 1.5 (not 1.8) keeps it realistic and avoids noisy
+    // false "over budget" flags.
+    if (start > 0 && end > start) return Math.round((start + end) / 2)
+    if (start > 0)                return Math.round(start * 1.5)
   }
   const lvl = String(placeData?.price_level || '')
   if (lvl === 'PRICE_LEVEL_INEXPENSIVE')    return 15
