@@ -1857,7 +1857,12 @@ Object.defineProperty(window, 'QUICK_REPLIES', {
   get() {
     const dbList = _qrCache[CS_QR_LANG]
     if (dbList && dbList.length) return dbList
-    return QUICK_REPLIES_DEFAULTS[CS_QR_LANG] || QUICK_REPLIES_DEFAULTS.en
+    // Fallback: attach the stable key by position (QR_DEFAULT_KEYS is parallel
+    // to the default arrays) so detectIncomingIntent's findIndex(q => q.key...)
+    // still matches when DB chips haven't loaded — raw defaults carry no key,
+    // so the "SUGGESTED" highlight never fired on the fallback path.
+    const defs = QUICK_REPLIES_DEFAULTS[CS_QR_LANG] || QUICK_REPLIES_DEFAULTS.en
+    return defs.map((c, i) => ({ ...c, key: QR_DEFAULT_KEYS[i] || null }))
   }
 })
 
@@ -2060,7 +2065,10 @@ function applyQuickReply(index) {
   const firstName = ctx?.planner?.name?.split(' ')[0] || 'there'
   const setNum = ctx?.active?.sets?.set_number ? String(ctx.active.sets.set_number).padStart(3,'0') : '—'
   const plannerShort = activeConv?.planner_id ? activeConv.planner_id.slice(0,6).toUpperCase() : ''
-  const pendingAmt = Math.round(ctx?.pendingAmt || 0).toLocaleString('ja-JP')
+  // Group per the active reply language: French slot (CS_QR_LANG==='ja') wants
+  // fr-FR thin-space grouping ("1 000 €"); English wants en-US comma. ja-JP was
+  // a Japan-era leftover that produced "1,000 €" in French replies.
+  const pendingAmt = Math.round(ctx?.pendingAmt || 0).toLocaleString(CS_QR_LANG === 'ja' ? 'fr-FR' : 'en-US')
   const filled = q.text
     .replace(/{first_name}/g, firstName)
     .replace(/{set_num}/g, setNum)

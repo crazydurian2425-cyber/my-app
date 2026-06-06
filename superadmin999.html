@@ -3033,7 +3033,7 @@ function renderTravelers(travelers) {
     const setNum = t.plans?.[0]?.sets?.set_number
     const bondTag = t.requires_bond ? `<span class="bond-chip" style="font-size:9px;padding:1px 5px;">bond</span>` : ''
     return `<tr>
-      <td><div class="tbl-name">${escapeHtml(t.name)}</div><div class="tbl-meta">${escapeHtml(t.traveler_type)} · €${escapeHtml(t.budget_per_day ? Number(t.budget_per_day).toLocaleString('ja-JP') : '?')}/day ${bondTag}</div></td>
+      <td><div class="tbl-name">${escapeHtml(t.name)}</div><div class="tbl-meta">${escapeHtml(t.traveler_type)} · €${escapeHtml(t.budget_per_day ? Number(t.budget_per_day).toLocaleString('en-GB') : '?')}/day ${bondTag}</div></td>
       <td>${escapeHtml(t.destination)}</td>
       <td><div style="font-size:12px">${escapeHtml(t.arrival_date)} · ${escapeHtml(t.duration)}${t.group_size>1?' · '+escapeHtml(t.group_size)+' pax':''}</div></td>
       <td><span class="status ${statusMap[t.status]||'s-gray'}"><span class="status-dot"></span>${escapeHtml(labelMap[t.status]||t.status)}</span></td>
@@ -3493,7 +3493,7 @@ function renderPlanSummary(plan){
       ${briefRow('Duration', trav.duration)}
       ${briefRow('Traveler type', typeLabel)}
       ${briefRow('Group size', trav.group_size ? `${trav.group_size} pax` : null)}
-      ${briefRow('Budget / day', trav.budget_per_day ? '€'+Number(trav.budget_per_day).toLocaleString('ja-JP') : null)}
+      ${briefRow('Budget / day', trav.budget_per_day ? '€'+Number(trav.budget_per_day).toLocaleString('en-GB') : null)}
       ${briefRow('Pace', trav.pace)}
       ${briefRow('Interests', trav.interests)}
       ${briefRow('Must avoid', trav.avoid)}
@@ -5175,7 +5175,7 @@ async function saveRetentionSetting(){
   ], { onConflict: 'key' })
   if (error) { showToast('Save failed: ' + error.message); return }
   if (typeof auditLog === 'function') auditLog('settings.update', 'platform_settings', 'retention', { value: val, sets })
-  showToast(`Retention updated · €${Number(val).toLocaleString('ja-JP')} · release after ${sets} sets`)
+  showToast(`Retention updated · €${Number(val).toLocaleString('en-GB')} · release after ${sets} sets`)
   loadRetentionSetting()
 }
 
@@ -5224,7 +5224,7 @@ async function submitPayout() {
   const remaining = Math.max(0, _poCtx.total - _poCtx.paidSoFar)
 
   if (!Number.isFinite(amount) || amount <= 0) { showToast('Enter a valid amount'); amtInput.focus(); return }
-  if (amount > remaining + 0.0001)            { showToast(`Amount cannot exceed remaining balance (€${Number(remaining).toLocaleString('ja-JP')})`); amtInput.focus(); return }
+  if (amount > remaining + 0.0001)            { showToast(`Amount cannot exceed remaining balance (€${Number(remaining).toLocaleString('en-GB')})`); amtInput.focus(); return }
   if (!reason)                                 { showToast('Please add a reason for this payout'); reasonEl.focus(); return }
 
   btn.disabled = true
@@ -6615,11 +6615,11 @@ function updatePreview() {
   const pno = document.getElementById('prev-notes')
 
   if (pn) pn.textContent = `${name} · ${dest}`
-  if (pm) pm.textContent = `${typeCap} · ${duration}${budget ? ' · Budget €' + Number(budget).toLocaleString('ja-JP') + '/day' : ''}`
+  if (pm) pm.textContent = `${typeCap} · ${duration}${budget ? ' · Budget €' + Number(budget).toLocaleString('en-GB') + '/day' : ''}`
   if (pi) pi.textContent = interests || '—'
   if (pp) pp.textContent = pace || '—'
   if (pa) pa.textContent = avoid || '—'
-  if (ppy) ppy.textContent = payout ? `€${Number(payout).toLocaleString('ja-JP')}` : '€—'
+  if (ppy) ppy.textContent = payout ? `€${Number(payout).toLocaleString('en-GB')}` : '€—'
   if (pno) {
     if (notes) { pno.textContent = notes; pno.style.display = 'block' }
     else pno.style.display = 'none'
@@ -7144,7 +7144,7 @@ async function openEditSetModal(setId, setNum) {
       if (t.destination) detailLabels.push(`Destination: ${escapeHtml(t.destination)}`)
       if (t.arrival_date) detailLabels.push(`Arriving: ${escapeHtml(t.arrival_date)}`)
       if (t.duration) detailLabels.push(`Duration: ${escapeHtml(t.duration)}`)
-      if (t.budget_per_day) detailLabels.push(`Budget: €${escapeHtml(Number(t.budget_per_day).toLocaleString('ja-JP'))}/day`)
+      if (t.budget_per_day) detailLabels.push(`Budget: €${escapeHtml(Number(t.budget_per_day).toLocaleString('en-GB'))}/day`)
       return `
         <div class="task-card${isBond ? ' bond' : ''}">
           <div class="task-card-header">
