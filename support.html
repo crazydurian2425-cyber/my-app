@@ -635,7 +635,7 @@ const SUP_I18N = {
     'sup.faq.q1':'Comment fonctionnent les paiements ?',
     'sup.faq.a1':'Vous êtes payé lorsque votre lot complet (15 plans) est vérifié et approuvé par l\'administrateur. Votre commission et les cautions éventuellement versées sont libérées ensemble vers votre portefeuille crypto enregistré (USDT/USDC), généralement sous 1 h après l\'approbation.',
     'sup.faq.qW':'Y a-t-il un salaire hebdomadaire ?',
-    'sup.faq.aW':'Oui — €1 000 par cycle glissant de 7 jours, à condition de terminer au moins 1 lot durant ce cycle. Votre premier cycle commence le jour où vous terminez votre tout premier lot ; le cycle suivant commence 7 jours plus tard, et ainsi de suite. Le salaire est crédité sur votre portefeuille à la fin de chaque cycle, en plus de la commission par plan. Les cycles sans aucun lot terminé ne sont pas éligibles.',
+    'sup.faq.aW':'Oui — 1 000 € par cycle glissant de 7 jours, à condition de terminer au moins 1 lot durant ce cycle. Votre premier cycle commence le jour où vous terminez votre tout premier lot ; le cycle suivant commence 7 jours plus tard, et ainsi de suite. Le salaire est crédité sur votre portefeuille à la fin de chaque cycle, en plus de la commission par plan. Les cycles sans aucun lot terminé ne sont pas éligibles.',
     'sup.faq.q2':'Qu\'est-ce qu\'un plan avec caution ?',
     'sup.faq.a2':'Les réservations premium (entreprises, VIP ou grands groupes) nécessitent une caution remboursable pour sécuriser le plan. La caution est intégralement restituée avec votre commission une fois les 15 plans approuvés.',
     'sup.faq.q3':'L\'administrateur a demandé une révision — et maintenant ?',
@@ -734,7 +734,7 @@ async function ensureConversation() {
   let { data } = await sb.from('conversations').select('*').eq('planner_id', planner.id).maybeSingle()
   if (!data) {
     const { data: created, error } = await sb.from('conversations').insert({ planner_id: planner.id }).select().single()
-    if (error) { showToast('Failed to open chat: ' + error.message); return null }
+    if (error) { showToast((SUP_LANG === 'ja' ? "Échec de l'ouverture du chat : " : 'Failed to open chat: ') + error.message); return null }
     data = created
   }
   conversation = data
@@ -768,8 +768,8 @@ function renderMessages() {
         <div class="chat-empty-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
-        <div style="font-size:14px;font-weight:500;color:var(--ink-2);">Say hi to the Journey Junction team</div>
-        <div style="font-size:12px;">We'll get back to you shortly — typical reply time under an hour.</div>
+        <div style="font-size:14px;font-weight:500;color:var(--ink-2);">${SUP_LANG === 'ja' ? "Dites bonjour à l'équipe Journey Junction" : 'Say hi to the Journey Junction team'}</div>
+        <div style="font-size:12px;">${SUP_LANG === 'ja' ? 'Nous vous répondrons sous peu — délai de réponse habituel inférieur à une heure.' : "We'll get back to you shortly — typical reply time under an hour."}</div>
       </div>`
     return
   }
@@ -789,13 +789,13 @@ function renderMessages() {
     if (m.sender_type === 'system') {
       return `<div class="msg system"><div class="msg-bubble">${escapeHtml(m.body)}</div></div>`
     }
-    const meta = m.sender_type === 'planner' ? `You · ${time}` : `${escapeHtml(m.sender_name || 'Support')} · ${time}`
+    const meta = m.sender_type === 'planner' ? `${SUP_LANG === 'ja' ? 'Vous' : 'You'} · ${time}` : `${escapeHtml(m.sender_name || 'Support')} · ${time}`
     const img = m.media_url ? `<img src="${escapeHtml(m.media_url)}" onclick="openImageLightbox('${(m.media_url||'').replace(/'/g,"\\'")}')" style="max-width:300px;max-height:320px;border-radius:10px;display:block;cursor:zoom-in;">` : ''
     const text = m.body ? `<div style="white-space:pre-wrap;word-wrap:break-word;">${escapeHtml(m.body)}</div>` : ''
     const bubblePad = m.media_url && !m.body ? 'padding:6px;' : ''
     return `
       <div class="msg ${m.sender_type}">
-        <div class="msg-bubble" style="${bubblePad}">${img}${text}${m._pending ? '<div style="font-size:10.5px;opacity:0.75;margin-top:4px;">sending…</div>' : ''}</div>
+        <div class="msg-bubble" style="${bubblePad}">${img}${text}${m._pending ? `<div style="font-size:10.5px;opacity:0.75;margin-top:4px;">${SUP_LANG === 'ja' ? 'Envoi…' : 'sending…'}</div>` : ''}</div>
         <div class="msg-meta">${meta}</div>
       </div>`
   }).join('')
@@ -810,7 +810,7 @@ async function handleImagePick(e) {
   e.target.value = ''
   if (!file) return
   if (!conversation) return
-  if (file.size > 8 * 1024 * 1024) { showToast('Image too large — max 8MB'); return }
+  if (file.size > 8 * 1024 * 1024) { showToast(SUP_LANG === 'ja' ? 'Image trop volumineuse — 8 Mo maximum' : 'Image too large — max 8MB'); return }
 
   const tempId = 'tmp-' + Date.now()
   const localUrl = URL.createObjectURL(file)
@@ -852,7 +852,7 @@ async function handleImagePick(e) {
   } catch (err) {
     messages = messages.filter(m => m.id !== tempId)
     renderMessages()
-    showToast('Upload failed: ' + (err.message || err))
+    showToast((SUP_LANG === 'ja' ? "Échec du téléversement : " : 'Upload failed: ') + (err.message || err))
   }
 }
 
@@ -890,7 +890,7 @@ async function sendMessage(e) {
   if (error) {
     messages = messages.filter(m => m.id !== tempId)
     renderMessages()
-    showToast('Send failed: ' + error.message)
+    showToast((SUP_LANG === 'ja' ? "Échec de l'envoi : " : 'Send failed: ') + error.message)
     input.value = body
     return
   }
