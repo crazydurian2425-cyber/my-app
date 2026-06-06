@@ -4359,19 +4359,26 @@ async function loadPayments() {
     const bondEarned   = bondBy[pl.id] || 0
     const earnedAdj    = earnedAdjBy[pl.id] || 0
     const directAdj    = directAdjBy[pl.id] || 0
-    const earnedTotal    = commission + bondEarned + earnedAdj + directAdj    // all inflows
+    const earnedTotal    = commission + bondEarned + earnedAdj + directAdj    // all inflows (for "earned" display)
     const locked         = lockedBy[pl.id] || 0
     const paid           = paidBy[pl.id]   || 0
-    // Unified pool: withdrawals reduce all inflows. Retention applies to the
-    // total available so the protection buffer is always honoured (matches
-    // dashboard's planner-side loadWallet formula).
-    const totalAvailable = Math.max(0, earnedTotal - locked)
+    // Mirror the planner-side loadWallet EXACTLY (was: pool everything and apply
+    // retention to the grand total — which over-held by buffering bond refunds,
+    // so admin showed a SMALLER withdrawable than the planner saw). Split inflows
+    // into a retainable pool (commission + earned adjustments — buffer applies
+    // here) and a bypass pool (bond refunds + bypass-flagged adjustments — never
+    // buffered). Past withdrawals drain the bypass pool first.
+    const retainablePool = commission + earnedAdj
+    const bypassPool     = bondEarned + directAdj
+    const payoutFromBypass     = Math.min(locked, bypassPool)
+    const payoutFromRetainable = Math.max(0, locked - bypassPool)
+    const bypassRemaining      = Math.max(0, bypassPool - payoutFromBypass)
+    const retainableRemaining  = Math.max(0, retainablePool - payoutFromRetainable)
     // Retention releases once the planner has COMPLETED the configured number
     // of sets (not on first payout). Mirrors the planner-side dashboard rule.
-    const hasBeenPaid    = paid > 0
     const retainReleased = (completedSetsBy[pl.id] || 0) >= retentionSets
-    const retainHeld     = retainReleased ? 0 : Math.min(retentionMin, totalAvailable)
-    const effectiveMax   = Math.max(0, totalAvailable - retainHeld)
+    const retainHeld     = retainReleased ? 0 : Math.min(retentionMin, retainableRemaining)
+    const effectiveMax   = bypassRemaining + Math.max(0, retainableRemaining - retainHeld)
     const pendingAmt = locked - paid  // wallet_requests pending only (not yet paid)
     if (earnedTotal > 0 || paid > 0 || pendingAmt > 0) {
       perPlanner.push({ id: pl.id, earned: earnedTotal, locked, paid, pendingAmt, available: effectiveMax, retainHeld })
@@ -5746,7 +5753,7 @@ async function viewPlanner(id) {
       sb.from('plans').select('*',{count:'exact',head:true})
         .in('set_id', allSetIds).eq('planner_id', id).in('status', ['submitted','approved']),
       sb.from('plans')
-        .select('set_id, planner_payout_override, bond_amount_override, travelers(planner_payout, bond_amount, requires_bond)')
+        .select('set_id, planner_payout_override, bond_amount_override, requires_bond_override, travelers(planner_payout, bond_amount, requires_bond)')
         .eq('planner_id', id).eq('status', 'approved')
     ])
     setsCount   = paidAssignIds.length + completedAssignIds.length
@@ -5754,7 +5761,11 @@ async function viewPlanner(id) {
     plansCount  = plansCountRes.count || 0
     for (const p of (earnedRes.data || [])) {
       _approvedCommission += Number(p.planner_payout_override != null ? p.planner_payout_override : (p.travelers?.planner_payout || 0))
-      if (p.travelers?.requires_bond) {
+      // Honour requires_bond_override (matches loadWallet/bondOf). Was reading
+      // travelers.requires_bond directly, so admin-added/removed bonds diverged
+      // from the planner's own earned total.
+      const requiresBond = (p.requires_bond_override != null ? p.requires_bond_override : (p.travelers?.requires_bond || false))
+      if (requiresBond) {
         _approvedBondRefund += Number(p.bond_amount_override != null ? p.bond_amount_override : (p.travelers?.bond_amount || 0))
       }
     }
@@ -5795,7 +5806,7 @@ async function viewPlanner(id) {
       if (paidEl)   paidEl.textContent    = '…'
       const [reqRes, adjRes, settingRes, setsRes] = await Promise.all([
         sb.from('wallet_requests').select('amount, status').eq('planner_id', id),
-        sb.from('wallet_adjustments').select('amount').eq('planner_id', id),
+        sb.from('wallet_adjustments').select('amount, bypass_retention').eq('planner_id', id),
         sb.from('platform_settings').select('key, value_num').in('key', ['first_payout_retention_min','first_payout_retention_sets']),
         sb.from('set_assignments').select('*', { count:'exact', head:true }).eq('planner_id', id).in('status', ['completed','paid'])
       ])
@@ -5806,17 +5817,29 @@ async function viewPlanner(id) {
                                  .reduce((s,r) => s + Number(r.amount || 0), 0)
       const paid       = requests.filter(r => r.status === 'paid')
                                  .reduce((s,r) => s + Number(r.amount || 0), 0)
-      const adjTotal   = (adjRes.data || []).reduce((s,a) => s + Number(a.amount || 0), 0)
-      const earnedNet  = _approvedCommission + _approvedBondRefund + adjTotal
-      const totalAvail = Math.max(0, earnedNet - locked)
+      // Split adjustments like loadWallet: bypass-flagged credits skip the
+      // retention buffer; the rest flow through it.
+      let _earnedAdj = 0, _directAdj = 0
+      for (const a of (adjRes.data || [])) {
+        const amt = Number(a.amount || 0)
+        if (a.bypass_retention) _directAdj += amt; else _earnedAdj += amt
+      }
+      const earnedNet  = _approvedCommission + _approvedBondRefund + _earnedAdj + _directAdj
       const _sRows     = Array.isArray(settingRes?.data) ? settingRes.data : []
       const _bRow      = _sRows.find(r => r.key === 'first_payout_retention_min')
       const _sRow      = _sRows.find(r => r.key === 'first_payout_retention_sets')
       const buffer     = (_bRow?.value_num != null) ? Number(_bRow.value_num) : 200
       const retSets    = (_sRow?.value_num != null) ? Math.max(1, Math.round(Number(_sRow.value_num))) : 3
       const retainReleased = (setsRes?.count || 0) >= retSets
-      const retainHeld = retainReleased ? 0 : Math.min(buffer, totalAvail)
-      const walletBal  = Math.max(0, totalAvail - retainHeld)
+      // Mirror loadWallet's bypass-pool drain so this matches the planner's wallet.
+      const retainablePool = _approvedCommission + _earnedAdj
+      const bypassPool     = _approvedBondRefund + _directAdj
+      const payoutFromBypass     = Math.min(locked, bypassPool)
+      const payoutFromRetainable = Math.max(0, locked - bypassPool)
+      const bypassRemaining      = Math.max(0, bypassPool - payoutFromBypass)
+      const retainableRemaining  = Math.max(0, retainablePool - payoutFromRetainable)
+      const retainHeld = retainReleased ? 0 : Math.min(buffer, retainableRemaining)
+      const walletBal  = bypassRemaining + Math.max(0, retainableRemaining - retainHeld)
       // Overwrite the Total earned card with the net-of-adjustments figure
       // so admin's view matches the planner's "Earned total" exactly.
       if (earnedEl) earnedEl.textContent = `€${Math.round(earnedNet).toLocaleString()}`
