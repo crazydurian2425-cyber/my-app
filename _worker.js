@@ -158,6 +158,23 @@ async function handleSupabaseProxy(request, url) {
   fwdHeaders.delete('x-forwarded-for')
   fwdHeaders.delete('x-forwarded-proto')
   fwdHeaders.delete('x-real-ip')
+  // Strip browser-fingerprint headers. Supabase's NEW secret keys (sb_secret_)
+  // are rejected with UNAUTHORIZED_INVALID_API_KEY_TYPE ("Forbidden use of secret
+  // API key in browser") when the request carries browser markers like Origin /
+  // Sec-Fetch-* / a web x-client-info. This proxy IS a trusted server-side caller,
+  // so remove those markers (and the page Referer/UA) before forwarding so the
+  // secret key is accepted as a server credential.
+  fwdHeaders.delete('origin')
+  fwdHeaders.delete('referer')
+  fwdHeaders.delete('sec-fetch-site')
+  fwdHeaders.delete('sec-fetch-mode')
+  fwdHeaders.delete('sec-fetch-dest')
+  fwdHeaders.delete('sec-fetch-user')
+  fwdHeaders.delete('sec-ch-ua')
+  fwdHeaders.delete('sec-ch-ua-mobile')
+  fwdHeaders.delete('sec-ch-ua-platform')
+  fwdHeaders.delete('x-client-info')
+  fwdHeaders.set('user-agent', 'journey-junction-worker')
 
   // Forward body for non-GET/HEAD. ArrayBuffer preserves binary uploads
   // (storage multipart) without forcing a string conversion.
