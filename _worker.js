@@ -332,22 +332,17 @@ function isProxyTargetAllowed(method, targetPath) {
 }
 
 function isProxyAuthorized(request, url) {
-  const referer = request.headers.get('referer') || ''
-  if (referer) {
-    try {
-      const r = new URL(referer)
-      const sameOrigin = (r.protocol === url.protocol && r.host === url.host)
-      if (sameOrigin) {
-        // Cloudflare Pages serves /superadmin999.html at /superadmin999 (extension
-        // stripped), so accept either form. We only need to confirm the request
-        // came from one of the gated admin/CS pages.
-        const path = r.pathname.replace(/\.html$/, '')
-        const allowedPrefixes = PROTECTED_PATHS.map(p => p.replace(/\.html$/, ''))
-        if (allowedPrefixes.includes(path)) return true
-      }
-    } catch (_) { /* malformed — fall through */ }
-  }
-  // Fallback: explicit Basic Auth (for non-browser callers)
+  // Require a shared secret token that the gated admin/CS consoles send on every
+  // /api/sb request (header `x-jj-proxy`), OR explicit Basic Auth (curl/server).
+  //
+  // The token equals the admin/CS password, which is ONLY obtainable by someone
+  // who already passed the page-level Basic Auth gate to load the console HTML.
+  // The previous check trusted the `Referer` header — which any caller can forge
+  // — so an unauthenticated stranger could drive the service-role key with a
+  // one-line curl. Referer trust is removed; a forged Referer alone no longer
+  // grants access. (`url` kept for signature compatibility.)
+  const tok = request.headers.get('x-jj-proxy') || ''
+  if (tok && CREDENTIALS.some(c => safeEqual(tok, c.pass))) return true
   return !!checkAuth(request, null)
 }
 

@@ -2652,7 +2652,12 @@ function promptAdmin() {
 // planner JWT from localStorage (which would otherwise be added as the
 // `Authorization` header and override our worker's service-role swap).
 const sb = supabase.createClient(PROXY_BASE, SUPABASE_ANON, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  // Shared secret the worker requires on every /api/sb request (replaces the
+  // old forgeable-Referer auth). The worker overwrites apikey/Authorization
+  // server-side, so this custom header is what proves the request came from the
+  // gated console. ADMIN_PASS is only available after the page-level Basic Auth.
+  global: { headers: { 'x-jj-proxy': ADMIN_PASS } }
 })
 
 // Realtime-only client — WebSocket subscriptions can't easily be proxied

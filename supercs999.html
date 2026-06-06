@@ -594,7 +594,10 @@ const csAgentName = localStorage.getItem('jj_cs_name') || (()=>{const n=prompt('
 
 // Primary client — all REST/auth/storage ops go through the worker proxy.
 const sb = supabase.createClient(PROXY_BASE, SUPABASE_ANON, {
-  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  // Shared secret the worker requires on every /api/sb request (replaces the
+  // old forgeable-Referer auth). CS_PASS is only available after the page gate.
+  global: { headers: { 'x-jj-proxy': CS_PASS } }
 })
 
 // Realtime-only client — WebSocket subscriptions hit Supabase directly with
