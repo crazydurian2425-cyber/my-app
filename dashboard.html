@@ -14151,7 +14151,9 @@ function fillItineraryItems(items) {
             const removeBtn = document.createElement('button')
             removeBtn.className = 'img-preview-remove'
             removeBtn.textContent = '✕'
-            removeBtn.onclick = () => wrap.remove()
+            // Autosave on removal so deleting a previously-saved image persists
+            // (was wrap.remove() only → reopening resurrected the image).
+            removeBtn.onclick = () => { wrap.remove(); if (typeof autoSaveDraft === 'function') autoSaveDraft() }
             wrap.appendChild(img)
             wrap.appendChild(removeBtn)
             previewBox.appendChild(wrap)
