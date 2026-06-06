@@ -13093,6 +13093,9 @@ async function openItineraryForm(planId) {
   window._currentDepartureMethod   = _tmeta.unit_departure_method   || null
   window._currentDepartureLocation = _tmeta.unit_departure_location || null
   window._currentDepartureTo       = _tmeta.unit_departure_to       || null
+  // Group size — used to split per-vehicle transport fares (Uber/taxi/car are
+  // priced per CAR, shared by the group) into a true per-pax cost.
+  window._currentGroupSize         = parseInt(t.group_size, 10) || 1
   // Airport buffer in minutes — represents the WHOLE time the traveler
   // needs between their last activity ending and the flight/train doors
   // (airport travel + check-in + security + boarding gate).
@@ -17839,14 +17842,14 @@ function applyRouteDataToSlot(slot, data) {
   // showing the Haversine-based heuristic cost which lagged behind the
   // (correctly updated) road distance.
   if (cells[2]) {
+    const _mode = slot.dataset.transportMode || 'taxi'
     if (data.costEur != null) {
-      cells[2].textContent = (data.costEur === 0) ? (_isFrMoney() ? '0 €' : '€0') : (_isFrMoney() ? `~${data.costEur} €` : `~€${data.costEur}`)
+      cells[2].textContent = _fmtCostPax(_perPaxTransportCost(_mode, data.costEur, window._currentGroupSize))
       cells[2].classList.remove('tg-blank')
     } else {
-      const mode = slot.dataset.transportMode || 'taxi'
-      const cost = _costFromRealKm(mode, data.distanceKm)
+      const cost = _costFromRealKm(_mode, data.distanceKm)
       if (cost != null) {
-        cells[2].textContent = (cost === 0) ? (_isFrMoney() ? '0 €' : '€0') : (_isFrMoney() ? `~${cost} €` : `~€${cost}`)
+        cells[2].textContent = _fmtCostPax(_perPaxTransportCost(_mode, cost, window._currentGroupSize))
         cells[2].classList.remove('tg-blank')
       }
     }
@@ -18068,6 +18071,33 @@ function _transportEstimates(mode, km) {
   return { mins: null, costEur: null }
 }
 
+// Standard car / rideshare seats 4. For PER-VEHICLE modes (taxi/Uber, rental
+// car) the fare covers the whole car shared by the group — so split it across
+// the group (ceil(group/4) cars for big groups: 5–8 → 2 cars, 9–12 → 3 …).
+// PER-TICKET modes (metro, bus, train, TGV) are already per person and pass
+// through unchanged; walking is free.
+const _CAR_CAPACITY = 4
+function _perPaxTransportCost(mode, fare, groupSize) {
+  const f = Number(fare)
+  if (!Number.isFinite(f)) return fare
+  const g = Math.max(1, parseInt(groupSize != null ? groupSize : window._currentGroupSize, 10) || 1)
+  const m = String(mode || '').toLowerCase()
+  if (m === 'taxi' || m === 'car') {
+    const cars = Math.max(1, Math.ceil(g / _CAR_CAPACITY))
+    return (cars * f) / g
+  }
+  return f
+}
+// Format a per-pax transport cost for the COST/PAX cell. 0 → "€0"; a small
+// fractional value keeps one decimal (e.g. ~€1.5); larger values round.
+function _fmtCostPax(v) {
+  if (v == null || !Number.isFinite(Number(v))) return '—'
+  const n = Number(v)
+  if (n === 0) return _isFrMoney() ? '0 €' : '€0'
+  const num = (n < 10 && Math.round(n) !== n) ? n.toFixed(1) : String(Math.round(n))
+  return _isFrMoney() ? `~${num} €` : `~€${num}`
+}
+
 // Each mode has ONE clear meaning so the planner doesn't have to guess
 // the difference between "Taxi / Grab" and "Car / taxi" (which was the
 // same overlap from user feedback).
@@ -18284,8 +18314,7 @@ function refreshTransportSlot(slot) {
   const minsTxt = (tooFar) ? '—' : ((est.mins != null) ? `${est.mins} min` : '—')
   const costTxt = (tooFar) ? '—'
                 : (est.costEur == null) ? '—'
-                : (est.costEur === 0) ? (_isFrMoney() ? '0 €' : '€0')
-                : (_isFrMoney() ? `~${est.costEur} €` : `~€${est.costEur}`)
+                : _fmtCostPax(_perPaxTransportCost(mode, est.costEur, window._currentGroupSize))
   // Depart time recomputes from the PREVIOUS slot's start + its stay
   // duration so a "2 hour" prev stay → transport leaves 2 hours later.
   // Auto-syncs back into the hidden time-input so save/sort see the
@@ -20275,7 +20304,9 @@ function computeDaySummary(dayContainer) {
     const distTxt = cells[0]?.textContent || ''
     const costTxt = cells[2]?.textContent || ''
     const distMatch = distTxt.match(/(\d+(?:\.\d+)?)\s*km/i)
-    const costMatch = costTxt.match(/€\s*~?\s*(\d+(?:\.\d+)?)/)
+    // The displayed cost is ALREADY per-pax (split for Uber/taxi/car), and the
+    // € can sit before (EN) or after (FR) the number — grab the first number.
+    const costMatch = costTxt.match(/(\d+(?:\.\d+)?)/)
     if (distMatch && (costMatch || /free/i.test(costTxt))) {
       const liveKm = parseFloat(distMatch[1])
       if (mode === 'walk') walkingKm += liveKm
@@ -20295,7 +20326,7 @@ function computeDaySummary(dayContainer) {
     const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : 0
     if (mode === 'walk') walkingKm += km
     const est = _transportEstimates(mode, km)
-    if (est?.costEur != null) transportSpend += est.costEur
+    if (est?.costEur != null) transportSpend += _perPaxTransportCost(mode, est.costEur, window._currentGroupSize)
   })
   // Stop spend — estimated per-pax cost for each linked venue. Hotel
   // check-in/out are excluded by slot type too (belt + braces with the
