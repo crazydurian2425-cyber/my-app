@@ -4072,8 +4072,13 @@ async function closeSet(setId) {
       const { error: tErr } = await sb.from('travelers').update({ status: 'unassigned' }).in('id', travIds)
       if (tErr) throw tErr
     }
-    // 6. Mark the set closed (kept for history; drops off Active sets).
-    await sb.from('sets').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', setId)
+    // 6. Mark the set CANCELLED — this is a discard/teardown (plans + assignment
+    //    deleted, travellers released), NOT a genuine completion. Using
+    //    'completed' here polluted the real completed-sets list + the 30-day
+    //    "sets completed" KPI (both query status='completed'). 'cancelled' drops
+    //    off Active sets (in ['open','claimed']) AND completed views alike, and
+    //    is kept in the DB for history/audit.
+    await sb.from('sets').update({ status: 'cancelled', completed_at: new Date().toISOString() }).eq('id', setId)
     auditLog('set.close', 'set', setId, { released_travellers: travIds.length, deleted_plans: planIds.length })
     showToast(`Set closed — ${travIds.length} traveller${travIds.length === 1 ? '' : 's'} released to the Unassigned pool`)
   } catch (e) {
