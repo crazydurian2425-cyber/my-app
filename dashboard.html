@@ -7334,7 +7334,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
   <div id="page-history" class="page">
     <div class="page-header"><div><div class="page-title"><span data-i18n="history.title.payout">Payout</span> <em data-i18n="history.title.history">history</em></div><div class="page-sub" data-i18n="history.sub">All completed payouts to your account</div></div></div>
     <div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr));">
-      <div class="metric-card"><div class="metric-label" data-i18n="history.totalEarned">Total earned</div><div class="metric-val green" id="hist-total">€0</div><div class="metric-note" id="hist-total-note">0 completed sets</div></div>
+      <div class="metric-card"><div class="metric-label" data-i18n="history.totalEarned">Total earned</div><div class="metric-val green" id="hist-total">€0</div><div class="metric-note" id="hist-total-note">0 payouts</div></div>
       <div class="metric-card"><div class="metric-label" data-i18n="history.avgPerSet">Avg per set</div><div class="metric-val" id="hist-avg">€0</div><div class="metric-note" data-i18n="history.standardRate">standard rate</div></div>
       <div class="metric-card"><div class="metric-label" data-i18n="history.pending">Pending</div><div class="metric-val" id="hist-pending">€0</div><div class="metric-note" data-i18n="history.inProgress">in progress</div></div>
     </div>
@@ -8135,14 +8135,15 @@ const TM_I18N = {
     // history
     'history.title.payout':'Payout',
     'history.title.history':'history',
-    'history.sub':'All completed payouts to your account',
-    'history.totalEarned':'Total earned',
-    'history.avgPerSet':'Avg per set',
-    'history.standardRate':'standard rate',
-    'history.pending':'Pending',
-    'history.inProgress':'in progress',
+    'history.sub':'Your payouts and what\'s available to withdraw',
+    'history.totalEarned':'Paid out',
+    'history.avgPerSet':'Available',
+    'history.standardRate':'in your wallet',
+    'history.pending':'Pending payout',
+    'history.inProgress':'awaiting release',
+    'history.payoutRow':'Payout',
     'history.transactionTitle':'Transaction history',
-    'history.empty':'No transactions yet',
+    'history.empty':'No payouts yet',
     // wallet
     'wallet.title.your':'Your',
     'wallet.title.wallet':'wallet',
@@ -8626,6 +8627,7 @@ const TM_I18N = {
     'mysets.plans':'plans',
     // History list
     'hist.completedSets':'{n} completed sets',
+    'hist.payoutCount':'{n} payouts',
     // Wallet
     'wallet.fromApproved':'from {n} approved plans',
     'wallet.earnedBreakdown':'{comm} commission · {bond} bond refund',
@@ -8850,14 +8852,15 @@ const TM_I18N = {
     'common.loading':'Chargement…',
     'history.title.payout':'Paiements',
     'history.title.history':'Historique',
-    'history.sub':'Tous les paiements versés sur votre compte',
-    'history.totalEarned':'Total gagné',
-    'history.avgPerSet':'Moy. par lot',
-    'history.standardRate':'tarif standard',
-    'history.pending':'En attente',
-    'history.inProgress':'en cours',
+    'history.sub':'Vos retraits et le montant disponible',
+    'history.totalEarned':'Versé',
+    'history.avgPerSet':'Disponible',
+    'history.standardRate':'dans votre portefeuille',
+    'history.pending':'Retrait en attente',
+    'history.inProgress':'en cours de versement',
+    'history.payoutRow':'Retrait',
     'history.transactionTitle':'Historique des transactions',
-    'history.empty':'Aucune transaction pour l\'instant',
+    'history.empty':'Aucun retrait pour l\'instant',
     'wallet.title.your':'Votre',
     'wallet.title.wallet':'portefeuille',
     'wallet.sub':'Revenus de commission · retrait à tout moment',
@@ -9306,6 +9309,7 @@ const TM_I18N = {
     'mysets.due':'Échéance',
     'mysets.plans':'plans',
     'hist.completedSets':'{n} lots terminés',
+    'hist.payoutCount':'{n} retraits',
     'wallet.fromApproved':'sur {n} plans approuvés',
     'wallet.earnedBreakdown':'Commission {comm} · retour de caution {bond}',
     'plan.btn.readOnly':'✓ Approuvé — lecture seule',
@@ -11917,91 +11921,49 @@ async function loadMySets() {
 
 // ── LOAD HISTORY ──────────────────────────────────────────────
 async function loadHistory() {
-  // Assignment status drives categorisation
-  const { data: assigns } = await sb.from('set_assignments').select('set_id, status, paid_at, completed_at').eq('planner_id', planner.id)
-  // Same resilience as loadMySets — if admin released payout but set_assignments
-  // wasn't cascaded, promote 'completed' assignments to 'paid' for display when
-  // the planner has at least one paid wallet_request.
-  let hasPaidRequestH = false
-  try {
-    const { data: pr } = await sb.from('wallet_requests')
-      .select('id').eq('planner_id', planner.id).eq('status', 'paid').limit(1)
-    hasPaidRequestH = !!(pr && pr.length)
-  } catch (_) {}
-  const paidAssigns = (assigns||[]).filter(a => a.status === 'paid' || (hasPaidRequestH && a.status === 'completed'))
-  const completedAssigns = (assigns||[]).filter(a => a.status === 'completed' && !hasPaidRequestH)
+  // ── Payout LEDGER — reconciles with the Wallet page (single source of truth).
+  // Tiles:  Paid out (lifetime) · Available (withdrawable now) · Pending payout.
+  // List:   the planner's ACTUAL payout requests (paid / pending / rejected),
+  //         so every number on this page matches the Wallet + Dashboard.
+  const { data: reqs } = await sb.from('wallet_requests')
+    .select('id, amount, status, requested_at, admin_note')
+    .eq('planner_id', planner.id)
+    .order('requested_at', { ascending: false })
+  const all = reqs || []
+  const paid    = all.filter(r => r.status === 'paid')
+  const pending = all.filter(r => r.status === 'pending')
+  const paidOut       = paid.reduce((s, r) => s + Number(r.amount || 0), 0)
+  const pendingPayout = pending.reduce((s, r) => s + Number(r.amount || 0), 0)
+  // Available = the wallet's withdrawable (effectiveMax), computed by loadWallet
+  // at init. Falls back to 0 if the wallet hasn't been computed this session.
+  const available = (_walletState && Number.isFinite(_walletState.effectiveMax))
+    ? _walletState.effectiveMax : 0
 
-  // Fallback to old-system if no assignments yet
-  let paidSets = [], pendingSets = []
-  if (paidAssigns.length || completedAssigns.length) {
-    const paidIds = paidAssigns.map(a => a.set_id)
-    const compIds = completedAssigns.map(a => a.set_id)
-    if (paidIds.length) {
-      const { data: paidData } = await sb.from('sets')
-        .select('id, set_number, city, completed_at').in('id', paidIds)
-      paidSets = paidData || []
-    }
-    if (compIds.length) {
-      const { data: pendingData } = await sb.from('sets')
-        .select('id').in('id', compIds)
-      pendingSets = pendingData || []
-    }
-  } else {
-    const { data: oldSets } = await sb.from('sets').select('id').eq('planner_id', planner.id)
-    const allSetIds = oldSets?.map(s => s.id) || []
-    if (allSetIds.length) {
-      const { data: paidData } = await sb.from('sets')
-        .select('id, set_number, city, completed_at').in('id', allSetIds)
-        .eq('status', 'paid').order('completed_at', { ascending: false })
-      paidSets = paidData || []
-      const { data: pendingData } = await sb.from('sets')
-        .select('id').in('id', allSetIds).eq('status', 'completed')
-      pendingSets = pendingData || []
-    }
-  }
-
-  let totalEarned = 0, pendingAmt = 0
-  let paidPlans = []
-  const payoutOf = p => (p.planner_payout_override != null ? p.planner_payout_override : (p.travelers?.planner_payout || 0))
-  if (paidSets.length) {
-    const { data: pp } = await sb.from('plans').select('id, set_id, planner_id, plan_number, planner_payout_override, travelers(planner_payout)')
-      .in('set_id', paidSets.map(s => s.id))
-      .or(`planner_id.eq.${planner.id},planner_id.is.null`)
-      .eq('status', 'approved')
-    paidPlans = dedupePlansByPlanner(pp || [], planner.id)
-    paidPlans.forEach(p => { totalEarned += payoutOf(p) })
-  }
-  if (pendingSets.length) {
-    const { data: cp } = await sb.from('plans').select('id, set_id, planner_id, plan_number, planner_payout_override, travelers(planner_payout)')
-      .in('set_id', pendingSets.map(s => s.id))
-      .or(`planner_id.eq.${planner.id},planner_id.is.null`)
-      .eq('status', 'approved')
-    dedupePlansByPlanner(cp || [], planner.id).forEach(p => { pendingAmt += payoutOf(p) })
-  }
-  const avg = paidSets?.length ? Math.round(totalEarned / paidSets.length) : 0
-
-  const el = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val }
-  el('hist-total',   fmtMoney(totalEarned))
-  el('hist-total-note', t('hist.completedSets','{n} completed sets').replace('{n}', paidSets?.length || 0))
-  el('hist-avg',     fmtMoney(avg))
-  el('hist-pending', fmtMoney(pendingAmt))
+  const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val }
+  el('hist-total',      fmtMoney(paidOut))
+  el('hist-total-note', t('hist.payoutCount', '{n} payouts').replace('{n}', paid.length))
+  el('hist-avg',        fmtMoney(available))
+  el('hist-pending',    fmtMoney(pendingPayout))
 
   const histList = document.getElementById('hist-list')
   if (!histList) return
-  if (!paidSets?.length) {
-    histList.innerHTML = `<div style="padding:24px;text-align:center;font-size:13px;color:var(--text-3);">${t('history.empty','No transactions yet')}</div>`
+  if (!all.length) {
+    histList.innerHTML = `<div style="padding:24px;text-align:center;font-size:13px;color:var(--text-3);">${t('history.empty','No payouts yet')}</div>`
     return
   }
-  const histLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
-  histList.innerHTML = paidSets.map(s => {
-    const amt = paidPlans.filter(p => p.set_id === s.id).reduce((sum,p) => sum + payoutOf(p), 0) || 0
+  const histLocale = 'en-GB'
+  histList.innerHTML = all.map(r => {
+    const d = r.requested_at ? new Date(r.requested_at).toLocaleDateString(histLocale, { day:'numeric', month:'short', year:'numeric' }) : '—'
+    const isPaid = r.status === 'paid'
+    const statusLabel = t('payoutStatus.' + r.status, r.status)
+    const amtColor = isPaid ? '' : 'color:var(--text-3);'
     return `<div class="hist-row">
       <div class="hist-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#1a7a5e" stroke-width="1.5"><path d="M8 2v12M3 9l5 5 5-5"/></svg></div>
       <div class="hist-info">
-        <div class="hist-name">Set #${String(s.set_number).padStart(3,'0')} · ${escapeHtml(s.city || '—')}</div>
-        <div class="hist-date">${s.completed_at ? new Date(s.completed_at).toLocaleDateString(histLocale,{day:'numeric',month:'short',year:'numeric'}) : '—'}</div>
+        <div class="hist-name">${t('history.payoutRow','Payout')} · ${escapeHtml(statusLabel)}${r.admin_note ? ' · ' + escapeHtml(r.admin_note) : ''}</div>
+        <div class="hist-date">${d}</div>
       </div>
-      <div class="hist-amt">+${fmtMoney(amt)}</div>
+      <div class="hist-amt" style="${amtColor}">${isPaid ? '+' : ''}${fmtMoney(r.amount)}</div>
     </div>`
   }).join('')
 }
