@@ -696,7 +696,7 @@ const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
 // Planner-facing page — MUST use the anon key, never service_role.
 // service_role bypasses all RLS and would let any planner who views the
 // page source take admin-level actions against the database.
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqY2h5cWFma3Bicnl6bHFocHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNTQ4OTEsImV4cCI6MjA5NDkzMDg5MX0.Ns9MybkhAjZGNKCv-pSPztB3msExD7PGBcZTXygfsSE'
+const SUPABASE_ANON_KEY = 'sb_publishable_EQBMG6WS1qd1F9jMNrog1g_gU1n9grr'
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // Validate the auth session matches the localStorage planner. Without this

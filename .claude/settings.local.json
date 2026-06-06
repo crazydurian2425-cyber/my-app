@@ -17,7 +17,31 @@
       "PowerShell(try { $r = Invoke-WebRequest -Uri 'https://my-app.shinsenna2023.workers.dev/' -UseBasicParsing -TimeoutSec 30 } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\"; \"HEADERS:\"; foreach \\($h in $_.Exception.Response.Headers\\) { \"  $h\" }; \"BODY:\"; $_.ErrorDetails.Message })",
       "PowerShell(npx opennextjs-cloudflare preview 2>&1)",
       "PowerShell(try { $r = Invoke-WebRequest -Uri 'http://127.0.0.1:8787/' -UseBasicParsing -TimeoutSec 30; \"STATUS: $\\($r.StatusCode\\) LEN: $\\($r.Content.Length\\)\"; if \\($r.Content -match 'Apex Talent'\\) { 'CONTENT: ok' } else { 'CONTENT: unexpected' } } catch { \"STATUS: $\\($_.Exception.Response.StatusCode.value__\\)\" })",
-      "Bash(git -c user.email=teemo6769@gmail.com -c user.name=teemo6769 commit -am ' *)"
+      "Bash(git -c user.email=teemo6769@gmail.com -c user.name=teemo6769 commit -am ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -c \"import re,io; [print\\(i,repr\\(l.strip\\(\\)[:200]\\)\\) for i,l in enumerate\\(io.open\\('sign-letter.html',encoding='utf-8'\\),1\\) if re.search\\('[぀-ヿ一-龯]', l\\)]\")",
+      "Bash(python -c \"import re,io; out=io.open\\('/tmp/ja_lines.txt','w',encoding='utf-8'\\); [out.write\\(f'{i}\\\\t{l.rstrip\\(\\)}\\\\n'\\) for i,l in enumerate\\(io.open\\('supercs999.html',encoding='utf-8'\\),1\\) if re.search\\('[぀-ヿ一-龯]', l\\)]; out.close\\(\\)\")",
+      "Bash(python -c \"import re,io; print\\(sum\\(1 for l in io.open\\('terms.html',encoding='utf-8'\\) if re.search\\('[぀-ヿ一-龯]', l\\)\\)\\)\")",
+      "Bash(python -c \"import re,io; print\\(sum\\(1 for l in io.open\\('privacy.html',encoding='utf-8'\\) if re.search\\('[぀-ヿ一-龯]', l\\)\\)\\)\")",
+      "Bash(node -e \"const fs=require\\('fs'\\),vm=require\\('vm'\\);const h=fs.readFileSync\\('terms.html','utf8'\\);const re=/<script\\(?![^>]*\\\\bsrc=\\)[^>]*>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m,i=0,b=0;while\\(\\(m=re.exec\\(h\\)\\)\\){i++;try{new vm.Script\\(m[1]\\)}catch\\(e\\){b++;console.log\\('ERR',e.message\\)}}console.log\\(i+' blocks '+b+' errors'\\)\")",
+      "Bash(node -e \"const fs=require\\('fs'\\),vm=require\\('vm'\\);const h=fs.readFileSync\\('privacy.html','utf8'\\);const re=/<script\\(?![^>]*\\\\bsrc=\\)[^>]*>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m,i=0,b=0;while\\(\\(m=re.exec\\(h\\)\\)\\){i++;try{new vm.Script\\(m[1]\\)}catch\\(e\\){b++;console.log\\('ERR',e.message\\)}}console.log\\(i+' blocks '+b+' errors'\\)\")",
+      "Bash(python -c \"import re,io; [print\\(i, l.rstrip\\(\\)\\) for i,l in enumerate\\(io.open\\('terms.html',encoding='utf-8'\\),1\\) if re.search\\('[぀-ヿ一-龯]', l\\)]\")",
+      "Bash(python -c \"import re,io; print\\(sum\\(1 for l in io.open\\('superadmin999.html',encoding='utf-8'\\) if re.search\\('[぀-ヿ一-龯]', l\\)\\)\\)\")",
+      "Bash(python -c \"import re,io; [print\\(i, repr\\(l.strip\\(\\)[:180]\\)\\) for i,l in enumerate\\(io.open\\('supercs999.html',encoding='utf-8'\\),1\\) if re.search\\('[àâäéèêëîïôöùûüçœ«»]', l\\)]\")",
+      "Bash(node -e \"const fs=require\\('fs'\\),vm=require\\('vm'\\);const h=fs.readFileSync\\('superadmin999.html','utf8'\\);const re=/<script\\(?![^>]*\\\\bsrc=\\)[^>]*>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m,i=0,b=0;while\\(\\(m=re.exec\\(h\\)\\)\\){i++;try{new vm.Script\\(m[1]\\)}catch\\(e\\){b++;console.log\\('ERR',e.message\\)}}console.log\\(i+' blocks '+b+' errors'\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(node _lux_seed.tmp.js)",
+      "Bash(node _brief_audit.tmp.js)",
+      "Bash(node _fixnote.tmp.js)",
+      "Bash(git commit -m '@ *)",
+      "Bash(Select-String -Pattern \"thejourney|hello@|support@\")",
+      "Bash(node -e \"const fs=require\\('fs'\\),vm=require\\('vm'\\);const h=fs.readFileSync\\('dashboard.html','utf8'\\);const re=/<script\\(?![^>]*\\\\bsrc=\\)[^>]*>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m,i=0,b=0;while\\(\\(m=re.exec\\(h\\)\\)\\){i++;try{new vm.Script\\(m[1]\\)}catch\\(e\\){b++;console.log\\('ERR near line',h.slice\\(0,m.index\\).split\\('\\\\n'\\).length,':',e.message\\)}}console.log\\('dashboard.html: '+b+' err'\\)\")",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e \"fetch\\('https://hjchyqafkpbryzlqhpxc.supabase.co/rest/v1/',{headers:{apikey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqY2h5cWFma3Bicnl6bHFocHhjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM1NDg5MSwiZXhwIjoyMDk0OTMwODkxfQ.tn2ovF385cdAtjyyKfEYE5HkLQUkUbpKKp8Hc4LFEcg'}}\\).then\\(r=>console.log\\('status',r.status\\)\\).catch\\(e=>console.log\\('err',e.message\\)\\)\")",
+      "Bash(git commit -m 'ui\\(summary\\): remove the 3 quick-stat tiles \\(stops / walking / spend\\) *)",
+      "Bash(git commit -m 'feat\\(wallet\\): retention buffer releases after N completed sets \\(was: first payout\\) *)",
+      "Bash(git commit -m 'fix\\(dashboard\\): set progress uses real plan count, not hardcoded 15 *)",
+      "Bash(git commit -m 'feat\\(payout\\): withdraw-all — lock amount to full available, no partials *)",
+      "Bash(git commit -m 'fix\\(summary\\): transport labels reflect the real mode + day-form terminology *)"
     ]
   }
 }
