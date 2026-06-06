@@ -21240,7 +21240,7 @@ async function submitPlan() {
         day_number: dayNum, time, type,
         title: titleVal,
         address: addressVal || null,
-        duration_minutes: (['activity','freetime'].includes(type) && Number.isFinite(durMins)) ? durMins : null,
+        duration_minutes: Number.isFinite(durMins) ? durMins : null,   // persist 'how long to stay' for ANY timed slot (hotel/meal/shopping/…), not just activity/freetime
         notes,
         sort_order: sortOrder,
         ...getPlaceFieldsForSlot(slot),
@@ -21625,7 +21625,7 @@ async function _persistDraft(planId) {
         type:       slotType,
         title:      titleVal,
         address:    slot.querySelector('.slot-address-input')?.value?.trim() || null,
-        duration_minutes: (['activity','freetime'].includes(slotType) && Number.isFinite(durMins)) ? durMins : null,
+        duration_minutes: Number.isFinite(durMins) ? durMins : null,   // persist 'how long to stay' for ANY timed slot, not just activity/freetime
         notes:      slot.querySelector('.slot-notes-input')?.value?.trim() || '',
         transport_mode: transportMode,
         is_locked:  isLockedRow,
