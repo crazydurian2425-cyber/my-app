@@ -43,7 +43,10 @@ export default {
     // Prefer the rotated service-role key from the Worker secret over the
     // committed fallback. Once the secret is set in production this is the
     // only key in use; the literal above can then be deleted.
-    if (env.SUPABASE_SERVICE_KEY) SUPABASE_SERVICE_KEY = env.SUPABASE_SERVICE_KEY
+    // .trim() — a stray newline/space from pasting the value into the
+    // Cloudflare secret box would make Headers.set('Authorization', …) throw
+    // (an invalid header character), crashing the proxy with a 1101.
+    if (env.SUPABASE_SERVICE_KEY) SUPABASE_SERVICE_KEY = String(env.SUPABASE_SERVICE_KEY).trim()
 
     // ── Supabase API proxy (admin/CS only — gates the service-role key) ──
     // Browser-side Supabase clients in superadmin999.html / supercs999.html
@@ -137,10 +140,16 @@ async function handleSupabaseProxy(request, url) {
 
   const targetUrl  = SUPABASE_URL + targetPath + url.search
 
-  // Clone request headers, swap auth, strip browser-only ones.
+  // Clone request headers, swap auth, strip browser-only ones. Guard the
+  // header set: an invalid character in the key (e.g. a pasted newline) makes
+  // Headers.set throw — return a clean 500 instead of an opaque 1101 crash.
   const fwdHeaders = new Headers(request.headers)
-  fwdHeaders.set('apikey', SUPABASE_SERVICE_KEY)
-  fwdHeaders.set('Authorization', `Bearer ${SUPABASE_SERVICE_KEY}`)
+  try {
+    fwdHeaders.set('apikey', SUPABASE_SERVICE_KEY)
+    fwdHeaders.set('Authorization', `Bearer ${SUPABASE_SERVICE_KEY}`)
+  } catch (e) {
+    return jsonResp(500, { error: 'Service key is malformed (check the Worker secret for stray whitespace/newline)' })
+  }
   fwdHeaders.delete('host')
   fwdHeaders.delete('cookie')
   fwdHeaders.delete('cf-connecting-ip')
