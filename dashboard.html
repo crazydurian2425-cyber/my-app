@@ -7339,9 +7339,9 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
   <div id="page-history" class="page">
     <div class="page-header"><div><div class="page-title"><span data-i18n="history.title.payout">Payout</span> <em data-i18n="history.title.history">history</em></div><div class="page-sub" data-i18n="history.sub">All completed payouts to your account</div></div></div>
     <div class="metrics" style="grid-template-columns:repeat(3,minmax(0,1fr));">
-      <div class="metric-card"><div class="metric-label" data-i18n="history.totalEarned">Total earned</div><div class="metric-val green" id="hist-total">€0</div><div class="metric-note" id="hist-total-note">0 payouts</div></div>
-      <div class="metric-card"><div class="metric-label" data-i18n="history.avgPerSet">Avg per set</div><div class="metric-val" id="hist-avg">€0</div><div class="metric-note" data-i18n="history.standardRate">standard rate</div></div>
-      <div class="metric-card"><div class="metric-label" data-i18n="history.pending">Pending</div><div class="metric-val" id="hist-pending">€0</div><div class="metric-note" data-i18n="history.inProgress">in progress</div></div>
+      <div class="metric-card"><div class="metric-label" data-i18n="history.totalEarned">Paid out</div><div class="metric-val green" id="hist-total">€0</div><div class="metric-note" id="hist-total-note">0 payouts</div></div>
+      <div class="metric-card"><div class="metric-label" data-i18n="history.avgPerSet">Available</div><div class="metric-val" id="hist-avg">€0</div><div class="metric-note" data-i18n="history.standardRate">in your wallet</div></div>
+      <div class="metric-card"><div class="metric-label" data-i18n="history.pending">Pending payout</div><div class="metric-val" id="hist-pending">€0</div><div class="metric-note" data-i18n="history.inProgress">awaiting release</div></div>
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title" data-i18n="history.transactionTitle">Transaction history</div></div>
@@ -9871,12 +9871,17 @@ function animateCount(el, target, opts={}){
   const prev = parseFloat(el.getAttribute('data-count-val'));
   const from = Number.isFinite(prev) ? prev : 0;
   const to = Number(target) || 0;
-  if (from === to) { el.textContent = prefix + Math.round(to) + suffix; el.setAttribute('data-count-val', to); return; }
+  // Group thousands so €12,500 / 12 500 € don't render as "€12500". The FR
+  // money suffix carries '€', so use fr-FR grouping (thin space) there and
+  // en-US (comma) otherwise; plain counts (no €) are unaffected for small n.
+  const loc = suffix.includes('€') ? 'fr-FR' : 'en-US';
+  const fmt = (n) => Math.round(n).toLocaleString(loc);
+  if (from === to) { el.textContent = prefix + fmt(to) + suffix; el.setAttribute('data-count-val', to); return; }
   const start = performance.now();
   const ease = t => 1 - Math.pow(1 - t, 3);
   (function tick(now){
     const t = Math.min(1, ((now||performance.now()) - start) / duration);
-    el.textContent = prefix + Math.round(from + (to - from) * ease(t)) + suffix;
+    el.textContent = prefix + fmt(from + (to - from) * ease(t)) + suffix;
     if (t < 1) requestAnimationFrame(tick);
     else el.setAttribute('data-count-val', to);
   })(start);
@@ -10378,11 +10383,12 @@ async function loadWallet() {
       .order('completed_at', { ascending: false }).limit(1).maybeSingle()
     if (comp?.set_id) {
       const { data: cp } = await sb.from('plans')
-        .select('planner_payout_override, bond_amount_override, travelers(planner_payout, bond_amount, requires_bond)')
+        .select('planner_payout_override, bond_amount_override, requires_bond_override, travelers(planner_payout, bond_amount, requires_bond)')
         .eq('set_id', comp.set_id).eq('planner_id', planner.id).eq('status', 'approved')
       for (const p of (cp || [])) {
         pendingCommission += Number(p.planner_payout_override != null ? p.planner_payout_override : (p.travelers?.planner_payout || 0))
-        if (p.travelers?.requires_bond) {
+        const requiresBond = (p.requires_bond_override != null ? p.requires_bond_override : (p.travelers?.requires_bond || false))
+        if (requiresBond) {
           pendingBondRefund += Number(p.bond_amount_override != null ? p.bond_amount_override : (p.travelers?.bond_amount || 0))
         }
       }
@@ -11217,7 +11223,10 @@ function renderActiveSet(set) {
   // Update assignment status card with real set details
   const statusBody = document.getElementById('assignment-status-body')
   if (statusBody) {
-    const done = plans.filter(p => p.status === 'approved').length
+    // Match the progress bar + admin planner-detail definition of "done"
+    // (submitted OR approved) — was 'approved' only, so this card showed a
+    // lower count than the bar for submitted-but-unapproved plans.
+    const done = plans.filter(p => ['submitted','approved'].includes(p.status)).length
     const total = plans.length || 15
     const asLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
     const deadline = set.deadline ? new Date(set.deadline).toLocaleDateString(asLocale,{day:'numeric',month:'short',year:'numeric'}) : '—'
