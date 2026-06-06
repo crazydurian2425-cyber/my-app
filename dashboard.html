@@ -14469,8 +14469,12 @@ function _autoSeedDay1HotelIfNeeded() {
     if (!Number.isFinite(arrHour) || arrHour < 13) { console.log('[day1-seed] skip: no afternoon arrival'); return }
     const day1 = document.getElementById('slots-day-1')
     if (!day1) { console.log('[day1-seed] skip: no day-1 container'); return }
+    // Exclude only locked ANCHOR bookends — NOT the locked auto-seeded hotel
+    // check-in, which is a real first venue the arrival taxi must precede.
+    // (Excluding it made firstStop land on the end-of-day transport, so the
+    // airport→hotel taxi was never seeded.)
     const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
-      .filter(s => !s.classList.contains('is-locked'))
+      .filter(s => !(s.classList.contains('is-locked') && s.dataset.anchorType))
     const firstStop = userStops[0] || null
     console.log('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
     if (userStops.length === 0) {
@@ -14603,8 +14607,13 @@ function _ensureArrivalTaxiPresent() {
     let next = anchor.nextElementSibling
     while (next) {
       if (next.classList?.contains('activity-slot')) {
-        if (next.classList.contains('is-locked')) { next = next.nextElementSibling; continue }
-        break    // first venue OR transport
+        // Skip locked ANCHOR bookends (morning / end-of-day) only — but STOP at
+        // a locked venue like the auto-seeded hotel check-in. It IS the first
+        // real stop, and the arrival taxi must sit BEFORE it. Skipping it made
+        // the walk run past to the end-of-day transport and wrongly conclude a
+        // taxi was already present, so the airport→hotel taxi never got added.
+        if (next.classList.contains('is-locked') && next.dataset.anchorType) { next = next.nextElementSibling; continue }
+        break    // first venue (incl. locked hotel check-in) OR transport
       }
       next = next.nextElementSibling
     }
