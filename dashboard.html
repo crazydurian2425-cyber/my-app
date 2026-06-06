@@ -20072,17 +20072,26 @@ function _sweepSelfLoopTransports(dayContainer) {
 function _dedupeConsecutiveTransports(dayContainer) {
   if (!dayContainer) return false
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
-  let removed = false, prevWasTransport = false
+  const isProtected = (el) => el?.dataset?.autoSeededArrivalTaxi === 'true'
+  const isAuto      = (el) => el?.dataset?.autoInserted === 'true'
+  let removed = false, prevT = null
   for (const s of slots) {
     const isT = s.classList.contains('slot-type-transport')
-    if (isT && prevWasTransport) {
-      // Never sweep the protected auto-seeded arrival taxi.
-      if (s.dataset.autoSeededArrivalTaxi === 'true') { prevWasTransport = true; continue }
-      console.log('[dedupe-transport] removing consecutive duplicate', s.id)
-      s.remove(); removed = true
-      continue   // keep prevWasTransport=true; the retained first leg is still "prev"
-    }
-    prevWasTransport = isT
+    if (!isT) { prevT = null; continue }
+    if (!prevT) { prevT = s; continue }
+    // Two consecutive transport legs describe the same gap — keep exactly ONE.
+    // Prefer the planner's deliberate pick: if one leg is auto-inserted (the
+    // stale fallback) and the other isn't, drop the auto one so a manually-set
+    // mode (Metro/Walk/…) isn't silently discarded. Never drop the protected
+    // auto-seeded arrival taxi. Otherwise default to keeping the first.
+    let dropEl, keepEl
+    if (isProtected(prevT))                 { dropEl = s;     keepEl = prevT }
+    else if (isProtected(s))                { dropEl = prevT; keepEl = s }
+    else if (isAuto(prevT) && !isAuto(s))   { dropEl = prevT; keepEl = s }
+    else                                    { dropEl = s;     keepEl = prevT }
+    console.log('[dedupe-transport] removing consecutive duplicate', dropEl.id)
+    dropEl.remove(); removed = true
+    prevT = keepEl
   }
   if (removed && typeof autoSaveDraft === 'function') autoSaveDraft()
   return removed
@@ -20287,7 +20296,10 @@ function computeDaySummary(dayContainer) {
     const [h, m] = t.split(':').map(Number)
     const start = (h || 0) * 60 + (m || 0)
     if (firstStartMin == null || start < firstStartMin) firstStartMin = start
-    const end = start + dur
+    // Clamp to end-of-day so a late venue with a long stay (e.g. 22:00 + 180min
+    // = 25:00) can't push activeMin past 24h and trip a false "day is 12h+ long,
+    // cut a stop" warning / inflate saved stats.
+    const end = Math.min(start + dur, 24 * 60)
     if (lastEndMin == null || end > lastEndMin) lastEndMin = end
   })
   const activeMin = (firstStartMin != null && lastEndMin != null)
