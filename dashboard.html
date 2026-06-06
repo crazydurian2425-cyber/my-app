@@ -17840,13 +17840,13 @@ function applyRouteDataToSlot(slot, data) {
   // (correctly updated) road distance.
   if (cells[2]) {
     if (data.costEur != null) {
-      cells[2].textContent = _isFrMoney() ? `~${data.costEur} €` : `~€${data.costEur}`
+      cells[2].textContent = (data.costEur === 0) ? (_isFrMoney() ? '0 €' : '€0') : (_isFrMoney() ? `~${data.costEur} €` : `~€${data.costEur}`)
       cells[2].classList.remove('tg-blank')
     } else {
       const mode = slot.dataset.transportMode || 'taxi'
       const cost = _costFromRealKm(mode, data.distanceKm)
       if (cost != null) {
-        cells[2].textContent = (cost === 0) ? 'free' : (_isFrMoney() ? `~${cost} €` : `~€${cost}`)
+        cells[2].textContent = (cost === 0) ? (_isFrMoney() ? '0 €' : '€0') : (_isFrMoney() ? `~${cost} €` : `~€${cost}`)
         cells[2].classList.remove('tg-blank')
       }
     }
@@ -18284,7 +18284,7 @@ function refreshTransportSlot(slot) {
   const minsTxt = (tooFar) ? '—' : ((est.mins != null) ? `${est.mins} min` : '—')
   const costTxt = (tooFar) ? '—'
                 : (est.costEur == null) ? '—'
-                : (est.costEur === 0) ? 'free'
+                : (est.costEur === 0) ? (_isFrMoney() ? '0 €' : '€0')
                 : (_isFrMoney() ? `~${est.costEur} €` : `~€${est.costEur}`)
   // Depart time recomputes from the PREVIOUS slot's start + its stay
   // duration so a "2 hour" prev stay → transport leaves 2 hours later.
