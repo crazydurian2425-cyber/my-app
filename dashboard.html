@@ -21780,16 +21780,31 @@ async function _persistDraft(planId) {
       return true
     }
   }
-  // Always re-sync itinerary_items — even if `items` is empty, so removing
-  // every slot clears the saved draft instead of leaving stale rows behind.
-  // Cascade on plan_id wipes item_images alongside.
-  const { error: delErr } = await sb.from('itinerary_items').delete().eq('plan_id', planId)
-  if (delErr) { console.warn('itinerary delete failed', delErr); return false }
-  if (!items.length) return true
+  // Re-sync itinerary_items with INSERT-FIRST, then delete-stale — so a failed
+  // insert can NEVER wipe the draft. The old delete-then-insert left a window
+  // where a transient insert error emptied the plan with no rollback. There's
+  // no unique(plan_id,sort_order) constraint (only the id PK), so new rows with
+  // fresh UUIDs coexist with the old rows for the brief moment before cleanup.
+  if (!items.length) {
+    // No slots left — clear all rows for this plan (cascades item_images).
+    const { error: delErr } = await sb.from('itinerary_items').delete().eq('plan_id', planId)
+    if (delErr) { console.warn('itinerary delete failed', delErr); return false }
+    return true
+  }
   const { data: inserted, error: insErr } = await sb.from('itinerary_items').insert(
     items.map((item,idx) => ({ plan_id: planId, ...item, sort_order: idx }))
   ).select('id, sort_order')
-  if (insErr) { console.warn('itinerary insert failed', insErr); return false }
+  // Insert failed → leave the existing rows untouched (no data loss); next save retries.
+  if (insErr) { console.warn('itinerary insert failed — kept existing rows (no wipe)', insErr); return false }
+  const _newIds = (inserted || []).map(r => r.id)
+  // Drop the OLD rows now that the new set is safely in (cascade clears their
+  // item_images). Non-fatal: a failure here at worst leaves stale rows until the
+  // next save — far better than losing the draft.
+  if (_newIds.length) {
+    const { error: delErr } = await sb.from('itinerary_items')
+      .delete().eq('plan_id', planId).not('id', 'in', `(${_newIds.join(',')})`)
+    if (delErr) console.warn('stale itinerary cleanup failed (non-fatal)', delErr)
+  }
   // Re-link images to the freshly-inserted item rows
   const imageRows = []
   for (const row of (inserted || [])) {
@@ -21826,6 +21841,8 @@ async function saveDraft() {
 // threw before the unsuppress timeout fired, blocking ALL future saves.
 let _autoSaveTimer = null
 let _autoSaveInFlight = false
+let _autoSaveQueued = false      // an edit arrived while a save was in flight → run once more after
+let _autoSaveQueuedPid = null
 
 function setAutoSaveStatus(state) {
   const el = document.getElementById('autosave-status')
@@ -21854,7 +21871,14 @@ async function silentSaveDraft(scheduledPlanId) {
   const targetPlanId = scheduledPlanId || currentPlanId
   console.log('[autosave] silentSaveDraft called', { targetPlanId, inFlight: _autoSaveInFlight })
   if (!targetPlanId) { console.warn('[autosave] no targetPlanId — bailing'); return }
-  if (_autoSaveInFlight) { console.warn('[autosave] already in flight — bailing'); return }
+  if (_autoSaveInFlight) {
+    // Don't DROP this save — an edit landed while a prior save was mid-flight.
+    // Queue a follow-up so the latest DOM state is persisted once the in-flight
+    // save finishes. Without this, the last change before tap-out/close was lost.
+    _autoSaveQueued = true; _autoSaveQueuedPid = targetPlanId
+    console.warn('[autosave] in flight — queued a follow-up save')
+    return
+  }
   _autoSaveInFlight = true
   // try/finally ensures _autoSaveInFlight always resets — without this, any
   // uncaught throw inside _persistDraft (or even setAutoSaveStatus throwing
@@ -21889,6 +21913,15 @@ async function silentSaveDraft(scheduledPlanId) {
     ok = false
   } finally {
     _autoSaveInFlight = false
+    // A save was requested while this one was running — run one more pass now to
+    // capture the latest edits (the modal stays in the DOM after close, so a
+    // flush-triggered queue still persists the final state).
+    if (_autoSaveQueued) {
+      _autoSaveQueued = false
+      const _qpid = _autoSaveQueuedPid || targetPlanId
+      _autoSaveQueuedPid = null
+      setTimeout(() => silentSaveDraft(_qpid), 0)
+    }
   }
   if (targetPlanId === currentPlanId) setAutoSaveStatus(ok ? 'saved' : 'error')
 }
