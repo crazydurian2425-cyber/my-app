@@ -8795,7 +8795,7 @@ const TM_I18N = {
     'nav.settings':'Paramètres',
     'nav.support':'Contacter le support',
     'dash.greeting':'Bonjour, ',
-    'dash.greeting.afternoon':'Bon après-midi, ',
+    'dash.greeting.afternoon':'Bonjour, ',
     'dash.greeting.evening':'Bonsoir, ',
     'dash.loading':'Chargement du tableau de bord…',
     'dash.m.currentEarning':'Revenus en cours',
@@ -8936,7 +8936,7 @@ const TM_I18N = {
     'profile.ph.account':'IBAN (FR76…)',
     'profile.ph.holder':'Titulaire du compte',
     'profile.ph.cities':'ex : Paris, Lyon, Marseille',
-    'profile.ph.types':'ex : food tours, voyages famille, événements pro…',
+    'profile.ph.types':'ex : circuits gastronomiques, voyages en famille, événements pro…',
     'profile.ph.phone':'+33 6 xx xx xx xx',
     'profile.ph.cityOther':'Saisissez votre région…',
     // Pop-up d\'acceptation des règles (première connexion)
@@ -9322,7 +9322,7 @@ const TM_I18N = {
     'plan.btn.submit':'Soumettre le plan',
     'plan.btn.submitting':'Envoi…',
     'plan.submit.needActivities':'Ajoutez au moins une activité avant de soumettre',
-    'plan.submit.needDay1Three':'Le Jour 1 doit contenir au moins 3 activités avec un nom de lieu réel, une adresse et au moins une photo. Remplacez les libellés génériques comme « Check-in hôtel », « Déjeuner », « Dîner » par les vrais noms, et ajoutez adresse + photo.',
+    'plan.submit.needDay1Three':'Le Jour 1 doit contenir au moins 3 activités, chacune avec un nom de lieu réel, une adresse et une photo. Remplacez les libellés génériques comme « Arrivée à l\'hôtel », « Déjeuner », « Dîner » par les vrais noms, et ajoutez adresse + photo.',
     'plan.submit.needDay1Template':'Le Jour 1 nécessite 5 entrées : 2 visites, déjeuner, hébergement, dîner — chacune avec nom réel, adresse et photo. Remplacez les libellés génériques par les vrais noms.',
     'plan.submit.needPhotos':'Ajoutez une photo à au moins {n} étapes avant de soumettre — {have} pour l\'instant.',
     'sub.needAnySlot':'Le Jour 1 est vide — ajoutez au moins 3 activités avec nom, adresse et photo',
@@ -13521,12 +13521,12 @@ async function openPlanSummary(plan) {
     if (typeof pts === 'string') pts = pts.split(',').map(x=>x.trim())
     if (!Array.isArray(pts)) return ''
     const M = { cafe:dt('café','café'), bakery:dt('bakery','boulangerie'), bar:'bar',
-      restaurant:dt('restaurant','restaurant'), meal_takeaway:dt('eatery','traiteur'),
+      restaurant:dt('restaurant','restaurant'), meal_takeaway:dt('takeaway','à emporter'),
       museum:dt('museum','musée'), art_gallery:dt('gallery','galerie'), park:dt('park','parc'),
       tourist_attraction:dt('sight','site'), church:dt('church','église'),
       book_store:dt('bookshop','librairie'), shopping_mall:dt('mall','centre commercial'),
       department_store:dt('store','grand magasin'), store:dt('shop','boutique'),
-      night_club:dt('nightlife','club'), spa:'spa', amusement_park:dt('park','parc') }
+      night_club:dt('nightclub','boîte de nuit'), spa:'spa', amusement_park:dt('park','parc') }
     for (const p of (pts||[])) if (M[p]) return M[p]
     return ''
   }
