@@ -16105,7 +16105,25 @@ function toggleDurationDD(btn, e){
   const dd = btn.closest('.duration-dd')
   const wasOpen = dd.classList.contains('open')
   document.querySelectorAll('.type-dd.open, .time-dd.open, .duration-dd.open').forEach(el => el.classList.remove('open'))
-  if (!wasOpen) dd.classList.add('open')
+  if (!wasOpen) {
+    // Rebuild the option list against the slot's CURRENT type before opening.
+    // The menu is static HTML baked at slot-creation time, but a slot's type can
+    // change AFTER that — the Day-1 hotel is auto-seeded, and a planner can switch
+    // a slot's type to "Hotel check-in" — which would otherwise leave a stale
+    // 15/30/45 list on a check-in whose scheduling floor is 60 min. Regenerating
+    // here means the floor is always correct no matter how the type was set.
+    const slot  = dd.closest('.activity-slot')
+    const floor = slot?.classList.contains('slot-type-hotel_checkin') ? 60 : 0
+    const menu  = dd.querySelector('.duration-dd-menu')
+    if (menu) {
+      const cur = dd.querySelector('.slot-duration-input')?.value || ''
+      menu.innerHTML = buildDurationOptions(floor)
+      if (cur) menu.querySelectorAll('.duration-dd-option').forEach(o => {
+        if (o.getAttribute('onclick')?.includes(`selectDurationDD(this, ${cur},`)) o.classList.add('is-selected')
+      })
+    }
+    dd.classList.add('open')
+  }
 }
 function selectDurationDD(btn, mins, label){
   const dd = btn.closest('.duration-dd')
