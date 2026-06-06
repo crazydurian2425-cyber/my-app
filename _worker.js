@@ -178,6 +178,11 @@ async function handleSupabaseProxy(request, url) {
   respHeaders.delete('access-control-allow-origin')
   respHeaders.delete('access-control-allow-credentials')
   respHeaders.delete('set-cookie')
+  // TEMP DIAGNOSTIC — reveals what the worker actually used/saw for THIS request
+  // so we can compare a browser 401 vs a working curl. Remove after debugging.
+  respHeaders.set('x-jj-keylen', String((SUPABASE_SERVICE_KEY || '').length))
+  respHeaders.set('x-jj-keyprefix', String((SUPABASE_SERVICE_KEY || '').slice(0, 10)))
+  respHeaders.set('x-jj-upstream', String(upstream.status))
 
   return new Response(upstream.body, {
     status: upstream.status,
