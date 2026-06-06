@@ -18668,9 +18668,23 @@ function _sortSlotsInPlace(container) {
   const bottomLocked = lockedAnchors.filter(isBottomAnchor)
   lockedAnchors.forEach(a => a.remove())
   const slots = [...container.querySelectorAll(':scope > .activity-slot')]
+  const _isT = (el) => el.classList.contains('slot-type-transport')
   slots
-    .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00' }))
-    .sort((a, b) => a.t.localeCompare(b.t))
+    .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00', tr: _isT(el) }))
+    .sort((a, b) => {
+      const c = a.t.localeCompare(b.t)
+      if (c !== 0) return c
+      // Equal time → a transport LEG must sort BEFORE the venue it leads into.
+      // A leg's depart = prev.start + prev.stay (stay ≥ 15 min), so it can only
+      // ever tie with the venue it's heading TO, never its origin — therefore
+      // "leg before same-time venue" is always the correct order. Without this
+      // tie-break the leg could land after its destination, and that wrong order
+      // got persisted as sort_order, leaving the leg "missing" between stops on
+      // reload (e.g. hotel 15:00 + 2h stay = 17:00 leg colliding with a 17:00 meal).
+      if (a.tr && !b.tr) return -1
+      if (!a.tr && b.tr) return 1
+      return 0
+    })
     .forEach(({ el }) => container.appendChild(el))
   // Put the locked anchors back at the right ends.
   topLocked.forEach(a => container.insertBefore(a, container.firstChild))
