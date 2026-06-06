@@ -16087,9 +16087,13 @@ function formatDurationLabel(mins){
 // Generate every 15-min slot from 15 minutes up to 8 hours as <option>-style
 // buttons for the duration-dd menu. 32 buttons total — the planner can
 // always tap a specific 1 h 45 or 6 h 30 stay duration.
-function buildDurationOptions(){
+function buildDurationOptions(minMins){
+  // minMins floors the list — e.g. hotel check-in only offers 1 h+ because a
+  // shorter stay is ignored by the 60-min scheduling floor anyway, so showing
+  // 15/30/45 there is misleading.
+  const start = Math.max(15, Math.round((Number(minMins) || 15) / 15) * 15)
   const out = []
-  for (let m = 15; m <= 8 * 60; m += 15) {
+  for (let m = start; m <= 8 * 60; m += 15) {
     const label = formatDurationLabel(m)
     const safe = label.replace(/'/g, "\\'")
     out.push(`<button type="button" class="duration-dd-option" onclick="selectDurationDD(this, ${m}, '${safe}')">${label}</button>`)
@@ -20909,7 +20913,7 @@ function addSlot(dayNum, seed = null) {
             <svg class="duration-dd-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 6 8 9 5"/></svg>
           </button>
           <div class="duration-dd-menu">
-            ${buildDurationOptions()}
+            ${buildDurationOptions(seedTypeKey === 'hotel_checkin' ? 60 : 0)}
           </div>
         </div>
       </div>
