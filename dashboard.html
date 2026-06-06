@@ -2082,6 +2082,11 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .type-dd-label{flex:1;text-align:left;font-weight:500;}
 .type-dd-caret{width:11px;height:11px;color:var(--text-3);transition:transform .2s ease;flex-shrink:0;}
 .type-dd.open .type-dd-caret{transform:rotate(180deg);}
+/* Auto-seeded Day-1 hotel check-in: type is fixed — render the pill as a
+   static label (no caret, no hover affordance, not clickable). */
+.activity-slot.slot-type-hotel_checkin[data-is-locked="true"] .type-dd-caret{display:none;}
+.activity-slot.slot-type-hotel_checkin[data-is-locked="true"] .type-dd-toggle{cursor:default;}
+.activity-slot.slot-type-hotel_checkin[data-is-locked="true"] .type-dd-toggle:hover{border-color:var(--border-med,rgba(0,0,0,0.12));box-shadow:none;}
 .type-dd-menu{
   position:absolute;top:calc(100% + 6px);left:0;right:0;
   background:var(--surface);
@@ -15218,6 +15223,10 @@ const TYPE_FLOOR_MINS = {
 }
 function toggleTypeDD(btn, e){
   e?.stopPropagation?.()
+  // The auto-seeded Day-1 hotel check-in is structural — its type is fixed, so
+  // the planner can't reopen the dropdown and switch it to something else.
+  const _slot = btn.closest('.activity-slot')
+  if (_slot && _slot.dataset.isLocked === 'true' && _slot.classList.contains('slot-type-hotel_checkin')) return
   const dd = btn.closest('.type-dd')
   const wasOpen = dd.classList.contains('open')
   document.querySelectorAll('.type-dd.open, .time-dd.open').forEach(el => el.classList.remove('open'))
