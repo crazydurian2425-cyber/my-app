@@ -21436,6 +21436,10 @@ async function submitPlan() {
   // the admin's original feedback. Wiping them on resubmit destroys the audit
   // trail and forces both sides to re-derive context from chat. Admin's own
   // approve flow clears the field when the plan is finally accepted.
+  // Remember the pre-submit status so we can roll back if the item save fails.
+  // The save is delete-then-insert (not a transaction): without this, a failed
+  // insert would leave the plan flipped to 'submitted' with zero items.
+  const _prevStatus = plans.find(p => p.id === currentPlanId)?.status || null
   const _submitBody = {
     itin_title: body.itin_title, start_date: body.start_date, end_date: body.end_date,
     transport_tips: body.transport_tips, spend_breakdown: body.spend_breakdown,
@@ -21464,6 +21468,11 @@ async function submitPlan() {
     const { data: insertedItems, error: itemErr } = await sb.from('itinerary_items').insert(rows).select('id, sort_order')
     if (itemErr) {
       console.error('itinerary_items insert failed:', itemErr, rows)
+      // Roll the plan back off 'submitted' so it isn't stuck empty — the
+      // on-screen items are still in the DOM, so the planner can just retry.
+      if (_prevStatus) {
+        await sb.from('plans').update({ status: _prevStatus }).eq('id', currentPlanId)
+      }
       showToast('Activities save failed: ' + (itemErr.message || 'unknown'))
       if (submitBtn) submitBtn.disabled = false
       if (submitLabel) submitLabel.textContent = t('dash.btn.submitPlan','Submit plan')
