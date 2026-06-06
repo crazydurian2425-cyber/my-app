@@ -703,7 +703,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 // message. The CS console connects with the public key and can't receive
 // `messages` postgres_changes under RLS, so it relies on this broadcast for
 // real-time delivery (vs a 3-5s poll). Broadcast isn't subject to table RLS.
-const csNotify = sb.channel('conv-inbox')
+const csNotify = sb.channel('cs-notify')
 csNotify.subscribe()
 function pingCs(msg) {
   try {
