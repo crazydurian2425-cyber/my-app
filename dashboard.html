@@ -7934,14 +7934,12 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
         <div data-i18n="pr.updateBankHint" style="font-size:11px;color:var(--text-3);margin-top:6px;font-family:'Lora',serif;font-style:italic;">Update bank details in Profile → Payment</div>
       </div>
 
-      <!-- Amount input -->
+      <!-- Amount — locked to the full available balance (withdraw-all, no partials) -->
       <div class="form-group">
         <label class="form-label" data-i18n="pr.amount">Amount to withdraw</label>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input class="form-input" id="pr-amount" type="number" step="0.01" min="0.01" placeholder="0.00" style="flex:1;">
-          <button type="button" onclick="prSetMax()" class="btn-ghost btn-sm" data-i18n="pr.max" style="flex-shrink:0;padding:8px 12px;">Max</button>
-        </div>
-        <div id="pr-amount-hint" data-i18n="pr.amountHint" style="font-size:11px;color:var(--text-3);margin-top:5px;">Enter any amount up to your available balance.</div>
+        <input class="form-input" id="pr-amount" type="text" readonly aria-readonly="true"
+               style="background:rgba(0,0,0,0.04);color:var(--text);font-weight:600;cursor:default;width:100%;" value="€0">
+        <div id="pr-amount-hint" data-i18n="pr.amountHint" style="font-size:11px;color:var(--text-3);margin-top:5px;">Your full available balance is withdrawn in one go.</div>
       </div>
 
       <div class="form-group" style="margin-top:12px;">
@@ -8352,7 +8350,7 @@ const TM_I18N = {
     'toast.addPayoutMethodFirst':'Add your crypto payout wallet in Profile first',
     'pr.amount':'Amount to withdraw',
     'pr.max':'Max',
-    'pr.amountHint':'Enter any amount up to your available balance.',
+    'pr.amountHint':'Your full available balance is withdrawn in one go.',
     'pr.breakdown':'Includes <strong>{bond}</strong> bond refund + <strong>{comm}</strong> commission.',
     'pr.note':'Note',
     'pr.optional':'· optional',
@@ -9054,7 +9052,7 @@ const TM_I18N = {
     'toast.addPayoutMethodFirst':'Ajoutez votre portefeuille crypto dans le profil',
     'pr.amount':'Montant',
     'pr.max':'Max',
-    'pr.amountHint':'Saisissez un montant jusqu\'au solde disponible.',
+    'pr.amountHint':'Votre solde disponible est retiré en une seule fois.',
     'pr.breakdown':'Détail : <strong>{bond}</strong> (retour de caution) + <strong>{comm}</strong> (commissions)',
     'pr.note':'Note',
     'pr.optional':'· facultatif',
@@ -10576,39 +10574,29 @@ function openPayoutRequestModal() {
         .replace(/{n}/g, String(_walletState.retentionSets || FIRST_PAYOUT_RETENTION_SETS))
         .replace('{done}', String(_walletState.completedSetsCount || 0)))
     }
-    if (!lines.length) lines.push(t('pr.amountHint','Enter any amount up to your available balance.'))
+    if (!lines.length) lines.push(t('pr.amountHint','Your full available balance is withdrawn in one go.'))
     hint.innerHTML = lines.join('<br>')
     hint.style.color = (!_walletState.bufferReleased && (_walletState.retentionHeld || 0) > 0) ? 'var(--e-amber,#c17d2a)' : ''
     hint.style.fontWeight = ''
     hint.style.lineHeight = '1.55'
   }
-  // Default amount = effective max (capped)
+  // Amount is LOCKED to the full available balance (withdraw-all, read-only).
   const amtInput = document.getElementById('pr-amount')
-  if (amtInput) { amtInput.value = _walletState.effectiveMax.toFixed(2); amtInput.max = _walletState.effectiveMax }
+  if (amtInput) amtInput.value = fmtMoney(_walletState.effectiveMax)
   const noteInput = document.getElementById('pr-note'); if (noteInput) noteInput.value = ''
   document.getElementById('pr-submit-btn').disabled = false
   document.getElementById('pr-submit-btn').textContent = t('pr.submit','Submit request')
   openModal('modal-payout-request')
 }
 
-function prSetMax() {
-  const el = document.getElementById('pr-amount')
-  if (el) el.value = _walletState.effectiveMax.toFixed(2)
-}
-
 async function submitPayoutRequest() {
-  const amtInput  = document.getElementById('pr-amount')
   const noteInput = document.getElementById('pr-note')
   const btn       = document.getElementById('pr-submit-btn')
-  const amount = parseFloat(amtInput?.value)
+  // Withdraw-all: the amount is always the full available balance, never a
+  // partial. The amount field is read-only display only.
+  const amount = Math.round((Number(_walletState.effectiveMax) || 0) * 100) / 100
   const note   = (noteInput?.value || '').trim()
-  if (!Number.isFinite(amount) || amount <= 0) { showToast(t('toast.validAmount','Enter a valid amount')); amtInput?.focus(); return }
-  if (amount > _walletState.effectiveMax + 0.001) {
-    const reason = _walletState.retentionReleased
-      ? t('toast.exceedsBalance','Cannot exceed available balance ({amt})').replace('{amt}', fmtMoney(_walletState.available))
-      : t('toast.bufferMaxThisRound','{min} stays held until you complete {n} sets — max this round: {max}').replace('{min}', fmtMoney(FIRST_PAYOUT_RETENTION_MIN)).replace('{n}', String(_walletState.retentionSets || FIRST_PAYOUT_RETENTION_SETS)).replace('{max}', fmtMoney(_walletState.effectiveMax))
-    showToast(reason); return
-  }
+  if (!Number.isFinite(amount) || amount <= 0) { showToast(t('toast.validAmount','No balance available to withdraw')); return }
   // Either PayPay OR bank is enough — PayPay is preferred when both are set.
   const submitMethod = getPlannerPayoutMethod()
   if (submitMethod.method === 'none') {
