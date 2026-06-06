@@ -24,8 +24,13 @@ let RESEND_API_KEY = ''
 
 // Supabase project — service role key kept server-side only.
 // Used by /api/create-planner to create auth users + insert planner rows.
+// SECURITY: prefer the Worker secret env.SUPABASE_SERVICE_KEY (loaded in fetch()
+// below). The hardcoded value is a TEMPORARY fallback only — it is committed to
+// git, so it is COMPROMISED and must be rotated in Supabase, set as a Worker
+// secret (`wrangler secret put SUPABASE_SERVICE_KEY` or the Cloudflare dashboard),
+// and then this literal removed entirely.
 const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqY2h5cWFma3Bicnl6bHFocHhjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM1NDg5MSwiZXhwIjoyMDk0OTMwODkxfQ.tn2ovF385cdAtjyyKfEYE5HkLQUkUbpKKp8Hc4LFEcg'
+let SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqY2h5cWFma3Bicnl6bHFocHhjIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM1NDg5MSwiZXhwIjoyMDk0OTMwODkxfQ.tn2ovF385cdAtjyyKfEYE5HkLQUkUbpKKp8Hc4LFEcg'
 
 export default {
   async fetch(request, env) {
@@ -36,6 +41,10 @@ export default {
     // Falls back to empty string — handlers already guard with a 500 when
     // the key is missing, so a forgotten secret fails loud, not silent.
     if (env.RESEND_API_KEY) RESEND_API_KEY = env.RESEND_API_KEY
+    // Prefer the rotated service-role key from the Worker secret over the
+    // committed fallback. Once the secret is set in production this is the
+    // only key in use; the literal above can then be deleted.
+    if (env.SUPABASE_SERVICE_KEY) SUPABASE_SERVICE_KEY = env.SUPABASE_SERVICE_KEY
 
     // ── Supabase API proxy (admin/CS only — gates the service-role key) ──
     // Browser-side Supabase clients in superadmin999.html / supercs999.html
@@ -118,6 +127,15 @@ async function handleSupabaseProxy(request, url) {
 
   // /api/sb/rest/v1/foo  →  /rest/v1/foo
   const targetPath = url.pathname.replace('/api/sb', '')
+
+  // Allowlist — even an authorized caller can only reach the tables / RPCs /
+  // buckets the admin + CS consoles actually use, and the one auth-admin op
+  // (delete user). This caps the blast radius of the service-role key: a forged
+  // request can't hit arbitrary tables, create auth users, or call /auth, /functions.
+  if (!isProxyTargetAllowed(request.method, targetPath)) {
+    return jsonResp(403, { error: 'Forbidden target' })
+  }
+
   const targetUrl  = SUPABASE_URL + targetPath + url.search
 
   // Clone request headers, swap auth, strip browser-only ones.
@@ -248,6 +266,42 @@ async function handleCreatePlanner(request) {
 //      passed the page-level Basic Auth gate.
 //   2. Requests carrying valid Basic Auth (for curl, server-to-server, or
 //      the rare browser that strips Referer).
+// Tables / RPCs / buckets the admin + CS consoles legitimately touch through
+// the proxy. Derived by scanning every sb.from()/rpc()/storage.from() call in
+// superadmin999.html + supercs999.html (incl. the best-effort planner-deletion
+// cleanup loop and the postpone dev tool). Anything else is denied.
+const PROXY_ALLOWED_TABLES = new Set([
+  'audit_log','conversations','cs_quick_replies','employment_letters',
+  'itinerary_items','messages','payouts','planner_applications','planners',
+  'plans','platform_settings','set_assignments','sets','support_tickets',
+  'travelers','wallet_adjustments','wallet_pending_payments','wallet_requests',
+  // Best-effort cleanup targets (may not exist; wrapped in try/catch client-side)
+  'wallet_ledger','chat_messages','typing_drafts',
+])
+const PROXY_ALLOWED_RPCS    = new Set(['postpone_all_travelers'])
+const PROXY_ALLOWED_BUCKETS = new Set(['chat-media'])
+
+function isProxyTargetAllowed(method, targetPath) {
+  const m = (method || 'GET').toUpperCase()
+  // PostgREST: /rest/v1/<table>  or  /rest/v1/rpc/<fn>
+  const rpc = targetPath.match(/^\/rest\/v1\/rpc\/([a-zA-Z0-9_]+)/)
+  if (rpc) return m === 'POST' && PROXY_ALLOWED_RPCS.has(rpc[1])
+  const rest = targetPath.match(/^\/rest\/v1\/([a-zA-Z0-9_]+)/)
+  if (rest) {
+    return PROXY_ALLOWED_TABLES.has(rest[1]) &&
+           ['GET','HEAD','POST','PATCH','DELETE'].includes(m)
+  }
+  // Auth admin: ONLY delete-user (DELETE /auth/v1/admin/users/<id>). Block
+  // create/list and every other /auth path.
+  if (targetPath.startsWith('/auth/v1/admin/users')) return m === 'DELETE'
+  // Storage: only the allowed buckets (any object/list/sign/render path).
+  if (targetPath.startsWith('/storage/v1/')) {
+    return [...PROXY_ALLOWED_BUCKETS].some(b =>
+      targetPath.includes('/' + b + '/') || targetPath.endsWith('/' + b))
+  }
+  return false
+}
+
 function isProxyAuthorized(request, url) {
   const referer = request.headers.get('referer') || ''
   if (referer) {
@@ -304,9 +358,16 @@ async function handleSendApproval(request) {
   try { body = await request.json() } catch (_) {
     return jsonResp(400, { error: 'Invalid JSON' })
   }
-  const { to, subject, html, text, from } = body
+  const { to, subject, html, text } = body
   if (!to || !subject || (!html && !text)) {
     return jsonResp(400, { error: 'Missing required fields: to, subject, html|text' })
+  }
+  // Validate recipients are well-formed addresses (string or array). Stops this
+  // authed endpoint from being abused as a generic relay with junk targets.
+  const _emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const _recips  = Array.isArray(to) ? to : [to]
+  if (!_recips.length || !_recips.every(r => typeof r === 'string' && _emailRe.test(r.trim()))) {
+    return jsonResp(400, { error: 'Invalid recipient address' })
   }
 
   const resendResp = await fetch('https://api.resend.com/emails', {
@@ -316,7 +377,9 @@ async function handleSendApproval(request) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: from || 'Journey Junction <hello@thejourneyjunction.co.uk>',
+      // FORCE the verified sender — never honour a client-supplied `from`, so
+      // this can't be used to spoof mail from the brand domain.
+      from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
       to,
       subject,
       html,
