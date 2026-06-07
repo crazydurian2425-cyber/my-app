@@ -136,6 +136,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
   body { overflow: hidden; }
   .sidebar { display: none !important; }
   .main {
+    /* Pin to the viewport (top-anchored) so iOS can't scroll the whole page up
+       when the message box is focused — that left the "Back to dashboard" strip
+       stranded off-screen and unrecoverable after the keyboard closed. With
+       position:fixed + top:0 + height:100dvh the layout tracks the visible
+       viewport (shrinks for the keyboard) and always resets, so the back button
+       stays reachable. */
+    position: fixed; top: 0; left: 0; right: 0;
     margin-left: 0; max-width: 100vw; width: 100%;
     height: 100vh; height: 100dvh;
     padding: 0;
@@ -423,7 +430,7 @@ body.theme-dark .compose-send:hover{background:#3FA17D!important;}
         <button type="button" class="qs-trigger" onclick="openQuickSheet()" data-i18n-title="sup.qa.title" title="Quick actions & FAQ" aria-label="Quick actions">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </button>
-        <textarea id="compose-input" placeholder="Type your message…" data-i18n-ph="sup.placeholder" rows="1"></textarea>
+        <textarea id="compose-input" placeholder="Type your message…" data-i18n-ph="sup.placeholder" rows="1" onblur="setTimeout(function(){window.scrollTo(0,0)},100)"></textarea>
         <button type="submit" class="compose-send" id="compose-send" data-i18n="sup.send">Send</button>
       </form>
     </div>
