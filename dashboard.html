@@ -15872,10 +15872,10 @@ function updateSlotFieldLabels(slot, typeKey){
   const notesLabel = slot.querySelector('.slot-notes-label')
   if (notesLabel) {
     if (typeKey === 'hotel_checkin' || typeKey === 'hotel_checkout') {
-      const _firstName = window._currentFirstName || 'the traveler'
+      const _firstName = window._currentFirstName || dt('the traveler','le voyageur')
       notesLabel.textContent = typeKey === 'hotel_checkin'
-        ? `Why this hotel for ${_firstName} (optional)`
-        : `Reminder for ${_firstName} (optional)`
+        ? dt(`Why this hotel for ${_firstName} (optional)`, `Pourquoi cet hôtel pour ${_firstName} (facultatif)`)
+        : dt(`Reminder for ${_firstName} (optional)`, `Rappel pour ${_firstName} (facultatif)`)
     } else {
       notesLabel.textContent = ''
     }
