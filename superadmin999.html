@@ -1496,7 +1496,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     <div class="ph">
       <div>
         <div class="ph-title">Weekly salary</div>
-        <div class="ph-sub">€1,000 per rolling 7-day cycle if a planner completes ≥1 set · cycles anchored to each planner's first set completion</div>
+        <div class="ph-sub">€1,000 per rolling 7-day cycle if a planner completes ≥2 sets · cycles anchored to each planner's first set completion</div>
       </div>
     </div>
     <div class="card" id="weekly-salaries-card">
@@ -4457,6 +4457,7 @@ async function loadPayments() {
 // Idempotency: notes = `weekly_salary_cycle_<N>` per (planner_id, cycle).
 const WEEKLY_SALARY_AMOUNT = 1000
 const WEEKLY_SALARY_WEEK_MS = 7 * 24 * 3600 * 1000
+const WEEKLY_SALARY_MIN_SETS = 2   // sets a planner must complete in a cycle to qualify
 
 const _fmtDayShort = (ms) => new Date(ms).toLocaleDateString('en-GB', { day:'numeric', month:'short' })
 
@@ -4541,7 +4542,7 @@ async function loadWeeklySalaries(){
     let status
     if (cycleNumber === 1)        status = 'first_cycle'
     else if (prevPaid)            status = 'paid'
-    else if (setsInPrev === 0)    status = 'missed'
+    else if (setsInPrev < WEEKLY_SALARY_MIN_SETS) status = 'missed'
     else                          status = 'ready'
 
     return {
@@ -4589,7 +4590,7 @@ async function loadWeeklySalaries(){
   if (groups.first_cycle.length) {
     html += `<div class="ws-group-head">First cycle in progress</div>`
     html += groups.first_cycle.map(r => {
-      const canPayEarly = r.setsInCurrent >= 1
+      const canPayEarly = r.setsInCurrent >= WEEKLY_SALARY_MIN_SETS
       return `
       <div class="ws-row" style="opacity:0.9;">
         <div class="ws-row-main">
@@ -4609,7 +4610,7 @@ async function loadWeeklySalaries(){
     html += `<div class="ws-group-head">Recently paid</div>`
     html += groups.paid.map(r => {
       const paidWhen = r.prevPaid?.created_at ? _fmtDayShort(new Date(r.prevPaid.created_at).getTime()) : '—'
-      const canPayEarly = r.setsInCurrent >= 1
+      const canPayEarly = r.setsInCurrent >= WEEKLY_SALARY_MIN_SETS
       return `
         <div class="ws-row">
           <div class="ws-row-main">
@@ -4629,14 +4630,14 @@ async function loadWeeklySalaries(){
   }
   // 4. Cycle missed
   if (groups.missed.length) {
-    html += `<div class="ws-group-head">Cycle missed (no sets last cycle)</div>`
+    html += `<div class="ws-group-head">Cycle missed (fewer than ${WEEKLY_SALARY_MIN_SETS} sets last cycle)</div>`
     html += groups.missed.map(r => {
-      const canPayEarly = r.setsInCurrent >= 1
+      const canPayEarly = r.setsInCurrent >= WEEKLY_SALARY_MIN_SETS
       return `
       <div class="ws-row" style="opacity:0.75;">
         <div class="ws-row-main">
           <div class="ws-row-name">${escapeHtml(r.p.name || '—')}</div>
-          <div class="ws-row-meta">Cycle ${r.prevCycleNumber} skipped (no sets) · Now in cycle ${r.cycleNumber} (day ${r.daysIntoCurrent}/7, ${r.setsInCurrent} set${r.setsInCurrent === 1 ? '' : 's'})</div>
+          <div class="ws-row-meta">Cycle ${r.prevCycleNumber} skipped (${r.setsInPrev}/${WEEKLY_SALARY_MIN_SETS} sets) · Now in cycle ${r.cycleNumber} (day ${r.daysIntoCurrent}/7, ${r.setsInCurrent} set${r.setsInCurrent === 1 ? '' : 's'})</div>
         </div>
         <div class="ws-row-actions">
           <span class="badge b-gray">Skipped</span>
