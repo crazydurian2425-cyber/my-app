@@ -22439,6 +22439,11 @@ async function openCsChat(prefillMessage) {
   if (!panel) return
   panel.style.display = 'flex'
   document.getElementById('cs-chat-fab').style.display = 'none'
+  // Hide the dashboard hamburger while the chat is open — on mobile it's
+  // position:fixed top-right with a higher z-index, so it covers the chat's ×
+  // close button (you'd hit the menu instead of closing). Restored on close.
+  // setProperty('important') is needed to beat the mobile media query's !important.
+  document.querySelectorAll('.mobile-fab').forEach(el => el.style.setProperty('display', 'none', 'important'))
   const conv = await ensureCsConversation()
   if (!conv) { showToast('Chat unavailable — try again'); return }
   await loadCsMessages()
@@ -22468,6 +22473,8 @@ async function openCsChat(prefillMessage) {
 function closeCsChat() {
   document.getElementById('cs-chat-panel').style.display = 'none'
   document.getElementById('cs-chat-fab').style.display = 'flex'
+  // Restore the dashboard hamburger (remove the inline override so the media query takes back over).
+  document.querySelectorAll('.mobile-fab').forEach(el => el.style.removeProperty('display'))
 }
 
 async function loadCsMessages() {
@@ -22714,6 +22721,7 @@ document.addEventListener('DOMContentLoaded', () => {
     max-height: 100dvh !important;
     border-radius: 0 !important;
     border: none !important;
+    z-index: 260 !important;   /* above the dashboard hamburger (200) so the × is never covered */
   }
   /* On full-screen mode the chat input + safe-area need a small bottom
      padding so the keyboard doesn't sit flush against the textarea. */
