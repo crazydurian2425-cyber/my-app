@@ -109,6 +109,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);m
 .compose{background:var(--surface);border-top:1px solid var(--border);padding:14px 20px;display:flex;gap:10px;align-items:flex-end;}
 .compose textarea{flex:1;min-height:44px;max-height:160px;resize:none;border:1px solid var(--border-med);border-radius:10px;padding:11px 14px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;line-height:1.45;}
 .compose textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(94,123,110,0.12);}
+/* Mobile: 16px so iOS Safari doesn't zoom the page in when the box is focused. */
+@media (max-width:640px){ .compose textarea{ font-size:16px !important; } }
 .compose-send{padding:11px 22px;background:var(--green);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.01em;transition:background .15s ease;}
 .compose-send:hover{background:var(--green-dark);}
 .compose-send:disabled{opacity:0.5;cursor:not-allowed;}

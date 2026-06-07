@@ -22728,6 +22728,8 @@ document.addEventListener('DOMContentLoaded', () => {
   #cs-chat-panel form {
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0)) !important;
   }
+  /* 16px so iOS Safari doesn't zoom the page when the chat input is focused. */
+  #cs-chat-input { font-size: 16px !important; }
 }
 </style>
 
