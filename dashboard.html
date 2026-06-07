@@ -17926,13 +17926,18 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
 
 // Cost from REAL road distance (Routes API returns road km, no need to
 // multiply by the 1.25 detour factor we use for Haversine).
-//   Uber / Paris taxi:  €2.5 base + €2.8/km
+//   Uber / taxi:  €3 base + €1.9/km, €8 minimum. Grounded in 2025 French
+//     rates: UberX is €1.20 booking + €1.05/km + €0.30/min, which at city
+//     speed (~22 km/h, ≈2.7 min/km) works out to ≈€1.86/km all-in; the
+//     regulated metered-taxi minimum course is €8. €1.9/km sits just under
+//     one-way taxi tariffs (~€2.2/km) so it's realistic for Uber OR a
+//     provincial metered cab. (Was €2.5 base + €2.8/km — overshot badly.)
 //   Rental car:         €0.30/km fuel + tolls + €8 base
 //   Train / HSR:        already returned by Routes API for TRANSIT mode
 // Walk → free; Flight → no realistic estimate (Routes doesn't support it).
 function _costFromRealKm(mode, km) {
   if (mode === 'walk') return 0
-  if (mode === 'taxi') return Math.round(2.5 + km * 2.8)
+  if (mode === 'taxi') return Math.max(8, Math.round(3 + km * 1.9))
   if (mode === 'car')  return Math.round(8   + km * 0.30)
   if (mode === 'train') return Math.round(15 + km * 0.40)
   if (mode === 'hsr')   return Math.round(30 + km * 0.25)
@@ -18166,9 +18171,12 @@ function _transportEstimates(mode, km) {
     return { mins: Math.max(6, round(kmWalk * 11)), costEur: 0 }
   }
   if (mode === 'taxi') {
-    // Generic city taxi/rideshare: ~€2.5 base + ~€3/km (Paris-ish surge level)
+    // Uber / taxi heuristic shown before Routes API resolves. Same model as
+    // _costFromRealKm: €3 base + €1.9 per ROAD km (kmCar = haversine ×1.25),
+    // €8 minimum. Matches real 2025 French Uber all-in (~€1.86/km once the
+    // €0.30/min time charge is folded in) and the €8 regulated minimum course.
     const mins = Math.max(4, round(kmCar * 3))
-    const cost = round(2.5 + kmCar * 3)
+    const cost = Math.max(8, round(3 + kmCar * 1.9))
     return { mins, costEur: cost }
   }
   if (mode === 'transit') {
