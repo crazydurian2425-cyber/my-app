@@ -12052,17 +12052,11 @@ async function loadHistory() {
       amtHtml: `<div class="hist-amt" style="color:${credit ? 'var(--green-dark,#0f5240)' : 'var(--red,#c0392b)'};">${credit ? '+' : '−'}${fmtMoney(Math.abs(amt))}</div>`,
     })
   }
-  // Platform invoices (wallet_pending_payments) — all statuses
-  let _invs = []
-  try { const { data } = await sb.from('wallet_pending_payments').select('amount, reason, status, created_at').eq('planner_id', planner.id); _invs = data || [] } catch (e) { _invs = [] }
-  for (const v of _invs) {
-    ledger.push({
-      ts: v.created_at ? new Date(v.created_at).getTime() : 0, icon: 'invoice',
-      name: `${t('history.invoiceRow','Invoice')} · ${escapeHtml(v.reason || '')}${v.status ? ' · ' + escapeHtml(t('invoiceStatus.' + v.status, v.status)) : ''}`,
-      date: fmtD(v.created_at),
-      amtHtml: `<div class="hist-amt" style="color:var(--amber,#c17d2a);">−${fmtMoney(v.amount)}</div>`,
-    })
-  }
+  // NOTE: platform invoices (wallet_pending_payments) are deliberately NOT in
+  // this ledger. An invoice is a bill the planner pays the platform externally
+  // (bank), NOT a deduction from their wallet — showing it as −€X wrongly implied
+  // a wallet debit. Its real wallet effect is the "Invoice paid" credit above.
+  // Pending/owed invoices live in the "Invoices due to platform" banner.
   ledger.sort((a, b) => b.ts - a.ts)
 
   const histList = document.getElementById('hist-list')
