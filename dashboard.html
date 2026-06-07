@@ -14639,7 +14639,7 @@ function _insertArrivalTaxi(beforeEl) {
     // refreshDayDistances adds locked anchors, which would otherwise
     // pollute a plain `.activity-slot` snapshot.
     const before = new Set([...day1.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
-    addSlot(1, { icon: 'transport', time: arr })
+    addSlot(1, { icon: 'transport', time: arr }, { deferRefresh: true })
     const t = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-transport')].find(s => !before.has(s))
     if (!t) { console.warn('[arrival-taxi] new transport slot not found post-addSlot'); return }
     t.dataset.transportMode = 'taxi'
@@ -14651,6 +14651,11 @@ function _insertArrivalTaxi(beforeEl) {
     // the new slot past the existing hotel slot.
     _applySlotTime(t, arr)
     if (beforeEl && beforeEl.parentNode === day1) day1.insertBefore(t, beforeEl)
+    // Now that the taxi is positioned, configured and flag-protected, run the
+    // sweep pipeline once (deferred from addSlot). Doing it here — not inside
+    // addSlot — means dedupe/self-loop see a fully-built airport→hotel ride and
+    // leave it alone, instead of culling a half-built row.
+    if (typeof refreshDayDistances === 'function') refreshDayDistances(day1)
     console.log('[arrival-taxi] inserted', { id: t.id, time: arr, before: beforeEl?.id, cls: t.className })
     // Trigger autosave so the inserted transport actually persists. Without
     // this, opening + closing the plan loses the auto-seed because nothing
@@ -17563,7 +17568,7 @@ function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon
   // (:last-of-type matches by tag, not class — last <div> may not be the
   // last slot).
   const slotsBefore = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot')])
-  addSlot(dayNum, { icon: 'transport', time: startTime })
+  addSlot(dayNum, { icon: 'transport', time: startTime }, { deferRefresh: true })
   const newSlot = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     .find(s => !slotsBefore.has(s))
   if (!newSlot) {
@@ -19817,7 +19822,7 @@ function endDayBackToHotel(dayContainerId) {
              : 'transit'
   // Insert.
   const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
-  addSlot(dayNum, { icon: 'transport', time: departHHMM })
+  addSlot(dayNum, { icon: 'transport', time: departHHMM }, { deferRefresh: true })
   const newT = [...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')]
     .find(s => !transportSnap.has(s))
   if (!newT) return
@@ -19924,7 +19929,7 @@ function endTripToAirport(dayContainerId) {
                     || 'the airport'
   // Build the transport.
   const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
-  addSlot(dayNum, { icon: 'transport', time: departHHMM })
+  addSlot(dayNum, { icon: 'transport', time: departHHMM }, { deferRefresh: true })
   const newT = [...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')]
     .find(s => !transportSnap.has(s))
   if (!newT) return
@@ -20165,7 +20170,12 @@ function _sweepSelfLoopTransports(dayContainer) {
   let removed = false
   for (const t of slots) {
     if (!t.classList.contains('slot-type-transport')) continue
-    if (t.dataset.autoSeededArrivalTaxi === 'true') continue
+    // Detect a same-place leg FIRST (coords, else "A → B" title), THEN decide on
+    // the protected flag. A genuine arrival taxi is airport→hotel (two different
+    // places, never a self-loop), so a detected self-loop is always junk — even
+    // when it wrongly carries autoSeededArrivalTaxi (a stale reloaded locked taxi
+    // row can pick up that flag in fillItineraryItems, which used to make the
+    // sweep skip it forever → the phantom hotel→hotel Uber).
     let prev = t.previousElementSibling; while (prev && !isFlank(prev)) prev = prev.previousElementSibling
     let next = t.nextElementSibling;     while (next && !isFlank(next)) next = next.nextElementSibling
     const a = prev ? getSlotLatLng(prev) : null
@@ -20184,6 +20194,7 @@ function _sweepSelfLoopTransports(dayContainer) {
         if (left && left === right) isSelf = true
       }
     }
+    if (!isSelf && t.dataset.autoSeededArrivalTaxi === 'true') continue   // protect the REAL arrival taxi only
     if (isSelf) { console.log('[self-loop-sweep] removing same-place transport', t.id); t.remove(); removed = true }
   }
   if (removed && typeof autoSaveDraft === 'function') autoSaveDraft()
@@ -20358,7 +20369,7 @@ function _gapFillTransportsForDay(dayContainer) {
       const mode = (km < 1) ? 'walk' : (km > 5 || isNight) ? 'taxi' : 'transit'
       try {
         const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
-        addSlot(dayNum, { icon: 'transport', time: departHHMM })
+        addSlot(dayNum, { icon: 'transport', time: departHHMM }, { deferRefresh: true })
         const newT = [...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')].find(s => !transportSnap.has(s))
         if (!newT) { console.warn('[gap-fill] new transport not found after addSlot'); continue }
         newT.dataset.transportMode = mode
@@ -20930,7 +20941,7 @@ function getPlaceFieldsForSlot(slot) {
   }
 }
 
-function addSlot(dayNum, seed = null) {
+function addSlot(dayNum, seed = null, opts = {}) {
   slotCounter++;
   const id = `slot-${slotCounter}`;
   const container = document.getElementById(`slots-day-${dayNum}`);
@@ -21131,7 +21142,13 @@ function addSlot(dayNum, seed = null) {
   // Activity / transport / shopping / meal / entertainment / free time use chips.
   if (['slot-type-activity','slot-type-transport','slot-type-shopping','slot-type-meal','slot-type-entertainment','slot-type-freetime'].some(c => slot.classList.contains(c))) renderSlotTips(slot)
   updateDayMeta(dayNum);
-  refreshDayDistances(container);
+  // deferRefresh: programmatic callers (arrival-taxi insert, gap-fill, end-of-day
+  // legs) snapshot-diff to grab the new transport, CONFIGURE it (title/coords/
+  // protective flag) and refresh themselves afterward. Running the sweep pipeline
+  // here — before the caller has configured the row — let dedupe/self-loop kill
+  // the half-built transport (the recurring "airport→hotel taxi vanishes" bug).
+  if (!opts.deferRefresh) refreshDayDistances(container);
+  return slot;
 }
 
 function removeSlot(id) {
