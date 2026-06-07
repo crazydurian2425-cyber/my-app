@@ -2416,7 +2416,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div class="form-group" style="margin-top:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <label class="form-label" style="margin:0;">Reason / title <span style="color:var(--red);">*</span></label>
-          <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('bill-reason','bill-reason-ja',this)">EN → JA</button>
+          <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('bill-reason','bill-reason-ja',this)">EN → FR</button>
         </div>
         <input class="form-input" id="bill-reason" type="text" placeholder="e.g. Platform usage policy deposit" maxlength="200">
         <input class="form-input" id="bill-reason-ja" type="text" placeholder="Français (ex. : dépôt de garantie d'utilisation de la plateforme)" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
@@ -2425,7 +2425,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div class="form-group" style="margin-top:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <label class="form-label" style="margin:0;">Description (optional)</label>
-          <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('bill-description','bill-description-ja',this)">EN → JA</button>
+          <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('bill-description','bill-description-ja',this)">EN → FR</button>
         </div>
         <textarea class="form-textarea" id="bill-description" rows="3" placeholder="Longer context for the planner — what this is, why we're billing it." style="resize:vertical;min-height:64px;"></textarea>
         <textarea class="form-textarea" id="bill-description-ja" rows="3" placeholder="Description en français (facultatif)" style="resize:vertical;min-height:64px;margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;"></textarea>
@@ -2465,7 +2465,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div class="form-group" style="margin-top:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <label class="form-label" style="margin:0;">Reason <span style="color:var(--red);">*</span></label>
-          <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('adj-reason','adj-reason-ja',this)">EN → JA</button>
+          <button type="button" class="btn-ghost" style="padding:4px 10px;font-size:11px;" onclick="autoTranslateField('adj-reason','adj-reason-ja',this)">EN → FR</button>
         </div>
         <input class="form-input" id="adj-reason" type="text" placeholder="e.g. Platform usage policy refund · €4,000 deposit returned" maxlength="200">
         <input class="form-input" id="adj-reason-ja" type="text" placeholder="Français (ex. : remboursement du dépôt de garantie d'utilisation de la plateforme)" maxlength="200" style="margin-top:6px;font-family:'Noto Sans JP','DM Sans',sans-serif;">
@@ -6789,7 +6789,7 @@ function editTraveler(id) {
 // ── Auto-translate (MyMemory free API) ─────────────────────
 // MyMemory: https://mymemory.translated.net/doc/spec.php
 // Free, no key, ~1k words/day per IP. CORS-friendly so we call directly.
-async function translateText(text, from = 'en', to = 'ja') {
+async function translateText(text, from = 'en', to = 'fr') {
   if (!text || !text.trim()) return ''
   const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + from + '|' + to
   const r = await fetch(url)
@@ -6807,7 +6807,7 @@ async function autoTranslateField(srcId, dstId, btn) {
   const original = btn?.textContent
   if (btn) { btn.disabled = true; btn.textContent = 'Translating…' }
   try {
-    const out = await translateText(src, 'en', 'ja')
+    const out = await translateText(src, 'en', 'fr')
     dst.value = out
     if (btn) { btn.textContent = '✓ Done' ; setTimeout(() => { btn.textContent = original; btn.disabled = false }, 1500) }
   } catch (e) {
