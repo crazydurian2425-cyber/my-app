@@ -4083,7 +4083,13 @@ async function closeSet(setId) {
     //    "sets completed" KPI (both query status='completed'). 'cancelled' drops
     //    off Active sets (in ['open','claimed']) AND completed views alike, and
     //    is kept in the DB for history/audit.
-    await sb.from('sets').update({ status: 'cancelled', completed_at: new Date().toISOString() }).eq('id', setId)
+    // Mark CANCELLED. No completed_at — a teardown is not a completion (stamping
+    // it was both semantically wrong and a second 400 risk if the column is
+    // absent on the drifted live schema). MUST check the error: this was the
+    // only step that swallowed it, so a failed PATCH still showed a success
+    // toast while the set stayed in Active sets.
+    const { error: setErr } = await sb.from('sets').update({ status: 'cancelled' }).eq('id', setId)
+    if (setErr) throw setErr
     auditLog('set.close', 'set', setId, { released_travellers: travIds.length, deleted_plans: planIds.length })
     showToast(`Set closed — ${travIds.length} traveller${travIds.length === 1 ? '' : 's'} released to the Unassigned pool`)
   } catch (e) {
