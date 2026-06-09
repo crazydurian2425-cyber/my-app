@@ -8098,14 +8098,16 @@ async function sendApprovalEmailAuto(app){
 function buildPlannerLoginUrl(){
   // Prefer the explicit config. Only fall back to window.location if the admin panel
   // is served from a real http(s) host AND JJ_PLANNER_URL wasn't customized.
+  // Clean URL (no .html): the site serves login.html at /login and even
+  // 308-redirects /login.html → /login, so the email shows a tidy link.
   const configured = (JJ_PLANNER_URL || '').replace(/\/$/, '')
-  if (configured) return configured + '/login.html'
+  if (configured) return configured + '/login'
   const proto = window.location.protocol
   if (proto === 'http:' || proto === 'https:') {
     // Strip any admin-page filename so we land at the site root, then append login.
-    return window.location.origin + window.location.pathname.replace(/(superadmin999|admin)\.html.*$/,'') + 'login.html'
+    return window.location.origin + window.location.pathname.replace(/(superadmin999|admin)\.html.*$/,'') + 'login'
   }
-  return '[set JJ_PLANNER_URL in superadmin999.html]/login.html'
+  return '[set JJ_PLANNER_URL in superadmin999.html]/login'
 }
 
 function openApprovalEmail(id){
