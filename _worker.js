@@ -489,7 +489,7 @@ async function handleSendEmploymentLetter(request, url) {
     <div style="font-family:'DM Sans','Helvetica Neue',Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f5f4f0;">
       <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid rgba(0,0,0,0.08);">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-          <img src="https://thejourneywise.com/jj.jpg?v=2" alt="JJ" width="32" height="32" style="border-radius:50%;display:block;">
+          <img src="https://journeyjunctionplanner.com/jj.jpg?v=2" alt="JJ" width="32" height="32" style="border-radius:50%;display:block;">
           <div style="font-size:20px;color:#1a1a18;font-family:Georgia,serif;">Journey<span style="color:#1a7a5e;font-style:italic;">Junction</span></div>
         </div>
         <h2 style="font-family:Georgia,serif;color:#1a1a18;margin:0 0 14px;">Confirmez votre contrat de prestation</h2>
