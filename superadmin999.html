@@ -6284,12 +6284,25 @@ async function deletePlannerFromModal(){
   try { await sb.from('sets').update({ planner_id: null }).eq('planner_id', id) } catch(e){ console.warn('sets.planner_id unassign failed', e) }
   try { await sb.from('set_assignments').delete().eq('planner_id', id) } catch(e){ /* table may not exist in some envs */ }
 
-  // 2) Delete the planner's plans outright. Keeping them around (with NULL
-  //    planner_id) would leave "Unknown planner" orphans in the review queue
-  //    that can never be approved. When the set is reassigned to a new
-  //    planner, fresh plan shells are created.
-  try { await sb.from('plans').delete().eq('planner_id', id) }
-  catch(e) { console.warn('plans delete failed', e) }
+  // 2) Delete the planner's plans — but first their itinerary_items and
+  //    item_images. On the live DB these child FKs are RESTRICT (schema
+  //    drift), so deleting a plan that still has items throws and the plan
+  //    lingers. Tear down deepest child first: item_images → itinerary_items
+  //    → plans. (Keeping plans around with NULL planner_id would also leave
+  //    "Unknown planner" orphans in the review queue.)
+  try {
+    const { data: planRows } = await sb.from('plans').select('id').eq('planner_id', id)
+    const planIds = (planRows || []).map(p => p.id)
+    if (planIds.length) {
+      const { data: itemRows } = await sb.from('itinerary_items').select('id').in('plan_id', planIds)
+      const itemIds = (itemRows || []).map(i => i.id)
+      if (itemIds.length) {
+        try { await sb.from('item_images').delete().in('item_id', itemIds) } catch(e){ console.warn('item_images delete failed', e) }
+      }
+      try { await sb.from('itinerary_items').delete().in('plan_id', planIds) } catch(e){ console.warn('itinerary_items delete failed', e) }
+    }
+    await sb.from('plans').delete().eq('planner_id', id)
+  } catch(e) { console.warn('plans delete failed', e) }
 
   // 3) Conversations + their messages. RESTRICT FKs mean we MUST clear these
   //    before the planner row, and messages link via conversation_id (NOT
@@ -6304,7 +6317,7 @@ async function deletePlannerFromModal(){
   } catch(e){ console.warn('conversations teardown failed', e) }
 
   // 4) Other likely references — best-effort, ignore if table/col doesn't exist
-  for (const tbl of ['wallet_requests','wallet_adjustments','wallet_pending_payments','wallet_ledger','chat_messages','typing_drafts']) {
+  for (const tbl of ['wallet_requests','wallet_adjustments','wallet_pending_payments','wallet_ledger','employment_letters','chat_messages','typing_drafts']) {
     try { await sb.from(tbl).delete().eq('planner_id', id) } catch(e){}
   }
 
