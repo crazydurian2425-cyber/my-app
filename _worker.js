@@ -31,6 +31,11 @@ let RESEND_API_KEY = ''
 const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
 let SUPABASE_SERVICE_KEY = ''
 
+// Canonical public site URL used in outbound emails. Hardcoded (not derived
+// from the request host) so signing/login links always point at the branded
+// domain — never the raw *.workers.dev host the admin panel may be opened on.
+const PUBLIC_SITE_URL = 'https://journeyjunctionplanner.com'
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
@@ -481,31 +486,68 @@ async function handleSendEmploymentLetter(request, url) {
     return jsonResp(500, { error: 'No signing token returned' })
   }
 
-  // 2. Build the signing link (origin from the request URL)
-  const signUrl = `${url.protocol}//${url.host}/sign-letter.html?token=${row.signing_token}`
+  // 2. Build the signing link — canonical branded domain, clean URL (no .html).
+  //    The site serves /sign-letter and 308-redirects /sign-letter.html while
+  //    preserving the ?token, so this is the tidy form planners see.
+  const signUrl = `${PUBLIC_SITE_URL}/sign-letter?token=${encodeURIComponent(row.signing_token)}`
+  const firstName = escapeForEmail((planner_name || '').trim().split(/\s+/)[0] || planner_name || '')
 
-  // 3. Email the planner (Resend) — French (primary) + English
-  const emailHtml = `
-    <div style="font-family:'DM Sans','Helvetica Neue',Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f5f4f0;">
-      <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid rgba(0,0,0,0.08);">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-          <img src="https://journeyjunctionplanner.com/jj.jpg?v=2" alt="JJ" width="32" height="32" style="border-radius:50%;display:block;">
-          <div style="font-size:20px;color:#1a1a18;font-family:Georgia,serif;">Journey<span style="color:#1a7a5e;font-style:italic;">Junction</span></div>
-        </div>
-        <h2 style="font-family:Georgia,serif;color:#1a1a18;margin:0 0 14px;">Confirmez votre contrat de prestation</h2>
-        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 12px;">Bonjour ${escapeForEmail(planner_name)},</p>
-        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 12px;">Merci de votre candidature et de votre inscription en tant que planificateur de voyages chez Journey Junction.</p>
-        <p style="color:#3a3a36;line-height:1.7;font-size:14px;margin:0 0 22px;">Veuillez consulter votre contrat de prestation via le lien ci-dessous, puis le signer et nous le retourner. Ce lien vous est personnel — merci de ne pas le partager.</p>
-        <p style="text-align:center;margin:28px 0;">
-          <a href="${signUrl}" style="display:inline-block;padding:12px 28px;background:#1a7a5e;color:#fff;text-decoration:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;">Consulter et signer le contrat</a>
+  // 3. Email the planner (Resend) — French (primary) + English.
+  //    Chrome mirrors the approval email (buildApprovalEmailHtml in
+  //    superadmin999.html): table-based layout (email-client safe — no flex),
+  //    gradient divider, and the branded company-registration footer.
+  const emailHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f4f0;padding:40px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','DM Sans',Helvetica,Arial,sans-serif;">
+  <tr><td align="center">
+    <table role="presentation" width="480" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid rgba(0,0,0,0.06);border-radius:14px;overflow:hidden;">
+
+      <tr><td style="padding:32px 36px 8px 36px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="vertical-align:middle;padding-right:10px;">
+              <img src="https://journeyjunctionplanner.com/jj.jpg?v=2" alt="Journey Junction" width="32" height="32" style="display:block;border-radius:50%;border:0;outline:none;text-decoration:none;">
+            </td>
+            <td style="vertical-align:middle;font-family:Georgia,'DM Serif Display',serif;font-size:22px;color:#1a1a18;letter-spacing:-0.4px;">
+              Journey<span style="color:#1a7a5e;font-style:italic;">Junction</span>
+            </td>
+          </tr>
+        </table>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(176,138,62,0.35),transparent);margin-top:18px;"></div>
+      </td></tr>
+
+      <tr><td style="padding:24px 36px 4px 36px;">
+        <h1 style="margin:0 0 12px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
+          Confirmez votre <em style="font-style:italic;color:#1a7a5e;">contrat de prestation</em>
+        </h1>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">Bonjour ${firstName},</p>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">Merci de votre candidature et de votre inscription en tant que planificateur de voyages chez Journey Junction.</p>
+        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">Veuillez consulter votre contrat de prestation via le bouton ci-dessous, puis le signer et nous le retourner. Ce lien vous est personnel — merci de ne pas le partager.</p>
+      </td></tr>
+
+      <tr><td style="padding:0 36px 8px 36px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr><td align="center" style="padding:6px 0 14px;">
+            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">Consulter et signer le contrat →</a>
+          </td></tr>
+        </table>
+      </td></tr>
+
+      <tr><td style="padding:0 36px 4px 36px;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
+      </td></tr>
+
+      <tr><td style="padding:18px 36px 28px 36px;">
+        <div style="height:1px;background:rgba(0,0,0,0.06);margin-bottom:14px;"></div>
+        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a travel planner. Please review your service agreement using the button above, then sign and return it. This link is personal to you; please don't share it.</p>
+      </td></tr>
+
+      <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
+        <p style="margin:0;font-size:11px;line-height:1.55;color:#8c8678;">
+          Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277
         </p>
-        <p style="color:#7a7a74;line-height:1.6;font-size:12px;margin:22px 0 0;">Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
-        <hr style="border:none;border-top:1px solid rgba(0,0,0,0.08);margin:24px 0;">
-        <p style="color:#9a9890;line-height:1.6;font-size:12px;margin:0;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a travel planner. Please review your service agreement using the button above, then sign and return it. This link is personal to you; please don't share it.</p>
-      </div>
-      <p style="text-align:center;color:#9a9890;font-size:11px;margin-top:18px;">Journey Junction · hello@thejourneyjunction.co.uk</p>
-    </div>
-  `
+      </td></tr>
+    </table>
+  </td></tr>
+</table>`
   const resendResp = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
