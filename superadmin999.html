@@ -1554,7 +1554,10 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
   <div id="page-planners" class="page">
     <div class="ph">
       <div><div class="ph-title">Manage planners</div><div class="ph-sub" id="planners-sub">Loading...</div></div>
-      <button class="btn btn-primary" onclick="copySignupLink()">+ Copy signup link</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" onclick="resetApplicationByEmail()">Reset application</button>
+        <button class="btn btn-primary" onclick="copySignupLink()">+ Copy signup link</button>
+      </div>
     </div>
 
     <!-- Filter bar: tabs + search + city/availability/sort + reset -->
@@ -6323,7 +6326,9 @@ async function deletePlannerFromModal(){
 
   // 5) Delete application rows (by user_id OR by email — either can be the link)
   try { await sb.from('planner_applications').delete().eq('user_id', id) } catch(e){}
-  if (email) try { await sb.from('planner_applications').delete().eq('email', email) } catch(e){}
+  // ilike (no wildcards) = case-insensitive exact match, so a row stored as
+  // Echongyau1998@Gmail.com still gets cleared and can't orphan the apply gate.
+  if (email) try { await sb.from('planner_applications').delete().ilike('email', email) } catch(e){}
 
   // 6) Delete the planner row
   const { error: delErr } = await sb.from('planners').delete().eq('id', id)
@@ -6692,6 +6697,40 @@ function toggleEtBondField() {
 function copySignupLink() {
   const link = window.location.origin + '/signup.html'
   navigator.clipboard.writeText(link).then(() => showToast('Signup link copied!')).catch(() => showToast('Link: ' + link))
+}
+
+// Wipe the application (and any linked auth user) for one email so it can
+// apply from scratch — for re-testing the signup flow without SQL. Runs over
+// the service-role proxy, so it bypasses RLS and frees auth.users too.
+async function resetApplicationByEmail() {
+  const raw = prompt('Reset application — enter the applicant email to clear so it can apply again:')
+  if (!raw) return
+  const email = raw.trim().toLowerCase()
+  if (!email) return
+  if (!confirm(`Clear the application for ${email} so it can apply from scratch?\n\nDeletes the application row and any auth user linked to it. Cannot be undone.`)) return
+
+  // 1) Read the row(s) first so we can also free any linked auth user.
+  //    (The auth admin LIST endpoint is blocked by the proxy allow-list, so we
+  //    can only reach the auth user via the user_id stored on the application.)
+  let userIds = []
+  try {
+    const { data: rows } = await sb.from('planner_applications').select('user_id').ilike('email', email)
+    userIds = (rows || []).map(r => r.user_id).filter(Boolean)
+  } catch(e){ console.warn('app lookup failed', e) }
+
+  // 2) Delete the application row(s), case-insensitive.
+  const { error: appErr } = await sb.from('planner_applications').delete().ilike('email', email)
+  if (appErr) { showToast('Reset failed: ' + appErr.message); return }
+
+  // 3) Free any linked auth user so signup won't hit "already registered".
+  for (const uid of userIds) {
+    try { await sb.auth.admin.deleteUser(uid) } catch(e){ console.warn('auth user delete failed', uid, e) }
+  }
+
+  auditLog('application.reset', 'application', email, { authUsersFreed: userIds.length })
+  showToast(userIds.length
+    ? `Cleared application + auth user for ${email}`
+    : `Cleared application for ${email}`)
 }
 
 // ── Multi-destination chip selector for the Edit traveler modal ──
