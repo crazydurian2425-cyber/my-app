@@ -6291,20 +6291,32 @@ async function deletePlannerFromModal(){
   try { await sb.from('plans').delete().eq('planner_id', id) }
   catch(e) { console.warn('plans delete failed', e) }
 
-  // 3) Other likely references — best-effort, ignore if table/col doesn't exist
-  for (const tbl of ['wallet_requests','wallet_ledger','messages','chat_messages','typing_drafts']) {
+  // 3) Conversations + their messages. RESTRICT FKs mean we MUST clear these
+  //    before the planner row, and messages link via conversation_id (NOT
+  //    planner_id), so delete children first, then the conversation rows.
+  try {
+    const { data: convs } = await sb.from('conversations').select('id').eq('planner_id', id)
+    const convIds = (convs || []).map(c => c.id)
+    if (convIds.length) {
+      try { await sb.from('messages').delete().in('conversation_id', convIds) } catch(e){ console.warn('messages delete failed', e) }
+    }
+    await sb.from('conversations').delete().eq('planner_id', id)
+  } catch(e){ console.warn('conversations teardown failed', e) }
+
+  // 4) Other likely references — best-effort, ignore if table/col doesn't exist
+  for (const tbl of ['wallet_requests','wallet_adjustments','wallet_pending_payments','wallet_ledger','chat_messages','typing_drafts']) {
     try { await sb.from(tbl).delete().eq('planner_id', id) } catch(e){}
   }
 
-  // 4) Delete application rows (by user_id OR by email — either can be the link)
+  // 5) Delete application rows (by user_id OR by email — either can be the link)
   try { await sb.from('planner_applications').delete().eq('user_id', id) } catch(e){}
   if (email) try { await sb.from('planner_applications').delete().eq('email', email) } catch(e){}
 
-  // 5) Delete the planner row
+  // 6) Delete the planner row
   const { error: delErr } = await sb.from('planners').delete().eq('id', id)
   if (delErr) { showToast('Delete planner failed: ' + delErr.message); return }
 
-  // 6) Delete the auth user so the email is reusable
+  // 7) Delete the auth user so the email is reusable
   try { await sb.auth.admin.deleteUser(id) }
   catch(e) { console.warn('auth user delete failed:', e) }
 
