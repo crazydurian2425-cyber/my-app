@@ -1018,7 +1018,9 @@ html[lang="ja"] .ps-itin-title{font-family:'Noto Serif JP','DM Serif Display',se
   background:linear-gradient(135deg, rgba(94,123,110,0.06) 0%, rgba(201,169,97,0.04) 100%);
   border:1px solid rgba(94,123,110,0.14);border-radius:12px;
 }
-.ps-brief-cell{min-width:0;}
+.ps-brief-cell{min-width:0;display:flex;gap:10px;align-items:flex-start;}
+.ps-brief-ico{flex:none;width:20px;height:20px;color:#5E7B6E;margin-top:1px;}
+.ps-brief-ico svg{display:block;width:20px;height:20px;}
 .ps-brief-label{
   font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;
   letter-spacing:0.14em;text-transform:uppercase;
@@ -1080,6 +1082,7 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
 .ps-name{
   font-family:'DM Sans',sans-serif;font-size:14.5px;font-weight:600;
   color:var(--e-ink,#1B1F1C);line-height:1.3;letter-spacing:-0.01em;
+  display:flex;align-items:center;gap:9px;
 }
 .ps-cat{color:var(--e-ink-3,#9aa09a);font-weight:500;}
 .ps-meta{
@@ -1113,6 +1116,27 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
 .ps-leg span{min-width:0;}
 /* Category icon before a stop name */
 .ps-name-ico{display:inline-block;margin-right:7px;font-size:14px;line-height:1;vertical-align:-1px;}
+
+/* Consistent circular icon badges — one visual language for EVERY stop and
+   transit leg (replaces the old emoji-for-stops / svg-for-transit mismatch). */
+.ps-ico{display:inline-flex;align-items:center;justify-content:center;flex:none;
+  width:28px;height:28px;border-radius:50%;}
+.ps-ico svg{width:15px;height:15px;display:block;}
+.ps-ico--sm{width:22px;height:22px;}
+.ps-ico--sm svg{width:12px;height:12px;}
+.ps-ico--activity{background:rgba(94,123,110,0.15);color:#3F5A4C;}
+.ps-ico--meal    {background:rgba(201,169,97,0.18);color:#8a6a1e;}
+.ps-ico--shop    {background:rgba(201,169,97,0.18);color:#8a6a1e;}
+.ps-ico--ent     {background:rgba(70,95,120,0.15);color:#46627a;}
+.ps-ico--free    {background:rgba(94,123,110,0.13);color:#3F5A4C;}
+.ps-ico--hotel   {background:rgba(94,123,110,0.17);color:#2f5240;}
+.ps-ico--transit {background:rgba(70,95,120,0.13);color:#46627a;}
+/* Day-type chip in the day header (replaces the misleading "0 stops"). */
+.ps-day-chip{display:inline-flex;align-items:center;font-family:'DM Sans',sans-serif;
+  font-size:11px;font-weight:600;padding:4px 11px;border-radius:99px;white-space:nowrap;letter-spacing:0;}
+.ps-day--arrival   .ps-day-chip{background:rgba(184,102,90,0.14);color:#9c4d42;}
+.ps-day--full      .ps-day-chip{background:rgba(94,123,110,0.15);color:#3F5A4C;}
+.ps-day--departure .ps-day-chip{background:rgba(212,145,61,0.16);color:#A26821;}
 
 /* ── Top blocks: quality warnings → personal note → quick stats ── */
 .ps-issues{
@@ -13621,26 +13645,41 @@ async function openPlanSummary(plan) {
     if (!isNaN(d.getTime())) { d.setDate(d.getDate() + nights); departureDate = d.toISOString().split('T')[0] }
   }
 
-  const briefRow = (label, val) => val ? `<div class="ps-brief-cell"><div class="ps-brief-label">${escapeHtml(label)}</div><div class="ps-brief-val">${escapeHtml(String(val))}</div></div>` : ''
+  const _bi = (inner) => `<span class="ps-brief-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg></span>`
+  const BICON = {
+    dest:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+    arr:'<path d="M2 22h20"/><path d="M3.8 16.6 21 11l-1-3-5.5 1.2L8 3 6 3.5l3.2 6.3-4.7 1L3 8 1.5 8.4Z"/>',
+    dep:'<path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/>',
+    dur:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+    grp:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    bud:'<path d="M18 7a7 7 0 1 0 0 10"/><path d="M3 11h9"/><path d="M3 15h7"/>',
+    hotel:'<path d="M2 4v16"/><path d="M2 9h18a2 2 0 0 1 2 2v9"/><path d="M2 16h20"/><path d="M7 9V6h6v3"/>',
+  }
+  const briefRow = (iconKey, label, val) => val ? `<div class="ps-brief-cell">${_bi(BICON[iconKey] || BICON.dest)}<div style="min-width:0;"><div class="ps-brief-label">${escapeHtml(label)}</div><div class="ps-brief-val">${escapeHtml(String(val))}</div></div></div>` : ''
   const commissionSummary = (plan.planner_payout_override != null ? plan.planner_payout_override : (trav.planner_payout || 0))
   // Hotel budget: column now stores per-night-per-pax directly.
   const _hotelStr = trav.hotel_budget ? fmtMoney(trav.hotel_budget) : null
   const _hotelLabelSuffix = trav.hotel_budget ? ` ${tPrime('brief.perPaxNight','/night per pax')}` : ''
   const commissionRow = commissionSummary > 0
-    ? `<div class="ps-brief-cell" style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(94,123,110,0.10);border:1px solid rgba(94,123,110,0.28);border-radius:10px;margin-top:2px;">
-         <div class="ps-brief-label" style="color:#4A6759!important;letter-spacing:0.14em!important;font-weight:700!important;">${escapeHtml(tPrime('brief.label.commission','Your commission'))}</div>
-         <div style="font-family:'Fraunces','DM Serif Display',serif;font-size:22px;line-height:1;color:#1F3A2E;font-weight:600;letter-spacing:-0.01em;">${escapeHtml(fmtMoney(commissionSummary))}</div>
+    ? `<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;margin-top:4px;border-radius:13px;background:linear-gradient(135deg,#1a7a5e,#0f5240);box-shadow:0 8px 22px rgba(15,82,64,0.22);">
+         <div style="display:flex;align-items:center;gap:12px;">
+           <span style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.16);display:inline-flex;align-items:center;justify-content:center;color:#fff;flex:none;">
+             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.1 10.4A6 6 0 1 1 10.3 18.1"/><path d="M7 6h1.5v4"/></svg>
+           </span>
+           <div style="color:#fff;"><div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;opacity:0.82;">${escapeHtml(tPrime('brief.label.commission','Your commission'))}</div><div style="font-size:12.5px;opacity:0.95;margin-top:1px;">${escapeHtml(tPrime('ps.commissionSub','Paid when the set is approved'))}</div></div>
+         </div>
+         <div style="font-family:'Fraunces','DM Serif Display',serif;font-size:28px;line-height:1;color:#fff;font-weight:600;">${escapeHtml(fmtMoney(commissionSummary))}</div>
        </div>`
     : ''
   const briefHtml = `
     <div class="ps-brief">
-      ${briefRow(tPrime('brief.label.destination','Destination'), trav.destination)}
-      ${briefRow(tPrime('brief.label.arrival','Arrival'), trav.arrival_date ? `${trav.arrival_date}${trav.arrival_time ? ' · '+formatTimeDisplay(trav.arrival_time) : ''}` : null)}
-      ${briefRow(tPrime('brief.label.departure','Departure'), departureDate ? `${departureDate}${trav.departure_time ? ' · '+formatTimeDisplay(trav.departure_time) : ''}` : null)}
-      ${briefRow(tPrime('brief.label.duration','Duration'), trav.duration)}
-      ${briefRow(tPrime('brief.label.groupSize','Group size'), trav.group_size ? `${trav.group_size} ${tPrime('brief.pax','pax')}` : null)}
-      ${briefRow(tPrime('brief.label.budget','Budget / day'), trav.budget_per_day ? fmtMoney(trav.budget_per_day) : null)}
-      ${briefRow(tPrime('brief.label.hotelBudget','Hotel budget') + _hotelLabelSuffix, _hotelStr)}
+      ${briefRow('dest', tPrime('brief.label.destination','Destination'), trav.destination)}
+      ${briefRow('arr', tPrime('brief.label.arrival','Arrival'), trav.arrival_date ? `${trav.arrival_date}${trav.arrival_time ? ' · '+formatTimeDisplay(trav.arrival_time) : ''}` : null)}
+      ${briefRow('dep', tPrime('brief.label.departure','Departure'), departureDate ? `${departureDate}${trav.departure_time ? ' · '+formatTimeDisplay(trav.departure_time) : ''}` : null)}
+      ${briefRow('dur', tPrime('brief.label.duration','Duration'), trav.duration)}
+      ${briefRow('grp', tPrime('brief.label.groupSize','Group size'), trav.group_size ? `${trav.group_size} ${tPrime('brief.pax','pax')}` : null)}
+      ${briefRow('bud', tPrime('brief.label.budget','Budget / day'), trav.budget_per_day ? fmtMoney(trav.budget_per_day) : null)}
+      ${briefRow('hotel', tPrime('brief.label.hotelBudget','Hotel budget') + _hotelLabelSuffix, _hotelStr)}
       ${commissionRow}
     </div>`
 
@@ -13791,6 +13830,34 @@ async function openPlanSummary(plan) {
     if (Array.isArray(pts)) for (const p of pts) if (PM[p]) return PM[p]
     return '📍'
   }
+  // Consistent SVG icon BADGE for a stop — replaces the old emoji so stops and
+  // transit legs speak ONE icon language. The kind drives the badge tint (CSS).
+  const _svgIco = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
+  const _STOP_ICON = {
+    activity: _svgIco('<path d="M3 22h18"/><path d="M6 18V11M10 18V11M14 18V11M18 18V11"/><path d="m12 3 7 5H5z"/>'),
+    meal:     _svgIco('<path d="M4 3v7a2 2 0 0 0 4 0V3"/><path d="M6 12v9"/><path d="M18 3a3 3 0 0 0-3 3v6h3Z"/><path d="M18 12v9"/>'),
+    shop:     _svgIco('<path d="M6 2 4 6v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6l-2-4Z"/><path d="M4 6h16"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
+    ent:      _svgIco('<path d="M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4Z"/><path d="M14 6v12"/>'),
+    free:     _svgIco('<path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 1v3M10 1v3M14 1v3"/>'),
+    hotel:    _svgIco('<path d="M2 4v16"/><path d="M2 9h18a2 2 0 0 1 2 2v9"/><path d="M2 16h20"/><path d="M7 9V6h6v3"/>'),
+    pin:      _svgIco('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
+  }
+  const _stopKind = (s) => {
+    const ty = String(s.type||'').toLowerCase()
+    if (ty === 'meal') return 'meal'
+    if (ty === 'shopping') return 'shop'
+    if (ty === 'entertainment') return 'ent'
+    if (ty === 'freetime') return 'free'
+    if (ty === 'hotel_checkin' || ty === 'hotel_checkout' || ty === 'accommodation') return 'hotel'
+    let pts = s.place_types; if (typeof pts === 'string') pts = pts.split(',').map(x=>x.trim())
+    if (Array.isArray(pts)) {
+      if (pts.some(p => /cafe|bakery|bar|restaurant|food|meal/.test(p))) return 'meal'
+      if (pts.some(p => /store|shopping_mall|department_store/.test(p))) return 'shop'
+      if (pts.some(p => /night_club|movie|theater|amusement/.test(p))) return 'ent'
+    }
+    return 'activity'
+  }
+  const _catBadge = (s) => { const k = _stopKind(s); return `<span class="ps-ico ps-ico--${k}">${_STOP_ICON[k] || _STOP_ICON.pin}</span>` }
   const _fmtLower = (tm) => tm ? formatTimeDisplay(tm).toLowerCase() : ''
   const _fmtBare  = (tm) => _fmtLower(tm).replace(/\s*(am|pm)\s*$/i,'')   // transit: drop the meridiem
   const _toMin = (tm) => { const m = String(tm||'').match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]*60 + +m[2]) : null }
@@ -13889,7 +13956,7 @@ async function openPlanSummary(plan) {
         return `
         <li class="ps-row ps-row--transit">
           <div class="ps-time ps-time--t">${escapeHtml(_fmtBare(s.time) || '·')}</div>
-          <div class="ps-cell"><div class="ps-leg">${_legIcon(_modeOf(s))}<span>${escapeHtml(s.title || '')}</span></div></div>
+          <div class="ps-cell"><div class="ps-leg"><span class="ps-ico ps-ico--transit ps-ico--sm">${_legIcon(_modeOf(s))}</span><span>${escapeHtml(s.title || '')}</span></div></div>
         </li>`
       }
       const metaBits = [_shortAddr(s.address), formatDurationLabel(s.duration_minutes)].filter(Boolean).join(' · ')
@@ -13907,7 +13974,7 @@ async function openPlanSummary(plan) {
       <li class="ps-row">
         <div class="ps-time">${escapeHtml(_fmtLower(s.time) || '—')}</div>
         <div class="ps-cell">
-          <div class="ps-name"><span class="ps-name-ico" aria-hidden="true">${_catIcon(s)}</span>${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</div>
+          <div class="ps-name">${_catBadge(s)}<span>${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</span></div>
           ${metaBits ? `<div class="ps-meta">${escapeHtml(metaBits)}</div>` : ''}
           ${chips}${legacy}${imgHtml}
         </div>
@@ -13916,7 +13983,10 @@ async function openPlanSummary(plan) {
       : `<li class="ps-empty">${tPrime('ps.emptyDay','No activities logged for this day.')}</li>`
 
     const stopWord = venues.length === 1 ? dt('stop','arrêt') : dt('stops','arrêts')
-    const statBits = [`${venues.length} ${stopWord}`]
+    // No misleading "0 stops" — the day sub-label already conveys arrival /
+    // departure days. Show the count + cost only when there's something there.
+    const statBits = []
+    if (venues.length > 0) statBits.push(`${venues.length} ${stopWord}`)
     if (dayCost > 0) statBits.push(fmtMoney(dayCost))
     const dateStr = _dayDate(d)
     daysHtml += `
@@ -13926,7 +13996,7 @@ async function openPlanSummary(plan) {
             <div class="ps-day-title">${tPrime('day.headerN','Day {n}').replace('{n}', d)}${dateStr ? ` · ${escapeHtml(dateStr)}` : ''}</div>
             <div class="ps-day-sub">${escapeHtml(dayLabel(d))}${_dayHint(d) ? ` · ${escapeHtml(_dayHint(d))}` : ''}</div>
           </div>
-          <div class="ps-day-stats">${escapeHtml(statBits.join(' · '))}</div>
+          ${statBits.length ? `<div class="ps-day-chip">${escapeHtml(statBits.join(' · '))}</div>` : ''}
         </div>
         <ul class="ps-rows">${rowsHtml}</ul>
       </div>`
