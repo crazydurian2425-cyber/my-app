@@ -1922,7 +1922,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border:1px solid var(--border);border-radius:10px;background:var(--surface);
   flex-shrink:0;text-transform:uppercase;letter-spacing:0.4px;
 }
-.activity-slot.is-locked .anchor-lock-icon{font-size:11px;line-height:1;}
+.activity-slot.is-locked .anchor-lock-icon{display:inline-flex;align-items:center;line-height:1;}
 /* Profile-match badge on the end-of-day anchor. State drives the color tint. */
 .activity-slot.is-locked .anchor-badge{
   display:inline-flex;align-items:center;gap:4px;
@@ -13167,7 +13167,7 @@ async function renderTravelerBrief(plan, t, notes) {
       // is purely for orientation; full details live in your plan list).
       return `
         <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(0,0,0,0.025);border:1px solid var(--color-border-tertiary);margin-bottom:6px;opacity:0.75;">
-          <span style="font-size:14px;flex-shrink:0;line-height:1;color:${INK_TERTIARY};">🔒</span>
+          <span style="flex-shrink:0;line-height:1;color:${INK_TERTIARY};display:inline-flex;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
           <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${INK_TERTIARY};flex-shrink:0;">${dt('Unit','Unité')} ${order}</span>
           <div style="flex:1;min-width:0;font-size:14px;color:${INK_MUTED};">
             <strong>${escapeHtml(s.destination || '—')}</strong>
@@ -13191,14 +13191,14 @@ async function renderTravelerBrief(plan, t, notes) {
       ))
     }
     const tipHtml = tipParts.length
-      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.10);border:1px solid rgba(224,139,58,0.30);border-radius:8px;font-size:13px;color:var(--text,#1A2E25);line-height:1.55;"><strong style="color:#BA6A1A;">💡 ${dt('Helpful context','Contexte utile')} · </strong>${tipParts.join(' ')}</div>`
+      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.10);border:1px solid rgba(224,139,58,0.30);border-radius:8px;font-size:13px;color:var(--text,#1A2E25);line-height:1.55;"><strong style="color:#BA6A1A;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V18h6v-1.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2Z"/></svg> ${dt('Helpful context','Contexte utile')} · </strong>${tipParts.join(' ')}</div>`
       : ''
 
     sectionContext = wrap(`
       ${sectionHeader('map-pin', dt(`Trip context · ${siblings.length} units · ${totalNights} nights total`, `Contexte du voyage · ${siblings.length} unités · ${totalNights} nuits au total`))}
       ${rows}
       ${tipHtml}
-      <div style="margin-top:8px;font-size:11px;color:var(--color-text-secondary,#5a6b62);font-style:italic;">🔒 ${dt('Other units locked for privacy — you see cities + dates only.', 'Autres unités masquées par confidentialité — vous ne voyez que les villes + dates.')}</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--color-text-secondary,#5a6b62);font-style:italic;display:flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${dt('Other units locked for privacy — you see cities + dates only.', 'Autres unités masquées par confidentialité — vous ne voyez que les villes + dates.')}</div>
     `)
   }
 
@@ -19858,14 +19858,21 @@ function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
   return { state, expected, actual, expectedStr, actualStr: formatTimeDisplay(minsToHHMM(actual)), gapMin: gap }
 }
 
-// Icon mark — emoji works without an extra icon font dependency. The CSS
-// .anchor-icon block colours the row tint by anchor type.
+// Icon mark — inline SVG line icons (consistent with the rest of the form's
+// icons, no more clashing emoji). The .anchor-icon CSS tints by anchor type
+// via currentColor, so the stroke picks up the right colour automatically.
 function _anchorIconFor(type, method) {
-  if (type === 'arrival')    return method === 'flight' ? '🛬' : '🚆'
-  if (type === 'departure')  return method === 'flight' ? '🛫' : '🚆'
-  if (type === 'morning')    return '🌅'
-  if (type === 'end_of_day') return '🌙'
-  return '·'
+  const w = (inner) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
+  const train     = '<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>'
+  const planeLand = '<path d="M2 22h20"/><path d="M3.8 16.6 21 11l-1-3-5.5 1.2L8 3 6 3.5l3.2 6.3-4.7 1L3 8 1.5 8.4Z"/>'
+  const planeUp   = '<path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/>'
+  const sunrise   = '<path d="M12 2v4M5.6 9.6 7 11M2 18h3M19 18h3M17 11l1.4-1.4M22 22H2"/><path d="M8 18a4 4 0 0 1 8 0"/>'
+  const moon      = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+  if (type === 'arrival')    return w(method === 'flight' ? planeLand : train)
+  if (type === 'departure')  return w(method === 'flight' ? planeUp : train)
+  if (type === 'morning')    return w(sunrise)
+  if (type === 'end_of_day') return w(moon)
+  return w('<circle cx="12" cy="12" r="9"/>')
 }
 
 function _buildLockedAnchor({ type, title, subtitle, method, badge, footer }) {
@@ -19875,7 +19882,7 @@ function _buildLockedAnchor({ type, title, subtitle, method, badge, footer }) {
   // Right-side: profile-match badge (only on end-of-day) OR the "auto" pill.
   const rightHtml = badge
     ? `<span class="anchor-badge anchor-badge-${badge.state}">${escapeHtml(badge.label)}</span>`
-    : `<span class="anchor-lock"><span class="anchor-lock-icon">🔒</span>${dt('auto','auto')}</span>`
+    : `<span class="anchor-lock"><span class="anchor-lock-icon"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>${dt('auto','auto')}</span>`
   el.innerHTML = `
     <div class="anchor-row">
       <span class="anchor-icon">${_anchorIconFor(type, method)}</span>
