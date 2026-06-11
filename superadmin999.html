@@ -495,13 +495,44 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 /* Rows — clean two-column timeline (time | content) */
 .ps-rows{list-style:none;padding:2px 0 4px;margin:0;}
 .ps-row{
-  display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:start;
-  padding:10px 16px;border-bottom:1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  display:grid;grid-template-columns:54px 1fr;gap:12px;align-items:start;
+  padding:8px 16px 8px 50px;position:relative;
 }
 .ps-row:last-child{border-bottom:none;}
-.ps-time{font-size:11.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:1px;white-space:nowrap;}
+/* ── Timeline spine ── */
+.ps-rows--tl{position:relative;}
+.ps-rows--tl::before{content:"";position:absolute;left:27px;top:12px;bottom:12px;width:2px;background:color-mix(in srgb, var(--border) 80%, transparent);}
+.ps-dot{position:absolute;z-index:1;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;box-shadow:0 0 0 3px var(--surface,#fff);}
+.ps-dot svg{display:block;}
+.ps-ico{width:28px;height:28px;}
+.ps-ico svg{width:15px;height:15px;}
+.ps-ico--sm{width:22px;height:22px;}
+.ps-ico--sm svg{width:12px;height:12px;}
+.ps-row--stop > .ps-dot, .ps-row--start > .ps-dot, .ps-row--end > .ps-dot{top:9px;left:14px;}
+.ps-row--transit > .ps-dot{top:7px;left:17px;}
+.ps-ico--activity{background:rgba(94,123,110,0.15);color:#3F5A4C;}
+.ps-ico--meal{background:rgba(201,169,97,0.18);color:#8a6a1e;}
+.ps-ico--shop{background:rgba(201,169,97,0.18);color:#8a6a1e;}
+.ps-ico--ent{background:rgba(70,95,120,0.15);color:#46627a;}
+.ps-ico--free{background:rgba(94,123,110,0.13);color:#3F5A4C;}
+.ps-ico--hotel{background:rgba(94,123,110,0.17);color:#2f5240;}
+.ps-ico--transit{background:rgba(70,95,120,0.13);color:#46627a;}
+.ps-ico--arrive{background:rgba(70,120,150,0.14);color:#2f6b8a;}
+.ps-ico--night{background:rgba(60,72,104,0.12);color:#41506e;}
+.ps-ico--depart{background:rgba(212,145,61,0.16);color:#A26821;}
+.ps-cell--card{background:var(--surface,#fff);border:1px solid var(--border);border-radius:11px;padding:9px 13px;}
+.ps-start-card{background:rgba(70,120,150,0.07);border:1px solid rgba(70,120,150,0.16);border-radius:11px;padding:8px 13px;}
+.ps-start-title{font-size:13.5px;font-weight:600;color:#235a78;}
+.ps-start-meta{font-size:11.5px;color:#5a7d92;margin-top:2px;}
+.ps-end-card{background:rgba(60,72,104,0.07);border:1px solid rgba(60,72,104,0.14);border-radius:11px;padding:8px 13px;}
+.ps-end-card--depart{background:rgba(212,145,61,0.08);border-color:rgba(212,145,61,0.18);}
+.ps-end-title{font-size:13px;font-weight:600;color:#41506e;}
+.ps-end-card--depart .ps-end-title{color:#8a5a14;}
+.ps-rate{color:#b0892f;font-weight:600;}
+.ps-day-chip{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:4px 11px;border-radius:99px;white-space:nowrap;background:rgba(94,123,110,0.15);color:#3F5A4C;}
+.ps-time{font-size:11.5px;font-weight:600;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:9px;white-space:nowrap;}
 .ps-cell{min-width:0;}
-.ps-name{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3;letter-spacing:-0.01em;}
+.ps-name{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px;}
 .ps-cat{color:var(--ink-3);font-weight:500;}
 .ps-meta{font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.4;}
 .ps-note{font-size:12px;line-height:1.5;color:var(--ink-2);margin-top:5px;font-style:italic;white-space:pre-wrap;word-wrap:break-word;}
@@ -539,7 +570,7 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 .ps-extra-val{font-size:13px;line-height:1.55;color:var(--ink-2);white-space:pre-wrap;word-wrap:break-word;}
 @media (max-width:640px){
   .ps-brief{grid-template-columns:1fr;}
-  .ps-row{grid-template-columns:58px 1fr;gap:10px;padding:9px 12px;}
+  .ps-row{grid-template-columns:48px 1fr;gap:10px;padding:8px 12px 8px 46px;}
   .ps-day-head{padding:11px 12px 9px;}
   .ps-warn{margin:8px 12px 11px;}
 }
@@ -3451,7 +3482,7 @@ async function openReviewModal(planId, planner, plan, traveler, isBond) {
 
   // Load full plan details
   const { data: planData } = await sb.from('plans')
-    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,transport_mode,place_types,item_images(id,url))')
+    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,transport_mode,place_types,rating,item_images(id,url))')
     .eq('id', planId).single()
   const data = { plan: planData }
   if (data?.plan?.sets) {
@@ -3597,8 +3628,42 @@ function renderPlanSummary(plan){
     return out
   }
 
+  // ── Spine/badge/leg/arrival/close helpers (mirrors the planner summary) ──
+  const _svgIco = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
+  const _STOP_ICON = {
+    activity: _svgIco('<path d="M3 22h18"/><path d="M6 18V11M10 18V11M14 18V11M18 18V11"/><path d="m12 3 7 5H5z"/>'),
+    meal:     _svgIco('<path d="M4 3v7a2 2 0 0 0 4 0V3"/><path d="M6 12v9"/><path d="M18 3a3 3 0 0 0-3 3v6h3Z"/><path d="M18 12v9"/>'),
+    shop:     _svgIco('<path d="M6 2 4 6v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6l-2-4Z"/><path d="M4 6h16"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
+    ent:      _svgIco('<path d="M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4Z"/><path d="M14 6v12"/>'),
+    free:     _svgIco('<path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 1v3M10 1v3M14 1v3"/>'),
+    hotel:    _svgIco('<path d="M2 4v16"/><path d="M2 9h18a2 2 0 0 1 2 2v9"/><path d="M2 16h20"/><path d="M7 9V6h6v3"/>'),
+    pin:      _svgIco('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
+  }
+  const _stopKind = (s) => {
+    const ty = String(s.type||'').toLowerCase()
+    if (ty==='meal') return 'meal'; if (ty==='shopping') return 'shop'; if (ty==='entertainment') return 'ent'
+    if (ty==='freetime') return 'free'; if (ty==='hotel_checkin'||ty==='hotel_checkout'||ty==='accommodation') return 'hotel'
+    let pts = s.place_types; if (typeof pts==='string') pts = pts.split(',').map(x=>x.trim())
+    if (Array.isArray(pts)) { if (pts.some(p=>/cafe|bakery|bar|restaurant|food|meal/.test(p))) return 'meal'; if (pts.some(p=>/store|shopping_mall|department_store/.test(p))) return 'shop'; if (pts.some(p=>/night_club|movie|theater|amusement/.test(p))) return 'ent' }
+    return 'activity'
+  }
+  const _catBadge = (s) => { const k=_stopKind(s); return `<span class="ps-ico ps-ico--${k} ps-dot">${_STOP_ICON[k]||_STOP_ICON.pin}</span>` }
+  const _legMins = (s) => { const d=parseInt(s.duration_minutes,10); return (Number.isFinite(d)&&d>0)?d:null }
+  const _legText = (s) => { const mode=_modeOf(s); const word=mode?_modeWord(mode):'Transport'; const parts=[`<b>${escapeHtml(word)}</b>`]; const mins=_legMins(s); if(mins!=null)parts.push(escapeHtml(_fmtDurMinsAdmin(mins))); return parts.join(' · ') }
+  const _psHotelName = ((items||[]).find(it=>String(it.type||'').toLowerCase()==='hotel_checkin')?.title) || ''
+  const _MOON_ICO  = _svgIco('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>')
+  const _PLANE_ICO = _svgIco('<path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/>')
+  const _arrMeta    = (trav&&typeof trav.meta==='object'&&trav.meta)?trav.meta:{}
+  const _arrGateway = String(_arrMeta.unit_arrival_location||_arrMeta.arrival_location||'').trim()
+  const _arrMethodK = String(_arrMeta.unit_arrival_method||_arrMeta.arrival_method||'').toLowerCase()
+  const _arrFrom    = String(_arrMeta.unit_arrival_from||_arrMeta.origin_city||_arrMeta.origin_country||'').trim()
+  const _arrTimeStr = trav.arrival_time ? _t(trav.arrival_time) : ''
+  const _arrMethodWord = (m) => { if(/flight|plane|air|vol/.test(m))return'Flight'; if(/train|tgv|rail/.test(m))return'Train'; if(/car|drive|voiture|taxi/.test(m))return'Car'; if(/bus|coach|autocar/.test(m))return'Bus'; if(/ferry|boat|bateau/.test(m))return'Ferry'; return'' }
+  const _arrIco = (m) => { if(/train|tgv|rail/.test(m))return _svgIco('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>'); if(/car|drive|voiture|taxi/.test(m))return _svgIco('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/>'); return _svgIco('<path d="M2 22h20"/><path d="M3.8 16.6 21 11l-1-3-5.5 1.2L8 3 6 3.5l3.2 6.3-4.7 1L3 8 1.5 8.4Z"/>') }
+
   let daysHtml = ''
-  for (let d = 1; d <= Math.max(totalDays, Object.keys(byDay).length); d++) {
+  const _maxDay = Math.max(totalDays, Object.keys(byDay).length)
+  for (let d = 1; d <= _maxDay; d++) {
     const slots = _normalizeTransport((byDay[d] || []).sort((a,b) => (a.sort_order||0) - (b.sort_order||0)))
     const stops = slots.filter(s => String(s.type||'').toLowerCase() !== 'transport')
     let daySpend = 0
@@ -3609,12 +3674,16 @@ function renderPlanSummary(plan){
       if (_type === 'transport') {
         return `
         <li class="ps-row ps-row--transit">
-          <div class="ps-time ps-time--t">${escapeHtml(_tBare(s.time) || '·')}</div>
-          <div class="ps-cell"><div class="ps-leg">${_legIcon(_modeOf(s))}<span>${escapeHtml(s.title||'')}</span></div></div>
+          <span class="ps-ico ps-ico--transit ps-ico--sm ps-dot">${_legIcon(_modeOf(s))}</span>
+          <div class="ps-time ps-time--t"></div>
+          <div class="ps-cell"><div class="ps-leg"><span>${_legText(s)}</span></div></div>
         </li>`
       }
       const cat = _placeCat(s)
-      const metaBits = [_shortAddr(s.address), _fmtDurMinsAdmin(s.duration_minutes)].filter(Boolean).join(' · ')
+      const _rateHtml = (s.rating!=null && Number(s.rating)>0) ? `<span class="ps-rate">★ ${Number(s.rating).toFixed(1)}</span>` : ''
+      const _addrTxt = _shortAddr(s.address)
+      const _durTxt  = _fmtDurMinsAdmin(s.duration_minutes)
+      const _metaParts = [_addrTxt?escapeHtml(_addrTxt):'', _rateHtml, _durTxt?escapeHtml(_durTxt):''].filter(Boolean)
       const st = _parseTips(s.notes)
       const chips = (st.tips && st.tips.length)
         ? `<div class="ps-chips">${st.tips.map(tp => { const c=_ADMIN_TIP_CATS[tp.cat]||_ADMIN_TIP_CATS.note; return `<span class="ps-chip" style="--c:${c.color};">${c.icon} ${escapeHtml(String(tp.text))}</span>` }).join('')}</div>`
@@ -3622,11 +3691,12 @@ function renderPlanSummary(plan){
       const legacy = st.legacy ? `<div class="ps-note">${escapeHtml(st.legacy)}</div>` : ''
       const imgHtml = s.item_images?.length ? `<div class="ps-imgs">${s.item_images.map(img => `<img src="${escapeHtml(img.url)}" alt="" onclick="openImageLightbox('${jsEsc(img.url)}')">`).join('')}</div>` : ''
       return `
-      <li class="ps-row">
+      <li class="ps-row ps-row--stop">
+        ${_catBadge(s)}
         <div class="ps-time">${escapeHtml(_t(s.time) || '—')}</div>
-        <div class="ps-cell">
-          <div class="ps-name">${escapeHtml(s.title || '(untitled)')}${cat ? `<span class="ps-cat"> · ${escapeHtml(cat)}</span>` : ''}</div>
-          ${metaBits ? `<div class="ps-meta">${escapeHtml(metaBits)}</div>` : ''}
+        <div class="ps-cell ps-cell--card">
+          <div class="ps-name"><span>${escapeHtml(s.title || '(untitled)')}${cat ? `<span class="ps-cat"> · ${escapeHtml(cat)}</span>` : ''}</span></div>
+          ${_metaParts.length ? `<div class="ps-meta">${_metaParts.join(' · ')}</div>` : ''}
           ${chips}${legacy}${imgHtml}
         </div>
       </li>`
@@ -3640,9 +3710,25 @@ function renderPlanSummary(plan){
       warnHtml = `<div class="ps-warn">⚠ ${escapeHtml(`No lunch scheduled — ${_travFirst} will be hungry by 1 PM`)}</div>`
     }
 
-    const statBits = [`${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`]
+    const statBits = []
+    if (stops.length > 0) statBits.push(`${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`)
     if (daySpend > 0) statBits.push('€' + daySpend.toLocaleString('en-GB'))
     const dateStr = _dayDate(d)
+    // Open/close the day on nodes (arrival · overnight · departure).
+    const _lastSlot = slots[slots.length - 1]
+    const _lastIsTransport = _lastSlot && String(_lastSlot.type||'').toLowerCase() === 'transport'
+    let closeHtml = ''
+    if (slots.length && d !== _maxDay) {
+      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span><div class="ps-time ps-time--t">night</div><div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">Overnight${_psHotelName?' · '+escapeHtml(_psHotelName):''}</div></div></div></li>`
+    } else if (slots.length && d === _maxDay && _lastIsTransport) {
+      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span><div class="ps-time ps-time--t"></div><div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">Departure</div></div></div></li>`
+    }
+    let startHtml = ''
+    if (d === 1 && slots.length && (_arrGateway || _arrTimeStr)) {
+      const _mw = _arrMethodWord(_arrMethodK)
+      const _sub = [_mw, _arrFrom ? `from ${_arrFrom}` : ''].filter(Boolean).join(' · ')
+      startHtml = `<li class="ps-row ps-row--start"><span class="ps-ico ps-ico--arrive ps-dot">${_arrIco(_arrMethodK)}</span><div class="ps-time">${escapeHtml(_arrTimeStr||'—')}</div><div class="ps-cell"><div class="ps-start-card"><div class="ps-start-title">Arrive${_arrGateway?' · '+escapeHtml(_arrGateway):''}</div>${_sub?`<div class="ps-start-meta">${escapeHtml(_sub)}</div>`:''}</div></div></li>`
+    }
     daysHtml += `
       <div class="ps-day ps-day--${dayTone(d)}">
         <div class="ps-day-head">
@@ -3650,9 +3736,9 @@ function renderPlanSummary(plan){
             <div class="ps-day-title">Day ${d}${dateStr ? ` · ${escapeHtml(dateStr)}` : ''}</div>
             <div class="ps-day-sub">${escapeHtml(dayLabel(d))}${dayHint(d) ? ` · ${dayHint(d)}` : ''}</div>
           </div>
-          <div class="ps-day-stats">${escapeHtml(statBits.join(' · '))}</div>
+          ${statBits.length ? `<div class="ps-day-chip">${escapeHtml(statBits.join(' · '))}</div>` : ''}
         </div>
-        <ul class="ps-rows">${rowsHtml}</ul>
+        <ul class="ps-rows ${slots.length ? 'ps-rows--tl' : ''}">${startHtml}${rowsHtml}${closeHtml}</ul>
         ${warnHtml}
       </div>`
   }
