@@ -14029,10 +14029,7 @@ async function openPlanSummary(plan) {
     const parts = [`<b>${escapeHtml(word)}</b>`]
     const mins = _legMins(s)
     if (mins != null) parts.push(escapeHtml(formatDurationLabel(mins)))
-    if (/taxi|uber|car|cab|drive/.test(mode)) {
-      const km = _legKm(s)
-      if (km != null) { const e = _transportEstimates(mode, km); if (e && e.costEur) parts.push(escapeHtml(fmtMoney(e.costEur))) }
-    }
+    // No transport cost on the leg — keep it clean (mode · duration only).
     return parts.join(' · ')
   }
   // Hotel name for the overnight close-node (day-1 check-in title, else plan field).
