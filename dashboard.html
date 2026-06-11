@@ -14382,6 +14382,13 @@ function fillItineraryItems(items) {
   // is "Hotel check-in" — drop the bags, freshen up, then go out. Skip if
   // the planner already has any non-locked stop on Day 1 (saved data wins).
   _autoSeedDay1HotelIfNeeded()
+  // Collapse any duplicate hotel check-in / check-out down to exactly one per
+  // day — heals restore-find-fail re-seeds, legacy duplicate DB rows, and any
+  // manual extras as soon as the plan loads (before the next autosave mirrors
+  // the DOM back to the DB).
+  document.querySelectorAll('[id^="slots-day-"]').forEach(c => {
+    if (typeof _enforceHotelBookendUnicity === 'function') _enforceHotelBookendUnicity(c)
+  })
   // After every slot is populated we have lat/lng on each linked slot —
   // compute the between-stop distance indicators for every day at once.
   refreshAllDistances()
@@ -15478,6 +15485,23 @@ function toggleTypeDD(btn, e){
 }
 function selectTypeDD(btn, label, key){
   const dd = btn.closest('.type-dd')
+  // Block creating a SECOND hotel check-in / check-out on the same day — there
+  // must be exactly one of each. (_enforceHotelBookendUnicity backstops this,
+  // but stopping it here respects the planner's intent and avoids silently
+  // removing a slot right after they configured it.)
+  if (key === 'hotel_checkin' || key === 'hotel_checkout') {
+    const _slotEl = dd.closest('.activity-slot')
+    const _dayC   = _slotEl?.closest('[id^="slots-day-"]')
+    const _dupe   = _dayC && [..._dayC.querySelectorAll(':scope > .activity-slot.slot-type-' + key)]
+      .some(s => s !== _slotEl)
+    if (_dupe) {
+      showToast(key === 'hotel_checkin'
+        ? dt('This day already has a hotel check-in.', "Cette journée a déjà un enregistrement à l'hôtel.")
+        : dt('This day already has a hotel check-out.', "Cette journée a déjà un départ de l'hôtel."))
+      dd.classList.remove('open')
+      return
+    }
+  }
   // Store the canonical KEY in the hidden input (not the localized label).
   // Postgres CHECK constraint on itinerary_items.type accepts only the
   // English keys (see docs/schema/add-stop-categories.sql).
@@ -20333,6 +20357,50 @@ function _sweepSelfLoopTransports(dayContainer) {
   return removed
 }
 
+// Enforce EXACTLY ONE hotel check-in and ONE hotel check-out per day. The rest
+// of the code only ever ADDS a bookend when one looks "missing" (presence
+// checks via querySelector) and never REMOVES extras — so once a second one
+// slips in (manual dropdown, restore-find-fail re-seed, legacy duplicate DB
+// rows) it survives forever via the DOM→DB round-trip. This is the single
+// authoritative place that COUNTS and collapses to one — keeping the planner's
+// real (most-filled-in) slot and never leaving zero. Pure DOM + idempotent.
+function _enforceHotelBookendUnicity(dayContainer) {
+  if (!dayContainer) return false
+  let removed = false
+  for (const typeClass of ['slot-type-hotel_checkin', 'slot-type-hotel_checkout']) {
+    const matches = [...dayContainer.querySelectorAll(':scope > .activity-slot.' + typeClass)]
+    if (matches.length <= 1) continue
+    // Keep the planner's REAL one: score by how filled-in it is (place link >
+    // title > address), tie-break toward the locked/auto-seeded structural slot,
+    // then original DOM order. Never delete content in favour of an empty seed.
+    const order = new Map(matches.map((s, i) => [s, i]))
+    const score = (s) => {
+      let n = 0
+      if (s.classList.contains('slot-place-linked')) n += 4
+      if ((s.querySelector('.slot-title-input')?.value || '').trim()) n += 2
+      if ((s.querySelector('.slot-address-input')?.value || '').trim()) n += 1
+      if (s.dataset.isLocked === 'true' || s.dataset.autoSeededHotelCheckin === 'true') n += 0.5
+      return n
+    }
+    const keeper = matches.slice().sort((a, b) => (score(b) - score(a)) || (order.get(a) - order.get(b)))[0]
+    // If ANY duplicate was the structural (locked / auto-seeded) check-in, keep
+    // the survivor protected so the "can't delete Day-1 check-in" lock doesn't
+    // vanish when the planner's manual copy wins the keep.
+    if (typeClass === 'slot-type-hotel_checkin'
+        && matches.some(s => s.dataset.isLocked === 'true' || s.dataset.autoSeededHotelCheckin === 'true')) {
+      keeper.dataset.isLocked = 'true'
+      keeper.dataset.autoSeededHotelCheckin = 'true'
+      keeper.classList.add('is-locked')
+    }
+    matches.forEach(s => {
+      if (s === keeper) return
+      console.log('[bookend-unicity] removing duplicate', typeClass, s.id || '')
+      s.remove(); removed = true
+    })
+  }
+  return removed
+}
+
 function _dedupeConsecutiveTransports(dayContainer) {
   if (!dayContainer) return false
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
@@ -21927,6 +21995,14 @@ async function _persistDraft(planId) {
   // dataset.url (uploaded by the picker, or kept from a previous load) carry
   // through to item_images. Wraps still pending upload (have _file) are
   // skipped here — the next auto-save will catch them once upload finishes.
+  // Enforce one hotel check-in / check-out per day BEFORE collecting, so a
+  // duplicate can never be written to the DB. _persistDraft is the only writer
+  // and mirrors the DOM exactly, so deduping here means the insert-then-delete-
+  // stale step below physically removes any leftover duplicate row on this very
+  // save — which is what finally stops the dup from "coming back" after reload.
+  document.querySelectorAll('[id^="slots-day-"]').forEach(c => {
+    if (typeof _enforceHotelBookendUnicity === 'function') _enforceHotelBookendUnicity(c)
+  })
   const items = []
   const urlsByOrder = {}
   document.querySelectorAll('.activity-slot').forEach(slot => {
