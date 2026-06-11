@@ -90,6 +90,28 @@
   .b-hotel{background:var(--tint-green);color:#2f5240;}
   .b-transit{background:var(--tint-slate);color:#46627a;}
   .b-night{background:var(--tint-night);color:#41506e;}
+  .b-arrive{background:rgba(70,120,150,0.14);color:#2f6b8a;}
+
+  /* arrival = the day's OPENING node (where the journey starts from) */
+  .start{padding:7px 0;}
+  .start .dot{margin-top:8px;width:28px;height:28px;}
+  .start .dot svg{width:15px;height:15px;}
+  .start .t{font-size:12.5px;color:var(--ink-2);font-weight:600;padding-top:9px;}
+  .start .card{flex:1;background:rgba(70,120,150,0.07);border:1px solid rgba(70,120,150,0.16);border-radius:12px;padding:10px 14px;min-width:0;}
+  .start .title{font-size:14px;font-weight:600;color:#235a78;}
+  .start .meta{font-size:12px;color:#5a7d92;margin-top:3px;}
+
+  /* photo thumbnails inside a stop card */
+  .thumbs{display:flex;gap:6px;margin-top:9px;}
+  .thumbs .ph{width:62px;height:62px;border-radius:8px;border:1px solid var(--rule);background-size:cover;background-position:center;}
+
+  /* planner tip chips — colour-coded by category, same as the live --c system */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;line-height:1.3;font-weight:500;padding:3px 10px 3px 9px;border-radius:99px;
+    color:color-mix(in srgb,var(--c,#6b6b6b) 82%,#1B1F1C);
+    background:color-mix(in srgb,var(--c,#6b6b6b) 12%,#fff);
+    border:1px solid color-mix(in srgb,var(--c,#6b6b6b) 30%,transparent);}
+  .rate{color:#b0892f;font-weight:600;}
 
   .m-foot{display:flex;justify-content:flex-end;gap:10px;padding:16px 26px;border-top:1px solid var(--rule);background:rgba(255,255,255,.4);}
   .btn{font-family:var(--sans);font-size:13.5px;font-weight:600;padding:10px 20px;border-radius:9px;cursor:pointer;border:1px solid var(--rule);}
@@ -135,16 +157,22 @@
         </div>
         <div class="tl">
 
+          <div class="node start">
+            <div class="rail"><span class="dot b-arrive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/></svg></span></div>
+            <div class="t">1:30 pm</div>
+            <div class="card"><div class="title">Arrive · Gare de Saint-Malo</div><div class="meta">TGV from Paris · meet the driver outside</div></div>
+          </div>
+
           <div class="node leg">
             <div class="rail"><span class="dot b-transit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/></svg></span></div>
             <div class="t"></div>
-            <div class="legtxt"><b>Uber</b> from station · 18 min · €14</div>
+            <div class="legtxt"><b>Uber</b> · 8 min · €12</div>
           </div>
 
           <div class="node stop">
             <div class="rail"><span class="dot b-hotel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 9h18a2 2 0 0 1 2 2v9"/><path d="M2 16h20"/><path d="M7 9V6h6v3"/></svg></span></div>
             <div class="t">2:00 pm</div>
-            <div class="card"><div class="title">Hotel Le Nouveau Monde</div><div class="meta">64 Chau. du Sillon, Saint-Malo · check-in</div></div>
+            <div class="card"><div class="title">Hotel Le Nouveau Monde</div><div class="meta">64 Chau. du Sillon, Saint-Malo · check-in</div><div class="chips"><span class="chip" style="--c:#2f8a7a">🛎 Early check-in requested</span></div></div>
           </div>
 
           <div class="node leg">
@@ -156,7 +184,7 @@
           <div class="node stop">
             <div class="rail"><span class="dot b-activity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M6 18V11M10 18V11M14 18V11M18 18V11"/><path d="m12 3 7 5H5z"/></svg></span></div>
             <div class="t">3:45 pm</div>
-            <div class="card"><div class="title">Escape game</div><div class="meta">Quai Chateaubriand, La Richardais · 1 hr</div></div>
+            <div class="card"><div class="title">Escape game</div><div class="meta">Quai Chateaubriand, La Richardais · <span class="rate">★ 4.7</span> · 1 hr</div><div class="chips"><span class="chip" style="--c:#3b6ea5">🎟 Book online — it's cheaper</span><span class="chip" style="--c:#c0683a">⚠️ Arrive 10 min early</span></div><div class="thumbs"><div class="ph" style="background:linear-gradient(135deg,#9cc4b0,#5e8b74)"></div><div class="ph" style="background:linear-gradient(135deg,#d8c79a,#b1923f)"></div></div></div>
           </div>
 
           <div class="node leg">
@@ -168,7 +196,7 @@
           <div class="node stop">
             <div class="rail"><span class="dot b-activity"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18"/><path d="M6 18V11M10 18V11M14 18V11M18 18V11"/><path d="m12 3 7 5H5z"/></svg></span></div>
             <div class="t">5:45 pm</div>
-            <div class="card"><div class="title">eCityscape-game : L'hermine et l'Oeuf de dragon</div><div class="meta">Esp. Saint-Vincent, Saint-Malo · 1 h 30</div></div>
+            <div class="card"><div class="title">eCityscape-game : L'hermine et l'Oeuf de dragon</div><div class="meta">Esp. Saint-Vincent, Saint-Malo · <span class="rate">★ 4.8</span> · 1 h 30</div><div class="chips"><span class="chip" style="--c:#7a5fb0">💬 "Bonjour, on a réservé" at the desk</span></div></div>
           </div>
 
           <div class="node leg">
@@ -180,7 +208,7 @@
           <div class="node stop">
             <div class="rail"><span class="dot b-meal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a2 2 0 0 0 4 0V3"/><path d="M6 12v9"/><path d="M18 3a3 3 0 0 0-3 3v6h3Z"/><path d="M18 12v9"/></svg></span></div>
             <div class="t">7:30 pm</div>
-            <div class="card"><div class="title">Restaurant 1934</div><div class="meta">40 Quai Duguay-Trouin, Saint-Malo · dinner</div></div>
+            <div class="card"><div class="title">Restaurant 1934</div><div class="meta">40 Quai Duguay-Trouin, Saint-Malo · <span class="rate">★ 4.5</span> · dinner</div><div class="chips"><span class="chip" style="--c:#b08a3e">🪙 The €32 set menu is best value</span><span class="chip" style="--c:#c0683a">⚠️ Ask for the terrace table</span></div></div>
           </div>
 
           <div class="node leg">
