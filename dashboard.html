@@ -1069,10 +1069,21 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
 /* Rows — clean two-column timeline (time | content), light dividers */
 .ps-rows{list-style:none;padding:2px 0 4px;margin:0;}
 .ps-row{
-  display:grid;grid-template-columns:74px 1fr;gap:14px;align-items:start;
-  padding:11px 18px;border-bottom:1px solid var(--e-rule,rgba(27,31,28,0.05));
+  display:grid;grid-template-columns:54px 1fr;gap:12px;align-items:start;
+  padding:8px 18px 8px 50px;position:relative;
 }
 .ps-row:last-child{border-bottom:none;}
+/* ── Timeline spine: one continuous thread linking the day's stops, with the
+   icon badge sitting ON the line as a node. Stops become subtle cards;
+   transit legs stay quiet inline connectors between them. ── */
+.ps-rows--tl{position:relative;}
+.ps-rows--tl::before{content:"";position:absolute;left:27px;top:12px;bottom:12px;width:2px;
+  background:var(--e-rule,rgba(27,31,28,0.13));}
+.ps-dot{position:absolute;z-index:1;box-shadow:0 0 0 3px #FFFDF8;}
+.ps-row--stop    > .ps-dot{top:9px;left:14px;}
+.ps-row--transit > .ps-dot{top:7px;left:17px;}
+.ps-cell--card{background:#FFFFFF;border:1px solid var(--e-rule,rgba(27,31,28,0.09));
+  border-radius:11px;padding:9px 13px;}
 .ps-time{
   font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
   color:var(--e-ink-2,#4A524C);letter-spacing:-0.01em;
@@ -1208,7 +1219,7 @@ html[lang="ja"] .ps-note{font-style:normal;font-family:'Noto Sans JP',sans-serif
   .ps-itin-title{font-size:22px;}
   .ps-brief{grid-template-columns:1fr;gap:10px;padding:14px 14px;}
   .ps-brief-val{font-size:13.5px;}
-  .ps-row{grid-template-columns:60px 1fr;gap:10px;padding:10px 14px;}
+  .ps-row{grid-template-columns:48px 1fr;gap:10px;padding:8px 14px 8px 46px;}
   .ps-time{font-size:11.5px;}
   .ps-name{font-size:13.5px;}
   .ps-note{font-size:12.5px;}
@@ -5339,6 +5350,11 @@ body.theme-premium #modal-plan-summary .ps-day--arrival   .ps-day-tag{color:#B86
 body.theme-premium #modal-plan-summary .ps-day--full      .ps-day-tag{color:var(--green-dark,#4A6759)!important;}
 body.theme-premium #modal-plan-summary .ps-day--departure .ps-day-tag{color:var(--p-gold-d)!important;}
 
+/* Timeline spine + stop cards on the ivory premium surface */
+body.theme-premium #modal-plan-summary .ps-rows--tl::before{background:rgba(198,165,100,0.32)!important;}
+body.theme-premium #modal-plan-summary .ps-dot{box-shadow:0 0 0 3px var(--p-paper-2,#FFFBF0)!important;}
+body.theme-premium #modal-plan-summary .ps-cell--card{background:#FFFCF4!important;border-color:rgba(198,165,100,0.22)!important;}
+
 /* Slot rows */
 body.theme-premium #modal-plan-summary .ps-slot{
   grid-template-columns:84px 32px 1fr!important;
@@ -5485,6 +5501,19 @@ body.theme-dark #modal-plan-summary .ps-chip,
 body.theme-dark.theme-premium #modal-plan-summary .ps-chip{
   color:#e9e2d2!important;background:rgba(255,255,255,0.06)!important;border-color:rgba(255,255,255,0.14)!important;
 }
+/* Timeline spine + stop cards + icon badges — legible on the dark surface */
+body.theme-dark #modal-plan-summary .ps-rows--tl::before,
+body.theme-dark.theme-premium #modal-plan-summary .ps-rows--tl::before{background:rgba(255,255,255,0.13)!important;}
+body.theme-dark #modal-plan-summary .ps-dot,
+body.theme-dark.theme-premium #modal-plan-summary .ps-dot{box-shadow:0 0 0 3px #2a231b!important;}
+body.theme-dark #modal-plan-summary .ps-cell--card,
+body.theme-dark.theme-premium #modal-plan-summary .ps-cell--card{background:rgba(255,255,255,0.045)!important;border-color:rgba(255,255,255,0.09)!important;}
+body.theme-dark #modal-plan-summary .ps-ico--activity, body.theme-dark #modal-plan-summary .ps-ico--hotel, body.theme-dark #modal-plan-summary .ps-ico--free,
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--activity, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--hotel, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--free{background:rgba(94,123,110,0.30)!important;color:#bcd3c6!important;}
+body.theme-dark #modal-plan-summary .ps-ico--meal, body.theme-dark #modal-plan-summary .ps-ico--shop,
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--meal, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--shop{background:rgba(201,169,97,0.28)!important;color:#e7c98a!important;}
+body.theme-dark #modal-plan-summary .ps-ico--ent, body.theme-dark #modal-plan-summary .ps-ico--transit,
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--ent, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--transit{background:rgba(120,150,180,0.26)!important;color:#bcd0e6!important;}
 /* Top blocks on dark surface */
 body.theme-dark #modal-plan-summary .ps-issues,
 body.theme-dark.theme-premium #modal-plan-summary .ps-issues{background:rgba(163,45,45,0.18)!important;border-color:rgba(220,90,80,0.40)!important;}
@@ -13857,7 +13886,7 @@ async function openPlanSummary(plan) {
     }
     return 'activity'
   }
-  const _catBadge = (s) => { const k = _stopKind(s); return `<span class="ps-ico ps-ico--${k}">${_STOP_ICON[k] || _STOP_ICON.pin}</span>` }
+  const _catBadge = (s) => { const k = _stopKind(s); return `<span class="ps-ico ps-ico--${k} ps-dot">${_STOP_ICON[k] || _STOP_ICON.pin}</span>` }
   const _fmtLower = (tm) => tm ? formatTimeDisplay(tm).toLowerCase() : ''
   const _fmtBare  = (tm) => _fmtLower(tm).replace(/\s*(am|pm)\s*$/i,'')   // transit: drop the meridiem
   const _toMin = (tm) => { const m = String(tm||'').match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]*60 + +m[2]) : null }
@@ -13955,8 +13984,9 @@ async function openPlanSummary(plan) {
       if (_type === 'transport') {
         return `
         <li class="ps-row ps-row--transit">
+          <span class="ps-ico ps-ico--transit ps-ico--sm ps-dot">${_legIcon(_modeOf(s))}</span>
           <div class="ps-time ps-time--t">${escapeHtml(_fmtBare(s.time) || '·')}</div>
-          <div class="ps-cell"><div class="ps-leg"><span class="ps-ico ps-ico--transit ps-ico--sm">${_legIcon(_modeOf(s))}</span><span>${escapeHtml(s.title || '')}</span></div></div>
+          <div class="ps-cell"><div class="ps-leg"><span>${escapeHtml(s.title || '')}</span></div></div>
         </li>`
       }
       const metaBits = [_shortAddr(s.address), formatDurationLabel(s.duration_minutes)].filter(Boolean).join(' · ')
@@ -13971,10 +14001,11 @@ async function openPlanSummary(plan) {
       const imgs = (s.item_images || []).filter(im => im?.url)
       const imgHtml = imgs.length ? `<div class="ps-imgs">${imgs.map(im => `<a href="${escapeHtml(im.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(im.url)}" alt=""></a>`).join('')}</div>` : ''
       return `
-      <li class="ps-row">
+      <li class="ps-row ps-row--stop">
+        ${_catBadge(s)}
         <div class="ps-time">${escapeHtml(_fmtLower(s.time) || '—')}</div>
-        <div class="ps-cell">
-          <div class="ps-name">${_catBadge(s)}<span>${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</span></div>
+        <div class="ps-cell ps-cell--card">
+          <div class="ps-name"><span>${escapeHtml(s.title || tPrime('ps.untitled','(untitled)'))}</span></div>
           ${metaBits ? `<div class="ps-meta">${escapeHtml(metaBits)}</div>` : ''}
           ${chips}${legacy}${imgHtml}
         </div>
@@ -13998,7 +14029,7 @@ async function openPlanSummary(plan) {
           </div>
           ${statBits.length ? `<div class="ps-day-chip">${escapeHtml(statBits.join(' · '))}</div>` : ''}
         </div>
-        <ul class="ps-rows">${rowsHtml}</ul>
+        <ul class="ps-rows ${slots.length ? 'ps-rows--tl' : ''}">${rowsHtml}</ul>
       </div>`
   }
 
