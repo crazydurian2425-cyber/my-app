@@ -3712,7 +3712,7 @@ function renderPlanSummary(plan){
 
     const statBits = []
     if (stops.length > 0) statBits.push(`${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`)
-    if (daySpend > 0) statBits.push('€' + daySpend.toLocaleString('en-GB'))
+    // (day spend intentionally not shown in the chip — keep it to the count)
     const dateStr = _dayDate(d)
     // Open/close the day on nodes (arrival · overnight · departure).
     const _lastSlot = slots[slots.length - 1]

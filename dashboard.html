@@ -14115,7 +14115,7 @@ async function openPlanSummary(plan) {
     // departure days. Show the count + cost only when there's something there.
     const statBits = []
     if (venues.length > 0) statBits.push(`${venues.length} ${stopWord}`)
-    if (dayCost > 0) statBits.push(fmtMoney(dayCost))
+    // (day spend intentionally not shown in the chip — keep it to the count)
     const dateStr = _dayDate(d)
     // Close the day on a NODE, not a dangling transport leg: an overnight marker
     // on normal days, a departure marker on the last day when it ends heading to
@@ -18351,6 +18351,14 @@ function applyRouteDataToSlot(slot, data) {
   const cells = host.querySelectorAll('.transport-grid .tg-value')
   if (cells[0]) { cells[0].textContent = Number.isFinite(data.distanceKm) ? `${data.distanceKm.toFixed(1)} km` : '—'; cells[0].classList.remove('tg-blank') }
   if (cells[1]) { cells[1].textContent = Number.isFinite(data.durationMin) ? `${data.durationMin} min` : '—'; cells[1].classList.remove('tg-blank') }
+  // Persist the REAL Google travel time so the read-only summary + admin review
+  // can show "Uber · 25 min" instead of a straight-line estimate — and so the
+  // ARRIVAL hop (origin = airport, which isn't a saved stop, so it can't be
+  // estimated) gets a duration at all. Saved by _persistDraft for transport.
+  if (Number.isFinite(data.durationMin)) {
+    slot.dataset.routeMins = String(data.durationMin)
+    if (typeof autoSaveDraft === 'function') autoSaveDraft()
+  }
   // Cost: if Routes API gave us a fare (transit only), use that. Otherwise
   // recompute from the REAL road km the API returned — previously we were
   // showing the Haversine-based heuristic cost which lagged behind the
@@ -21867,7 +21875,7 @@ async function submitPlan() {
         day_number: dayNum, time, type,
         title: titleVal,
         address: addressVal || null,
-        duration_minutes: Number.isFinite(durMins) ? durMins : null,   // persist 'how long to stay' for ANY timed slot (hotel/meal/shopping/…), not just activity/freetime
+        duration_minutes: (type === 'transport') ? (parseInt(slot.dataset.routeMins, 10) || null) : (Number.isFinite(durMins) ? durMins : null),   // transport: real Google travel time; other slots: 'how long to stay'
         notes,
         transport_mode: transportMode,
         is_locked: isLockedRow,
@@ -22283,7 +22291,7 @@ async function _persistDraft(planId) {
         type:       slotType,
         title:      titleVal,
         address:    slot.querySelector('.slot-address-input')?.value?.trim() || null,
-        duration_minutes: Number.isFinite(durMins) ? durMins : null,   // persist 'how long to stay' for ANY timed slot, not just activity/freetime
+        duration_minutes: (slotType === 'transport') ? (parseInt(slot.dataset.routeMins, 10) || null) : (Number.isFinite(durMins) ? durMins : null),   // transport: real Google travel time; other slots: 'how long to stay'
         notes,
         transport_mode: transportMode,
         is_locked:  isLockedRow,
