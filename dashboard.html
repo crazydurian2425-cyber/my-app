@@ -1084,6 +1084,14 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
 .ps-row--transit > .ps-dot{top:7px;left:17px;}
 .ps-cell--card{background:#FFFFFF;border:1px solid var(--e-rule,rgba(27,31,28,0.09));
   border-radius:11px;padding:9px 13px;}
+/* Day-closing node — overnight (moon) on normal days, departure (plane) on the last. */
+.ps-row--end > .ps-dot{top:9px;left:14px;}
+.ps-ico--night {background:rgba(60,72,104,0.12);color:#41506e;}
+.ps-ico--depart{background:rgba(212,145,61,0.16);color:#A26821;}
+.ps-end-card{background:rgba(60,72,104,0.07);border:1px solid rgba(60,72,104,0.14);border-radius:11px;padding:8px 13px;}
+.ps-end-card--depart{background:rgba(212,145,61,0.08);border-color:rgba(212,145,61,0.18);}
+.ps-end-title{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#41506e;}
+.ps-end-card--depart .ps-end-title{color:#8a5a14;}
 .ps-time{
   font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;
   color:var(--e-ink-2,#4A524C);letter-spacing:-0.01em;
@@ -5354,6 +5362,7 @@ body.theme-premium #modal-plan-summary .ps-day--departure .ps-day-tag{color:var(
 body.theme-premium #modal-plan-summary .ps-rows--tl::before{background:rgba(198,165,100,0.32)!important;}
 body.theme-premium #modal-plan-summary .ps-dot{box-shadow:0 0 0 3px var(--p-paper-2,#FFFBF0)!important;}
 body.theme-premium #modal-plan-summary .ps-cell--card{background:#FFFCF4!important;border-color:rgba(198,165,100,0.22)!important;}
+body.theme-premium #modal-plan-summary .ps-end-card{background:rgba(198,165,100,0.08)!important;border-color:rgba(198,165,100,0.20)!important;}
 
 /* Slot rows */
 body.theme-premium #modal-plan-summary .ps-slot{
@@ -5514,6 +5523,17 @@ body.theme-dark #modal-plan-summary .ps-ico--meal, body.theme-dark #modal-plan-s
 body.theme-dark.theme-premium #modal-plan-summary .ps-ico--meal, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--shop{background:rgba(201,169,97,0.28)!important;color:#e7c98a!important;}
 body.theme-dark #modal-plan-summary .ps-ico--ent, body.theme-dark #modal-plan-summary .ps-ico--transit,
 body.theme-dark.theme-premium #modal-plan-summary .ps-ico--ent, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--transit{background:rgba(120,150,180,0.26)!important;color:#bcd0e6!important;}
+/* Day-closing node on dark */
+body.theme-dark #modal-plan-summary .ps-end-card,
+body.theme-dark.theme-premium #modal-plan-summary .ps-end-card{background:rgba(255,255,255,0.05)!important;border-color:rgba(255,255,255,0.10)!important;}
+body.theme-dark #modal-plan-summary .ps-end-title,
+body.theme-dark.theme-premium #modal-plan-summary .ps-end-title{color:#cdd5e6!important;}
+body.theme-dark #modal-plan-summary .ps-end-card--depart .ps-end-title,
+body.theme-dark.theme-premium #modal-plan-summary .ps-end-card--depart .ps-end-title{color:#e7c98a!important;}
+body.theme-dark #modal-plan-summary .ps-ico--night,
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--night{background:rgba(120,140,180,0.26)!important;color:#bcd0e6!important;}
+body.theme-dark #modal-plan-summary .ps-ico--depart,
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--depart{background:rgba(212,145,61,0.26)!important;color:#e7c98a!important;}
 /* Top blocks on dark surface */
 body.theme-dark #modal-plan-summary .ps-issues,
 body.theme-dark.theme-premium #modal-plan-summary .ps-issues{background:rgba(163,45,45,0.18)!important;border-color:rgba(220,90,80,0.40)!important;}
@@ -13969,6 +13989,38 @@ async function openPlanSummary(plan) {
     }
   }
 
+  // ── Terse connector text + close-node helpers ──
+  // The spine already shows the route (card above → card below), so a leg only
+  // needs its MODE + travel time (+ cost for private rides) — far less noise
+  // than repeating "A → B" place names on every hop.
+  const _legMins = (s) => {
+    const d = parseInt(s.duration_minutes, 10)
+    if (Number.isFinite(d) && d > 0) return d
+    const km = _legKm(s)
+    if (km != null && typeof _transportEstimates === 'function') {
+      const e = _transportEstimates(_modeOf(s) || 'taxi', km)
+      if (e && Number.isFinite(e.mins)) return e.mins
+    }
+    return null
+  }
+  const _legText = (s) => {
+    const mode = _modeOf(s)
+    const word = (mode && typeof modeLabel === 'function') ? modeLabel(mode) : dt('Transport','Transport')
+    const parts = [`<b>${escapeHtml(word)}</b>`]
+    const mins = _legMins(s)
+    if (mins != null) parts.push(escapeHtml(formatDurationLabel(mins)))
+    if (/taxi|uber|car|cab|drive/.test(mode)) {
+      const km = _legKm(s)
+      if (km != null) { const e = _transportEstimates(mode, km); if (e && e.costEur) parts.push(escapeHtml(fmtMoney(e.costEur))) }
+    }
+    return parts.join(' · ')
+  }
+  // Hotel name for the overnight close-node (day-1 check-in title, else plan field).
+  const _psHotelName = ((items||[]).find(it => String(it.type||'').toLowerCase()==='hotel_checkin')?.title)
+                     || plan.hotel_name || window._currentHotelName || ''
+  const _MOON_ICO  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`
+  const _PLANE_ICO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/></svg>`
+
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
     const slots = _psNormalizeTransport(byDay[d] || [])
@@ -13985,8 +14037,8 @@ async function openPlanSummary(plan) {
         return `
         <li class="ps-row ps-row--transit">
           <span class="ps-ico ps-ico--transit ps-ico--sm ps-dot">${_legIcon(_modeOf(s))}</span>
-          <div class="ps-time ps-time--t">${escapeHtml(_fmtBare(s.time) || '·')}</div>
-          <div class="ps-cell"><div class="ps-leg"><span>${escapeHtml(s.title || '')}</span></div></div>
+          <div class="ps-time ps-time--t"></div>
+          <div class="ps-cell"><div class="ps-leg"><span>${_legText(s)}</span></div></div>
         </li>`
       }
       const metaBits = [_shortAddr(s.address), formatDurationLabel(s.duration_minutes)].filter(Boolean).join(' · ')
@@ -14020,6 +14072,27 @@ async function openPlanSummary(plan) {
     if (venues.length > 0) statBits.push(`${venues.length} ${stopWord}`)
     if (dayCost > 0) statBits.push(fmtMoney(dayCost))
     const dateStr = _dayDate(d)
+    // Close the day on a NODE, not a dangling transport leg: an overnight marker
+    // on normal days, a departure marker on the last day when it ends heading to
+    // a station/airport. Synthesised at render time — no data change.
+    const _lastSlot = slots[slots.length - 1]
+    const _lastIsTransport = _lastSlot && String(_lastSlot.type||'').toLowerCase() === 'transport'
+    let closeHtml = ''
+    if (slots.length && d !== totalDays) {
+      closeHtml = `
+        <li class="ps-row ps-row--end">
+          <span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span>
+          <div class="ps-time ps-time--t">${escapeHtml(dt('night','nuit'))}</div>
+          <div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">${escapeHtml(dt('Overnight','Nuit sur place'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div></div></div>
+        </li>`
+    } else if (slots.length && d === totalDays && _lastIsTransport) {
+      closeHtml = `
+        <li class="ps-row ps-row--end">
+          <span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span>
+          <div class="ps-time ps-time--t"></div>
+          <div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">${escapeHtml(dt('Departure','Départ'))}</div></div></div>
+        </li>`
+    }
     daysHtml += `
       <div class="ps-day ps-day--${dayTone(d)}">
         <div class="ps-day-head">
@@ -14029,7 +14102,7 @@ async function openPlanSummary(plan) {
           </div>
           ${statBits.length ? `<div class="ps-day-chip">${escapeHtml(statBits.join(' · '))}</div>` : ''}
         </div>
-        <ul class="ps-rows ${slots.length ? 'ps-rows--tl' : ''}">${rowsHtml}</ul>
+        <ul class="ps-rows ${slots.length ? 'ps-rows--tl' : ''}">${rowsHtml}${closeHtml}</ul>
       </div>`
   }
 
