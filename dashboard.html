@@ -7155,6 +7155,28 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
       <span data-i18n="sidebar.theme">Theme</span>
     </button>
 
+    <!-- Language toggle — 日本語 ↔ English (sits above Sign out) -->
+    <div class="sb-lang" role="group" aria-label="Language">
+      <button type="button" class="sb-lang-btn active" data-lang="ja" onclick="setLang('ja')" aria-label="日本語" title="日本語">
+        <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="13">
+          <rect width="60" height="30" fill="#fff"/>
+          <circle cx="30" cy="15" r="9" fill="#bc002d"/>
+        </svg>
+        <span>日本語</span>
+      </button>
+      <button type="button" class="sb-lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
+        <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="13">
+          <clipPath id="sb-uk"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+          <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+          <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>
+          <path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#sb-uk)" stroke="#C8102E" stroke-width="4"/>
+          <path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>
+          <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+        </svg>
+        <span>EN</span>
+      </button>
+    </div>
+
     <button class="sidebar-signout" onclick="logout()" data-i18n="sidebar.signOut">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       Sign out
