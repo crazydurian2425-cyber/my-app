@@ -7551,48 +7551,34 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
         </div></div>
         <div class="card" style="margin-top:16px;"><div class="card-header"><div class="card-title" data-i18n="profile.payment">Payment details</div><div class="card-sub" data-i18n="profile.payment.sub">For commission payout</div></div><div class="card-body">
 
-          <!-- Payout method: planners are paid in crypto (USDT/USDC) OR by
+          <!-- Payout method: planners are paid via PayPay (instant) OR by
                Japanese bank transfer. One active method, chosen via this toggle. -->
           <div id="payout-method-tabs" style="display:flex;gap:8px;margin-bottom:16px;">
-            <button type="button" id="pm-tab-crypto" onclick="setPayoutMethodTab('crypto')" data-i18n="profile.method.crypto" style="flex:1;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border,#e5e2d9);background:#fff;color:var(--text-2,#5a554c);">Crypto (USDT / USDC)</button>
+            <button type="button" id="pm-tab-paypay" onclick="setPayoutMethodTab('paypay')" data-i18n="profile.method.paypay" style="flex:1;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border,#e5e2d9);background:#fff;color:var(--text-2,#5a554c);">PayPay</button>
             <button type="button" id="pm-tab-bank" onclick="setPayoutMethodTab('bank')" data-i18n="profile.method.bank" style="flex:1;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border,#e5e2d9);background:#fff;color:var(--text-2,#5a554c);">Bank transfer (Japan)</button>
           </div>
 
-          <!-- ── Crypto ── -->
-          <div id="payout-section-crypto">
-          <!-- Crypto payout: planners are paid in USDT / USDC on a network
-               of their choice. Stablecoin + network + wallet address. -->
-          <div data-i18n-html="profile.crypto.switchHint" style="font-size:11.5px;color:var(--text-3);background:rgba(193,125,42,0.06);border:1px solid rgba(193,125,42,0.18);border-radius:8px;padding:9px 12px;margin-bottom:16px;line-height:1.5;">
-            Payouts are sent in <strong style="color:var(--text-2);">USDT or USDC</strong>. Pick your stablecoin and network, then paste the matching wallet address. <strong style="color:var(--text-2);">Make sure the address matches the network</strong> — funds sent on the wrong network can be lost.
+          <!-- ── PayPay ── -->
+          <div id="payout-section-paypay">
+          <!-- PayPay payout: planners are paid instantly to their PayPay
+               account. PayPay ID (or registered phone) + account holder name. -->
+          <div data-i18n-html="profile.paypay.switchHint" style="font-size:11.5px;color:var(--text-3);background:rgba(193,125,42,0.06);border:1px solid rgba(193,125,42,0.18);border-radius:8px;padding:9px 12px;margin-bottom:16px;line-height:1.5;">
+            Payouts are sent <strong style="color:var(--text-2);">instantly to your PayPay account</strong>. Enter your PayPay ID (or the phone number registered to PayPay) and the name on your PayPay account. <strong style="color:var(--text-2);">Make sure the name matches your PayPay account</strong> — payouts to a mismatched account can be rejected.
           </div>
 
           <div style="font-size:11px;font-weight:700;color:var(--e-green-d,#0f5240);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-            <span data-i18n="profile.crypto.header">Crypto payout</span>
-            <span style="font-weight:500;letter-spacing:0;text-transform:none;font-size:10.5px;color:var(--text-3);" data-i18n="profile.crypto.tag">· USDT / USDC · stablecoin</span>
+            <span data-i18n="profile.paypay.header">PayPay payout</span>
+            <span style="font-weight:500;letter-spacing:0;text-transform:none;font-size:10.5px;color:var(--text-3);" data-i18n="profile.paypay.tag">· PayPay · 即時</span>
           </div>
-          <div class="form-row">
-            <div class="form-group"><label class="form-label" data-i18n="profile.crypto.asset">Stablecoin</label>
-              <select class="form-input" id="profile-crypto-asset">
-                <option value="USDT">USDT</option>
-                <option value="USDC">USDC</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.crypto.network">Network</label>
-              <select class="form-input" id="profile-crypto-network">
-                <option value="TRC20">Tron (TRC20)</option>
-                <option value="ERC20">Ethereum (ERC20)</option>
-                <option value="BEP20">BNB Smart Chain (BEP20)</option>
-                <option value="Polygon">Polygon</option>
-                <option value="Solana">Solana</option>
-                <option value="Arbitrum">Arbitrum</option>
-              </select>
-            </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="profile.paypay.id">PayPay ID / phone</label>
+            <input class="form-input" id="profile-paypay-id" placeholder="e.g. your PayPay ID or 090-1234-5678" data-i18n-ph="profile.paypay.ph.id" autocomplete="off" spellcheck="false" autocapitalize="off">
           </div>
           <div class="form-group" style="margin-bottom:0;margin-top:14px;">
-            <label class="form-label" data-i18n="profile.crypto.address">Wallet address</label>
-            <input class="form-input" id="profile-crypto-address" placeholder="Paste your USDT / USDC wallet address" data-i18n-ph="profile.crypto.ph.address" autocomplete="off" spellcheck="false" autocapitalize="off">
+            <label class="form-label" data-i18n="profile.paypay.holder">Account holder</label>
+            <input class="form-input" id="profile-paypay-holder" placeholder="Name as on your PayPay account" data-i18n-ph="profile.paypay.ph.holder" autocomplete="off">
           </div>
-          </div><!-- /payout-section-crypto -->
+          </div><!-- /payout-section-paypay -->
 
           <!-- ── Bank (Japan) ── -->
           <div id="payout-section-bank" style="display:none;">
@@ -8042,7 +8028,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
     <div class="modal-header">
       <div>
         <div class="modal-title" data-i18n="pr.title">Request payout</div>
-        <div class="modal-sub" data-i18n="pr.sub">Funds are sent to your crypto wallet on record (USDT / USDC)</div>
+        <div class="modal-sub" data-i18n="pr.sub">Funds are sent to your registered payout method</div>
       </div>
       <button class="modal-close" onclick="closeModal('modal-payout-request')">✕</button>
     </div>
@@ -8332,7 +8318,7 @@ const TM_I18N = {
     'profile.email':'Email',
     'profile.phone':'Phone',
     'profile.payment':'Payment details',
-    'profile.method.crypto':'Crypto (USDT / USDC)',
+    'profile.method.paypay':'PayPay',
     'profile.method.bank':'Bank transfer (Japan)',
     'profile.bank.header':'Bank transfer',
     'profile.bank.tag':'· Japan · ¥',
@@ -8344,15 +8330,16 @@ const TM_I18N = {
     'profile.bank.ph.holder':'Name as on the account',
     'profile.bank.ph.bic':'e.g. 001',
     'wallet.method.sepa':'Bank transfer',
+    'wallet.method.paypay':'PayPay',
     'toast.ibanInvalid':"Those bank details don't look right — double-check them.",
     'toast.bicInvalid':"That branch code doesn't look right.",
-    'profile.crypto.header':'Crypto payout',
-    'profile.crypto.tag':'· USDT / USDC · stablecoin',
-    'profile.crypto.switchHint':'Payouts are sent in <strong>USDT or USDC</strong>. Pick your stablecoin and network, then paste the matching wallet address. <strong>Make sure the address matches the network</strong> — funds sent on the wrong network can be lost.',
-    'profile.crypto.asset':'Stablecoin',
-    'profile.crypto.network':'Network',
-    'profile.crypto.address':'Wallet address',
-    'profile.crypto.ph.address':'Paste your USDT / USDC wallet address',
+    'profile.paypay.header':'PayPay payout',
+    'profile.paypay.tag':'· PayPay · instant',
+    'profile.paypay.switchHint':'Payouts are sent <strong>instantly to your PayPay account</strong>. Enter your PayPay ID (or the phone number registered to PayPay) and the name on your PayPay account. <strong>Make sure the name matches your PayPay account</strong> — payouts to a mismatched account can be rejected.',
+    'profile.paypay.id':'PayPay ID / phone',
+    'profile.paypay.holder':'Account holder',
+    'profile.paypay.ph.id':'e.g. your PayPay ID or 090-1234-5678',
+    'profile.paypay.ph.holder':'Name as on your PayPay account',
     'profile.payment.sub':'For commission payout',
     'profile.stats':'Your stats',
     'profile.stats.sets':'Sets done',
@@ -8396,7 +8383,7 @@ const TM_I18N = {
     'ps.name':'Add your full name',
     'ps.city':'Set your home region',
     'ps.phone':'Add a contact phone',
-    'ps.bank':'Add your payout method (crypto or bank)',
+    'ps.bank':'Add your payout method (PayPay or bank)',
     'ps.langs':'Pick at least one language you speak',
     'ps.types':'Pick 2+ travel types you cover',
     'ps.firstSet':'Complete your first set',
@@ -8509,7 +8496,7 @@ const TM_I18N = {
     'pr.available':'Available',
     'pr.payingTo':'Paying to',
     'pr.updateBankHint':'Update payout details in Profile → Payment',
-    'toast.addPayoutMethodFirst':'Add your crypto payout wallet in Profile first',
+    'toast.addPayoutMethodFirst':'Add your PayPay or bank payout details in Profile first',
     'pr.amount':'Amount to withdraw',
     'pr.max':'Max',
     'pr.amountHint':'Your full available balance is withdrawn in one go.',
@@ -8884,13 +8871,13 @@ const TM_I18N = {
     'common.close':'Close',
     'completed.bondAndCommission':'Your commission plus the bond deposits you paid will all be released together.',
     'completed.youEarned':'You earned <strong style="color:var(--green-dark);">{amt}</strong> on this set.',
-    'completed.payoutEta':'Payout is sent to your registered method once admin clears the queue — crypto usually within 1hr, bank transfers 1–2 business days.',
+    'completed.payoutEta':'Payout is sent to your registered method once admin clears the queue — PayPay usually within 1hr, bank transfers 1–2 business days.',
     'completed.availableInWallet':'Your earnings are now available in your wallet — withdraw anytime.',
     'completed.availableLabel':'This set\'s payout',
     'completed.breakdown':'Breakdown',
     'between.title':'Batch paid out',
     'between.sub':'Well done — request a new set and we\'ll appoint one to you shortly.',
-    'completed.walletHint':'Head to your wallet to request a payout — funds are sent to your crypto wallet, usually within an hour.',
+    'completed.walletHint':'Head to your wallet to request a payout — funds are sent to your PayPay account, usually within an hour.',
     'completed.btn.checkPayout':'Check payout status',
     'completed.btn.requestNew':'Request new set',
     'completed.btn.goToWallet':'Go to wallet',
@@ -8917,7 +8904,7 @@ const TM_I18N = {
     'toast.validAmount':'Enter a valid amount',
     'toast.exceedsBalance':'Cannot exceed available balance ({amt})',
     'toast.firstMinBuffer':'First payout must leave at least {min} in wallet — max this round: {max}',
-    'toast.addBankFirst':'Add your crypto payout wallet in Profile first',
+    'toast.addBankFirst':'Add your PayPay or bank payout details in Profile first',
     'toast.requestSubmitted':'Request submitted — {amt} pending review',
     'toast.enterAmounts':'Enter some amounts first',
     'toast.paymentNoted':'Payment noted — chat with support to confirm',
@@ -9071,7 +9058,7 @@ const TM_I18N = {
     'profile.email':'メールアドレス',
     'profile.phone':'電話番号',
     'profile.payment':'支払い情報',
-    'profile.method.crypto':'暗号資産（USDT / USDC）',
+    'profile.method.paypay':'PayPay',
     'profile.method.bank':'銀行振込（日本）',
     'profile.bank.header':'銀行振込',
     'profile.bank.tag':'· 日本国内 · ¥',
@@ -9083,15 +9070,16 @@ const TM_I18N = {
     'profile.bank.ph.holder':'口座に記載のとおりの名義',
     'profile.bank.ph.bic':'例：001',
     'wallet.method.sepa':'銀行振込',
+    'wallet.method.paypay':'PayPay',
     'toast.ibanInvalid':"口座情報が正しくないようです — ご確認ください。",
     'toast.bicInvalid':"支店コードが正しくないようです。",
-    'profile.crypto.header':'暗号資産での支払い',
-    'profile.crypto.tag':'· USDT / USDC · ステーブルコイン',
-    'profile.crypto.switchHint':'支払いは <strong>USDT または USDC</strong> で送金されます。ステーブルコインとネットワークを選び、対応するウォレットアドレスを貼り付けてください。<strong>アドレスがネットワークと一致していることを確認してください</strong> — 誤ったネットワークに送金された資金は失われる可能性があります。',
-    'profile.crypto.asset':'ステーブルコイン',
-    'profile.crypto.network':'ネットワーク',
-    'profile.crypto.address':'ウォレットアドレス',
-    'profile.crypto.ph.address':'USDT / USDC のウォレットアドレスを貼り付け',
+    'profile.paypay.header':'PayPay での支払い',
+    'profile.paypay.tag':'· PayPay · 即時',
+    'profile.paypay.switchHint':'支払いは <strong>PayPay 残高へ即時に送金</strong>されます。PayPay ID（または PayPay に登録した電話番号）と、PayPay アカウントの名義を入力してください。<strong>名義が PayPay アカウントと一致していることを確認してください</strong> — 一致しない場合、送金が拒否されることがあります。',
+    'profile.paypay.id':'PayPay ID / 電話番号',
+    'profile.paypay.holder':'口座名義',
+    'profile.paypay.ph.id':'例：PayPay ID または 090-1234-5678',
+    'profile.paypay.ph.holder':'PayPay アカウントの名義',
     'profile.payment.sub':'コミッションの受け取り先',
     'profile.stats':'あなたの統計',
     'profile.stats.sets':'完了したセット',
@@ -9133,7 +9121,7 @@ const TM_I18N = {
     'ps.name':'氏名を入力',
     'ps.city':'地域を設定',
     'ps.phone':'電話番号を追加',
-    'ps.bank':'支払い方法を追加（暗号資産または銀行）',
+    'ps.bank':'支払い方法を追加（PayPay または銀行）',
     'ps.langs':'言語を1つ以上選択',
     'ps.types':'旅行タイプを2つ以上選択',
     'ps.firstSet':'最初のセットを完了',
@@ -9238,7 +9226,7 @@ const TM_I18N = {
     'pr.available':'利用可能',
     'pr.payingTo':'支払い先',
     'pr.updateBankHint':'プロフィール → 支払い で情報を編集してください',
-    'toast.addPayoutMethodFirst':'プロフィールで暗号資産ウォレットを追加してください',
+    'toast.addPayoutMethodFirst':'プロフィールで PayPay または銀行口座を追加してください',
     'pr.amount':'金額',
     'pr.max':'最大',
     'pr.amountHint':'利用可能な残高は一括で出金されます。',
@@ -9585,13 +9573,13 @@ const TM_I18N = {
     'common.close':'閉じる',
     'completed.bondAndCommission':'コミッションと保証金がまとめて支払われます。',
     'completed.youEarned':'このセットで <strong style="color:var(--green-dark);">{amt}</strong> を獲得しました。',
-    'completed.payoutEta':'管理者の処理後、登録済みの支払い方法に応じて送金されます — 暗号資産は通常1時間以内、銀行振込は1〜2営業日以内。',
+    'completed.payoutEta':'管理者の処理後、登録済みの支払い方法に応じて送金されます — PayPay は通常1時間以内、銀行振込は1〜2営業日以内。',
     'completed.availableInWallet':'収入がウォレットに入金されました — いつでも出金できます。',
     'completed.availableLabel':'このセットの報酬',
     'completed.breakdown':'内訳',
     'between.title':'セット支払済み',
     'between.sub':'お疲れさまでした — 新しいセットをリクエストいただければ、すぐに割り当てます。',
-    'completed.walletHint':'ウォレットから出金をリクエストしてください — 暗号資産ウォレットへ送金、通常1時間以内です。',
+    'completed.walletHint':'ウォレットから出金をリクエストしてください — PayPay 残高へ送金、通常1時間以内です。',
     'completed.btn.checkPayout':'支払いを確認',
     'completed.btn.requestNew':'新しいセットをリクエスト',
     'completed.btn.goToWallet':'ウォレットへ移動',
@@ -9613,7 +9601,7 @@ const TM_I18N = {
     'toast.validAmount':'有効な金額を入力してください',
     'toast.exceedsBalance':'利用可能な残高（{amt}）を超えています',
     'toast.firstMinBuffer':'初回出金：ウォレットに少なくとも {min} を残してください — 上限：{max}',
-    'toast.addBankFirst':'まずプロフィールで暗号資産ウォレットを追加してください',
+    'toast.addBankFirst':'まずプロフィールで PayPay または銀行口座を追加してください',
     'toast.requestSubmitted':'リクエストを送信しました — {amt} が審査待ちです',
     'toast.enterAmounts':'まず金額を入力してください',
     'toast.paymentNoted':'支払いを記録しました — サポートとのチャットで確認してください',
@@ -10395,22 +10383,22 @@ async function loadPendingPayments() {
   }
 }
 
-// Switch the Profile payout form between Crypto and Bank. One method is active
+// Switch the Profile payout form between PayPay and Bank. One method is active
 // at a time; the inactive section is hidden so saves only capture the chosen
 // method. Tracks the choice on window._payoutTab (read by savePlannerProfile).
 function setPayoutMethodTab(method) {
-  window._payoutTab = (method === 'bank') ? 'bank' : 'crypto'
-  const cryptoSec = document.getElementById('payout-section-crypto')
-  const bankSec   = document.getElementById('payout-section-bank')
-  if (cryptoSec) cryptoSec.style.display = (window._payoutTab === 'crypto') ? '' : 'none'
-  if (bankSec)   bankSec.style.display   = (window._payoutTab === 'bank')   ? '' : 'none'
+  window._payoutTab = (method === 'bank') ? 'bank' : 'paypay'
+  const ppSec   = document.getElementById('payout-section-paypay')
+  const bankSec = document.getElementById('payout-section-bank')
+  if (ppSec)   ppSec.style.display   = (window._payoutTab === 'paypay') ? '' : 'none'
+  if (bankSec) bankSec.style.display = (window._payoutTab === 'bank')   ? '' : 'none'
   const paint = (id, on) => {
     const b = document.getElementById(id); if (!b) return
     b.style.borderColor = on ? 'var(--e-green-d,#0f5240)' : 'var(--border,#e5e2d9)'
     b.style.background   = on ? 'var(--e-green-d,#0f5240)' : '#fff'
     b.style.color        = on ? '#fff' : 'var(--text-2,#5a554c)'
   }
-  paint('pm-tab-crypto', window._payoutTab === 'crypto')
+  paint('pm-tab-paypay', window._payoutTab === 'paypay')
   paint('pm-tab-bank',   window._payoutTab === 'bank')
 }
 
@@ -10430,12 +10418,12 @@ function _isValidBic(raw) {
   return _normalizeIban(raw).length >= 1
 }
 
-// Picks the planner's active payout method (crypto OR bank — one at a time,
+// Picks the planner's active payout method (PayPay OR bank — one at a time,
 // per planner.payout_method). Returns a uniform shape with a render-ready
 // title, detail line, and the snapshot we attach to wallet_requests (which the
 // admin payout list already knows how to render for either method).
 function getPlannerPayoutMethod() {
-  const active = (planner?.payout_method === 'bank') ? 'bank' : 'crypto'
+  const active = (planner?.payout_method === 'bank') ? 'bank' : 'paypay'
 
   if (active === 'bank') {
     const iban   = (planner?.bank_account || '').trim()      // bank_account: account number
@@ -10453,14 +10441,15 @@ function getPlannerPayoutMethod() {
     return { method: 'none', title: t('wallet.methodNotSet', 'Not set — add in Profile'), detail: '—', snapshot: null }
   }
 
-  // Crypto — prefer the dedicated crypto_* columns; fall back to the legacy
-  // bank_* columns for the brief window before add-bank-payout-method.sql runs.
-  const asset   = ((planner?.crypto_asset || planner?.bank_name) === 'USDC') ? 'USDC' : 'USDT'
-  const network = (planner?.crypto_network || planner?.bank_branch_code || '').trim() || 'TRC20'
-  const address = (planner?.crypto_address || planner?.bank_account || '').trim()
-  if (address) {
-    return { method: 'crypto', title: `${asset} · ${network}`, detail: address,
-             snapshot: { method: 'crypto', asset, network, address } }
+  // PayPay — instant payout to the planner's PayPay account. Identified by
+  // their PayPay ID (or registered phone) + the account holder name.
+  const ppId     = (planner?.paypay_id || '').trim()
+  const ppHolder = (planner?.paypay_holder || '').trim()
+  if (ppId) {
+    return { method: 'paypay',
+             title:  t('wallet.method.paypay', 'PayPay'),
+             detail: ppHolder ? `${ppId} · ${ppHolder}` : ppId,
+             snapshot: { method: 'paypay', paypay_id: ppId, paypay_holder: ppHolder || null } }
   }
   return { method: 'none', title: t('wallet.methodNotSet', 'Not set — add in Profile'), detail: '—', snapshot: null }
 }
@@ -11348,7 +11337,7 @@ async function renderDemoSet() {
             <span class="bp-break-total-label">${t('completed.totalPayout','Total payout')}</span>
             <span class="bp-break-total-value">${fmtMoney(pendingPayout)}</span>
           </div>
-          <p class="bp-fineprint">${t('completed.walletHint','Head to your wallet to request a payout — funds are sent to your crypto wallet, usually within an hour.')}</p>
+          <p class="bp-fineprint">${t('completed.walletHint','Head to your wallet to request a payout — funds are sent to your PayPay account, usually within an hour.')}</p>
         </aside>
       </div>
 
@@ -12262,20 +12251,17 @@ async function loadProfile() {
   el('profile-name',    p.name)
   el('profile-email',   p.email)
   el('profile-phone',   p.phone)
-  // Payout method — crypto OR bank (one active). Crypto lives in crypto_*
-  // (with a legacy fall-back to bank_* for the pre-migration window); bank lives
-  // in bank_account (bank name/account) / bank_holder / bank_branch_code (branch code).
+  // Payout method — PayPay OR bank (one active). PayPay lives in paypay_id /
+  // paypay_holder; bank lives in bank_account (bank name/account) / bank_holder
+  // / bank_branch_code (branch code).
   const _isBank = (p.payout_method === 'bank')
-  const _cAsset = p.crypto_asset || (!_isBank ? p.bank_name : '')
-  el('profile-crypto-asset',   (_cAsset === 'USDC' ? 'USDC' : 'USDT'))
-  const _cNet = p.crypto_network || (!_isBank ? p.bank_branch_code : '')
-  el('profile-crypto-network', (['TRC20','ERC20','BEP20','Polygon','Solana','Arbitrum'].includes(_cNet) ? _cNet : 'TRC20'))
-  el('profile-crypto-address', p.crypto_address || (!_isBank ? p.bank_account : ''))
+  el('profile-paypay-id',     _isBank ? '' : (p.paypay_id || ''))
+  el('profile-paypay-holder', _isBank ? '' : (p.paypay_holder || ''))
   // Bank fields only carry real bank data when bank is the active method.
   el('profile-bank-iban',   _isBank ? p.bank_account : '')
   el('profile-bank-holder', _isBank ? p.bank_holder : '')
   el('profile-bank-bic',    _isBank ? p.bank_branch_code : '')
-  if (typeof setPayoutMethodTab === 'function') setPayoutMethodTab(_isBank ? 'bank' : 'crypto')
+  if (typeof setPayoutMethodTab === 'function') setPayoutMethodTab(_isBank ? 'bank' : 'paypay')
   // Cities-you-cover + hidden specialty fields (langs + types) are persisted as
   // plain strings in planners.specialty_* columns. If the columns don't exist,
   // Supabase silently ignores them on update — this stays resilient.
@@ -12361,11 +12347,10 @@ async function saveProfile() {
   const citySel  = document.getElementById('profile-city')?.value?.trim() || ''
   const cityOther = document.getElementById('profile-city-other')?.value?.trim() || ''
   const cityFinal = (citySel === 'Other' && cityOther) ? cityOther : (citySel === 'Other' ? '' : citySel)
-  // Payout method — crypto OR bank (one active, chosen via the toggle).
+  // Payout method — PayPay OR bank (one active, chosen via the toggle).
   // `core` holds only columns that ALWAYS exist, so a save never loses payout
-  // info even before the bank migration runs; the new crypto_*/payout_method
-  // columns go in `optional`, which degrades gracefully if they're absent.
-  const _payoutTab = (window._payoutTab === 'bank') ? 'bank' : 'crypto'
+  // info; payout_method goes in `optional`, which degrades gracefully if absent.
+  const _payoutTab = (window._payoutTab === 'bank') ? 'bank' : 'paypay'
   let _payoutCore, _payoutOptional
   if (_payoutTab === 'bank') {
     const iban   = _normalizeIban(document.getElementById('profile-bank-iban')?.value)
@@ -12374,17 +12359,16 @@ async function saveProfile() {
     if (iban && !_isValidIban(iban)) { showToast(t('toast.ibanInvalid',"Those bank details don't look right — double-check them.")); return }
     if (bic  && !_isValidBic(bic))   { showToast(t('toast.bicInvalid',"That branch code doesn't look right.")); return }
     // bank_account = bank name/account, bank_branch_code = branch code, bank_holder = account holder.
+    // Clear the PayPay fields so the inactive method doesn't linger.
     _payoutCore     = { bank_account: iban || null, bank_holder: holder || null, bank_branch_code: bic || null, bank_name: null, paypay_id: null, paypay_holder: null }
     _payoutOptional = { payout_method: 'bank' }
   } else {
-    // Crypto. Mirror into the legacy bank_* (always-existing) columns AND the
-    // new crypto_* columns. Wallet addresses are CASE-SENSITIVE (Tron, Solana,
-    // EVM checksums) — only strip surrounding whitespace, never re-case.
-    const cAsset   = document.getElementById('profile-crypto-asset')?.value || 'USDT'
-    const cNetwork = document.getElementById('profile-crypto-network')?.value || 'TRC20'
-    const cAddress = (document.getElementById('profile-crypto-address')?.value || '').trim() || null
-    _payoutCore     = { bank_name: cAsset, bank_branch_code: cNetwork, bank_account: cAddress, bank_holder: null, paypay_id: null, paypay_holder: null }
-    _payoutOptional = { payout_method: 'crypto', crypto_asset: cAsset, crypto_network: cNetwork, crypto_address: cAddress }
+    // PayPay. Store the PayPay ID (or registered phone) + account holder name.
+    // Clear the bank_* columns so the inactive method doesn't linger.
+    const ppId     = (document.getElementById('profile-paypay-id')?.value || '').trim() || null
+    const ppHolder = (document.getElementById('profile-paypay-holder')?.value || '').trim() || null
+    _payoutCore     = { paypay_id: ppId, paypay_holder: ppHolder, bank_account: null, bank_holder: null, bank_branch_code: null, bank_name: null }
+    _payoutOptional = { payout_method: 'paypay' }
   }
   const core = {
     name:  document.getElementById('profile-name')?.value?.trim(),
@@ -12593,11 +12577,11 @@ function _refreshProfileStrength(){
   const nameOk   = !!(p.name && p.name.trim())
   const cityOk   = !!(p.city && p.city.trim())
   const phoneOk  = !!(p.phone && p.phone.trim())
-  // Payout set = a crypto wallet (crypto_address, or legacy bank_account) OR a
-  // bank account (bank_account when payout_method is 'bank') on file.
+  // Payout set = a PayPay account (paypay_id) OR a bank account (bank_account
+  // when payout_method is 'bank') on file.
   const bankOk   = (p.payout_method === 'bank')
                      ? !!(p.bank_account && p.bank_account.trim())
-                     : !!((p.crypto_address || p.bank_account || '').trim())
+                     : !!((p.paypay_id || '').trim())
   const langsOk  = _selectedChips('chips-langs').length >= 1
   const typesOk  = _selectedChips('chips-types').length >= 2
   const firstSet = (stats.setsCount || 0) >= 1
@@ -12605,7 +12589,7 @@ function _refreshProfileStrength(){
     { done: nameOk,  label: t('ps.name',     'Add your full name') },
     { done: cityOk,  label: t('ps.city',     'Set your home city') },
     { done: phoneOk, label: t('ps.phone',    'Add a contact phone') },
-    { done: bankOk,  label: t('ps.bank',     'Add your crypto payout wallet') },
+    { done: bankOk,  label: t('ps.bank',     'Add your PayPay or bank payout details') },
     { done: langsOk, label: t('ps.langs',    'Pick at least one language you speak') },
     { done: typesOk, label: t('ps.types',    'Pick 2+ travel types you cover') },
     { done: firstSet,label: t('ps.firstSet', 'Complete your first set') },

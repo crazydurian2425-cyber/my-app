@@ -2293,11 +2293,11 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <div id="mp-city" style="font-size:13px;color:var(--ink);">—</div>
         </div>
         <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4);margin-bottom:4px;">Stablecoin · network</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4);margin-bottom:4px;">Payout method</div>
           <div id="mp-bank" style="font-size:13px;color:var(--ink);">—</div>
         </div>
         <div style="background:var(--cream);border-radius:var(--radius-sm);padding:12px;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4);margin-bottom:4px;">Wallet address</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-4);margin-bottom:4px;">PayPay ID / account</div>
           <div id="mp-account" style="font-size:13px;color:var(--ink);word-break:break-all;">—</div>
         </div>
       </div>
@@ -4515,7 +4515,7 @@ async function loadPayments() {
     return
   }
   const { data: plannerRows } = await sb.from('planners')
-    .select('id, name, city, bank_name').in('id', withBalance.map(p => p.id))
+    .select('id, name, city, bank_name, payout_method, paypay_id').in('id', withBalance.map(p => p.id))
   const nameById = {}
   for (const p of (plannerRows || [])) nameById[p.id] = p
   rl.innerHTML = withBalance
@@ -4523,6 +4523,9 @@ async function loadPayments() {
     .map(p => {
       const pr = nameById[p.id] || {}
       const ini = (pr.name || '?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+      const payLabel = pr.payout_method === 'bank'
+        ? (pr.bank_name ? `Bank · ${pr.bank_name}` : 'Bank (not set)')
+        : (pr.paypay_id ? 'PayPay' : 'No payout method')
       const paidChip = p.paid > 0
         ? `<span style="font-size:10.5px;color:var(--green-dark,#0f5240);margin-left:8px;">· ¥${Math.round(p.paid).toLocaleString()} paid</span>` : ''
       const pendingChip = p.pendingAmt > 0
@@ -4533,7 +4536,7 @@ async function loadPayments() {
         <div class="pay-av">${escapeHtml(ini)}</div>
         <div class="pay-info">
           <div class="pay-name">${escapeHtml(pr.name || '—')}</div>
-          <div class="pay-meta">${escapeHtml(pr.city || '—')} · ${escapeHtml(pr.bank_name || 'No wallet')}${paidChip}${pendingChip}${retentionChip}</div>
+          <div class="pay-meta">${escapeHtml(pr.city || '—')} · ${escapeHtml(payLabel)}${paidChip}${pendingChip}${retentionChip}</div>
         </div>
         <div style="text-align:right;">
           <div class="pay-amount" style="color:var(--green-dark,#0f5240);">¥${Math.round(p.available).toLocaleString()}</div>
@@ -5422,24 +5425,25 @@ async function loadPayoutRequests() {
       ? `<div style="padding:20px;text-align:center;font-size:13px;color:var(--ink-3)">No pending requests</div>`
       : pending.map(r => {
           const bank = r.bank_snapshot || {}
-          // Crypto payout (USDT/USDC) is the current method. Older requests
-          // carry legacy paypay/SEPA snapshots — keep rendering those as-is.
-          // When a request has no usable snapshot, fall back to the planner's
-          // current crypto wallet on file (bank_name=asset, bank_branch_code=
-          // network, bank_account=address).
-          const isCryptoSnap     = bank.method === 'crypto' && bank.address
-          const useSnapshotPaypay = bank.method === 'paypay' && bank.paypay_id          // legacy
-          const useSnapshotBank   = !isCryptoSnap && !useSnapshotPaypay && !!(bank.bank_account || bank.bank_name) // legacy SEPA
+          // PayPay is the current method. Older requests may carry a legacy
+          // crypto/SEPA snapshot — keep rendering those as-is. When a request
+          // has no usable snapshot, fall back to the planner's current payout
+          // details on file (PayPay first, then bank).
+          const usePaypaySnap   = bank.method === 'paypay' && bank.paypay_id
+          const isCryptoSnap    = bank.method === 'crypto' && bank.address              // legacy
+          const useSnapshotBank = !usePaypaySnap && !isCryptoSnap && !!(bank.bank_account || bank.bank_name) // legacy/bank SEPA
           let bankLine
-          if (isCryptoSnap) {
+          if (usePaypaySnap) {
+            bankLine = `⚡ PayPay · ${escapeHtml(bank.paypay_id)} · ${escapeHtml(bank.paypay_holder || '—')}`
+          } else if (isCryptoSnap) {
             bankLine = `🪙 ${escapeHtml(bank.asset || 'USDT')} · ${escapeHtml(bank.network || '—')} · <span style="font-variant-numeric:tabular-nums;word-break:break-all;">${escapeHtml(bank.address)}</span>`
-          } else if (useSnapshotPaypay) {
-            bankLine = `⚡ Instant · ${escapeHtml(bank.paypay_id)} · ${escapeHtml(bank.paypay_holder || '—')}`
           } else if (useSnapshotBank) {
             const bankParts = [bank.bank_name, bank.bank_account, bank.bank_bic, bank.bank_holder].filter(Boolean).map(escapeHtml)
-            bankLine = bankParts.length ? bankParts.join(' · ') : '—'
+            bankLine = bankParts.length ? `🏦 ${bankParts.join(' · ')}` : '—'
+          } else if (r.planners?.paypay_id) {
+            bankLine = `⚡ PayPay · ${escapeHtml(r.planners.paypay_id)} · ${escapeHtml(r.planners.paypay_holder || '—')}`
           } else if (r.planners?.bank_account) {
-            bankLine = `🪙 ${escapeHtml(r.planners.bank_name || 'USDT')} · ${escapeHtml(r.planners.bank_branch_code || '—')} · <span style="font-variant-numeric:tabular-nums;word-break:break-all;">${escapeHtml(r.planners.bank_account)}</span>`
+            bankLine = `🏦 ${escapeHtml(r.planners.bank_name || 'Bank')} · <span style="font-variant-numeric:tabular-nums;word-break:break-all;">${escapeHtml(r.planners.bank_account)}</span>`
           } else {
             bankLine = 'No payout method on file'
           }
@@ -5472,12 +5476,12 @@ async function loadPayoutRequests() {
       ? `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-3)">No history yet</td></tr>`
       : history.slice(0, 100).map(r => {
           const bank = r.bank_snapshot || {}
-          const bankShort = bank.method === 'crypto' && bank.address
-            ? `${escapeHtml(bank.asset || 'USDT')} ${escapeHtml(bank.network || '')} · ${escapeHtml(bank.address)}`
-            : bank.method === 'paypay' && bank.paypay_id
-              ? `Instant ${escapeHtml(bank.paypay_id)}`
+          const bankShort = bank.method === 'paypay' && bank.paypay_id
+            ? `PayPay ${escapeHtml(bank.paypay_id)}`
+            : bank.method === 'crypto' && bank.address
+              ? `${escapeHtml(bank.asset || 'USDT')} ${escapeHtml(bank.network || '')} · ${escapeHtml(bank.address)}`
               : (bank.bank_name || bank.bank_account)
-                ? `${escapeHtml(bank.bank_name || 'IBAN')} ${escapeHtml(bank.bank_account||'—')}`
+                ? `${escapeHtml(bank.bank_name || 'Bank')} ${escapeHtml(bank.bank_account||'—')}`
                 : '—'
           const reqD = r.requested_at ? new Date(r.requested_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—'
           const resD = r.resolved_at ? new Date(r.resolved_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—'
@@ -5684,7 +5688,7 @@ function renderPlanners(planners, meta) {
           <div class="p-meta">${escapeHtml(p.city)} · ${escapeHtml(p.email)} · Joined ${joined}</div>
         </div>
         <div class="p-stats">
-          <div><div class="p-stat-val">${p.bank_account ? escapeHtml((p.bank_name||'USDT') + (p.bank_branch_code ? ' · ' + p.bank_branch_code : '')) : '—'}</div><div style="font-size:11px;color:var(--ink-3)">crypto</div></div>
+          <div><div class="p-stat-val">${p.payout_method === 'bank' ? (p.bank_account ? escapeHtml((p.bank_name||'Bank') + (p.bank_branch_code ? ' · ' + p.bank_branch_code : '')) : '—') : (p.paypay_id ? 'PayPay' : '—')}</div><div style="font-size:11px;color:var(--ink-3)">payout</div></div>
           <div><div class="p-stat-val" style="font-size:12px;">${escapeHtml(p.phone||'—')}</div><div style="font-size:11px;color:var(--ink-3)">phone</div></div>
         </div>
         <span class="status ${statusColor}" style="margin-left:8px;"><span class="status-dot"></span>${statusLabel}</span>
@@ -5791,9 +5795,16 @@ async function viewPlanner(id) {
   document.getElementById('mp-meta').textContent    = `${p.city}${p.phone ? ' · ' + p.phone : ''}`
   document.getElementById('mp-phone').textContent   = p.phone || '—'
   document.getElementById('mp-city').textContent    = p.city || '—'
-  // Crypto payout: bank_name = stablecoin, bank_branch_code = network, bank_account = wallet address.
-  document.getElementById('mp-bank').textContent    = p.bank_account ? `${p.bank_name || 'USDT'} · ${p.bank_branch_code || '—'}` : '—'
-  document.getElementById('mp-account').textContent = p.bank_account ? p.bank_account : '—'
+  // Payout method: PayPay (paypay_id / paypay_holder) or bank transfer
+  // (bank_account = bank name/account, bank_branch_code = branch code).
+  const _mpIsBank = p.payout_method === 'bank'
+  if (_mpIsBank) {
+    document.getElementById('mp-bank').textContent    = p.bank_account ? `Bank · ${p.bank_name || '—'}` : '—'
+    document.getElementById('mp-account').textContent = p.bank_account ? `${p.bank_account}${p.bank_branch_code ? ' · 支店 ' + p.bank_branch_code : ''}${p.bank_holder ? ' · ' + p.bank_holder : ''}` : '—'
+  } else {
+    document.getElementById('mp-bank').textContent    = p.paypay_id ? 'PayPay' : '—'
+    document.getElementById('mp-account').textContent = p.paypay_id ? `${p.paypay_id}${p.paypay_holder ? ' · ' + p.paypay_holder : ''}` : '—'
+  }
   // Geo / last-login info — show whatever we have. Try last_login first;
   // if the planner hasn't logged in since geo capture was added, fall
   // back to the signup connection captured on planner_applications.
