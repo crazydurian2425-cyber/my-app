@@ -8866,7 +8866,7 @@ const TM_I18N = {
     'chat.placeholder':'Type a message…',
     'chat.send':'Send',
     // Currency
-    'currency.symbol':'€',
+    'currency.symbol':'¥',
     // Support-chat prefills
     'chatPrefill.bondHelp':'Hi, I need help paying the bond for a plan.',
     'chatPrefill.bondPlan':'Hi, I need help with the bond payment for Plan {n}.',
@@ -9569,7 +9569,7 @@ const TM_I18N = {
     'chat.attach':'Joindre une image',
     'chat.placeholder':'Tapez votre message…',
     'chat.send':'Envoyer',
-    'currency.symbol':'€',
+    'currency.symbol':'¥',
     'chatPrefill.bondHelp':'Bonjour, j\'ai besoin d\'aide pour le paiement d\'une caution.',
     'chatPrefill.bondPlan':'Bonjour, j\'ai besoin d\'aide pour la caution du Plan {n}.',
     'chatPrefill.bondPaid':'J\'ai réglé la caution du Plan {n}.\nMontant : {amt}\n\nMerci de confirmer.\nRéférence du virement / capture d\'écran :',
@@ -9953,11 +9953,13 @@ function applyDashHero(city){
 function _isFrMoney(){ try { return typeof isPlannerFR === 'function' && isPlannerFR() } catch(e){ return false } }
 function fmtMoney(amount){
   const n = Math.round(Number(amount) || 0)
+  return '¥' + n.toLocaleString('en-GB')   // Japan pivot: yen only (euro path below now unused)
   return _isFrMoney() ? n.toLocaleString('fr-FR') + ' €' : '€' + n.toLocaleString('en-GB')
 }
 // Short variant used where a raw currency string is needed without rounding noise
 function fmtMoneyRaw(amount){
   const n = Number(amount) || 0
+  return '¥' + n.toLocaleString('en-GB')   // Japan pivot: yen only (euro path below now unused)
   return _isFrMoney() ? n.toLocaleString('fr-FR') + ' €' : '€' + n.toLocaleString('en-GB')
 }
 
