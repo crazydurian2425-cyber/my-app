@@ -38,11 +38,33 @@
     },
   }
 
-  // Detect. Anything not in the map (localhost, *.workers.dev preview) falls
-  // back to FR, so local dev and the preview URL keep working unchanged.
+  // Detect from the hostname. Anything not in the map (localhost,
+  // *.workers.dev preview) falls back to FR, so dev + preview work unchanged.
   var host = (window.location && window.location.hostname) || ''
   var region = HOST_REGION[host] || 'FR'
 
-  window.JJ_REGION = region
-  window.JJ_CONFIG = REGION_CONFIG[region]
+  // ── Preview override (dev / QA) ──────────────────────────────────────
+  // Visit ?market=JP (or ?market=FR) to preview that market's PRESENTATION
+  // — language, currency, branding — on ANY domain, with no domain to buy.
+  // Persisted per browser tab so it survives navigation (login → dashboard).
+  // Reset with ?market=clear.
+  //
+  // Changes LOOK ONLY. What data a user can access stays enforced server-side
+  // by the planner's real `region` + RLS — a preview cannot leak another
+  // market's data.
+  var preview = false
+  try {
+    var qs = new URLSearchParams(window.location.search)
+    if (qs.has('market')) {
+      var m = (qs.get('market') || '').toUpperCase()
+      if (m === 'FR' || m === 'JP') sessionStorage.setItem('jj_market_preview', m)
+      else sessionStorage.removeItem('jj_market_preview')   // ?market=clear / empty resets
+    }
+    var stored = sessionStorage.getItem('jj_market_preview')
+    if (stored === 'FR' || stored === 'JP') { region = stored; preview = true }
+  } catch (e) {}
+
+  window.JJ_REGION  = region
+  window.JJ_CONFIG  = REGION_CONFIG[region]
+  window.JJ_PREVIEW = preview   // true when overridden via ?market=
 })()
