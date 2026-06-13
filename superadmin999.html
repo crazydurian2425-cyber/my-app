@@ -1325,6 +1325,11 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title">In-progress sets</div><span class="badge b-amber" id="active-sets-badge">—</span></div>
+      <div style="padding:12px 16px 0;"><div class="tabs" id="active-market-tabs">
+        <button class="tab active" onclick="filterActiveSetsMarket('all',this)">🌐 All markets</button>
+        <button class="tab" onclick="filterActiveSetsMarket('japan',this)">🇯🇵 Japan</button>
+        <button class="tab" onclick="filterActiveSetsMarket('france',this)">🇫🇷 France</button>
+      </div></div>
       <table class="tbl">
         <thead><tr><th>Set</th><th style="min-width:220px;">Admin remark</th><th>Action</th></tr></thead>
         <tbody id="active-sets-tbody"><tr><td colspan="3" style="text-align:center;padding:20px;color:var(--ink-3)">Loading...</td></tr></tbody>
@@ -1383,6 +1388,11 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <input id="recent-approvals-filter" type="text" placeholder="Search planner, email, or set #…"
                  oninput="onRecentApprovalsFilterInput()"
                  style="border:none;background:transparent;font-size:13px;color:var(--ink);outline:none;width:100%;font-family:'DM Sans',sans-serif;">
+        </div>
+        <div class="tabs" id="approvals-market-tabs">
+          <button class="tab active" onclick="filterApprovalsMarket('all',this)">🌐 All markets</button>
+          <button class="tab" onclick="filterApprovalsMarket('japan',this)">🇯🇵 Japan</button>
+          <button class="tab" onclick="filterApprovalsMarket('france',this)">🇫🇷 France</button>
         </div>
       </div>
       <div id="recent-approvals-list" style="padding:8px 0 16px;"></div>
@@ -3042,6 +3052,10 @@ function travelerMarket(t) {
   if (m === 'japan' || m === 'france') return m
   return _JP_CITIES.has(String(t.destination || '').trim()) ? 'japan' : 'france'
 }
+// A set carries a city (its primary destination); classify it the same way.
+function marketOfCity(city) {
+  return _JP_CITIES.has(String(city || '').trim()) ? 'japan' : 'france'
+}
 
 // Click a column header → cycle asc/desc and update the dropdown to match.
 // Keeps the dropdown and the column-header sort in sync (single source of truth).
@@ -3999,6 +4013,14 @@ async function loadRecentApprovals() {
   renderRecentApprovals()
 }
 
+let _approvalsMarket = 'all'
+function filterApprovalsMarket(market, btn) {
+  const scope = btn.closest('.tabs') || document
+  scope.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  btn.classList.add('active')
+  _approvalsMarket = market
+  renderRecentApprovals()
+}
 function renderRecentApprovals(){
   const list  = document.getElementById('recent-approvals-list')
   const badge = document.getElementById('recent-approvals-badge')
@@ -4015,6 +4037,7 @@ function renderRecentApprovals(){
       return name.includes(q) || email.includes(q) || setNum.includes(q) || ('#'+setNum).includes(q)
     })
   }
+  if (_approvalsMarket !== 'all') filtered = filtered.filter(r => marketOfCity(r.sets?.city) === _approvalsMarket)
 
   if (badge) badge.textContent = String(filtered.length)
 
@@ -4120,7 +4143,25 @@ async function loadActiveSets() {
     })
   }
 
-  const count = activeSets?.length || 0
+  window._activeSetsData = activeSets || []
+  window._activeSetsPlanners = plannersBySet
+  renderActiveSets()
+}
+
+let _activeMarket = 'all'
+function filterActiveSetsMarket(market, btn) {
+  const scope = btn.closest('.tabs') || document
+  scope.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  btn.classList.add('active')
+  _activeMarket = market
+  renderActiveSets()
+}
+
+function renderActiveSets() {
+  const allSets = window._activeSetsData || []
+  const plannersBySet = window._activeSetsPlanners || {}
+  const activeSets = (_activeMarket === 'all') ? allSets : allSets.filter(s => marketOfCity(s.city) === _activeMarket)
+  const count = activeSets.length
   const sub=document.getElementById('active-sets-sub'); if(sub) sub.textContent=`${count} active`
   const badge=document.getElementById('active-sets-badge'); if(badge) badge.textContent=`${count} active`
   const tbody=document.getElementById('active-sets-tbody')
