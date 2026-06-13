@@ -1088,11 +1088,19 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
-      <div class="tabs">
-        <button class="tab active" onclick="filterTravelers('all',this)">All</button>
-        <button class="tab" onclick="filterTravelers('unassigned',this)">Unassigned</button>
-        <button class="tab" onclick="filterTravelers('assigned',this)">Assigned</button>
-        <button class="tab" onclick="filterTravelers('delivered',this)">Delivered</button>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="tabs">
+          <button class="tab active" onclick="filterTravelers('all',this)">All</button>
+          <button class="tab" onclick="filterTravelers('unassigned',this)">Unassigned</button>
+          <button class="tab" onclick="filterTravelers('assigned',this)">Assigned</button>
+          <button class="tab" onclick="filterTravelers('delivered',this)">Delivered</button>
+        </div>
+        <!-- Market filter — separate the legacy France travelers from the Japan ones -->
+        <div class="tabs" id="trav-market-tabs">
+          <button class="tab active" onclick="filterTravelerMarket('all',this)">🌐 All markets</button>
+          <button class="tab" onclick="filterTravelerMarket('japan',this)">🇯🇵 Japan</button>
+          <button class="tab" onclick="filterTravelerMarket('france',this)">🇫🇷 France</button>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
         <span style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Sort</span>
@@ -3006,13 +3014,33 @@ async function loadTravelers() {
   if (sub) sub.textContent = `${allTravelers.length} travelers total`
 }
 
-// Track current filter so the sort dropdown can re-apply it without losing context.
+// Track current filters so the sort dropdown can re-apply without losing context.
 let _travCurrentFilter = 'all'
+let _travMarket = 'all'
 function filterTravelers(filter, btn) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  // Scope the active toggle to THIS pill group so the market group keeps its state.
+  const scope = btn.closest('.tabs') || document
+  scope.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
   btn.classList.add('active')
   _travCurrentFilter = filter
   applyTravelerSort()
+}
+function filterTravelerMarket(market, btn) {
+  const scope = btn.closest('.tabs') || document
+  scope.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'))
+  btn.classList.add('active')
+  _travMarket = market
+  applyTravelerSort()
+}
+
+// Japan vs France. Prefers the explicit market column / meta.market (set by the
+// Japan seed); falls back to a destination-city check so legacy France rows
+// (no market tag) still classify correctly.
+const _JP_CITIES = new Set(['Tokyo','Kyoto','Osaka','Sapporo','Fukuoka','Hiroshima','Nara','Nagoya','Kobe','Okinawa','Hakone','Otaru','Niseko','Kawaguchiko','Nagasaki','Yokohama','Sendai','Nagano','Matsumoto','Takayama','Hakodate','Kanazawa','Yufuin','Beppu','Aomori','Nikko','Miyajima','Himeji','Furano','Naha','Onna','Shirakawa-go','Kumamoto'])
+function travelerMarket(t) {
+  const m = String(t.market || (t.meta && t.meta.market) || '').toLowerCase()
+  if (m === 'japan' || m === 'france') return m
+  return _JP_CITIES.has(String(t.destination || '').trim()) ? 'japan' : 'france'
 }
 
 // Click a column header → cycle asc/desc and update the dropdown to match.
@@ -3041,7 +3069,8 @@ function updateSortArrows() {
 // Read filter + sort dropdown state and re-render. Called by both the tab
 // filter and the sort dropdown so the two controls always combine correctly.
 function applyTravelerSort() {
-  const list = (_travCurrentFilter === 'all') ? allTravelers.slice() : allTravelers.filter(t => t.status === _travCurrentFilter)
+  let list = (_travCurrentFilter === 'all') ? allTravelers.slice() : allTravelers.filter(t => t.status === _travCurrentFilter)
+  if (_travMarket !== 'all') list = list.filter(t => travelerMarket(t) === _travMarket)
   const sort = document.getElementById('trav-sort')?.value || 'created_desc'
   const cmp = (a, b) => {
     switch (sort) {
