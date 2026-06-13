@@ -5393,10 +5393,24 @@ async function submitPayout() {
   setTimeout(loadPayments, 300)
 }
 
+// Render a full Japanese furikomi line from a bank object (request snapshot or
+// planner row): bank name · 支店{branch} · 普通/当座 · 口座{number} · holder.
+// Everything an admin needs to actually execute the transfer.
+function _fmtBankLine(o) {
+  const parts = [
+    o.bank_name,
+    o.bank_branch_code ? `支店${o.bank_branch_code}` : '',
+    o.bank_account_type,
+    o.bank_account ? `口座${o.bank_account}` : '',
+    o.bank_holder
+  ].filter(Boolean).map(escapeHtml)
+  return parts.length ? `🏦 ${parts.join(' · ')}` : '—'
+}
+
 // ── PAYOUT REQUESTS (planner-initiated wallet withdrawals) ────
 async function loadPayoutRequests() {
   const { data: rows, error } = await sb.from('wallet_requests')
-    .select('id, planner_id, amount, status, note, admin_note, bank_snapshot, requested_at, resolved_at, resolved_by, planners:planner_id(name, email, bank_name, bank_account, bank_holder, bank_branch_code, paypay_id, paypay_holder)')
+    .select('id, planner_id, amount, status, note, admin_note, bank_snapshot, requested_at, resolved_at, resolved_by, planners:planner_id(name, email, bank_name, bank_account, bank_account_type, bank_holder, bank_branch_code, paypay_id, paypay_holder)')
     .order('requested_at', { ascending: false })
   if (error) { showToast('Load failed: ' + error.message); return }
 
@@ -5438,12 +5452,11 @@ async function loadPayoutRequests() {
           } else if (isCryptoSnap) {
             bankLine = `🪙 ${escapeHtml(bank.asset || 'USDT')} · ${escapeHtml(bank.network || '—')} · <span style="font-variant-numeric:tabular-nums;word-break:break-all;">${escapeHtml(bank.address)}</span>`
           } else if (useSnapshotBank) {
-            const bankParts = [bank.bank_name, bank.bank_account, bank.bank_bic, bank.bank_holder].filter(Boolean).map(escapeHtml)
-            bankLine = bankParts.length ? `🏦 ${bankParts.join(' · ')}` : '—'
+            bankLine = _fmtBankLine(bank)
           } else if (r.planners?.paypay_id) {
             bankLine = `⚡ PayPay · ${escapeHtml(r.planners.paypay_id)} · ${escapeHtml(r.planners.paypay_holder || '—')}`
-          } else if (r.planners?.bank_account) {
-            bankLine = `🏦 ${escapeHtml(r.planners.bank_name || 'Bank')} · <span style="font-variant-numeric:tabular-nums;word-break:break-all;">${escapeHtml(r.planners.bank_account)}</span>`
+          } else if (r.planners?.bank_account || r.planners?.bank_name) {
+            bankLine = _fmtBankLine(r.planners)
           } else {
             bankLine = 'No payout method on file'
           }
@@ -5799,8 +5812,14 @@ async function viewPlanner(id) {
   // (bank_account = bank name/account, bank_branch_code = branch code).
   const _mpIsBank = p.payout_method === 'bank'
   if (_mpIsBank) {
-    document.getElementById('mp-bank').textContent    = p.bank_account ? `Bank · ${p.bank_name || '—'}` : '—'
-    document.getElementById('mp-account').textContent = p.bank_account ? `${p.bank_account}${p.bank_branch_code ? ' · 支店 ' + p.bank_branch_code : ''}${p.bank_holder ? ' · ' + p.bank_holder : ''}` : '—'
+    document.getElementById('mp-bank').textContent    = (p.bank_name || p.bank_account) ? `Bank · ${p.bank_name || '—'}` : '—'
+    const _bp = [
+      p.bank_branch_code ? '支店' + p.bank_branch_code : '',
+      p.bank_account_type || '',
+      p.bank_account ? '口座' + p.bank_account : '',
+      p.bank_holder || ''
+    ].filter(Boolean).join(' · ')
+    document.getElementById('mp-account').textContent = _bp || '—'
   } else {
     document.getElementById('mp-bank').textContent    = p.paypay_id ? 'PayPay' : '—'
     document.getElementById('mp-account').textContent = p.paypay_id ? `${p.paypay_id}${p.paypay_holder ? ' · ' + p.paypay_holder : ''}` : '—'

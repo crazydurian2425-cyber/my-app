@@ -7589,17 +7589,30 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <span data-i18n="profile.bank.header">Bank transfer</span>
               <span style="font-weight:500;letter-spacing:0;text-transform:none;font-size:10.5px;color:var(--text-3);" data-i18n="profile.bank.tag">· Japan · ¥</span>
             </div>
-            <div class="form-group">
-              <label class="form-label" data-i18n="profile.bank.iban">Bank name</label>
-              <input class="form-input" id="profile-bank-iban" placeholder="e.g. MUFG Bank (Futsu 1234567)" data-i18n-ph="profile.bank.ph.iban" autocomplete="off" spellcheck="false">
-            </div>
+            <!-- Furikomi needs all of: bank name, 3-digit branch code, account
+                 type (普通/当座), account number, and the holder name in katakana. -->
             <div class="form-row">
-              <div class="form-group"><label class="form-label" data-i18n="profile.bank.holder">Account holder</label>
-                <input class="form-input" id="profile-bank-holder" placeholder="Name as on the account" data-i18n-ph="profile.bank.ph.holder" autocomplete="off">
+              <div class="form-group"><label class="form-label" data-i18n="profile.bank.name">Bank name</label>
+                <input class="form-input" id="profile-bank-name" placeholder="e.g. MUFG Bank" data-i18n-ph="profile.bank.ph.name" autocomplete="off" spellcheck="false">
               </div>
-              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.bic">Branch code</label>
-                <input class="form-input" id="profile-bank-bic" placeholder="e.g. 001" data-i18n-ph="profile.bank.ph.bic" autocomplete="off" spellcheck="false">
+              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.branch">Branch code</label>
+                <input class="form-input" id="profile-bank-branch" placeholder="e.g. 001" data-i18n-ph="profile.bank.ph.branch" autocomplete="off" spellcheck="false" inputmode="numeric">
               </div>
+            </div>
+            <div class="form-row" style="margin-top:14px;">
+              <div class="form-group"><label class="form-label" data-i18n="profile.bank.type">Account type</label>
+                <select class="form-input" id="profile-bank-type">
+                  <option value="普通" data-i18n="profile.bank.type.futsu">Ordinary (普通)</option>
+                  <option value="当座" data-i18n="profile.bank.type.touza">Current (当座)</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.number">Account number</label>
+                <input class="form-input" id="profile-bank-number" placeholder="e.g. 1234567" data-i18n-ph="profile.bank.ph.number" autocomplete="off" spellcheck="false" inputmode="numeric">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;margin-top:14px;">
+              <label class="form-label" data-i18n="profile.bank.holder">Account holder (katakana)</label>
+              <input class="form-input" id="profile-bank-holder" placeholder="e.g. ヤマダ タロウ" data-i18n-ph="profile.bank.ph.holder" autocomplete="off">
             </div>
           </div><!-- /payout-section-bank -->
         </div></div>
@@ -8294,8 +8307,6 @@ const TM_I18N = {
     'wallet.empty':'No payout requests yet',
     'wallet.protection.title':'Wallet protection buffer',
     'wallet.protection.sub':'Fraud & chargeback buffer',
-    'profile.bic':'Branch code (optional)',
-    'profile.ph.bic':'e.g. 001',
     'wallet.protection.badge':'Fraud & chargeback buffer',
     'wallet.protection.body1':'We hold a one-time <strong><span id="w-protection-min">¥91,500</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. It stays held until you have <strong>completed <span id="w-protection-sets">3</span> sets</strong>; until then you can still withdraw anything earned <strong>above</strong> the buffer. Once you reach that, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
     'wallet.protection.body2':'Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>. You have completed <strong><span id="w-protection-done">0</span></strong> set(s) so far — once you reach the target the buffer releases and everything becomes fully withdrawable.',
@@ -8322,17 +8333,20 @@ const TM_I18N = {
     'profile.method.bank':'Bank transfer (Japan)',
     'profile.bank.header':'Bank transfer',
     'profile.bank.tag':'· Japan · ¥',
-    'profile.bank.hint':'Payouts are sent by <strong>Japanese yen bank transfer</strong>. Enter your bank details exactly as they appear on your passbook or cash card.',
-    'profile.bank.iban':'Bank name',
-    'profile.bank.holder':'Account holder',
-    'profile.bank.bic':'Branch code',
-    'profile.bank.ph.iban':'e.g. MUFG Bank (Futsu 1234567)',
-    'profile.bank.ph.holder':'Name as on the account',
-    'profile.bank.ph.bic':'e.g. 001',
+    'profile.bank.hint':'Payouts are sent by <strong>Japanese yen bank transfer</strong>. Enter your bank details exactly as they appear on your passbook or cash card — the account holder name in <strong>katakana</strong>.',
+    'profile.bank.name':'Bank name',
+    'profile.bank.branch':'Branch code',
+    'profile.bank.type':'Account type',
+    'profile.bank.type.futsu':'Ordinary (普通)',
+    'profile.bank.type.touza':'Current (当座)',
+    'profile.bank.number':'Account number',
+    'profile.bank.holder':'Account holder (katakana)',
+    'profile.bank.ph.name':'e.g. MUFG Bank',
+    'profile.bank.ph.branch':'e.g. 001',
+    'profile.bank.ph.number':'e.g. 1234567',
+    'profile.bank.ph.holder':'e.g. ヤマダ タロウ',
     'wallet.method.sepa':'Bank transfer',
     'wallet.method.paypay':'PayPay',
-    'toast.ibanInvalid':"Those bank details don't look right — double-check them.",
-    'toast.bicInvalid':"That branch code doesn't look right.",
     'profile.paypay.header':'PayPay payout',
     'profile.paypay.tag':'· PayPay · instant',
     'profile.paypay.switchHint':'Payouts are sent <strong>instantly to your PayPay account</strong>. Enter your PayPay ID (or the phone number registered to PayPay) and the name on your PayPay account. <strong>Make sure the name matches your PayPay account</strong> — payouts to a mismatched account can be rejected.',
@@ -9035,8 +9049,6 @@ const TM_I18N = {
     'wallet.empty':'まだ出金リクエストはありません',
     'wallet.protection.title':'ウォレット保護リザーブ',
     'wallet.protection.sub':'不正利用や支払いトラブルに備えた安全保留分',
-    'profile.bic':'支店コード（任意）',
-    'profile.ph.bic':'例：001',
     'wallet.protection.badge':'不正・トラブル用リザーブ',
     'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、安全リザーブとして一度だけ <strong><span id="w-protection-min">¥91,500</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもリザーブを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、リザーブは<strong>恒久的に解除</strong>され、以降の出金ではウォレットを空にすることもできます。',
     'wallet.protection.body2':'現在の上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。これまでに <strong><span id="w-protection-done">0</span></strong> セットを完了しています — しきい値に達するとリザーブが解除され、すべて自由に出金できるようになります。',
@@ -9062,17 +9074,20 @@ const TM_I18N = {
     'profile.method.bank':'銀行振込（日本）',
     'profile.bank.header':'銀行振込',
     'profile.bank.tag':'· 日本国内 · ¥',
-    'profile.bank.hint':'支払いは<strong>日本円での銀行振込</strong>で行われます。銀行口座の情報を通帳・キャッシュカードに記載されたとおり正確に入力してください。',
-    'profile.bank.iban':'銀行名',
-    'profile.bank.holder':'口座名義',
-    'profile.bank.bic':'支店コード',
-    'profile.bank.ph.iban':'例：三菱UFJ銀行（普通 1234567）',
-    'profile.bank.ph.holder':'口座に記載のとおりの名義',
-    'profile.bank.ph.bic':'例：001',
+    'profile.bank.hint':'支払いは<strong>日本円での銀行振込</strong>で行われます。通帳・キャッシュカードに記載のとおり正確に入力してください。口座名義は<strong>カタカナ</strong>でご入力ください。',
+    'profile.bank.name':'銀行名',
+    'profile.bank.branch':'支店コード',
+    'profile.bank.type':'預金種目',
+    'profile.bank.type.futsu':'普通',
+    'profile.bank.type.touza':'当座',
+    'profile.bank.number':'口座番号',
+    'profile.bank.holder':'口座名義（カタカナ）',
+    'profile.bank.ph.name':'例：三菱UFJ銀行',
+    'profile.bank.ph.branch':'例：001',
+    'profile.bank.ph.number':'例：1234567',
+    'profile.bank.ph.holder':'例：ヤマダ タロウ',
     'wallet.method.sepa':'銀行振込',
     'wallet.method.paypay':'PayPay',
-    'toast.ibanInvalid':"口座情報が正しくないようです — ご確認ください。",
-    'toast.bicInvalid':"支店コードが正しくないようです。",
     'profile.paypay.header':'PayPay での支払い',
     'profile.paypay.tag':'· PayPay · 即時',
     'profile.paypay.switchHint':'支払いは <strong>PayPay 残高へ即時に送金</strong>されます。PayPay ID（または PayPay に登録した電話番号）と、PayPay アカウントの名義を入力してください。<strong>名義が PayPay アカウントと一致していることを確認してください</strong> — 一致しない場合、送金が拒否されることがあります。',
@@ -10426,16 +10441,20 @@ function getPlannerPayoutMethod() {
   const active = (planner?.payout_method === 'bank') ? 'bank' : 'paypay'
 
   if (active === 'bank') {
-    const iban   = (planner?.bank_account || '').trim()      // bank_account: account number
-    const holder = (planner?.bank_holder || '').trim()
-    const bic    = (planner?.bank_branch_code || '').trim()  // bank_branch_code: branch code
-    if (iban) {
-      const masked = iban.length > 9 ? `${iban.slice(0, 6)}…${iban.slice(-3)}` : iban
+    const bankName = (planner?.bank_name || '').trim()
+    const branch   = (planner?.bank_branch_code || '').trim()   // 3-digit branch code
+    const acctType = (planner?.bank_account_type === '当座') ? '当座' : '普通'
+    const acctNum  = (planner?.bank_account || '').trim()        // account number
+    const holder   = (planner?.bank_holder || '').trim()        // katakana holder
+    if (acctNum) {
+      // Compact one-liner for the wallet card; the full snapshot carries every
+      // furikomi field so the admin can pay from the historical record.
+      const detail = [bankName, branch ? `支店${branch}` : '', acctType, acctNum, holder].filter(Boolean).join(' · ')
       return {
         method: 'bank',
         title:  t('wallet.method.sepa', 'Bank transfer'),
-        detail: holder ? `${masked} · ${holder}` : masked,
-        snapshot: { method: 'bank', bank_account: iban, bank_holder: holder || null, bank_bic: bic || null, bank_name: null }
+        detail,
+        snapshot: { method: 'bank', bank_name: bankName || null, bank_branch_code: branch || null, bank_account_type: acctType, bank_account: acctNum, bank_holder: holder || null }
       }
     }
     return { method: 'none', title: t('wallet.methodNotSet', 'Not set — add in Profile'), detail: '—', snapshot: null }
@@ -12252,15 +12271,18 @@ async function loadProfile() {
   el('profile-email',   p.email)
   el('profile-phone',   p.phone)
   // Payout method — PayPay OR bank (one active). PayPay lives in paypay_id /
-  // paypay_holder; bank lives in bank_account (bank name/account) / bank_holder
-  // / bank_branch_code (branch code).
+  // paypay_holder; bank lives in bank_name / bank_branch_code (branch code) /
+  // bank_account (account number) / bank_holder (katakana) / bank_account_type.
   const _isBank = (p.payout_method === 'bank')
   el('profile-paypay-id',     _isBank ? '' : (p.paypay_id || ''))
   el('profile-paypay-holder', _isBank ? '' : (p.paypay_holder || ''))
   // Bank fields only carry real bank data when bank is the active method.
-  el('profile-bank-iban',   _isBank ? p.bank_account : '')
-  el('profile-bank-holder', _isBank ? p.bank_holder : '')
-  el('profile-bank-bic',    _isBank ? p.bank_branch_code : '')
+  el('profile-bank-name',   _isBank ? (p.bank_name || '') : '')
+  el('profile-bank-branch', _isBank ? (p.bank_branch_code || '') : '')
+  el('profile-bank-number', _isBank ? (p.bank_account || '') : '')
+  el('profile-bank-holder', _isBank ? (p.bank_holder || '') : '')
+  const _btSel = document.getElementById('profile-bank-type')
+  if (_btSel) _btSel.value = (_isBank && p.bank_account_type === '当座') ? '当座' : '普通'
   if (typeof setPayoutMethodTab === 'function') setPayoutMethodTab(_isBank ? 'bank' : 'paypay')
   // Cities-you-cover + hidden specialty fields (langs + types) are persisted as
   // plain strings in planners.specialty_* columns. If the columns don't exist,
@@ -12348,27 +12370,33 @@ async function saveProfile() {
   const cityOther = document.getElementById('profile-city-other')?.value?.trim() || ''
   const cityFinal = (citySel === 'Other' && cityOther) ? cityOther : (citySel === 'Other' ? '' : citySel)
   // Payout method — PayPay OR bank (one active, chosen via the toggle).
-  // `core` holds only columns that ALWAYS exist, so a save never loses payout
-  // info; payout_method goes in `optional`, which degrades gracefully if absent.
+  // `core` holds columns that ALWAYS exist (incl. payout_method, so the active
+  // method is never lost on save); bank_account_type goes in `optional`, which
+  // degrades gracefully until add-bank-account-type.sql has run.
   const _payoutTab = (window._payoutTab === 'bank') ? 'bank' : 'paypay'
   let _payoutCore, _payoutOptional
   if (_payoutTab === 'bank') {
-    const iban   = _normalizeIban(document.getElementById('profile-bank-iban')?.value)
-    const holder = (document.getElementById('profile-bank-holder')?.value || '').trim()
-    const bic    = _normalizeIban(document.getElementById('profile-bank-bic')?.value)
-    if (iban && !_isValidIban(iban)) { showToast(t('toast.ibanInvalid',"Those bank details don't look right — double-check them.")); return }
-    if (bic  && !_isValidBic(bic))   { showToast(t('toast.bicInvalid',"That branch code doesn't look right.")); return }
-    // bank_account = bank name/account, bank_branch_code = branch code, bank_holder = account holder.
-    // Clear the PayPay fields so the inactive method doesn't linger.
-    _payoutCore     = { bank_account: iban || null, bank_holder: holder || null, bank_branch_code: bic || null, bank_name: null, paypay_id: null, paypay_holder: null }
-    _payoutOptional = { payout_method: 'bank' }
+    // Japanese furikomi: bank name + 3-digit branch code + account type
+    // (普通/当座) + account number + holder name in katakana. Branch code and
+    // account number are digits-only; we don't hard-block (ゆうちょ / legacy
+    // account lengths vary), just strip non-digits.
+    const bankName = (document.getElementById('profile-bank-name')?.value || '').trim()
+    const branch   = (document.getElementById('profile-bank-branch')?.value || '').replace(/[^0-9]/g, '')
+    const acctType = (document.getElementById('profile-bank-type')?.value === '当座') ? '当座' : '普通'
+    const acctNum  = (document.getElementById('profile-bank-number')?.value || '').replace(/[^0-9]/g, '')
+    const holder   = (document.getElementById('profile-bank-holder')?.value || '').trim()
+    // bank_name = bank, bank_branch_code = branch code, bank_account = account
+    // number, bank_holder = katakana holder. Clear the PayPay fields so the
+    // inactive method doesn't linger.
+    _payoutCore     = { bank_name: bankName || null, bank_branch_code: branch || null, bank_account: acctNum || null, bank_holder: holder || null, paypay_id: null, paypay_holder: null, payout_method: 'bank' }
+    _payoutOptional = { bank_account_type: acctType }
   } else {
     // PayPay. Store the PayPay ID (or registered phone) + account holder name.
     // Clear the bank_* columns so the inactive method doesn't linger.
     const ppId     = (document.getElementById('profile-paypay-id')?.value || '').trim() || null
     const ppHolder = (document.getElementById('profile-paypay-holder')?.value || '').trim() || null
-    _payoutCore     = { paypay_id: ppId, paypay_holder: ppHolder, bank_account: null, bank_holder: null, bank_branch_code: null, bank_name: null }
-    _payoutOptional = { payout_method: 'paypay' }
+    _payoutCore     = { paypay_id: ppId, paypay_holder: ppHolder, bank_name: null, bank_branch_code: null, bank_account: null, bank_holder: null, payout_method: 'paypay' }
+    _payoutOptional = { bank_account_type: null }
   }
   const core = {
     name:  document.getElementById('profile-name')?.value?.trim(),
@@ -12422,14 +12450,17 @@ async function saveProfile() {
     showToast(t('toast.profileSaved'))
   }
 
-  // Mirror to localStorage so the sidebar + hero reflect the change immediately
-  const updated = { ...planner, ...core, ...(savedSpecs ? specs : {}) }
+  // Mirror to localStorage so the sidebar + hero reflect the change immediately.
+  // Always merge _payoutOptional last (account type) so the toggled 普通/当座 is
+  // reflected in memory even if the spec save degraded (column not yet migrated);
+  // it's a no-op when specs were saved since specs already carries it.
+  const updated = { ...planner, ...core, ...(savedSpecs ? specs : {}), ..._payoutOptional }
   localStorage.setItem('jj_planner', JSON.stringify(updated))
   // CRITICAL: also mutate the in-memory `planner` object. Without this, the
   // wallet page + payout request modal continue reading the stale (cached)
   // bank_name/account/holder until the user hard-refreshes — that was the
   // "Bank not set" still showing after save bug.
-  Object.assign(planner, core, savedSpecs ? specs : {})
+  Object.assign(planner, core, savedSpecs ? specs : {}, _payoutOptional)
   try { if (typeof applyDashHero === 'function') applyDashHero(core.city) } catch(e){}
   // Re-render any open wallet / payout UI so the new bank details appear
   // immediately. loadWallet() reads from `planner` so this picks up the
