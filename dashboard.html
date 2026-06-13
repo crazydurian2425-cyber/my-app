@@ -9955,15 +9955,11 @@ function applyDashHero(city){
 function _isFrMoney(){ try { return typeof isPlannerFR === 'function' && isPlannerFR() } catch(e){ return false } }
 function fmtMoney(amount){
   const n = Math.round(Number(amount) || 0)
-  // JP market → yen: ¥ in front, no decimals, comma thousands. No conversion —
-  // JP rows already store yen. Region from window.JJ_CONFIG (host / ?market=).
-  if (window.JJ_CONFIG && window.JJ_CONFIG.region === 'JP') return '¥' + n.toLocaleString('en-GB')
   return _isFrMoney() ? n.toLocaleString('fr-FR') + ' €' : '€' + n.toLocaleString('en-GB')
 }
 // Short variant used where a raw currency string is needed without rounding noise
 function fmtMoneyRaw(amount){
   const n = Number(amount) || 0
-  if (window.JJ_CONFIG && window.JJ_CONFIG.region === 'JP') return '¥' + n.toLocaleString('en-GB')
   return _isFrMoney() ? n.toLocaleString('fr-FR') + ' €' : '€' + n.toLocaleString('en-GB')
 }
 
