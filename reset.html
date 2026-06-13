@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="jjlogo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Journey Junction — Nouveau mot de passe</title>
+<title>Journey Junction — 新しいパスワード</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -47,7 +47,7 @@ body{font-family:'DM Sans',sans-serif;background:#f5f4f0;min-height:100vh;displa
 <body>
 <div class="card">
   <div class="logo"><img src="jj.jpg" alt="JJ"/>Journey<span>Junction</span></div>
-  <div class="sub" id="sub">Saisissez le code que nous vous avons envoyé par e-mail et définissez un nouveau mot de passe.</div>
+  <div class="sub" id="sub">メールでお送りした認証コードを入力し、新しいパスワードを設定してください。</div>
   <div id="email-line" class="sub" style="margin-top:-12px;margin-bottom:18px;"></div>
 
   <div class="error" id="err"></div>
@@ -55,39 +55,39 @@ body{font-family:'DM Sans',sans-serif;background:#f5f4f0;min-height:100vh;displa
 
   <!-- STEP 1: ask for email if we don't already have it -->
   <div id="step-email" style="display:none;">
-    <label class="label">Adresse e-mail</label>
-    <input class="input" type="email" id="email-input" placeholder="vous@email.com" autocomplete="email">
-    <button class="btn" onclick="sendCode()">Envoyer le code</button>
-    <div class="foot"><a href="login.html">Retour à la connexion</a></div>
+    <label class="label">メールアドレス</label>
+    <input class="input" type="email" id="email-input" placeholder="you@email.com" autocomplete="email">
+    <button class="btn" onclick="sendCode()">認証コードを送信</button>
+    <div class="foot"><a href="login.html">ログイン画面に戻る</a></div>
   </div>
 
   <!-- STEP 2: enter code + new password -->
   <div id="step-code" style="display:none;">
-    <label class="label">Code reçu par e-mail</label>
+    <label class="label">メールで届いた認証コード</label>
     <input class="input code" type="text" id="code" inputmode="numeric" maxlength="10" autocomplete="one-time-code" placeholder="••••••">
-    <label class="label">Nouveau mot de passe</label>
+    <label class="label">新しいパスワード</label>
     <div class="pw-wrap">
-      <input class="input" type="password" id="password" placeholder="Définissez un mot de passe robuste" autocomplete="new-password" oninput="updatePwRules()">
-      <button type="button" class="pw-toggle" onclick="togglePw('password', this)" aria-label="Afficher le mot de passe">
+      <input class="input" type="password" id="password" placeholder="強固なパスワードを設定してください" autocomplete="new-password" oninput="updatePwRules()">
+      <button type="button" class="pw-toggle" onclick="togglePw('password', this)" aria-label="パスワードを表示">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
     <ul class="pw-rules" id="pw-rules">
-      <li id="pw-len">Au moins 8 caractères</li>
-      <li id="pw-letter">Au moins une lettre</li>
-      <li id="pw-digit">Au moins un chiffre</li>
+      <li id="pw-len">8文字以上</li>
+      <li id="pw-letter">英字を1文字以上</li>
+      <li id="pw-digit">数字を1文字以上</li>
     </ul>
-    <label class="label">Confirmer le mot de passe</label>
+    <label class="label">パスワードの確認</label>
     <div class="pw-wrap">
-      <input class="input" type="password" id="confirm" placeholder="Saisissez à nouveau le mot de passe" autocomplete="new-password">
-      <button type="button" class="pw-toggle" onclick="togglePw('confirm', this)" aria-label="Afficher le mot de passe">
+      <input class="input" type="password" id="confirm" placeholder="パスワードをもう一度入力してください" autocomplete="new-password">
+      <button type="button" class="pw-toggle" onclick="togglePw('confirm', this)" aria-label="パスワードを表示">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
-    <button class="btn" id="btn-set" onclick="setPassword()">Définir le nouveau mot de passe</button>
+    <button class="btn" id="btn-set" onclick="setPassword()">新しいパスワードを設定</button>
     <div class="foot">
-      Vous n'avez pas reçu le code ? <button class="btn-link" onclick="resendCode()">Renvoyer</button>
-      &nbsp;·&nbsp; <a href="login.html">Connexion</a>
+      認証コードが届きませんか？ <button class="btn-link" onclick="resendCode()">再送信</button>
+      &nbsp;·&nbsp; <a href="login.html">ログイン</a>
     </div>
   </div>
 </div>
@@ -124,7 +124,7 @@ let userEmail = null
     // Magic-link path failed (token consumed by email scanner, expired, etc.).
     // Show OTP code entry instead — user can paste the code from the email
     // body if the template carries both link + token.
-    showError(decodeURIComponent(errDesc).replace(/\+/g,' ') + ' — saisissez plutôt le code reçu par e-mail.')
+    showError(decodeURIComponent(errDesc).replace(/\+/g,' ') + ' — 代わりにメールで届いた認証コードを入力してください。')
     history.replaceState(null, '', window.location.pathname + window.location.search)
     return showStep(userEmail ? 'code' : 'email')
   }
@@ -140,12 +140,12 @@ let userEmail = null
       codeBox.value = '__session__'
       codeBox.parentElement.style.display = 'none'
       document.querySelectorAll('label.label')[0].style.display = 'none'
-      document.getElementById('sub').textContent = 'Définissez votre nouveau mot de passe ci-dessous.'
+      document.getElementById('sub').textContent = '以下に新しいパスワードを設定してください。'
       document.getElementById('email-line').style.display = 'none'
       return
     }
     // Fall through to OTP entry on failure.
-    showError('Le lien a expiré ou a déjà été utilisé. Saisissez le code à 6 chiffres reçu par e-mail.')
+    showError('リンクの有効期限が切れているか、既に使用されています。メールで届いた6桁の認証コードを入力してください。')
   }
 
   showStep(userEmail ? 'code' : 'email')
@@ -156,7 +156,7 @@ let userEmail = null
       redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(userEmail)
     }).then(({ error }) => {
       if (error) showError(error.message)
-      else showSuccess('Code envoyé à ' + escapeHtml(userEmail) + '. Vérifiez votre boîte de réception.')
+      else showSuccess(escapeHtml(userEmail) + ' に認証コードを送信しました。受信トレイをご確認ください。')
     })
     history.replaceState(null, '', 'reset.html?email=' + encodeURIComponent(userEmail))
   }
@@ -167,7 +167,7 @@ function showStep(which) {
   document.getElementById('step-code').style.display  = which === 'code'  ? 'block' : 'none'
   if (which === 'code' && userEmail) {
     document.getElementById('email-line').innerHTML =
-      'Code envoyé à <span class="email-pill">' + escapeHtml(userEmail) + '</span>'
+      '<span class="email-pill">' + escapeHtml(userEmail) + '</span> に認証コードを送信しました'
     document.getElementById('email-line').style.display = 'block'
     setTimeout(() => document.getElementById('code')?.focus(), 50)
   }
@@ -175,7 +175,7 @@ function showStep(which) {
 
 async function sendCode() {
   const email = document.getElementById('email-input').value.trim()
-  if (!email) { showError('Veuillez saisir votre adresse e-mail'); return }
+  if (!email) { showError('メールアドレスを入力してください'); return }
   hideMessages()
 
   const { error } = await sb.auth.resetPasswordForEmail(email, {
@@ -185,7 +185,7 @@ async function sendCode() {
 
   userEmail = email
   showStep('code')
-  showSuccess('Vérifiez votre boîte de réception. Le code expire dans 1 heure.')  /* static, safe */
+  showSuccess('受信トレイをご確認ください。認証コードの有効期限は1時間です。')  /* static, safe */
 }
 
 async function resendCode() {
@@ -195,7 +195,7 @@ async function resendCode() {
     redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(userEmail)
   })
   if (error) return showError(error.message)
-  showSuccess('Nouveau code envoyé à ' + escapeHtml(userEmail))
+  showSuccess(escapeHtml(userEmail) + ' に新しい認証コードを送信しました')
 }
 
 // Toggle password visibility on the new-password and confirm fields.
@@ -212,7 +212,7 @@ function togglePw(inputId, btn) {
   input.type = isHidden ? 'text' : 'password'
   if (btn) {
     btn.innerHTML = isHidden ? EYE_CLOSED_SVG : EYE_OPEN_SVG
-    btn.setAttribute('aria-label', isHidden ? 'Masquer le mot de passe' : 'Afficher le mot de passe')
+    btn.setAttribute('aria-label', isHidden ? 'パスワードを隠す' : 'パスワードを表示')
   }
 }
 
@@ -222,13 +222,13 @@ function togglePw(inputId, btn) {
 function translateAuthError(msg, fallback) {
   const m = (msg || '').toLowerCase()
   if (!m) return fallback || ''
-  if (m.includes('different from the old password')) return 'Le nouveau mot de passe doit être différent de l\'ancien'
-  if (m.includes('password should be at least')) return 'Le mot de passe doit comporter au moins 6 caractères'
-  if (m.includes('weak password') || m.includes('password is too weak')) return 'Mot de passe trop faible. Choisissez-en un plus robuste.'
-  if (m.includes('rate limit') || m.includes('too many')) return 'Trop de tentatives. Patientez un instant avant de réessayer.'
-  if (m.includes('invalid') && m.includes('token')) return 'Code invalide ou expiré'
-  if (m.includes('expired') || m.includes('not valid')) return 'Code invalide ou expiré'
-  if (m.includes('user not found') || m.includes('email not found')) return 'Aucun compte trouvé pour cette adresse e-mail'
+  if (m.includes('different from the old password')) return '新しいパスワードは以前のものと異なる必要があります'
+  if (m.includes('password should be at least')) return 'パスワードは6文字以上で入力してください'
+  if (m.includes('weak password') || m.includes('password is too weak')) return 'パスワードが脆弱です。より強固なものを選んでください。'
+  if (m.includes('rate limit') || m.includes('too many')) return '試行回数が多すぎます。しばらく待ってから再度お試しください。'
+  if (m.includes('invalid') && m.includes('token')) return '認証コードが無効、または有効期限が切れています'
+  if (m.includes('expired') || m.includes('not valid')) return '認証コードが無効、または有効期限が切れています'
+  if (m.includes('user not found') || m.includes('email not found')) return 'このメールアドレスに該当するアカウントが見つかりません'
   return fallback || msg
 }
 
@@ -238,45 +238,45 @@ async function setPassword() {
   const confirm  = document.getElementById('confirm').value
   const btn      = document.getElementById('btn-set')
 
-  if (!password)             { showError('Veuillez saisir un nouveau mot de passe'); return }
-  if (password.length < 6)   { showError('Le mot de passe doit comporter au moins 6 caractères'); return }
-  if (password !== confirm)  { showError('Les mots de passe ne correspondent pas'); return }
+  if (!password)             { showError('新しいパスワードを入力してください'); return }
+  if (password.length < 6)   { showError('パスワードは6文字以上で入力してください'); return }
+  if (password !== confirm)  { showError('パスワードが一致しません'); return }
 
   hideMessages()
   btn.disabled = true
-  btn.textContent = 'Enregistrement…'
+  btn.textContent = '保存中…'
 
   // Skip OTP exchange if we already established the session via the magic-link
   // hash earlier. Otherwise, exchange the 6-digit code for a session first.
   if (code !== '__session__') {
     if (!/^\d{4,10}$/.test(code)) {
-      showError('Saisissez le code numérique indiqué dans l\'e-mail')
-      btn.disabled = false; btn.textContent = 'Définir le nouveau mot de passe'; return
+      showError('メールに記載された数字の認証コードを入力してください')
+      btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
     }
     if (!userEmail) {
-      showError('Adresse e-mail inconnue. Revenez à l\'écran précédent et saisissez-la à nouveau.')
-      btn.disabled = false; btn.textContent = 'Définir le nouveau mot de passe'; return
+      showError('メールアドレスが不明です。前の画面に戻り、もう一度入力してください。')
+      btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
     }
     const { error: otpErr } = await sb.auth.verifyOtp({
       email: userEmail, token: code, type: 'recovery'
     })
     if (otpErr) {
-      showError(translateAuthError(otpErr.message, 'Code invalide ou expiré'))
-      btn.disabled = false; btn.textContent = 'Définir le nouveau mot de passe'; return
+      showError(translateAuthError(otpErr.message, '認証コードが無効、または有効期限が切れています'))
+      btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
     }
   }
 
   const { error } = await sb.auth.updateUser({ password })
   if (error) {
-    showError(translateAuthError(error.message, 'Échec de la mise à jour du mot de passe'))
-    btn.disabled = false; btn.textContent = 'Définir le nouveau mot de passe'; return
+    showError(translateAuthError(error.message, 'パスワードの更新に失敗しました'))
+    btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
   }
 
   document.getElementById('step-code').style.display = 'none'
   document.getElementById('step-email').style.display = 'none'
   document.getElementById('email-line').style.display = 'none'
   document.getElementById('sub').textContent = ''
-  showSuccess('<strong>Mot de passe mis à jour !</strong> Redirection vers la page de connexion…')
+  showSuccess('<strong>パスワードを更新しました！</strong> ログイン画面へ移動します…')
   setTimeout(() => window.location.href = 'login.html', 1800)
 }
 

@@ -259,7 +259,7 @@ async function handleCreatePlanner(request) {
   }
 
   // Step 2 — insert the planner row keyed by the auth user id.
-  // `city` is NOT NULL on planners; default to 'Paris' for direct-create
+  // `city` is NOT NULL on planners; default to 'Tokyo' for direct-create
   // accounts (admin can edit later via Manage planners → Edit).
   // `admin_created=true` flags this row so the admin UI can show a badge
   // distinguishing direct-create accounts from application-flow planners.
@@ -268,7 +268,7 @@ async function handleCreatePlanner(request) {
     name,
     email,
     phone: phone || null,
-    city: 'Paris',
+    city: 'Tokyo',
     admin_created: true,
     is_subaccount: !!is_subaccount
   }
@@ -492,7 +492,7 @@ async function handleSendEmploymentLetter(request, url) {
   const signUrl = `${PUBLIC_SITE_URL}/sign-letter?token=${encodeURIComponent(row.signing_token)}`
   const firstName = escapeForEmail((planner_name || '').trim().split(/\s+/)[0] || planner_name || '')
 
-  // 3. Email the planner (Resend) — French (primary) + English.
+  // 3. Email the planner (Resend) — Japanese (primary) + English.
   //    Chrome mirrors the approval email (buildApprovalEmailHtml in
   //    superadmin999.html): table-based layout (email-client safe — no flex),
   //    gradient divider, and the branded company-registration footer.
@@ -516,23 +516,23 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:24px 36px 4px 36px;">
         <h1 style="margin:0 0 12px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
-          Confirmez votre <em style="font-style:italic;color:#1a7a5e;">contrat de prestation</em>
+          <em style="font-style:italic;color:#1a7a5e;">業務委託契約書</em>のご確認をお願いいたします
         </h1>
-        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">Bonjour ${firstName},</p>
-        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">Merci de votre candidature et de votre inscription en tant que planificateur de voyages chez Journey Junction.</p>
-        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">Veuillez consulter votre contrat de prestation via le bouton ci-dessous, puis le signer et nous le retourner. Ce lien vous est personnel — merci de ne pas le partager.</p>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${firstName} 様</p>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">この度は Journey Junction の旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。</p>
+        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより業務委託契約書をご確認のうえ、ご署名いただき、ご返送くださいますようお願いいたします。このリンクはあなた専用のものです。第三者と共有なさらないようお願いいたします。</p>
       </td></tr>
 
       <tr><td style="padding:0 36px 8px 36px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr><td align="center" style="padding:6px 0 14px;">
-            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">Consulter et signer le contrat →</a>
+            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">契約書を確認して署名する →</a>
           </td></tr>
         </table>
       </td></tr>
 
       <tr><td style="padding:0 36px 4px 36px;">
-        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">ボタンが動作しない場合は、こちらのリンクをコピーしてブラウザに貼り付けてください：<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
       </td></tr>
 
       <tr><td style="padding:18px 36px 28px 36px;">
@@ -557,7 +557,7 @@ async function handleSendEmploymentLetter(request, url) {
     body: JSON.stringify({
       from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
       to: planner_email,
-      subject: 'Journey Junction — Votre contrat de prestation à signer',
+      subject: 'Journey Junction — 業務委託契約書へのご署名のお願い',
       html: emailHtml
     })
   })
@@ -667,7 +667,7 @@ async function handleSignLetter(request, url) {
   }
 
   // 5. Email support@ with the signed details
-  const signedDateHuman = new Date(signedAt).toLocaleString('en-GB')
+  const signedDateHuman = new Date(signedAt).toLocaleString('ja-JP')
   const html = `
     <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;padding:32px;background:#f5f4f0;">
       <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid rgba(0,0,0,0.08);">
@@ -722,7 +722,7 @@ function safeEqual(a, b) {
 }
 
 // POST /api/translate — Cloudflare Workers AI translation for the CS console.
-// Body: { text, source_lang?, target_lang? }   (defaults: french -> english)
+// Body: { text, source_lang?, target_lang? }   (defaults: japanese -> english)
 // Returns: { translated }
 // Same-origin only: gated by isProxyAuthorized which already accepts a
 // Referer from /supercs999 or admin Basic Auth.
@@ -742,7 +742,7 @@ async function handleTranslate(request, env) {
   if (!text) return jsonResp(400, { error: 'Missing text' })
   if (text.length > 5000) return jsonResp(413, { error: 'Text too long (max 5000 chars)' })
 
-  const source_lang = String(body?.source_lang || 'french').toLowerCase()
+  const source_lang = String(body?.source_lang || 'japanese').toLowerCase()
   const target_lang = String(body?.target_lang || 'english').toLowerCase()
   try {
     // m2m100 handles many language pairs; expects long-form names like 'japanese'.

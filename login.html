@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="jjlogo.png">
@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display:ital@0;1&family=Lora:ital@1&family=Noto+Sans+JP:wght@400;500;600&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
 <!-- Preload both hero images so language switch is instant -->
-<link rel="preload" as="image" href="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1600&q=80&auto=format&fit=crop">
+<link rel="preload" as="image" href="https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1600&q=80&auto=format&fit=crop">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -520,11 +520,10 @@ html[lang="ja"] .form-sub{font-style:normal;font-family:'Noto Sans JP','Lora',se
 
 <!-- ─── Floating language toggle ─── -->
 <div class="lang-toggle" role="group" aria-label="Language">
-  <button type="button" class="lang-btn active" data-lang="fr" onclick="setLang('fr')" aria-label="Français (French)" title="Français">
+  <button type="button" class="lang-btn active" data-lang="ja" onclick="setLang('ja')" aria-label="日本語 (Japanese)" title="日本語">
     <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect width="20" height="30" x="0"  fill="#0055A4"/>
-      <rect width="20" height="30" x="20" fill="#ffffff"/>
-      <rect width="20" height="30" x="40" fill="#EF4135"/>
+      <rect width="60" height="30" fill="#ffffff"/>
+      <circle cx="30" cy="15" r="9" fill="#BC002D"/>
     </svg>
   </button>
   <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
@@ -542,8 +541,8 @@ html[lang="ja"] .form-sub{font-style:normal;font-family:'Noto Sans JP','Lora',se
 <!-- ─── Hero panel ─── -->
 <aside class="hero" aria-hidden="false">
   <img class="hero-img" id="hero-img"
-       src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80&auto=format&fit=crop"
-       alt="The French Riviera coastline at golden hour"
+       src="https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1600&q=80&auto=format&fit=crop"
+       alt="夕暮れの富士山と河口湖"
        loading="eager" fetchpriority="high">
 
   <div class="hero-inner">
@@ -566,7 +565,7 @@ html[lang="ja"] .form-sub{font-style:normal;font-family:'Noto Sans JP','Lora',se
           <div class="quote-avatar">CL</div>
           <div>
             <div class="quote-name" data-i18n="hero.quoteName">Camille Laurent</div>
-            <div class="quote-role" data-i18n="hero.quoteRole">Senior planner · Paris</div>
+            <div class="quote-role" data-i18n="hero.quoteRole">シニアプランナー · 東京</div>
           </div>
         </div>
       </div>
@@ -686,7 +685,7 @@ const AUTH_I18N = {
     'hero.loginDesc':'Sign in to your planner dashboard — craft itineraries, review traveler briefs, and track payouts from anywhere in the world.',
     'hero.quoteText':'"Journey Junction gave me a steady stream of corporate bookings without chasing leads — I just plan, they pay, we all win."',
     'hero.quoteName':'Camille Laurent',
-    'hero.quoteRole':'Senior planner · Paris',
+    'hero.quoteRole':'Senior planner · Tokyo',
     'hero.statTrips':'Trips planned',
     'hero.statPlanners':'Active planners',
     'hero.statRating':'Traveler rating',
@@ -716,63 +715,62 @@ const AUTH_I18N = {
     'err.suspended':'Your account is suspended. Please contact admin.',
     'err.passwordWrong':'Incorrect password — please try again.',
     'err.noAccountApply':'No account found for this email. Please apply first.',
-    'heroImgAlt':'The French Riviera coastline at golden hour',
+    'heroImgAlt':'Mount Fuji and Lake Kawaguchi at dusk',
   },
-  fr: {
-    'hero.portalBadge':'Espace planificateur',
-    'hero.welcomeBack':'Bon retour',
-    'hero.loginTitle':'Concevez des voyages<br>que les voyageurs <em>n\'oublient pas.</em>',
-    'hero.loginDesc':'Connectez-vous à votre tableau de bord planificateur — créez des itinéraires, consultez les briefs des voyageurs et suivez vos paiements depuis n\'importe où.',
-    'hero.quoteText':'« Journey Junction m\'a apporté un flux régulier de réservations sans avoir à chercher des clients — je planifie, ils paient, tout le monde y gagne. »',
+  ja: {
+    'hero.portalBadge':'プランナーポータル',
+    'hero.welcomeBack':'おかえりなさい',
+    'hero.loginTitle':'旅行者の記憶に<br>残る旅を<em>デザイン。</em>',
+    'hero.loginDesc':'プランナーダッシュボードにサインインして、世界中どこからでも旅程の作成、旅行者のブリーフの確認、報酬の管理を行えます。',
+    'hero.quoteText':'「Journey Junction のおかげで、営業に追われることなく安定した法人予約をいただけています。私はプランニングに専念し、報酬も受け取れる。みんなが満足できる仕組みです。」',
     'hero.quoteName':'Camille Laurent',
-    'hero.quoteRole':'Planificatrice senior · Paris',
-    'hero.statTrips':'Voyages planifiés',
-    'hero.statPlanners':'Planificateurs actifs',
-    'hero.statRating':'Note des voyageurs',
-    'form.signinEyebrow':'Connexion',
-    'form.helloAgain':'<em>Re</em>bonjour',
-    'form.loginSub':'Saisissez vos identifiants pour accéder à votre portail planificateur — vos lots, vos briefs, votre portefeuille et bien plus encore.',
-    'form.emailLabel':'Adresse e-mail',
-    'form.emailPh':'votre@email.com',
-    'form.passwordLabel':'Mot de passe',
-    'form.showPassword':'Afficher le mot de passe',
-    'form.hidePassword':'Masquer le mot de passe',
-    'form.rememberMe':'Se souvenir de moi',
-    'form.forgot':'Mot de passe oublié ?',
-    'form.btnSignIn':'Se connecter au tableau de bord',
-    'form.btnSigningIn':'Connexion…',
-    'form.or':'ou',
-    'form.newToJJ':'Nouveau sur Journey Junction ?',
-    'form.createAccount':'Créer un compte planificateur',
-    'trust.encryption':'Chiffrement de niveau bancaire',
-    'trust.verified':'Planificateurs vérifiés',
-    'err.fillFields':'Veuillez saisir votre e-mail et votre mot de passe',
-    'err.invalid':'E-mail ou mot de passe invalide',
-    'err.noSession':'Échec de la connexion — aucune session n\'a été créée',
-    'err.noAccount':'Aucun compte planificateur trouvé pour cet e-mail',
-    'err.pending':'Votre candidature est encore en cours d\'examen. Nous vous écrirons dès qu\'elle sera approuvée.',
-    'err.rejected':'Cette candidature n\'a pas été approuvée. N\'hésitez pas à postuler à nouveau si votre situation a changé.',
-    'err.suspended':'Votre compte est suspendu. Veuillez contacter l\'administrateur.',
-    'err.passwordWrong':'Mot de passe incorrect — veuillez réessayer.',
-    'err.noAccountApply':'Aucun compte trouvé pour cet e-mail. Veuillez d\'abord postuler.',
-    'heroImgAlt':'Le littoral de la Côte d\'Azur à l\'heure dorée',
+    'hero.quoteRole':'シニアプランナー · 東京',
+    'hero.statTrips':'作成された旅行',
+    'hero.statPlanners':'アクティブなプランナー',
+    'hero.statRating':'旅行者からの評価',
+    'form.signinEyebrow':'サインイン',
+    'form.helloAgain':'<em>また</em>お会いできました',
+    'form.loginSub':'認証情報を入力して、プランナーポータルにアクセスしてください — セット、ブリーフ、ウォレットなどをご利用いただけます。',
+    'form.emailLabel':'メールアドレス',
+    'form.emailPh':'your@email.com',
+    'form.passwordLabel':'パスワード',
+    'form.showPassword':'パスワードを表示',
+    'form.hidePassword':'パスワードを非表示',
+    'form.rememberMe':'ログイン状態を保持する',
+    'form.forgot':'パスワードをお忘れですか？',
+    'form.btnSignIn':'ダッシュボードにサインイン',
+    'form.btnSigningIn':'サインインしています…',
+    'form.or':'または',
+    'form.newToJJ':'Journey Junction は初めてですか？',
+    'form.createAccount':'プランナーアカウントを作成',
+    'trust.encryption':'銀行レベルの暗号化',
+    'trust.verified':'認証済みプランナー',
+    'err.fillFields':'メールアドレスとパスワードを入力してください',
+    'err.invalid':'メールアドレスまたはパスワードが正しくありません',
+    'err.noSession':'ログインに失敗しました — セッションが作成されませんでした',
+    'err.noAccount':'このメールアドレスに対応するプランナーアカウントが見つかりません',
+    'err.pending':'お申し込みは現在審査中です。承認され次第、メールでご連絡いたします。',
+    'err.rejected':'このお申し込みは承認されませんでした。状況が変わった場合は、再度お申し込みいただけます。',
+    'err.suspended':'お客様のアカウントは停止されています。管理者にお問い合わせください。',
+    'err.passwordWrong':'パスワードが正しくありません — もう一度お試しください。',
+    'err.noAccountApply':'このメールアドレスに対応するアカウントが見つかりません。まずお申し込みください。',
+    'heroImgAlt':'夕暮れの富士山と河口湖',
   }
 }
 
-// Hero image — France-only app; same Eiffel Tower image for both languages
+// Hero image — Japan-only app; same Mount Fuji image for both languages
 const HERO_IMG = {
-  en: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80&auto=format&fit=crop',
-  fr: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1600&q=80&auto=format&fit=crop'
+  en: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1600&q=80&auto=format&fit=crop',
+  ja: 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1600&q=80&auto=format&fit=crop'
 }
 
 try {
-  if (!localStorage.getItem('jj_lang_resetv2')) {
-    if (localStorage.getItem('jj_planner_lang') === 'ja') localStorage.removeItem('jj_planner_lang')
-    localStorage.setItem('jj_lang_resetv2', '1')
+  if (!localStorage.getItem('jj_lang_resetv3')) {
+    localStorage.setItem('jj_lang_resetv3', '1')
   }
 } catch (e) {}
-let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'fr')
-if (TM_LANG !== 'en' && TM_LANG !== 'fr') TM_LANG = 'fr'
+let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'ja')
+if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
 
 function t(key, fb){
   const d = AUTH_I18N[TM_LANG] || AUTH_I18N.en
@@ -782,10 +780,10 @@ function t(key, fb){
 }
 
 function applyLang(lang){
-  if (lang !== 'en' && lang !== 'fr') lang = 'fr'
+  if (lang !== 'en' && lang !== 'ja') lang = 'ja'
   TM_LANG = lang
   try { localStorage.setItem('jj_planner_lang', lang) } catch(e){}
-  document.documentElement.lang = (lang === 'fr') ? 'fr' : 'en'
+  document.documentElement.lang = (lang === 'ja') ? 'ja' : 'en'
 
   // Swap hero image with a short fade so the cut isn't jarring
   const img = document.getElementById('hero-img')
@@ -865,22 +863,22 @@ function togglePassword(){
 // the message is empty / unknown.
 function translateAuthError(msg, fallback) {
   const m = (msg || '').toLowerCase()
-  const isFr = (typeof TM_LANG !== 'undefined' && TM_LANG === 'fr') || (document.documentElement.lang === 'fr')
+  const isJa = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') || (document.documentElement.lang === 'ja')
   if (!m) return fallback || ''
   if (m.includes('invalid login credentials') || m.includes('invalid_credentials')) {
-    return isFr ? 'E-mail ou mot de passe incorrect' : (fallback || msg)
+    return isJa ? 'メールアドレスまたはパスワードが正しくありません' : (fallback || msg)
   }
   if (m.includes('email not confirmed')) {
-    return isFr ? 'Adresse e-mail non confirmée. Vérifiez votre e-mail de confirmation.' : msg
+    return isJa ? 'メールアドレスが確認されていません。確認メールをご確認ください。' : msg
   }
   if (m.includes('rate limit') || m.includes('too many')) {
-    return isFr ? 'Trop de tentatives. Patientez un instant avant de réessayer.' : msg
+    return isJa ? '試行回数が多すぎます。少し時間をおいてから再度お試しください。' : msg
   }
   if (m.includes('unable to validate email') || m.includes('invalid format') || m.includes('invalid email')) {
-    return isFr ? "Le format de l'adresse e-mail est incorrect" : msg
+    return isJa ? 'メールアドレスの形式が正しくありません' : msg
   }
   if (m.includes('user not found') || m.includes('email not found')) {
-    return isFr ? 'Aucun compte trouvé pour cette adresse e-mail' : msg
+    return isJa ? 'このメールアドレスに対応するアカウントが見つかりません' : msg
   }
   return fallback || msg
 }

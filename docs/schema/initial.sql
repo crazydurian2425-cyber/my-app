@@ -109,7 +109,7 @@ create table if not exists public.travelers (
   -- planner-facing notes
   special_notes      text,
   special_notes_ja   text,
-  language_pref      text default 'en',
+  language_pref      text default 'ja',
   created_at         timestamptz not null default now()
 );
 

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="jjlogo.png">
@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Serif+Display:ital@0;1&family=Lora:ital@1&family=Noto+Sans+JP:wght@400;500;600&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=1600&q=80&auto=format&fit=crop">
+<link rel="preload" as="image" href="https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1600&q=80&auto=format&fit=crop">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -365,11 +365,10 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
 
 <!-- Language toggle -->
 <div class="lang-toggle" role="group" aria-label="Language">
-  <button type="button" class="lang-btn active" data-lang="fr" onclick="setLang('fr')" aria-label="Français" title="Français">
+  <button type="button" class="lang-btn active" data-lang="ja" onclick="setLang('ja')" aria-label="日本語" title="日本語">
     <svg viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect width="20" height="30" x="0"  fill="#0055A4"/>
-      <rect width="20" height="30" x="20" fill="#ffffff"/>
-      <rect width="20" height="30" x="40" fill="#EF4135"/>
+      <rect width="60" height="30" x="0" fill="#ffffff"/>
+      <circle cx="30" cy="15" r="9" fill="#BC002D"/>
     </svg>
   </button>
   <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')" aria-label="English" title="English">
@@ -401,7 +400,7 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
     <div id="form-state">
       <div class="form-eyebrow"><span class="form-eyebrow-line"></span><span data-i18n="apply.eyebrow">Apply to join</span></div>
       <h2 class="form-title" data-i18n-html="apply.title">Share your <em>local expertise.</em></h2>
-      <p class="form-sub" data-i18n="apply.sub">Journey Junction is invite-only. Tell us a bit about yourself and how you'd craft a trip in France. We review every application personally.</p>
+      <p class="form-sub" data-i18n="apply.sub">Journey Junction is invite-only. Tell us a bit about yourself and how you'd craft a trip in Japan. We review every application personally.</p>
 
       <div class="alert error" id="err" role="alert">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -412,7 +411,7 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
         <div class="field">
           <label class="label" for="name" data-i18n="apply.nameLabel">Full name</label>
           <input class="input" type="text" id="name" name="name"
-                 placeholder="ex. Camille Dubois" data-i18n-ph="apply.namePh"
+                 placeholder="例：山田 花子" data-i18n-ph="apply.namePh"
                  autocomplete="name" required maxlength="80">
         </div>
 
@@ -453,17 +452,17 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
           </select>
           <div id="city-other-wrap" style="display:none;margin-top:10px;">
             <input class="input" id="city-other" type="text"
-                   placeholder="Saisissez votre région" data-i18n-ph="apply.cityOtherPh"
+                   placeholder="お住まいの地域を入力" data-i18n-ph="apply.cityOtherPh"
                    autocomplete="address-level2" maxlength="40">
           </div>
         </div>
 
         <div class="field">
-          <label class="label" for="japan_depth" data-i18n="apply.depthLabel">Your connection to France</label>
+          <label class="label" for="japan_depth" data-i18n="apply.depthLabel">Your connection to Japan</label>
           <select class="input" id="japan_depth" name="japan_depth" required>
             <option value="" data-i18n="apply.depth.ph">— Select one —</option>
-            <option value="native" data-i18n="apply.depth.native">French native / grew up in France</option>
-            <option value="resident" data-i18n="apply.depth.resident">Living in France now</option>
+            <option value="native" data-i18n="apply.depth.native">Japanese native / grew up in Japan</option>
+            <option value="resident" data-i18n="apply.depth.resident">Living in Japan now</option>
             <option value="frequent" data-i18n="apply.depth.frequent">Visited 3+ times / deep travel experience</option>
             <option value="occasional" data-i18n="apply.depth.occasional">Visited once or twice</option>
           </select>
@@ -538,8 +537,8 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
 <!-- ─── Hero panel (right) ─── -->
 <aside class="hero" aria-hidden="false">
   <img class="hero-img" id="hero-img"
-       src="https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=1600&q=80&auto=format&fit=crop"
-       alt="Eiffel Tower at dusk"
+       src="https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1600&q=80&auto=format&fit=crop"
+       alt="夕暮れの富士山"
        loading="eager" fetchpriority="high">
 
   <div class="hero-inner">
@@ -553,8 +552,8 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
 
     <div class="hero-center">
       <div class="hero-eyebrow" data-i18n="hero.eyebrow">Curated planner network</div>
-      <h1 class="hero-title" data-i18n-html="hero.title">France, <em>through your eyes.</em></h1>
-      <p class="hero-desc" data-i18n="hero.desc">Journey Junction pairs travelers with vetted local planners who craft real, lived-in France itineraries — nothing generic, nothing scraped.</p>
+      <h1 class="hero-title" data-i18n-html="hero.title">Japan, <em>through your eyes.</em></h1>
+      <p class="hero-desc" data-i18n="hero.desc">Journey Junction pairs travelers with vetted local planners who craft real, lived-in Japan itineraries — nothing generic, nothing scraped.</p>
 
       <div class="benefits">
         <div class="benefit">
@@ -563,7 +562,7 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
           </div>
           <div>
             <div class="benefit-title" data-i18n="apply.benefit.local.title">Local expertise, valued</div>
-            <div class="benefit-desc" data-i18n="apply.benefit.local.desc">Turn the France you already know into paid work — no scripts, no templates</div>
+            <div class="benefit-desc" data-i18n="apply.benefit.local.desc">Turn the Japan you already know into paid work — no scripts, no templates</div>
           </div>
         </div>
         <div class="benefit">
@@ -601,10 +600,10 @@ const APPLY_I18N = {
   en: {
     'hero.applyBadge':'Open application',
     'hero.eyebrow':'Curated planner network',
-    'hero.title':'France, <em>through your eyes.</em>',
-    'hero.desc':'Journey Junction pairs travelers with vetted local planners who craft real, lived-in France itineraries — nothing generic, nothing scraped.',
+    'hero.title':'Japan, <em>through your eyes.</em>',
+    'hero.desc':'Journey Junction pairs travelers with vetted local planners who craft real, lived-in Japan itineraries — nothing generic, nothing scraped.',
     'apply.benefit.local.title':'Local expertise, valued',
-    'apply.benefit.local.desc':'Turn the France you already know into paid work — no scripts, no templates',
+    'apply.benefit.local.desc':'Turn the Japan you already know into paid work — no scripts, no templates',
     'apply.benefit.flexible.title':'Flexible by design',
     'apply.benefit.flexible.desc':'Plan on your own schedule · pause anytime · remote work from anywhere',
     'apply.benefit.vetted.title':'A vetted community',
@@ -612,9 +611,9 @@ const APPLY_I18N = {
     'apply.heroFooter':'<strong>Not open to everyone yet.</strong> We\'re growing carefully so every traveler gets an itinerary from someone who actually knows the place.',
     'apply.eyebrow':'Apply to join',
     'apply.title':'Share your <em>local expertise.</em>',
-    'apply.sub':"Journey Junction is invite-only. Tell us a bit about yourself and how you'd craft a trip in France. We review every application personally.",
+    'apply.sub':"Journey Junction is invite-only. Tell us a bit about yourself and how you'd craft a trip in Japan. We review every application personally.",
     'apply.nameLabel':'Full name',
-    'apply.namePh':'e.g. Camille Dubois',
+    'apply.namePh':'e.g. Hanako Yamada',
     'apply.emailLabel':'Email address',
     'apply.emailPh':'your@email.com',
     'apply.emailHint':"We'll email you here once you're approved.",
@@ -628,11 +627,11 @@ const APPLY_I18N = {
     'apply.showPassword':'Show password',
     'apply.hidePassword':'Hide password',
     'apply.cityLabel':"Region you're based in",
-    'apply.cityOtherPh':'Type your region in English or French',
-    'apply.depthLabel':'Your connection to France',
+    'apply.cityOtherPh':'Type your region in English or Japanese',
+    'apply.depthLabel':'Your connection to Japan',
     'apply.depth.ph':'— Select one —',
-    'apply.depth.native':'French native / grew up in France',
-    'apply.depth.resident':'Living in France now',
+    'apply.depth.native':'Japanese native / grew up in Japan',
+    'apply.depth.resident':'Living in Japan now',
     'apply.depth.frequent':'Visited 3+ times / deep travel experience',
     'apply.depth.occasional':'Visited once or twice',
     'apply.langsLabel':'Languages you can plan in',
@@ -664,7 +663,7 @@ const APPLY_I18N = {
     'err.email':'Please enter a valid email',
     'err.city':'Please select your region',
     'err.cityOther':'Please type your region',
-    'err.depth':'Please pick your connection to France',
+    'err.depth':'Please pick your connection to Japan',
     'err.lang':'Please pick at least one language',
     'err.heard':'Please tell us where you heard about Journey Junction',
     'err.pw':'Please choose a password',
@@ -673,109 +672,117 @@ const APPLY_I18N = {
     'err.dup':"We already have an application from this email. Check your inbox — we'll reply there.",
     'err.authDup':"An account with this email already exists. Try signing in, or use a different email to apply.",
     'err.generic':'Something went wrong. Please try again in a minute.',
-    'heroImgAlt':'Eiffel Tower at dusk',
+    'heroImgAlt':'Mount Fuji at dusk',
   },
-  fr: {
-    'hero.applyBadge':'Candidatures ouvertes',
-    'hero.eyebrow':'Réseau de planificateurs sélectionnés',
-    'hero.title':'La France, <br><em>à travers vos yeux.</em>',
-    'hero.desc':'Journey Junction met en relation les voyageurs avec des planificateurs locaux vérifiés qui conçoivent de vrais itinéraires français — rien de générique, rien de copié.',
-    'apply.benefit.local.title':'Votre expertise locale, valorisée',
-    'apply.benefit.local.desc':'Transformez la France que vous connaissez déjà en travail rémunéré — sans script, sans modèle',
-    'apply.benefit.flexible.title':'Flexible par nature',
-    'apply.benefit.flexible.desc':'Planifiez à votre rythme · pause quand vous voulez · travail à distance, où que vous soyez',
-    'apply.benefit.vetted.title':'Une communauté sélectionnée',
-    'apply.benefit.vetted.desc':'Un groupe restreint de planificateurs — chaque candidat examiné personnellement',
-    'apply.heroFooter':'<strong>Pas encore ouvert à tous.</strong> Nous grandissons prudemment pour que chaque voyageur reçoive un itinéraire de quelqu\'un qui connaît vraiment les lieux.',
-    'apply.eyebrow':'Postuler',
-    'apply.title':'Partagez votre <em>expertise locale.</em>',
-    'apply.sub':'Journey Junction est sur invitation uniquement. Parlez-nous de vous et de la façon dont vous concevriez un voyage en France. Nous examinons chaque candidature personnellement.',
-    'apply.nameLabel':'Nom complet',
-    'apply.namePh':'ex. Camille Dubois',
-    'apply.emailLabel':'Adresse e-mail',
-    'apply.emailPh':'votre@email.com',
-    'apply.emailHint':'Nous vous écrirons ici une fois votre candidature approuvée.',
-    'apply.passwordLabel':'Mot de passe',
-    'apply.passwordPh':'Au moins 6 caractères',
-    'apply.pw.empty':'Choisissez le mot de passe que vous utiliserez pour vous connecter après approbation.',
-    'apply.pw.weak':'Trop court ou trop simple — ajoutez de la longueur et de la variété.',
-    'apply.pw.med':'Correct — ajoutez une majuscule ou un symbole pour le renforcer.',
-    'apply.pw.medStrong':'Bien — un symbole le rendrait encore plus fort.',
-    'apply.pw.strong':'Mot de passe robuste.',
-    'apply.showPassword':'Afficher le mot de passe',
-    'apply.hidePassword':'Masquer le mot de passe',
-    'apply.cityLabel':'Région où vous résidez',
-    'apply.cityOtherPh':'Saisissez votre région',
-    'apply.depthLabel':'Votre lien avec la France',
-    'apply.depth.ph':'— Sélectionnez —',
-    'apply.depth.native':'Français de naissance / a grandi en France',
-    'apply.depth.resident':'Vit en France actuellement',
-    'apply.depth.frequent':'Visité 3 fois ou plus / grande expérience de voyage',
-    'apply.depth.occasional':'Visité une ou deux fois',
-    'apply.langsLabel':'Langues dans lesquelles vous pouvez planifier',
-    'apply.lang.fr':'Français',
-    'apply.lang.en':'Anglais',
-    'apply.lang.es':'Espagnol',
-    'apply.lang.de':'Allemand',
-    'apply.lang.it':'Italien',
-    'apply.lang.other':'Autre',
-    'apply.heardLabel':'Comment avez-vous entendu parler de nous ?',
-    'apply.heard.ph':'— Sélectionnez —',
-    'apply.heard.referral':'Ami ou recommandation',
-    'apply.heard.facebook':'Facebook ou Instagram',
-    'apply.heard.google':'Recherche Google',
+  ja: {
+    'hero.applyBadge':'応募受付中',
+    'hero.eyebrow':'厳選されたプランナーネットワーク',
+    'hero.title':'日本を、<br><em>あなたの視点で。</em>',
+    'hero.desc':'Journey Junction は、旅行者と審査を通過した現地プランナーをつなぎます。プランナーが本物の、暮らしの目線に根ざした日本の旅程を作り上げます。ありきたりなものも、寄せ集めもありません。',
+    'apply.benefit.local.title':'あなたの地元の知識を、価値に',
+    'apply.benefit.local.desc':'あなたが既に知っている日本を、報酬につながる仕事に変えましょう。台本もテンプレートもありません',
+    'apply.benefit.flexible.title':'柔軟さが、設計の前提',
+    'apply.benefit.flexible.desc':'ご自身のペースで作成 · いつでも休止可能 · どこからでもリモートで',
+    'apply.benefit.vetted.title':'審査されたコミュニティ',
+    'apply.benefit.vetted.desc':'少数精鋭の厳選されたプランナー陣 — すべての応募者を一人ひとり審査します',
+    'apply.heroFooter':'<strong>まだ誰にでも開かれているわけではありません。</strong> すべての旅行者が、その土地を本当に知る人から旅程を受け取れるよう、私たちは慎重に成長しています。',
+    'apply.eyebrow':'応募する',
+    'apply.title':'あなたの<em>地元の知識</em>を、共有してください。',
+    'apply.sub':'Journey Junction は招待制です。あなた自身のこと、そしてどのように日本の旅を組み立てるかを、少しだけお聞かせください。すべての応募を一人ひとり審査しています。',
+    'apply.nameLabel':'氏名',
+    'apply.namePh':'例：山田 花子',
+    'apply.emailLabel':'メールアドレス',
+    'apply.emailPh':'your@email.com',
+    'apply.emailHint':'承認されましたら、こちらのアドレスへご連絡いたします。',
+    'apply.passwordLabel':'パスワード',
+    'apply.passwordPh':'6文字以上',
+    'apply.pw.empty':'承認後のログインに使用するパスワードを設定してください。',
+    'apply.pw.weak':'短すぎるか単純すぎます — 長さと種類を増やしてください。',
+    'apply.pw.med':'まずまずです — 大文字や記号を加えると、より強固になります。',
+    'apply.pw.medStrong':'良好です — 記号を加えると、さらに強固になります。',
+    'apply.pw.strong':'強固なパスワードです。',
+    'apply.showPassword':'パスワードを表示',
+    'apply.hidePassword':'パスワードを非表示',
+    'apply.cityLabel':'お住まいの地域',
+    'apply.cityOtherPh':'お住まいの地域を入力',
+    'apply.depthLabel':'あなたと日本とのつながり',
+    'apply.depth.ph':'— 選択してください —',
+    'apply.depth.native':'日本出身 / 日本で育った',
+    'apply.depth.resident':'現在、日本に在住',
+    'apply.depth.frequent':'3回以上訪問 / 豊富な旅行経験',
+    'apply.depth.occasional':'1〜2回訪問',
+    'apply.langsLabel':'プランニングに使用できる言語',
+    'apply.lang.fr':'フランス語',
+    'apply.lang.en':'英語',
+    'apply.lang.es':'スペイン語',
+    'apply.lang.de':'ドイツ語',
+    'apply.lang.it':'イタリア語',
+    'apply.lang.other':'その他',
+    'apply.heardLabel':'当社をどこでお知りになりましたか？',
+    'apply.heard.ph':'— 選択してください —',
+    'apply.heard.referral':'友人・知人からの紹介',
+    'apply.heard.facebook':'Facebook または Instagram',
+    'apply.heard.google':'Google 検索',
     'apply.heard.tiktok':'TikTok',
-    'apply.heard.article':'Article de presse ou de blog',
-    'apply.heard.event':'Événement ou rencontre',
-    'apply.heard.other':'Autre',
-    'apply.tos':'J\'accepte les <a href="terms.html" target="_blank" rel="noopener">Conditions d\'utilisation</a> et la <a href="privacy.html" target="_blank" rel="noopener">Politique de confidentialité</a> de Journey Junction.',
-    'apply.btn':'Envoyer ma candidature',
-    'apply.btn.sending':'Envoi…',
-    'apply.alreadyHave':'Déjà approuvé ?',
-    'apply.signin':'Se connecter',
-    'apply.success.title':'Candidature <em>reçue.</em>',
-    'apply.success.sub':'Merci d\'avoir postulé chez Journey Junction. Nous examinons chaque candidature personnellement et vous écrirons sous quelques heures si nous souhaitons aller plus loin.',
-    'apply.success.checkEmail':'Surveillez votre boîte de réception',
-    'apply.success.signin':'Aller à la connexion →',
-    'err.name':'Veuillez saisir votre nom complet',
-    'err.email':'Veuillez saisir une adresse e-mail valide',
-    'err.city':'Veuillez sélectionner votre région',
-    'err.cityOther':'Veuillez saisir votre région',
-    'err.depth':'Veuillez indiquer votre lien avec la France',
-    'err.lang':'Veuillez choisir au moins une langue',
-    'err.heard':'Dites-nous comment vous avez connu Journey Junction',
-    'err.pw':'Veuillez choisir un mot de passe',
-    'err.pwShort':'Le mot de passe doit comporter au moins 6 caractères',
-    'err.tos':'Veuillez accepter les Conditions d\'utilisation pour continuer',
-    'err.dup':'Nous avons déjà une candidature avec cette adresse e-mail. Vérifiez votre boîte de réception — nous y répondrons.',
-    'err.authDup':'Un compte avec cette adresse e-mail existe déjà. Essayez de vous connecter, ou utilisez une autre adresse pour postuler.',
-    'err.generic':'Une erreur s\'est produite. Veuillez réessayer dans une minute.',
-    'heroImgAlt':'La Tour Eiffel au crépuscule',
+    'apply.heard.article':'ニュースまたはブログ記事',
+    'apply.heard.event':'イベントまたは交流会',
+    'apply.heard.other':'その他',
+    'apply.tos':'Journey Junction の<a href="terms.html" target="_blank" rel="noopener">利用規約</a>および<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>に同意します。',
+    'apply.btn':'応募を送信',
+    'apply.btn.sending':'送信中…',
+    'apply.alreadyHave':'すでに承認済みですか？',
+    'apply.signin':'ログイン',
+    'apply.success.title':'応募を<em>受け付けました。</em>',
+    'apply.success.sub':'Journey Junction へのご応募ありがとうございます。すべての応募を一人ひとり審査しており、選考を進めさせていただく場合は数時間以内にメールでご連絡いたします。',
+    'apply.success.checkEmail':'受信トレイをご確認ください',
+    'apply.success.signin':'ログインへ進む →',
+    'err.name':'氏名を入力してください',
+    'err.email':'有効なメールアドレスを入力してください',
+    'err.city':'お住まいの地域を選択してください',
+    'err.cityOther':'お住まいの地域を入力してください',
+    'err.depth':'あなたと日本とのつながりを選択してください',
+    'err.lang':'少なくとも1つの言語を選択してください',
+    'err.heard':'Journey Junction をどこでお知りになったかをお聞かせください',
+    'err.pw':'パスワードを設定してください',
+    'err.pwShort':'パスワードは6文字以上で設定してください',
+    'err.tos':'続行するには利用規約に同意してください',
+    'err.dup':'このメールアドレスからのご応募はすでに受け付けております。受信トレイをご確認ください — そちらへご返信いたします。',
+    'err.authDup':'このメールアドレスのアカウントはすでに存在します。ログインをお試しいただくか、別のアドレスでご応募ください。',
+    'err.generic':'問題が発生しました。しばらくしてからもう一度お試しください。',
+    'heroImgAlt':'夕暮れの富士山',
   }
 }
 
-const HERO_IMG = 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?w=1600&q=80&auto=format&fit=crop'
+const HERO_IMG = 'https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1600&q=80&auto=format&fit=crop'
 
-// French regions a planner might be based in. Mirrors PREFECTURES_PROFILE in
-// dashboard.html (13 metropolitan + 5 overseas) so the value stored at
-// application time matches the planner-profile region dropdown exactly.
-// Same name in FR + EN — no transliteration needed.
-const FRENCH_CITIES = [
-  'Île-de-France','Auvergne-Rhône-Alpes','Bourgogne-Franche-Comté','Bretagne',
-  'Centre-Val de Loire','Corse','Grand Est','Hauts-de-France','Normandie',
-  'Nouvelle-Aquitaine','Occitanie','Pays de la Loire',"Provence-Alpes-Côte d'Azur",
-  'Guadeloupe','Martinique','Guyane','La Réunion','Mayotte'
+// Japanese prefectures/regions a planner might be based in. Mirrors
+// PREFECTURES_PROFILE in dashboard.html so the value stored at application
+// time matches the planner-profile region dropdown exactly. Each entry is
+// [romaji (stored value, shown in EN), 日本語 label (shown in JA)].
+const JAPANESE_PREFECTURES = [
+  ['Tokyo',     '東京都'],
+  ['Kanagawa',  '神奈川県'],
+  ['Kyoto',     '京都府'],
+  ['Osaka',     '大阪府'],
+  ['Hyogo',     '兵庫県'],
+  ['Aichi',     '愛知県'],
+  ['Hokkaido',  '北海道'],
+  ['Fukuoka',   '福岡県'],
+  ['Hiroshima', '広島県'],
+  ['Nagano',    '長野県'],
+  ['Ishikawa',  '石川県'],
+  ['Okinawa',   '沖縄県'],
 ]
 const CITY_OPTIONS = {
-  en: [...FRENCH_CITIES.map(c => ({ value:c, label:c })), { value:'Other', label:'Other' }],
-  fr: [...FRENCH_CITIES.map(c => ({ value:c, label:c })), { value:'Other', label:'Autre' }]
+  en: [...JAPANESE_PREFECTURES.map(([en]) => ({ value:en, label:en })), { value:'Other', label:'Other' }],
+  ja: [...JAPANESE_PREFECTURES.map(([en,ja]) => ({ value:en, label:`${ja} (${en})` })), { value:'Other', label:'その他' }]
 }
 
 function renderCityOptions(lang){
   const sel = document.getElementById('city')
   if (!sel) return
   const prev = sel.value
-  const placeholder = (lang === 'fr') ? '— Sélectionnez votre région —' : '— Select your region —'
+  const placeholder = (lang === 'ja') ? '— 地域を選択 —' : '— Select your region —'
   const list = CITY_OPTIONS[lang] || CITY_OPTIONS.en
   sel.innerHTML = '<option value="">' + placeholder + '</option>' +
     list.map(c => `<option value="${c.value}">${c.label}</option>`).join('')
@@ -800,16 +807,15 @@ function onChipChange(cb){
 }
 
 try {
-  // One-time reset: anyone whose saved language is the retired 'ja' gets
-  // bumped to the new default. Bumped the reset flag to v2 so it re-runs
-  // for users who already passed the v1 reset while 'ja' was still valid.
-  if (!localStorage.getItem('jj_lang_resetv2')) {
-    if (localStorage.getItem('jj_planner_lang') === 'ja') localStorage.removeItem('jj_planner_lang')
-    localStorage.setItem('jj_lang_resetv2', '1')
+  // One-time reset flag, bumped to v3 for the Japan conversion. 'ja' now
+  // holds real Japanese (the platform default), so we must NOT wipe a saved
+  // 'ja' preference any more — only set the flag so this block stops running.
+  if (!localStorage.getItem('jj_lang_resetv3')) {
+    localStorage.setItem('jj_lang_resetv3', '1')
   }
 } catch (e) {}
-let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'fr')
-if (TM_LANG !== 'en' && TM_LANG !== 'fr') TM_LANG = 'fr'
+let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'ja')
+if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
 
 function t(key, fb){
   const d = APPLY_I18N[TM_LANG] || APPLY_I18N.en
@@ -819,10 +825,10 @@ function t(key, fb){
 }
 
 function applyLang(lang){
-  if (lang !== 'en' && lang !== 'fr') lang = 'fr'
+  if (lang !== 'en' && lang !== 'ja') lang = 'ja'
   TM_LANG = lang
   try { localStorage.setItem('jj_planner_lang', lang) } catch(e){}
-  document.documentElement.lang = (lang === 'fr') ? 'fr' : 'en'
+  document.documentElement.lang = (lang === 'ja') ? 'ja' : 'en'
 
   const img = document.getElementById('hero-img')
   if (img) img.alt = t('heroImgAlt', img.alt)

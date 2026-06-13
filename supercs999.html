@@ -333,10 +333,10 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
     </div>
   </div>
   <div class="inbox-filter">
-    <button class="filter-chip active" data-filter="open" onclick="setFilter('open')">Open</button>
-    <button class="filter-chip" data-filter="unread" onclick="setFilter('unread')">Unread</button>
-    <button class="filter-chip" data-filter="mine" onclick="setFilter('mine')">Mine</button>
-    <button class="filter-chip" data-filter="closed" onclick="setFilter('closed')">Closed</button>
+    <button class="filter-chip active" data-filter="open" onclick="setFilter('open')">未対応</button>
+    <button class="filter-chip" data-filter="unread" onclick="setFilter('unread')">未読</button>
+    <button class="filter-chip" data-filter="mine" onclick="setFilter('mine')">担当</button>
+    <button class="filter-chip" data-filter="closed" onclick="setFilter('closed')">対応済み</button>
   </div>
   <!-- Tag filter row — click a chip to narrow inbox to that tag. Click again to clear. -->
   <div class="inbox-tag-filter">
@@ -379,8 +379,8 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
   <div class="chat-scroll" id="chat-scroll">
     <div class="chat-empty">
       <div class="chat-empty-icon">💬</div>
-      <div style="font-size:13.5px;font-weight:500;">No conversation selected</div>
-      <div style="font-size:11.5px;">Pick a thread on the left to start chatting</div>
+      <div style="font-size:13.5px;font-weight:500;">会話が選択されていません</div>
+      <div style="font-size:11.5px;">左側のスレッドを選択してチャットを開始してください</div>
     </div>
   </div>
 
@@ -392,7 +392,7 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
       <span style="width:5px;height:5px;border-radius:50%;background:var(--green-mid);animation:typDot 1.2s 0.15s infinite both;"></span>
       <span style="width:5px;height:5px;border-radius:50%;background:var(--green-mid);animation:typDot 1.2s 0.3s infinite both;"></span>
     </span>
-    <span><strong id="typing-agent" style="color:var(--ink-2);font-weight:600;">—</strong> is typing<span id="typing-preview" style="color:var(--ink-2);"></span></span>
+    <span><strong id="typing-agent" style="color:var(--ink-2);font-weight:600;">—</strong> が入力中<span id="typing-preview" style="color:var(--ink-2);"></span></span>
   </div>
   <div id="quick-replies" style="display:none;padding:8px 22px;background:var(--surface);border-top:1px solid var(--border);gap:6px;flex-wrap:wrap;align-items:center;"></div>
 
@@ -421,7 +421,7 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
         <span class="info-badge ok" id="info-status" style="margin-bottom:0;">active</span>
         <span id="info-bond-chip" style="display:none;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;background:linear-gradient(135deg, rgba(193,125,42,0.18), rgba(193,125,42,0.06));border:1px solid rgba(193,125,42,0.45);color:#a16029;box-shadow:0 0 0 3px rgba(193,125,42,0.06);">
           <span style="width:6px;height:6px;border-radius:50%;background:#c17d2a;box-shadow:0 0 6px rgba(193,125,42,0.8);animation:bondPulse 1.6s ease-in-out infinite;"></span>
-          <span id="info-bond-chip-text">Bond pending</span>
+          <span id="info-bond-chip-text">保証金未払い</span>
         </span>
       </div>
     </div>
@@ -437,9 +437,9 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
   <div class="cc-section" style="border-top:none;margin-top:0;padding-top:0;">
     <div class="info-label">Conversation</div>
     <div class="cc-actions">
-      <button class="cc-btn" id="cc-pin-btn"     onclick="toggleConvPin()">📌 Pin</button>
-      <button class="cc-btn" id="cc-snooze-btn"  onclick="openSnoozeMenu()">😴 Snooze</button>
-      <button class="cc-btn" id="cc-assign-btn"  onclick="toggleConvAssigned()">🙋 Take</button>
+      <button class="cc-btn" id="cc-pin-btn"     onclick="toggleConvPin()">📌 ピン留め</button>
+      <button class="cc-btn" id="cc-snooze-btn"  onclick="openSnoozeMenu()">😴 スヌーズ</button>
+      <button class="cc-btn" id="cc-assign-btn"  onclick="toggleConvAssigned()">🙋 担当する</button>
     </div>
     <div id="cc-assigned-meta" style="font-size:11px;color:var(--ink-3);margin-bottom:8px;display:none;"></div>
     <div id="cc-snoozed-meta"  style="font-size:11px;color:var(--amber,#b87333);margin-bottom:8px;display:none;"></div>
@@ -479,14 +479,14 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
     <div class="info-label">Earnings snapshot</div>
     <div style="display:grid;gap:10px;">
       <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Total paid out</span><span style="font-weight:600;color:var(--green);" id="info-earned">€0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Total paid out</span><span style="font-weight:600;color:var(--green);" id="info-earned">¥0</span></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Pending payout</span><span style="font-weight:600;color:var(--amber);" id="info-pending">€0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Pending payout</span><span style="font-weight:600;color:var(--amber);" id="info-pending">¥0</span></div>
         <div class="mini-bar amber" id="bar-pending"><span style="width:0%;"></span></div>
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Bond on hold</span><span style="font-weight:600;color:var(--amber);" id="info-bond-hold">€0</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Bond on hold</span><span style="font-weight:600;color:var(--amber);" id="info-bond-hold">¥0</span></div>
         <div class="mini-bar amber" id="bar-bond"><span style="width:0%;"></span></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Sets completed</span><span style="font-weight:600;color:var(--ink);" id="info-sets-done">0</span></div>
@@ -534,7 +534,7 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
       <span style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;">Language</span>
       <div style="display:inline-flex;gap:0;padding:2px;background:var(--cream);border:1px solid var(--border-med);border-radius:99px;">
         <button id="qr-mgr-en" onclick="setQrEditLang('en')" style="padding:4px 14px;border:none;background:var(--ink);color:#fff;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">EN</button>
-        <button id="qr-mgr-ja" onclick="setQrEditLang('ja')" style="padding:4px 14px;border:none;background:transparent;color:var(--ink-3);border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Français</button>
+        <button id="qr-mgr-ja" onclick="setQrEditLang('ja')" style="padding:4px 14px;border:none;background:transparent;color:var(--ink-3);border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">日本語</button>
       </div>
       <span id="qr-mgr-count" style="font-size:11px;color:var(--ink-3);margin-left:auto;">—</span>
     </div>
@@ -991,7 +991,7 @@ function timeAgo(ts) {
 function fullTime(ts) {
   if (!ts) return ''
   const d = new Date(ts)
-  return d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+  return d.toLocaleString('ja-JP', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
 }
 function escapeHtml(s) {
   return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
@@ -1311,13 +1311,13 @@ function renderConvControls() {
     const until = c.snoozed_until ? new Date(c.snoozed_until) : null
     if (until && until > new Date()) {
       snoozeMeta.style.display = 'block'
-      snoozeMeta.textContent = `Snoozed until ${until.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · click again to unsnooze`
+      snoozeMeta.textContent = `${until.toLocaleString('ja-JP',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}までスヌーズ中 · もう一度クリックで解除`
       snoozeBtn.classList.add('active')
-      snoozeBtn.textContent = '😴 Snoozed'
+      snoozeBtn.textContent = '😴 スヌーズ中'
     } else {
       snoozeMeta.style.display = 'none'
       snoozeBtn.classList.remove('active')
-      snoozeBtn.textContent = '😴 Snooze'
+      snoozeBtn.textContent = '😴 スヌーズ'
     }
   }
   // Tag chips state
@@ -1419,7 +1419,7 @@ async function loadPlannerContext(plannerId) {
   // Planner profile (includes CS internal notes)
   const { data: p } = await sb.from('planners').select('name, email, phone, city, status, created_at, cs_notes, cs_notes_updated_at, cs_notes_updated_by').eq('id', plannerId).maybeSingle()
   if (p) {
-    el('info-joined').textContent = p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—'
+    el('info-joined').textContent = p.created_at ? new Date(p.created_at).toLocaleDateString('ja-JP',{month:'short',year:'numeric'}) : '—'
     loadCsNotesIntoPanel(p)
   }
 
@@ -1448,7 +1448,7 @@ async function loadPlannerContext(plannerId) {
     stateEl.innerHTML = `
       <div style="font-size:10.5px;color:var(--ink-3);letter-spacing:0.08em;text-transform:uppercase;font-weight:600;margin-bottom:4px;">Working on</div>
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;">Set #${String(active.sets?.set_number||'?').padStart(3,'0')} · ${escapeHtml(active.sets?.city||'')}</div>
-      ${deadline ? `<div style="font-size:11px;color:${dlTone};">Deadline ${deadline.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${dlLabel}</div>` : ''}
+      ${deadline ? `<div style="font-size:11px;color:${dlTone};">Deadline ${deadline.toLocaleDateString('ja-JP',{day:'numeric',month:'short'})} · ${dlLabel}</div>` : ''}
       ${remarkHtml}`
   } else if (completed.length) {
     const c = completed[0]
@@ -1485,9 +1485,9 @@ async function loadPlannerContext(plannerId) {
       if (pl.travelers?.requires_bond && ['submitted','approved'].includes(pl.status) && !paidSetIds.has(pl.set_id)) bondHeld += bo(pl)
     }
   }
-  el('info-earned').textContent = `€${Math.round(paidAmt).toLocaleString("ja-JP")}`
-  el('info-pending').textContent = `€${Math.round(pendingAmt).toLocaleString("ja-JP")}`
-  el('info-bond-hold').textContent = `€${Math.round(bondHeld).toLocaleString("ja-JP")}`
+  el('info-earned').textContent = `¥${Math.round(paidAmt).toLocaleString("ja-JP")}`
+  el('info-pending').textContent = `¥${Math.round(pendingAmt).toLocaleString("ja-JP")}`
+  el('info-bond-hold').textContent = `¥${Math.round(bondHeld).toLocaleString("ja-JP")}`
   el('info-sets-done').textContent = paid.length
 
   // Mini progress bars — scaled against max(paidAmt, pendingAmt, bondHeld, 1)
@@ -1513,7 +1513,7 @@ async function loadPlannerContext(plannerId) {
     }
     events.sort((a,b) => (b.t?.getTime()||Infinity) - (a.t?.getTime()||Infinity))
     recentHtml = events.slice(0,4).map(e => {
-      const when = e.t ? e.t.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : 'now'
+      const when = e.t ? e.t.toLocaleDateString('ja-JP',{day:'numeric',month:'short'}) : 'now'
       return `<div style="display:flex;gap:6px;align-items:flex-start;"><span style="color:${e.color};flex-shrink:0;">●</span><span>${e.label}<span style="color:var(--ink-3);"> · ${when}</span></span></div>`
     }).join('') || '<div style="color:var(--ink-3);">No activity yet</div>'
   } else {
@@ -1561,7 +1561,7 @@ async function renderInlineActions() {
     if (bondPending && bondPending.length) {
       const bp = bondPending[0]
       const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
-      bondChipText.textContent = `Bond pending · Plan ${bp.plan_number} · €${escapeHtml(amt)}`
+      bondChipText.textContent = `保証金未払い · プラン ${bp.plan_number} · ¥${escapeHtml(amt)}`
       bondChip.style.display = 'inline-flex'
     } else {
       bondChip.style.display = 'none'
@@ -1576,8 +1576,8 @@ async function renderInlineActions() {
   let html = ''
   for (const bp of (bondPending || [])) {
     const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
-    const notified = bp.admin_notes === 'BOND_NOTIFIED' ? ' · sent' : ''
-    html += actionBtn(`Confirm bond · Plan ${bp.plan_number} (€${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
+    const notified = bp.admin_notes === 'BOND_NOTIFIED' ? ' · 送信済み' : ''
+    html += actionBtn(`保証金を確認 · プラン ${bp.plan_number} (¥${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
   }
   // Revert button for recently-confirmed bond plans (safe window: no work started)
   for (const rc of (recentlyConfirmed || [])) {
@@ -1608,10 +1608,10 @@ function loadCsNotesIntoPanel(p) {
   _csNotesSnapshot = { planner_id: activeConv?.planner_id || null, body }
   if (meta) {
     if (p?.cs_notes_updated_at) {
-      const when = new Date(p.cs_notes_updated_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
-      meta.textContent = `Last edited ${when}${p.cs_notes_updated_by ? ' · ' + p.cs_notes_updated_by : ''}`
+      const when = new Date(p.cs_notes_updated_at).toLocaleString('ja-JP',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+      meta.textContent = `最終編集 ${when}${p.cs_notes_updated_by ? ' · ' + p.cs_notes_updated_by : ''}`
     } else {
-      meta.textContent = 'Never edited'
+      meta.textContent = '未編集'
     }
   }
 }
@@ -1713,7 +1713,7 @@ window.csExtendDeadline = async function(assignmentId, days) {
   // Fetch current deadline first so we can show it in the prompt
   const { data: a } = await sb.from('set_assignments').select('deadline').eq('id', assignmentId).maybeSingle()
   const currentDl = a?.deadline ? new Date(a.deadline) : new Date()
-  const currentLabel = a?.deadline ? currentDl.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : 'today'
+  const currentLabel = a?.deadline ? currentDl.toLocaleDateString('ja-JP',{day:'numeric',month:'short',year:'numeric'}) : 'today'
 
   // Ask for the number of days if not passed in
   if (days == null) {
@@ -1727,13 +1727,13 @@ window.csExtendDeadline = async function(assignmentId, days) {
   const base = new Date(currentDl)
   base.setDate(base.getDate() + days)
   const newDl = base.toISOString().split('T')[0]
-  const newLabel = base.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
+  const newLabel = base.toLocaleDateString('ja-JP',{day:'numeric',month:'short',year:'numeric'})
 
   if (!confirm(`Change deadline from ${currentLabel} to ${newLabel} (${days > 0 ? '+' : ''}${days} days)?`)) return
 
   const { error } = await sb.from('set_assignments').update({ deadline: newDl }).eq('id', assignmentId)
   if (error) { showToast('Failed: ' + error.message); return }
-  showToast(`Deadline → ${base.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`)
+  showToast(`Deadline → ${base.toLocaleDateString('ja-JP',{day:'numeric',month:'short'})}`)
   // Best-effort audit trail
   try {
     await sb.from('audit_log').insert({
@@ -1759,7 +1759,7 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🏦 Bond bank details', text: 'Hi {first_name}, here are the bond payment details:\n\nBank: [bank name]\nAccount: [account number]\nName: Journey Junction\nReference: BOND-{set_num}-{planner_short}\n\nOnce transferred, please share the screenshot here and we\'ll confirm shortly.' },
     { label: '💳 Verifying bond', text: 'Got it {first_name} — we\'ll verify your transfer shortly and confirm as soon as it clears (usually under 30 min during business hours).' },
     { label: '✅ Bond received', text: 'Bond payment confirmed — your plan is now unlocked. Happy planning!' },
-    { label: '💰 Payout update', text: 'Hi {first_name}, your payout of €{pending_amt} is queued for release. You\'ll receive it in your registered bank account within 24 hours.' },
+    { label: '💰 Payout update', text: 'Hi {first_name}, your payout of ¥{pending_amt} is queued for release. You\'ll receive it in your registered bank account within 24 hours.' },
     { label: '💰 Payout processed', text: 'Payout has been released to your bank account. Please allow 1-2 business days for it to reflect.' },
     { label: '📋 Checking sets', text: 'Hi {first_name}, let me check what\'s available in your city and I\'ll assign you a set shortly.' },
     { label: '⏰ How many days?', text: 'No problem {first_name} — how many extra days do you need, and could you share the reason briefly so we can log it?' },
@@ -1774,22 +1774,22 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🎉 Plan approved', text: 'Plan approved! Nicely done {first_name}. The commission is logged and will be released to your wallet once the whole set is approved.' },
   ],
   ja: [
-    { label: '👋 Salutation', text: 'Bonjour {first_name}, comment puis-je vous aider aujourd\'hui ?' },
-    { label: '🏦 Coordonnées pour la caution', text: 'Bonjour {first_name}, voici les coordonnées bancaires pour le versement de la caution :\n\nBanque : [Nom de la banque]\nNuméro de compte : [Numéro de compte]\nTitulaire du compte : Journey Junction\nRéférence du virement : BOND-{set_num}-{planner_short}\n\nUne fois le virement effectué, merci de nous envoyer ici une capture d\'écran du justificatif. Nous vous recontacterons dès vérification.' },
-    { label: '💳 Vérification de la caution', text: 'C\'est bien noté, {first_name}. Nous procédons à la vérification de votre virement. Pendant les heures ouvrées, la vérification est généralement terminée sous 30 minutes et nous vous recontacterons.' },
-    { label: '✅ Caution reçue', text: 'Nous avons bien confirmé le versement de votre caution. Vos plans ont été déverrouillés. Merci et bonne continuation.' },
-    { label: '💰 Information sur le paiement', text: 'Bonjour {first_name}, nous traitons votre retrait de {pending_amt} €. Les fonds seront envoyés selon le mode de paiement que vous avez enregistré sous 24 heures.' },
-    { label: '💰 Paiement effectué', text: 'Le traitement de votre retrait est terminé. La crypto apparaît généralement sous 1 h ; comptez 1 à 2 jours ouvrés pour un virement bancaire.' },
-    { label: '📋 Vérification des lots', text: 'Bonjour {first_name}, je vérifie les lots disponibles dans votre ville et je vous en attribue un sous peu.' },
-    { label: '⏰ Combien de jours ?', text: 'Pas de problème {first_name} — de combien de jours supplémentaires avez-vous besoin ? Pourriez-vous aussi nous indiquer brièvement la raison afin que nous puissions la consigner ?' },
-    { label: '⏰ Prolongation accordée', text: 'C\'est fait : nous avons prolongé votre délai. La nouvelle date figure sur votre tableau de bord.' },
-    { label: '🔍 Plus de détails svp', text: 'Pourriez-vous nous donner un peu plus de détails ? S\'il s\'agit d\'un plan en particulier, le numéro du plan et le nom du voyageur nous aideraient beaucoup.' },
-    { label: '📸 Envoyez une capture svp', text: 'Pourriez-vous partager une capture d\'écran ? Il vous suffit de cliquer sur l\'icône 📎 dans le chat pour joindre une image.' },
-    { label: '🙏 Merci', text: 'Merci de nous avoir contactés — n\'hésitez pas si vous avez besoin d\'autre chose !' },
-    { label: '📨 Mis en file de validation', text: 'C\'est bien noté {first_name}, merci — le lot n° {set_num} est désormais dans la file de validation de l\'administrateur. Vous serez notifié au fur et à mesure de la validation de chaque plan (généralement sous 24 à 48 heures). Merci pour votre excellent travail !' },
-    { label: '✨ Nouveau lot attribué', text: 'Bonne nouvelle {first_name} : un nouveau lot vous a été attribué. Consultez les fiches des voyageurs sur votre tableau de bord. Prévenez-nous si certaines informations sur le voyageur vous semblent incorrectes avant de commencer la planification.' },
-    { label: '📝 Révision demandée', text: 'C\'est noté {first_name} — l\'administrateur a signalé certains plans à réviser avec des commentaires. Ouvrez le plan depuis votre tableau de bord pour consulter la demande de révision, mettez-le à jour puis soumettez-le à nouveau. Contactez-nous si quoi que ce soit n\'est pas clair.' },
-    { label: '🎉 Plan approuvé', text: 'Plan approuvé ! Beau travail, {first_name}. La commission est enregistrée et sera versée selon votre mode de paiement une fois l\'ensemble du lot validé.' },
+    { label: '👋 ご挨拶', text: '{first_name}さん、こんにちは。本日はどのようなご用件でしょうか。' },
+    { label: '🏦 保証金の振込先', text: '{first_name}さん、こんにちは。保証金のお振込先は以下のとおりです。\n\n銀行名：[銀行名]\n口座番号：[口座番号]\n口座名義：Journey Junction\n振込依頼人名（ご依頼番号）：BOND-{set_num}-{planner_short}\n\nお振込が完了しましたら、お振込控えのスクリーンショットをこちらにお送りください。確認でき次第、ご連絡いたします。' },
+    { label: '💳 保証金の確認中', text: '{first_name}さん、承知いたしました。ただいまお振込の確認を行っております。営業時間内であれば通常30分以内に確認が完了し、改めてご連絡いたします。' },
+    { label: '✅ 保証金を受領', text: '保証金のお振込を確認いたしました。プランのロックを解除いたしましたので、引き続きよろしくお願いいたします。' },
+    { label: '💰 お支払いについて', text: '{first_name}さん、こんにちは。ただいま¥{pending_amt}のお引き出しを処理しております。ご登録いただいたお支払い方法にて、24時間以内にお振込いたします。' },
+    { label: '💰 お支払い完了', text: 'お引き出しの処理が完了いたしました。暗号資産の場合は通常1時間以内、銀行振込の場合は1～2営業日で反映されます。' },
+    { label: '📋 案件を確認中', text: '{first_name}さん、こんにちは。お住まいの地域で対応可能な案件を確認しております。まもなく案件を割り当ていたします。' },
+    { label: '⏰ 何日必要ですか？', text: '{first_name}さん、問題ございません。追加で何日ほど必要でしょうか。記録のため、差し支えなければ理由も簡単にお知らせいただけますと幸いです。' },
+    { label: '⏰ 延長を承認', text: '対応いたしました。締め切りを延長いたしました。新しい期日はダッシュボードに表示されております。' },
+    { label: '🔍 詳細をお願いします', text: 'もう少し詳しくお聞かせいただけますでしょうか。特定のプランに関するご質問でしたら、プラン番号と旅行者のお名前をお知らせいただけますと大変助かります。' },
+    { label: '📸 スクリーンショットをお願いします', text: 'スクリーンショットをお送りいただけますでしょうか。チャット内の📎アイコンをクリックすると画像を添付できます。' },
+    { label: '🙏 お礼', text: 'お問い合わせいただきありがとうございます。他にもご不明な点がございましたら、お気軽にお知らせください。' },
+    { label: '📨 審査待ちに登録', text: '{first_name}さん、承知いたしました。ありがとうございます。案件番号 {set_num} を管理者の審査待ちリストに登録いたしました。各プランが承認され次第（通常24～48時間以内）、順次ご連絡いたします。素晴らしいお仕事をありがとうございます。' },
+    { label: '✨ 新しい案件を割り当て', text: '{first_name}さん、よいお知らせです。新しい案件を割り当ていたしました。ダッシュボードで旅行者の概要をご確認ください。プランニングを始める前に、旅行者情報に誤りがあればお知らせください。' },
+    { label: '📝 修正のご依頼', text: '{first_name}さん、承知いたしました。管理者がいくつかのプランについて、コメント付きで修正が必要と判断いたしました。ダッシュボードから該当のプランを開き、修正依頼の内容をご確認のうえ、更新して再提出してください。ご不明な点がございましたらご連絡ください。' },
+    { label: '🎉 プラン承認', text: 'プランが承認されました。{first_name}さん、お見事です。報酬は記録され、案件一式がすべて承認された時点でお支払い方法に応じて支払われます。' },
   ]
 }
 // Stable keys for the default chips, by position (en & ja arrays are parallel).
@@ -1802,7 +1802,7 @@ const QR_DEFAULT_KEYS = [
   'queued_for_review', 'new_set_assigned', 'revision_noted', 'plan_approved'
 ]
 // Current language for quick replies — persisted per agent session
-let CS_QR_LANG = localStorage.getItem('jj_cs_qr_lang') || 'en'
+let CS_QR_LANG = localStorage.getItem('jj_cs_qr_lang') || 'ja'
 if (CS_QR_LANG !== 'en' && CS_QR_LANG !== 'ja') CS_QR_LANG = 'en'
 function setQuickReplyLang(lang){
   if (lang !== 'en' && lang !== 'ja') return
@@ -2034,10 +2034,10 @@ function renderQuickReplies() {
   if (!box) return
   const suggestedIdx = detectIncomingIntent()
 
-  // Language toggle pill (EN / Français) — lives at the front of the bar
+  // Language toggle pill (EN / 日本語) — lives at the front of the bar
   const langPill = `<div style="display:inline-flex;gap:0;padding:2px;background:var(--cream);border:1px solid var(--border-med);border-radius:99px;margin-right:6px;flex-shrink:0;">
     <button onclick="setQuickReplyLang('en')" title="English quick replies" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='en'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='en'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.04em;">EN</button>
-    <button onclick="setQuickReplyLang('ja')" title="Réponses rapides en français" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='ja'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='ja'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Français</button>
+    <button onclick="setQuickReplyLang('ja')" title="日本語のクイック返信" style="padding:3px 10px;border:none;background:${CS_QR_LANG==='ja'?'var(--ink)':'transparent'};color:${CS_QR_LANG==='ja'?'#fff':'var(--ink-3)'};border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">日本語</button>
   </div>
   <button onclick="openQuickReplyEditor()" title="Add or edit quick replies" style="padding:3px 10px;background:transparent;border:1px solid var(--border-med);border-radius:99px;font-size:10.5px;font-weight:600;cursor:pointer;color:var(--ink-3);font-family:'DM Sans',sans-serif;margin-right:6px;flex-shrink:0;">⚙ Manage</button>`
 
@@ -2069,10 +2069,10 @@ function applyQuickReply(index) {
   const firstName = ctx?.planner?.name?.split(' ')[0] || 'there'
   const setNum = ctx?.active?.sets?.set_number ? String(ctx.active.sets.set_number).padStart(3,'0') : '—'
   const plannerShort = activeConv?.planner_id ? activeConv.planner_id.slice(0,6).toUpperCase() : ''
-  // Group per the active reply language: French slot (CS_QR_LANG==='ja') wants
-  // fr-FR thin-space grouping ("1 000 €"); English wants en-US comma. ja-JP was
-  // a Japan-era leftover that produced "1,000 €" in French replies.
-  const pendingAmt = Math.round(ctx?.pendingAmt || 0).toLocaleString(CS_QR_LANG === 'ja' ? 'fr-FR' : 'en-US')
+  // Group per the active reply language: the Japanese slot (CS_QR_LANG==='ja')
+  // uses ja-JP grouping ("1,234"); English uses en-US comma grouping. Yen has no
+  // decimals, so the rounded integer is formatted directly.
+  const pendingAmt = Math.round(ctx?.pendingAmt || 0).toLocaleString(CS_QR_LANG === 'ja' ? 'ja-JP' : 'en-US')
   const filled = q.text
     .replace(/{first_name}/g, firstName)
     .replace(/{set_num}/g, setNum)
