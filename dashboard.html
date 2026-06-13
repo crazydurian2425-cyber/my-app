@@ -9658,6 +9658,88 @@ try {
 let TM_LANG = (localStorage.getItem('jj_planner_lang') || 'ja')
 if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
 
+// ── Japanese language pack (Japan market only) ───────────────────────────
+// PARALLEL TRACK: France's 'ja' slot holds FRENCH and is left untouched. On the
+// JP market, t() reads from window.TM_I18N_JA instead (see t()). Any missing key
+// falls back to English automatically, so this dictionary can grow incrementally.
+// ⚠ FIRST-PASS DRAFT — review by a native speaker before go-live. Strings that
+// embed money AMOUNTS (e.g. the weekly-salary rule) are omitted until the real
+// JP figures are decided, so they fall back to English rather than show wrong ¥.
+window.TM_I18N_JA = {
+  'sidebar.portal':'プランナーポータル', 'sidebar.main':'メイン', 'sidebar.account':'アカウント',
+  'sidebar.signOut':'ログアウト', 'sidebar.theme':'テーマ',
+  'nav.dashboard':'ダッシュボード', 'nav.mysets':'マイセット', 'nav.history':'履歴',
+  'nav.wallet':'ウォレット', 'nav.profile':'プロフィール', 'nav.settings':'設定',
+  'nav.support':'サポートに連絡',
+  'dash.greeting':'おはようございます、', 'dash.greeting.afternoon':'こんにちは、',
+  'dash.greeting.evening':'こんばんは、', 'dash.loading':'ダッシュボードを読み込んでいます...',
+  'dash.m.currentEarning':'現在の報酬', 'dash.m.currentEarning.note':'未払い — 現在のセット',
+  'dash.m.earned':'支払い済み', 'dash.m.earned.note':'累計 · ウォレットへ',
+  'dash.m.bond':'保証金（保留中）', 'dash.m.bond.note':'セット完了まで保留',
+  'dash.m.sets':'完了したセット', 'dash.m.sets.note':'累計',
+  'dash.m.pending':'残りのプラン', 'dash.m.pending.note':'このセットの残り',
+  'dash.revisions.title':'修正依頼', 'dash.activeSet':'進行中のセット',
+  'dash.btn.submitPlan':'プランを提出', 'dash.btn.viewAllBriefs':'すべてのブリーフを見る',
+  'dash.btn.fillItin':'旅程フォームに記入', 'dash.btn.saveDraft':'下書きを保存',
+  'legend.done':'完了', 'legend.current':'進行中', 'legend.bond':'保証金が必要', 'legend.pending':'保留中',
+  'brief.noActive':'進行中のプランはありません', 'brief.sub':'この旅行者が期待していること',
+  'brief.label.interests':'興味・関心', 'brief.label.pace':'ペース',
+  'brief.label.avoid':'避けるべきこと', 'brief.label.notes':'特記事項',
+  'brief.guide.title':'旅程に含めるべき内容', 'brief.guide.breakfast':'朝食スポット',
+  'brief.guide.dest':'訪問する2〜3か所の目的地', 'brief.guide.meals':'ランチ・ディナーの候補',
+  'brief.guide.transport':'移動方法', 'brief.guide.tips':'地元のヒント',
+  'brief.checklist.title':'提出チェックリスト', 'brief.check.schedule':'時間付きの日ごとのスケジュール',
+  'brief.check.transport':'移動方法 — 交通のヒント', 'brief.check.spend':'概算費用の内訳',
+  'brief.check.tips':'地元のヒントと穴場',
+  'assign.title':'アサイン状況', 'assign.sub':'管理者が所在地と専門性に基づいてセットを割り当てます',
+  'assign.pending':'アサイン待ち',
+  'assign.pending.sub':'担当チームがあなたの都市と専門性に基づいてセットを割り当てます。割り当てられるとここに表示されます。',
+  'assign.supportLink':'ご質問はサポートまで →',
+  'perf.title':'あなたのパフォーマンス', 'perf.ontime':'納期遵守率', 'perf.approval':'承認率',
+  'perf.sets':'完了したセット',
+  'mysets.title.my':'マイ', 'mysets.title.sets':'セット',
+  'mysets.sub':'受注または完了したすべてのセット', 'mysets.allSets':'すべてのセット',
+  'common.loading':'読み込み中...',
+  'history.title.payout':'アカウント', 'history.title.history':'履歴',
+  'history.sub':'ウォレットのすべての支払い、クレジット、控除、請求書',
+  'history.totalEarned':'支払い済み', 'history.avgPerSet':'利用可能', 'history.standardRate':'ウォレット内',
+  'history.pending':'保留中の支払い', 'history.inProgress':'リリース待ち',
+  'history.payoutRow':'支払い', 'history.creditRow':'クレジット', 'history.debitRow':'控除',
+  'history.invoiceRow':'請求書', 'invoiceStatus.pending':'未払い', 'invoiceStatus.paid':'支払い済み',
+  'invoiceStatus.cancelled':'キャンセル済み', 'history.transactionTitle':'取引履歴',
+  'history.empty':'取引はまだありません',
+  'wallet.adj.title':'ウォレットの動き', 'wallet.adj.sub':'ウォレットに適用されたクレジットと控除',
+  'wallet.adj.credit':'クレジット', 'wallet.adj.debit':'控除',
+  'wallet.title.your':'あなたの', 'wallet.title.wallet':'ウォレット',
+  'wallet.sub':'コミッション収入 · いつでも出金申請可能',
+  'walletSnap.title':'あなたのウォレット', 'walletSnap.sub':'コミッション収入の概要',
+  'walletSnap.available':'出金可能額', 'walletSnap.locked':'承認待ち',
+  'walletSnap.lifetime':'支払い済み（累計）', 'walletSnap.lastPayout':'前回の支払い',
+  'walletSnap.payoutRule':'出金は、進行中のセットのすべてのプランが管理者に承認された後にのみ可能になります。',
+  'walletSnap.cta':'ウォレットを開く',
+  'wallet.m.available':'利用可能', 'wallet.m.earnedTotal':'総収入',
+  'wallet.m.earnedTotal.note':'累計収入', 'wallet.m.pending':'保留中',
+  'wallet.m.pending.note':'管理者のリリース待ち', 'wallet.m.paid':'支払い済み',
+  'wallet.m.paid.note':'ウォレットへ、累計',
+  'wallet.requests.title':'出金申請', 'wallet.requests.sub':'最近および保留中の出金',
+  'wallet.btn.request':'出金を申請', 'wallet.empty':'出金申請はまだありません',
+  // Region-correct settings + placeholders
+  'settings.currency':'通貨', 'settings.currency.sub':'すべての収入は日本円',
+  'settings.tz.valueJP':'日本標準時', 'currency.symbol':'¥',
+  'profile.ph.cities':'例：東京、京都、大阪',
+}
+
+// Relabel the local-language toggle (FR flag + "FR") to Japanese on the JP market.
+function _jjRelabelLangToggle(){
+  if (!window.JJ_REGION || window.JJ_REGION !== 'JP') return
+  var jaFlag = '<svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="20" height="13"><rect width="60" height="40" fill="#fff"/><circle cx="30" cy="20" r="12" fill="#BC002D"/></svg>'
+  document.querySelectorAll('.sb-lang-btn[data-lang="ja"], .settings-lang-btn[data-lang="ja"]').forEach(function(b){
+    b.setAttribute('aria-label','日本語'); b.setAttribute('title','日本語')
+    var svg = b.querySelector('svg'); if (svg) svg.outerHTML = jaFlag
+    var span = b.querySelector('span'); if (span) span.textContent = 'JA'
+  })
+}
+
 // ── Theme (light / dark) ───────────────────────────────────────
 function applyPlannerTheme(theme){
   if (theme !== 'dark') theme = 'light'
@@ -9676,8 +9758,14 @@ function togglePlannerTheme(){
 applyPlannerTheme(localStorage.getItem('jj_planner_theme') || 'light')
 
 function t(key, fallback){
-  const dict = TM_I18N[TM_LANG] || TM_I18N.en
-  if (Object.prototype.hasOwnProperty.call(dict, key)) return dict[key]
+  // Parallel-track Japanese (safe): on the JP market the 'ja' toggle resolves to
+  // the REAL Japanese dictionary (window.TM_I18N_JA), not the 'ja' slot — which
+  // holds FRENCH (repurposed in the France pivot). Missing JA keys fall through
+  // to English below. The France path (region !== 'JP') is 100% unchanged.
+  let dict
+  if (TM_LANG === 'ja' && window.JJ_REGION === 'JP' && window.TM_I18N_JA) dict = window.TM_I18N_JA
+  else dict = TM_I18N[TM_LANG] || TM_I18N.en
+  if (dict && Object.prototype.hasOwnProperty.call(dict, key)) return dict[key]
   if (TM_I18N.en && Object.prototype.hasOwnProperty.call(TM_I18N.en, key)) return TM_I18N.en[key]
   return (fallback !== undefined) ? fallback : key
 }
@@ -9686,7 +9774,11 @@ function t(key, fallback){
 // trip context, tip chips, day summary, transport, warnings) which were
 // hardcoded in English. French is served from the 'ja' dictionary slot
 // (repurposed in the France pivot), so French users have TM_LANG === 'ja'.
-function isPlannerFR(){ return TM_LANG === 'ja' || TM_LANG === 'fr' }
+// French-style rendering (money "1 000 €", FR dates, FR enum maps, dt() fr arg).
+// Region-guarded: on the JP market this is FALSE, so Japan never inherits French
+// formatting — it gets ¥ (via JJ_CONFIG) + English fallback for dynamic strings
+// until Japanese is supplied. France (region !== 'JP') behaves exactly as before.
+function isPlannerFR(){ return (TM_LANG === 'ja' || TM_LANG === 'fr') && window.JJ_REGION !== 'JP' }
 function dt(en, fr){ return isPlannerFR() ? fr : en }
 
 // FR translations for the day-form brief LABELS (section headers + field
@@ -9768,7 +9860,7 @@ function applyLang(lang){
   if (lang !== 'en' && lang !== 'ja') lang = 'en'
   TM_LANG = lang
   try { localStorage.setItem('jj_planner_lang', lang) } catch(e){}
-  document.documentElement.lang = (lang === 'ja') ? 'fr' : 'en'
+  document.documentElement.lang = (lang === 'ja') ? (window.JJ_REGION === 'JP' ? 'ja' : 'fr') : 'en'
 
   // text nodes
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -9795,6 +9887,8 @@ function applyLang(lang){
   document.querySelectorAll('.lang-btn, .tb-lang-btn, .sb-lang-btn, .settings-lang-btn').forEach(b => {
     b.classList.toggle('active', b.getAttribute('data-lang') === lang)
   })
+  // JP market: relabel the local-language toggle (FR flag/"FR") → Japanese.
+  try { _jjRelabelLangToggle() } catch(e){}
 
   // Time-of-day aware greeting swap (the "Good morning," span)
   try{
