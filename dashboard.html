@@ -20663,6 +20663,15 @@ function _sweepSelfLoopTransports(dayContainer) {
         if (left && left === right) isSelf = true
       }
     }
+    // Protect the arrival → first-venue transport: it sits immediately after the
+    // Day-1 arrival anchor. In Japan the gateway and the hotel are often the SAME
+    // place (Shinkansen arrives at Kyoto Station; the hotel is AT Kyoto Station),
+    // so this leg legitimately reads as a self-loop — but it must stay. The
+    // phantom "hotel → hotel" back-to-hotel leg sits at the END of the day (after
+    // the last venue, before end_of_day), NOT after the arrival anchor, so it is
+    // still culled below. This is what makes the arrival transport never go
+    // missing again when arrival station == hotel station.
+    if (prev && prev.classList.contains('is-locked') && prev.dataset.anchorType === 'arrival') continue
     if (!isSelf && t.dataset.autoSeededArrivalTaxi === 'true') continue   // protect the REAL arrival taxi only
     if (isSelf) { console.log('[self-loop-sweep] removing same-place transport', t.id); t.remove(); removed = true }
   }
