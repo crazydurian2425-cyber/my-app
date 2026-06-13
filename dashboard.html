@@ -18710,6 +18710,44 @@ function _venueNameOf(slot) {
       || ''
 }
 
+// Resolve a typed/unverified stop NAME → Google place_id (+ lat/lng) so a route
+// leg can fetch real Google data (the line + stops breakdown) even when the
+// planner didn't pick the stop from the autocomplete dropdown. Cached per
+// name+city in localStorage. Best-effort: returns null on any failure, and the
+// caller falls back to the heuristic — so this can only ADD real data, never
+// break an existing leg.
+const _PLACEID_CACHE_PREFIX = 'jj_placeid_v1_'
+async function _resolvePlaceIdByName(name, biasCity) {
+  const q = String(name || '').trim()
+  if (!q) return null
+  const ck = `${_PLACEID_CACHE_PREFIX}${q.toLowerCase()}|${String(biasCity || '').toLowerCase()}`
+  try { const raw = localStorage.getItem(ck); if (raw) { const o = JSON.parse(raw); if (o && o.id) return o } } catch (e) {}
+  if (_readRoutesDaily() >= ROUTES_DAILY_CAP) return null
+  try {
+    const query = (biasCity && !q.toLowerCase().includes(String(biasCity).toLowerCase())) ? `${q}, ${biasCity}` : q
+    const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
+    const bias = (typeof buildDestBias === 'function') ? buildDestBias(biasCity) : null
+    if (bias) body.locationBias = bias
+    const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.location',
+      },
+      body: JSON.stringify(body),
+    })
+    if (!resp.ok) return null
+    const data = await resp.json()
+    const p = data?.places?.[0]
+    if (!p?.id) return null
+    const out = { id: p.id, lat: p.location?.latitude ?? null, lng: p.location?.longitude ?? null }
+    try { localStorage.setItem(ck, JSON.stringify(out)) } catch (e) {}
+    _bumpRoutesDaily()
+    return out
+  } catch (e) { return null }
+}
+
 // Inject (or update) the transport content panel inside a transport slot.
 // Idempotent — safe to call after every resort / link change.
 function refreshTransportSlot(slot) {
@@ -19057,28 +19095,48 @@ function refreshTransportSlot(slot) {
   // _placeData (only morning + end_of_day anchors do), so without this
   // fallback the Routes API call was being skipped and we never got a
   // polyline → "Show route map" was stuck on the iframe fallback forever.
-  const fromPlaceId = prev?._placeData?.google_place_id || slot.dataset.fromPlaceId || null
-  const toPlaceId   = next?._placeData?.google_place_id || slot.dataset.toPlaceId   || null
-  if (!tooFar && fromPlaceId && toPlaceId) {
-    const originSlot = prev || { _placeData: { google_place_id: fromPlaceId } }
-    const destSlot   = (next?._placeData?.google_place_id)
-      ? next
-      : { _placeData: { google_place_id: toPlaceId } }
-    // Compute the real trip-date + slot-time so the Routes API picks the
-    // right transit schedule + traffic pattern. Trip start date lives on
-    // window._currentTripStartDate (loaded from plans.start_date); the
-    // slot's day number determines the offset.
-    let _departISO = null
-    if (window._currentTripStartDate && departHHMM) {
-      const _m = slot.closest('[id^="slots-day-"]')?.id?.match(/slots-day-(\d+)/)
-      const _dayNum = _m ? parseInt(_m[1], 10) : 1
-      _departISO = _localDepartISO(window._currentTripStartDate, _dayNum, departHHMM, 'Asia/Tokyo')
-    }
-    fetchRouteData(originSlot, destSlot, mode, _departISO).then(result => {
+  if (!tooFar) {
+    const _biasCity = window._currentDestination || ''
+    ;(async () => {
+      // Resolve each endpoint to a Google place_id: prefer the linked one or
+      // the dataset fallback, ELSE auto-resolve from the stop's typed NAME so
+      // the route still fetches real Google data (line + stops breakdown) even
+      // when the planner didn't pick it from the autocomplete. Cached + best-
+      // effort; if resolution fails the leg just keeps its heuristic as before.
+      let fromPlaceId = prev?._placeData?.google_place_id || slot.dataset.fromPlaceId || null
+      let toPlaceId   = next?._placeData?.google_place_id || slot.dataset.toPlaceId   || null
+      if (!fromPlaceId && prev) {
+        const r = await _resolvePlaceIdByName(_venueNameOf(prev), _biasCity)
+        if (r) {
+          fromPlaceId = r.id; slot.dataset.fromPlaceId = r.id
+          if (prev._placeData) prev._placeData.google_place_id = prev._placeData.google_place_id || r.id
+          else prev._placeData = { google_place_id: r.id, name: _venueNameOf(prev), latitude: r.lat, longitude: r.lng }
+        }
+      }
+      if (!toPlaceId && next) {
+        const r = await _resolvePlaceIdByName(_venueNameOf(next), _biasCity)
+        if (r) {
+          toPlaceId = r.id; slot.dataset.toPlaceId = r.id
+          if (next._placeData) next._placeData.google_place_id = next._placeData.google_place_id || r.id
+          else next._placeData = { google_place_id: r.id, name: _venueNameOf(next), latitude: r.lat, longitude: r.lng }
+        }
+      }
+      if (!fromPlaceId || !toPlaceId) return
+      const originSlot = (prev?._placeData?.google_place_id) ? prev : { _placeData: { google_place_id: fromPlaceId } }
+      const destSlot   = (next?._placeData?.google_place_id) ? next : { _placeData: { google_place_id: toPlaceId } }
+      // Compute the real trip-date + slot-time so the Routes API picks the
+      // right transit schedule + traffic pattern.
+      let _departISO = null
+      if (window._currentTripStartDate && departHHMM) {
+        const _m = slot.closest('[id^="slots-day-"]')?.id?.match(/slots-day-(\d+)/)
+        const _dayNum = _m ? parseInt(_m[1], 10) : 1
+        _departISO = _localDepartISO(window._currentTripStartDate, _dayNum, departHHMM, 'Asia/Tokyo')
+      }
+      const result = await fetchRouteData(originSlot, destSlot, mode, _departISO)
       if (!result) return
       const live = document.getElementById(slot.id)
       if (live) applyRouteDataToSlot(live, result)
-    })
+    })()
   }
 }
 
