@@ -9919,7 +9919,10 @@ function applyDashHero(city){
   // the UI language instead of always defaulting to a Japanese photo.
   let entry
   if (key === 'Other' || !CITY_HERO[key]) {
-    entry = (TM_LANG === 'ja') ? CITY_HERO['_fallback_ja'] : CITY_HERO['_fallback_en']
+    // Fallback hero follows the MARKET (JP → Japan image, FR → Europe image),
+    // not just the UI language, so an English-mode JP planner still sees Japan.
+    const _jp = (window.JJ_CONFIG && window.JJ_CONFIG.region === 'JP') || TM_LANG === 'ja'
+    entry = _jp ? CITY_HERO['_fallback_ja'] : CITY_HERO['_fallback_en']
   } else {
     entry = CITY_HERO[key]
   }
@@ -19070,7 +19073,10 @@ function refreshTransportSlot(slot) {
     if (window._currentTripStartDate && departHHMM) {
       const _m = slot.closest('[id^="slots-day-"]')?.id?.match(/slots-day-(\d+)/)
       const _dayNum = _m ? parseInt(_m[1], 10) : 1
-      _departISO = _localDepartISO(window._currentTripStartDate, _dayNum, departHHMM, 'Europe/Paris')
+      // Region timezone (Asia/Tokyo for JP, Europe/Paris for FR) so the Routes
+      // API schedules against the destination's real local clock.
+      const _tz = (window.JJ_CONFIG && window.JJ_CONFIG.timezone) || 'Europe/Paris'
+      _departISO = _localDepartISO(window._currentTripStartDate, _dayNum, departHHMM, _tz)
     }
     fetchRouteData(originSlot, destSlot, mode, _departISO).then(result => {
       if (!result) return
@@ -22647,13 +22653,16 @@ function loadSettings() {
     btn.classList.toggle('active', btn.dataset.lang === TM_LANG)
   })
 
-  // Timezone — locked to Central European Time for everyone (Journey Junction
-  // is Japan-only). We do NOT auto-detect because planners may be browsing
-  // from other regions while working on Japan-based sets; dates/deadlines
-  // must always reflect Japan local time. The IANA zone is still Europe/Paris
-  // under the hood — only the user-facing label was changed.
+  // Timezone — region-driven (FR → Central European Time / Europe/Paris,
+  // JP → Japan Standard Time / Asia/Tokyo). We do NOT auto-detect: planners may
+  // browse from anywhere while working a set, so dates/deadlines must reflect
+  // the market's local time, not the browser's.
   const tzEl = document.getElementById('settings-tz-chip')
-  if (tzEl) tzEl.textContent = t('settings.tz.value','Central European Time')
+  if (tzEl) {
+    const _jp = window.JJ_CONFIG && window.JJ_CONFIG.region === 'JP'
+    tzEl.textContent = _jp ? t('settings.tz.valueJP','Japan Standard Time')
+                           : t('settings.tz.value','Central European Time')
+  }
 }
 
 function saveAvailability(value) {
