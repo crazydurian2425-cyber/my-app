@@ -18305,10 +18305,21 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
 //   Rental car:         ¥55/km fuel + tolls + ¥1,500 base
 //   Train / HSR:        already returned by Routes API for TRANSIT mode
 // Walk → free; Flight → no realistic estimate (Routes doesn't support it).
+// Japanese urban transit fare estimate (bus / tram / metro / short JR). Local
+// fares cluster low and flat-ish — Hiroshima tram ~¥240, Kyoto city bus ~¥230,
+// metro ~¥180–330 — so model a gentle distance curve (¥180 base + ¥30/km),
+// floor ¥160, cap ¥520 before it crosses into long-haul rail. Used ONLY as a
+// fallback when Google's Routes API returns no real transitFare (common for JP
+// local transit); when Google DOES return a fare, that real number is shown.
+function _transitFareEstimate(km) {
+  const f = 180 + (Number(km) || 0) * 30
+  return Math.min(520, Math.max(160, Math.round(f / 10) * 10))
+}
 function _costFromRealKm(mode, km) {
   if (mode === 'walk') return 0
   if (mode === 'taxi') return Math.max(1500, Math.round(550 + km * 350))
   if (mode === 'car')  return Math.round(1500 + km * 55)
+  if (mode === 'transit') return _transitFareEstimate(km)   // when Google gives no fare
   if (mode === 'train') return Math.round(2750 + km * 73)
   if (mode === 'hsr')   return Math.round(5500 + km * 46)
   return null
@@ -18563,7 +18574,7 @@ function _transportEstimates(mode, km) {
     // Google says 9 min. Previous formula (5 min/km + 5) gave 22 min —
     // way too slow.
     const mins = Math.max(8, round(km * 2.5) + 4)
-    return { mins, costEur: 550 }   // ¥550 covers base fare + transfer margin
+    return { mins, costEur: _transitFareEstimate(km) }   // realistic JP local fare; Google's real fare overrides when returned
   }
   if (mode === 'train') {
     const mins = round(km * 1.2) + 20
