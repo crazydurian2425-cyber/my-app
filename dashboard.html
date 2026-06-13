@@ -18241,7 +18241,16 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
     const allRoutes = Array.isArray(data.routes) ? data.routes : []
     if (!allRoutes.length) return null
     const _durSec = (r) => parseInt(String(r?.duration || '0s').replace('s',''), 10) || Infinity
-    const route = allRoutes.reduce((best, r) => _durSec(r) < _durSec(best) ? r : best, allRoutes[0])
+    const _hasTransit = (r) => (r?.legs || []).some(l => (l?.steps || []).some(s => s.travelMode === 'TRANSIT'))
+    // For a TRANSIT leg, prefer the fastest route that ACTUALLY rides transit —
+    // a planner who chose "Public transport" wants the line + stops timeline,
+    // not a walk-only alternative that happened to be a minute quicker (which
+    // would render no step breakdown). Fall back to overall fastest if none
+    // of Google's alternatives use transit (e.g. the hop is too short).
+    const _pool = (travelMode === 'TRANSIT' && allRoutes.some(_hasTransit))
+      ? allRoutes.filter(_hasTransit)
+      : allRoutes
+    const route = _pool.reduce((best, r) => _durSec(r) < _durSec(best) ? r : best, _pool[0])
     const durSec = _durSec(route)
     // Encoded polyline so we can render OUR own map with the same route
     // data the grid shows — no more grid-vs-iframe distance mismatch.
