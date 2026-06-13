@@ -940,6 +940,16 @@ async function login() {
     } catch (e) { /* fall through to generic */ }
     showError(t('err.noAccount'), 'err.noAccount'); resetBtn(); return
   }
+  // Market scoping — a planner may only sign into THEIR market's site (FR
+  // account on the France domain, JP on the Japan domain). Skipped in preview
+  // (?market=) so QA can view the other market with a real account.
+  if (!window.JJ_PREVIEW && planner.region && window.JJ_REGION && planner.region !== window.JJ_REGION) {
+    try { await sb.auth.signOut() } catch(_){}
+    const _wm = (window.JJ_REGION === 'JP') ? 'このアカウントはこのサイトに登録されていません。'
+              : (window.JJ_REGION === 'FR') ? "Ce compte n'est pas enregistré sur ce site."
+              : 'This account is not registered on this site.'
+    showError(_wm, 'err.wrongMarket'); resetBtn(); return
+  }
   // Suspended planners get the same generic "invalid email or password"
   // message as wrong-password attempts — so an attacker can't tell whether
   // an account exists/is suspended from the outside. We also clear the
