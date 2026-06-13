@@ -2662,6 +2662,10 @@ const PROXY_BASE = window.location.origin + '/api/sb'
 // Set this to your deployed site once live (e.g. 'https://journeyjunctionplanner.com').
 // Used in the approval email link.
 const JJ_PLANNER_URL = 'https://journeyjunctionplanner.com'
+// Japan market site — set this once the Japan domain is live. Until then it's
+// empty and JP approval emails fall back to the France URL above.
+const JJ_PLANNER_URL_JP = ''
+let _approvalRegion = 'FR'   // market of the application currently being approved
 
 // Resend API key for sending approval emails. Replace the placeholder below
 // with your real key from https://resend.com/api-keys. The admin page is
@@ -8120,6 +8124,7 @@ async function approveApplication(id){
       name:  app.name,
       email: app.email,
       city:  app.city,
+      region: app.region || 'FR',   // inherit the applicant's market (FR/JP)
       status:'active'
     })
     if (insErr) { showToast('Create planner failed: ' + insErr.message); return }
@@ -8144,7 +8149,8 @@ async function sendApprovalEmailAuto(app){
     console.warn('Resend API key not set — falling back to manual email')
     return false
   }
-  const loginUrl = buildPlannerLoginUrl()
+  _approvalRegion = app.region || 'FR'
+  const loginUrl = buildPlannerLoginUrl(app.region)
   const firstName = (app.name || '').split(' ')[0] || 'planificateur'
   const subject = `Votre candidature de planificateur Journey Junction est approuvée`
   // Use the same branded template as the manual send so the auto-fired email
@@ -8181,12 +8187,14 @@ async function sendApprovalEmailAuto(app){
   }
 }
 
-function buildPlannerLoginUrl(){
-  // Prefer the explicit config. Only fall back to window.location if the admin panel
-  // is served from a real http(s) host AND JJ_PLANNER_URL wasn't customized.
+function buildPlannerLoginUrl(region){
+  // Region-aware: JP applicants get the Japan site, everyone else the France
+  // site. Falls back to the France URL if the JP domain isn't set yet.
   // Clean URL (no .html): the site serves login.html at /login and even
   // 308-redirects /login.html → /login, so the email shows a tidy link.
-  const configured = (JJ_PLANNER_URL || '').replace(/\/$/, '')
+  const reg = region || _approvalRegion || 'FR'
+  const base = (reg === 'JP' && JJ_PLANNER_URL_JP) ? JJ_PLANNER_URL_JP : JJ_PLANNER_URL
+  const configured = (base || '').replace(/\/$/, '')
   if (configured) return configured + '/login'
   const proto = window.location.protocol
   if (proto === 'http:' || proto === 'https:') {
@@ -8199,7 +8207,8 @@ function buildPlannerLoginUrl(){
 function openApprovalEmail(id){
   const app = _allApps.find(x => x.id === id)
   if (!app) return
-  const loginUrl = buildPlannerLoginUrl()
+  _approvalRegion = app.region || 'FR'   // so the manual Send path uses the right market site
+  const loginUrl = buildPlannerLoginUrl(app.region)
   document.getElementById('welcome-to').textContent = app.email
   document.getElementById('welcome-subject').value = `Votre candidature de planificateur Journey Junction est approuvée`
   document.getElementById('welcome-body').value =

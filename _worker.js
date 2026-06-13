@@ -224,7 +224,7 @@ async function handleCreatePlanner(request) {
   try { body = await request.json() } catch (_) {
     return jsonResp(400, { error: 'Invalid JSON' })
   }
-  const { name, email, phone, password, is_subaccount } = body || {}
+  const { name, email, phone, password, is_subaccount, region } = body || {}
   if (!name || !email || !password) {
     return jsonResp(400, { error: 'Missing required fields: name, email, password' })
   }
@@ -263,12 +263,16 @@ async function handleCreatePlanner(request) {
   // accounts (admin can edit later via Manage planners → Edit).
   // `admin_created=true` flags this row so the admin UI can show a badge
   // distinguishing direct-create accounts from application-flow planners.
+  // Region ('FR'|'JP') — passed by the admin UI from the application's market.
+  // Defaults to 'FR'. city is NOT NULL; default to the market's primary gateway.
+  const reg = (region === 'JP') ? 'JP' : 'FR'
   const planRow = {
     id: userId,
     name,
     email,
     phone: phone || null,
-    city: 'Paris',
+    city: reg === 'JP' ? 'Tokyo' : 'Paris',
+    region: reg,
     admin_created: true,
     is_subaccount: !!is_subaccount
   }
