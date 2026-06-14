@@ -18487,13 +18487,22 @@ function applyRouteDataToSlot(slot, data) {
   // set yet when an early fetch resolves. By the time THIS runs (async), the
   // notes are populated, so reading them here guarantees a saved override is
   // never overwritten by the estimate.
-  try {
-    const _ov = _parseTipsValue(slot.querySelector('.slot-notes-input')?.value || '')
-    const _om = (Number.isFinite(Number(_ov.durMins)) && Number(_ov.durMins) > 0) ? Math.round(Number(_ov.durMins)) : null
-    const _of = (Number.isFinite(Number(_ov.cost))    && Number(_ov.cost)    >= 0) ? Math.round(Number(_ov.cost))    : null
-    if (_om != null) { slot.dataset.routeMins = String(_om); slot.dataset.manualMins = '1' }
-    if (_of != null) { slot.dataset.manualFare = '1' }
-  } catch (e) { /* notes not JSON — no override to protect */ }
+  // Only for override-eligible modes (Public transport / Shinkansen). Walk + Taxi
+  // use real Google data and never honor an override — and if a leg was switched
+  // away from transit, clear any stale flags so the fresh fetch writes through.
+  const _aMode = slot.dataset.transportMode || 'taxi'
+  if (_aMode === 'transit' || _aMode === 'hsr') {
+    try {
+      const _ov = _parseTipsValue(slot.querySelector('.slot-notes-input')?.value || '')
+      const _om = (Number.isFinite(Number(_ov.durMins)) && Number(_ov.durMins) > 0) ? Math.round(Number(_ov.durMins)) : null
+      const _of = (Number.isFinite(Number(_ov.cost))    && Number(_ov.cost)    >= 0) ? Math.round(Number(_ov.cost))    : null
+      if (_om != null) { slot.dataset.routeMins = String(_om); slot.dataset.manualMins = '1' }
+      if (_of != null) { slot.dataset.manualFare = '1' }
+    } catch (e) { /* notes not JSON — no override to protect */ }
+  } else {
+    if (slot.dataset.manualMins === '1') delete slot.dataset.routeMins
+    delete slot.dataset.manualMins; delete slot.dataset.manualFare
+  }
   const cells = host.querySelectorAll('.transport-grid .tg-value')
   if (cells[0]) { cells[0].textContent = Number.isFinite(data.distanceKm) ? `${data.distanceKm.toFixed(1)} km` : '—'; cells[0].classList.remove('tg-blank') }
   if (cells[1] && slot.dataset.manualMins !== '1') { cells[1].textContent = Number.isFinite(data.durationMin) ? `${data.durationMin} min` : '—'; cells[1].classList.remove('tg-blank') }
@@ -19023,7 +19032,12 @@ function refreshTransportSlot(slot) {
   // have Japan transit). Stored in the slot's tips JSON (durMins + cost). When
   // set it WINS over the estimate, shows as confirmed (no "~"), and feeds the
   // arrival-time chain via routeMins.
-  const _ovr = _parseTipsValue(slot.querySelector('.slot-notes-input')?.value || '')
+  // The exact-value override only applies to the modes Google can't price in
+  // Japan: Public transport (transit) and Shinkansen (hsr). Walk + Taxi use real
+  // Google WALK/DRIVE data, so they never show the override row nor honor a
+  // stored one (_ovr is forced empty → flags cleared → real data wins).
+  const _ovrEligible = (mode === 'transit' || mode === 'hsr')
+  const _ovr = _ovrEligible ? _parseTipsValue(slot.querySelector('.slot-notes-input')?.value || '') : {}
   const _ovrMin  = (Number.isFinite(Number(_ovr.durMins)) && Number(_ovr.durMins) > 0) ? Math.round(Number(_ovr.durMins)) : null
   const _ovrFare = (Number.isFinite(Number(_ovr.cost))    && Number(_ovr.cost)    >= 0) ? Math.round(Number(_ovr.cost))    : null
   // Only drop routeMins when it was OUR manual value — never clobber a legit
@@ -19224,7 +19238,7 @@ function refreshTransportSlot(slot) {
       <div><div class="tg-label">${dt('Duration','所要時間')}</div><div class="tg-value${(tooFar||(_ovrMin==null&&est.mins==null))?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
       <div><div class="tg-label">${dt('Cost / pax','費用 / 人')}</div><div class="tg-value${(tooFar||(_ovrFare==null&&est.costEur==null))?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
     </div>
-    <div class="transport-override" style="margin-top:8px;">
+    ${_ovrEligible ? `<div class="transport-override" style="margin-top:8px;">
       <button type="button" class="to-toggle" onclick="_toggleTransportOverride('${slot.id}')" style="background:none;border:none;color:var(--green,#1a7a5e);cursor:pointer;font-family:inherit;font-size:11.5px;padding:0;display:inline-flex;align-items:center;gap:5px;">
         ${(_ovrMin!=null||_ovrFare!=null) ? dt('✓ Exact set · edit','✓ 実値を設定済み · 編集') : dt('✎ Set exact duration / fare (from Google Maps)','✎ 正確な所要時間・運賃を入力（Googleマップから）')}
       </button>
@@ -19235,7 +19249,7 @@ function refreshTransportSlot(slot) {
         <button type="button" class="btn btn-primary btn-sm" onclick="_applyTransportOverride('${slot.id}')" style="padding:5px 12px;font-size:11.5px;">${dt('Save','保存')}</button>
         <button type="button" onclick="_clearTransportOverride('${slot.id}')" style="background:none;border:none;color:var(--text-3,#7a6b4a);cursor:pointer;font-size:11.5px;text-decoration:underline;">${dt('Clear','クリア')}</button>
       </div>
-    </div>
+    </div>` : ''}
     ${directionsLink}
     ${tooFarBanner}`
   // Re-insert the preserved step timeline (if any) after the grid so it
