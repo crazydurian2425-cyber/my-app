@@ -18794,11 +18794,11 @@ function _fmtCostPax(v) {
 // is the plain "Taxi" — the dominant hire-and-go ride in Japan. 'hsr' keeps its
 // key but the label is the Japan-appropriate "Shinkansen / high-speed train".
 const _MODE_LABELS = {
-  walk: 'Walk', taxi: 'Taxi', transit: 'Public transport',
+  walk: 'Walk', taxi: 'GO Taxi', transit: 'Public transport',
   train: 'Public transport', car: 'Rental car', hsr: 'Shinkansen / high-speed train', flight: 'Flight'
 }
 const _MODE_LABELS_FR = {
-  walk: '徒歩', taxi: 'タクシー', transit: '公共交通機関',
+  walk: '徒歩', taxi: 'GOタクシー', transit: '公共交通機関',
   train: '公共交通機関', car: 'レンタカー', hsr: '新幹線', flight: '飛行機'
 }
 function modeLabel(k) {
@@ -20484,7 +20484,7 @@ function endDayBackToHotel(dayContainerId) {
   if (titleInput) {
     const aName = _venueNameOf(lastVenue) || dt('last stop','最後の立ち寄り先')
     const bName = hotel?.name || window._currentHotelName || dt('the hotel','ホテル')
-    const modeName = mode === 'walk' ? dt('Walk','徒歩') : (mode === 'taxi' ? dt('Taxi','タクシー') : dt('Metro','地下鉄'))
+    const modeName = mode === 'walk' ? dt('Walk','徒歩') : (mode === 'taxi' ? dt('GO Taxi','GOタクシー') : dt('Metro','地下鉄'))
     titleInput.value = `${modeName} · ${aName} → ${bName}`
   }
   _applySlotTime(newT, departHHMM)
@@ -21084,7 +21084,7 @@ function _gapFillTransportsForDay(dayContainer) {
         if (titleInput) {
           const aName = _venueNameOf(aSlot) || aSlot.querySelector('.anchor-title')?.textContent || dt('origin','出発地')
           const bName = _venueNameOf(bSlot) || dt('destination','目的地')
-          const modeName = mode === 'walk' ? dt('Walk','徒歩') : (mode === 'taxi' ? dt('Taxi','タクシー') : dt('Metro','地下鉄'))
+          const modeName = mode === 'walk' ? dt('Walk','徒歩') : (mode === 'taxi' ? dt('GO Taxi','GOタクシー') : dt('Metro','地下鉄'))
           titleInput.value = `${modeName} · ${aName} → ${bName}`
         }
         if (aSlot.classList.contains('is-locked') && aSlot._placeData) {

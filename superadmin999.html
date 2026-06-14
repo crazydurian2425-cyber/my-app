@@ -3643,7 +3643,7 @@ function renderPlanSummary(plan){
     if (/metro|métro|transit|tram|\brer\b|funicul|transport|commun/.test(t)) return 'transit'
     return ''
   }
-  const _modeWord = (m) => ({ walk:'Walk', taxi:'Taxi', transit:'Public transport', train:'Train', hsr:'Shinkansen', bus:'Bus', flight:'Flight', ferry:'Ferry' }[m] || 'Transport')
+  const _modeWord = (m) => ({ walk:'Walk', taxi:'GO Taxi', transit:'Public transport', train:'Train', hsr:'Shinkansen', bus:'Bus', flight:'Flight', ferry:'Ferry' }[m] || 'Transport')
   // Transport titles go stale (the arrival leg keeps "Taxi to hotel" even after
   // it's switched to Public transport; mid-day legs drift when stops reorder).
   // Rebuild EVERY leg from its real mode + actual neighbours; collapse dups.
