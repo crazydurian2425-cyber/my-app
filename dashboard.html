@@ -19243,11 +19243,11 @@ function refreshTransportSlot(slot) {
         ${(_ovrMin!=null||_ovrFare!=null) ? dt('✓ Exact set · edit','✓ 実値を設定済み · 編集') : dt('✎ Set exact duration / fare (from Google Maps)','✎ 正確な所要時間・運賃を入力（Googleマップから）')}
       </button>
       <div class="to-fields" hidden style="margin-top:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3,#7a6b4a);">
-        <input class="to-min form-input" inputmode="numeric" placeholder="${dt('min','分')}" value="${_ovrMin!=null?_ovrMin:''}" style="width:62px;padding:5px 8px;">
+        <input class="to-min tip-editor-input" inputmode="numeric" placeholder="${dt('min','分')}" value="${_ovrMin!=null?_ovrMin:''}" style="flex:0 0 auto;width:58px;">
         <span>${dt('min','分')}</span><span>·</span><span>¥</span>
-        <input class="to-fare form-input" inputmode="numeric" placeholder="${dt('fare','運賃')}" value="${_ovrFare!=null?_ovrFare:''}" style="width:74px;padding:5px 8px;">
-        <button type="button" class="btn btn-primary btn-sm" onclick="_applyTransportOverride('${slot.id}')" style="padding:5px 12px;font-size:11.5px;">${dt('Save','保存')}</button>
-        <button type="button" onclick="_clearTransportOverride('${slot.id}')" style="background:none;border:none;color:var(--text-3,#7a6b4a);cursor:pointer;font-size:11.5px;text-decoration:underline;">${dt('Clear','クリア')}</button>
+        <input class="to-fare tip-editor-input" inputmode="numeric" placeholder="${dt('fare','運賃')}" value="${_ovrFare!=null?_ovrFare:''}" style="flex:0 0 auto;width:72px;">
+        <button type="button" class="tip-editor-save" onclick="_applyTransportOverride('${slot.id}')">${dt('Save','保存')}</button>
+        <button type="button" class="tip-editor-cancel" onclick="_clearTransportOverride('${slot.id}')">${dt('Clear','クリア')}</button>
       </div>
     </div>` : ''}
     ${directionsLink}
