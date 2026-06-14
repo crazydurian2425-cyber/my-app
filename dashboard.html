@@ -16760,25 +16760,45 @@ async function fetchPlacesPredictions(slot, query) {
   }
 }
 
-// City-to-circle bias. Hand-picked centers for the cities Journey Junction
-// commonly serves (Japan); everything else falls back to unbiased.
+// City-to-circle bias. Hand-picked centers for the Japanese cities Journey
+// Junction serves, so the Places autocomplete returns the right "Kyoto Station"
+// / "Osaka Castle" instead of a same-named place elsewhere. Everything else
+// falls back to unbiased global search. Keyed by lowercased first word of the
+// traveler's destination (see buildDestBias).
 const CITY_BIAS = {
-  paris:      { lat: 48.8566, lng:  2.3522, r: 30000 },
-  lyon:       { lat: 45.7640, lng:  4.8357, r: 25000 },
-  marseille:  { lat: 43.2965, lng:  5.3698, r: 25000 },
-  nice:       { lat: 43.7102, lng:  7.2620, r: 20000 },
-  bordeaux:   { lat: 44.8378, lng: -0.5792, r: 25000 },
-  toulouse:   { lat: 43.6047, lng:  1.4442, r: 25000 },
-  strasbourg: { lat: 48.5734, lng:  7.7521, r: 20000 },
-  lille:      { lat: 50.6292, lng:  3.0573, r: 20000 },
-  nantes:     { lat: 47.2184, lng: -1.5536, r: 20000 },
-  avignon:    { lat: 43.9493, lng:  4.8055, r: 15000 },
-  rennes:     { lat: 48.1173, lng: -1.6778, r: 20000 },
-  reims:      { lat: 49.2583, lng:  4.0317, r: 15000 },
-  cannes:     { lat: 43.5528, lng:  7.0174, r: 12000 },
-  versailles: { lat: 48.8049, lng:  2.1204, r: 8000  },
-  'mont-saint-michel': { lat: 48.6361, lng: -1.5115, r: 6000  },
-  'saint-malo':        { lat: 48.6499, lng: -2.0260, r: 8000  },
+  tokyo:       { lat: 35.6762, lng: 139.6503, r: 35000 },
+  kyoto:       { lat: 35.0116, lng: 135.7681, r: 20000 },
+  osaka:       { lat: 34.6937, lng: 135.5023, r: 25000 },
+  yokohama:    { lat: 35.4437, lng: 139.6380, r: 25000 },
+  nagoya:      { lat: 35.1815, lng: 136.9066, r: 25000 },
+  kobe:        { lat: 34.6901, lng: 135.1955, r: 20000 },
+  nara:        { lat: 34.6851, lng: 135.8048, r: 12000 },
+  himeji:      { lat: 34.8154, lng: 134.6856, r: 12000 },
+  hiroshima:   { lat: 34.3853, lng: 132.4553, r: 20000 },
+  miyajima:    { lat: 34.2959, lng: 132.3197, r:  6000 },
+  hakone:      { lat: 35.2324, lng: 139.1069, r: 10000 },
+  kawaguchiko: { lat: 35.5171, lng: 138.7547, r: 10000 },
+  nikko:       { lat: 36.7199, lng: 139.6982, r: 12000 },
+  sapporo:     { lat: 43.0618, lng: 141.3545, r: 25000 },
+  otaru:       { lat: 43.1907, lng: 140.9947, r: 10000 },
+  niseko:      { lat: 42.8048, lng: 140.6874, r: 12000 },
+  furano:      { lat: 43.3424, lng: 142.3833, r: 12000 },
+  hakodate:    { lat: 41.7687, lng: 140.7288, r: 15000 },
+  fukuoka:     { lat: 33.5904, lng: 130.4017, r: 25000 },
+  beppu:       { lat: 33.2846, lng: 131.4914, r: 10000 },
+  yufuin:      { lat: 33.2647, lng: 131.3550, r:  8000 },
+  nagasaki:    { lat: 32.7503, lng: 129.8779, r: 15000 },
+  kumamoto:    { lat: 32.8032, lng: 130.7079, r: 15000 },
+  takayama:    { lat: 36.1408, lng: 137.2522, r: 10000 },
+  kanazawa:    { lat: 36.5613, lng: 136.6562, r: 15000 },
+  matsumoto:   { lat: 36.2381, lng: 137.9720, r: 12000 },
+  nagano:      { lat: 36.6485, lng: 138.1947, r: 15000 },
+  sendai:      { lat: 38.2682, lng: 140.8694, r: 20000 },
+  aomori:      { lat: 40.8244, lng: 140.7400, r: 15000 },
+  naha:        { lat: 26.2124, lng: 127.6809, r: 15000 },
+  okinawa:     { lat: 26.3344, lng: 127.8056, r: 30000 },
+  onna:        { lat: 26.4975, lng: 127.8531, r: 12000 },
+  'shirakawa-go': { lat: 36.2578, lng: 136.9066, r: 8000 },
 }
 function buildDestBias(dest) {
   if (!dest) return null
