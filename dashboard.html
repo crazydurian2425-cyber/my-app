@@ -13183,7 +13183,7 @@ async function renderTravelerBrief(plan, t, notes) {
       ))
     }
     const tipHtml = tipParts.length
-      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.10);border:1px solid rgba(224,139,58,0.30);border-radius:8px;font-size:13px;color:var(--text,#1A2E25);line-height:1.55;"><strong style="color:#BA6A1A;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V18h6v-1.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2Z"/></svg> ${dt('Helpful context','Contexte utile')} · </strong>${tipParts.join(' ')}</div>`
+      ? `<div style="margin-top:12px;padding:12px 14px;background:rgba(224,139,58,0.10);border:1px solid rgba(224,139,58,0.30);border-radius:8px;font-size:13px;color:var(--text,#1A2E25);line-height:1.55;"><strong style="color:#BA6A1A;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V18h6v-1.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2Z"/></svg> ${dt('Helpful context','参考情報')} · </strong>${tipParts.join(' ')}</div>`
       : ''
 
     sectionContext = wrap(`
@@ -16595,26 +16595,21 @@ function renderNotesReadonly(raw) {
 }
 // Duration label for a stored minutes value.
 // Format any minute value as a friendly stay-duration label.
-//   45  → "45 min"
-//   60  → "1 hour" / "1 heure"
-//   75  → "1 h 15"
-//   120 → "2 hours" / "2 heures"
-//   180 → "3 hours" / "3 heures"
-//   480 → "8 hours" / "8 heures"
-// French uses "h" abbreviation for mixed values ("1 h 15") which works
-// natively in fr; English keeps it consistent with the same short form
-// so the dropdown column doesn't shift width between locales.
+//   EN:  45 → "45 min", 60 → "1 hour", 75 → "1 h 15", 120 → "2 hours"
+//   JA:  45 → "45分",   60 → "1時間",  75 → "1時間15分", 120 → "2時間"
 function formatDurationLabel(mins){
   const m = parseInt(mins, 10)
   if (!Number.isFinite(m) || m <= 0) return ''
-  const isFrench = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja')
-  if (m < 60) return `${m} min`
+  const isJa = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja')
   const h = Math.floor(m / 60)
   const mm = m % 60
-  if (mm === 0) {
-    if (isFrench) return h === 1 ? '1 heure' : `${h} heures`
-    return h === 1 ? '1 hour' : `${h} hours`
+  if (isJa) {
+    if (m < 60)     return `${m}分`
+    if (mm === 0)   return `${h}時間`
+    return `${h}時間${mm}分`
   }
+  if (m < 60) return `${m} min`
+  if (mm === 0) return h === 1 ? '1 hour' : `${h} hours`
   return `${h} h ${mm}`
 }
 
