@@ -10177,7 +10177,7 @@ function refreshDay1RequiredBadges(){
     const badge = document.createElement('span')
     badge.className = 'day1-required-badge'
     badge.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;background:rgba(180,120,40,0.15);color:#8a5a18;border:1px solid rgba(180,120,40,0.40);border-radius:4px;font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;vertical-align:middle;'
-    badge.textContent = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? 'Requis · 3+' : 'Required · 3+'
+    badge.textContent = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? '必須 · 3+' : 'Required · 3+'
     d1Title.appendChild(badge)
   }
 }
@@ -10883,7 +10883,7 @@ async function submitPayoutRequest() {
     note: note || null,
     bank_snapshot: submitMethod.snapshot
   })
-  if (error) { showToast('Failed: ' + error.message); btn.disabled = false; btn.textContent = t('pr.submit','Submit request'); return }
+  if (error) { showToast(dt('Failed: ','失敗: ') + error.message); btn.disabled = false; btn.textContent = t('pr.submit','Submit request'); return }
 
   closeModal('modal-payout-request')
   showToast(t('toast.requestSubmitted','Request submitted — {amt} pending review').replace('{amt}', fmtMoney(amount)))
@@ -10891,9 +10891,9 @@ async function submitPayoutRequest() {
 }
 
 async function cancelPayoutRequest(id) {
-  if (!confirm('Cancel this payout request? Your balance will be unlocked.')) return
+  if (!confirm(dt('Cancel this payout request? Your balance will be unlocked.','この支払いリクエストをキャンセルしますか？残高がロック解除されます。'))) return
   const { error } = await sb.from('wallet_requests').update({ status: 'cancelled' }).eq('id', id).eq('status', 'pending')
-  if (error) { showToast('Failed: ' + error.message); return }
+  if (error) { showToast(dt('Failed: ','失敗: ') + error.message); return }
   showToast(t('toast.requestCancelled','Request cancelled'))
   loadWallet()
 }
@@ -14440,8 +14440,10 @@ function fillItineraryItems(items) {
         shopping:       'shopping',
         entertainment:  'entertainment',
       }
-      const labelTxt = labelMap[rawType] || 'Activity'
       const iconKey  = keyMap[rawType]   || 'activity'
+      // Use the i18n dictionary (slot.type.*) so the loaded label renders in
+      // Japanese; labelMap is only the English fallback when a key is missing.
+      const labelTxt = t('slot.type.' + iconKey, labelMap[rawType] || 'Activity')
       const hidden = slot.querySelector('.slot-type-select')
       if (hidden) hidden.value = iconKey
       // A saved non-default type is a deliberate planner choice — lock it so
@@ -14502,7 +14504,7 @@ function fillItineraryItems(items) {
           && (parseInt(day, 10) || 1) === 1
           && (
             it.is_locked === true
-            || /^taxi to hotel\b/i.test((it.title || '').trim())
+            || /^(taxi to hotel\b|ホテルへのタクシー)/i.test((it.title || '').trim())
           )) {
         slot.dataset.autoSeededArrivalTaxi = 'true'
         slot.dataset.isLocked = 'true'
@@ -15001,7 +15003,7 @@ function _insertArrivalTaxi(beforeEl) {
     t.dataset.autoSeededArrivalTaxi = 'true'
     t.dataset.isLocked = 'true'    // hide × — every itinerary needs this ride
     const titleInput = t.querySelector('.slot-title-input')
-    if (titleInput) titleInput.value = 'Taxi to hotel'
+    if (titleInput) titleInput.value = dt('Taxi to hotel','ホテルへのタクシー')
     // FORCE the time to arrival_time. addSlot's bumpAnd logic would push
     // the new slot past the existing hotel slot.
     _applySlotTime(t, arr)
@@ -15045,7 +15047,7 @@ function _ensureArrivalTaxiPresent() {
     // Also check by mode/title (covers slots saved-then-loaded).
     const existingTaxi = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-transport')]
       .find(t => t.dataset.transportMode === 'taxi'
-              && (t.querySelector('.slot-title-input')?.value || '').toLowerCase().startsWith('taxi to hotel'))
+              && /^(taxi to hotel|ホテルへのタクシー)/i.test(t.querySelector('.slot-title-input')?.value || ''))
     if (existingTaxi) {
       console.log('[arrival-taxi-safety] existing "Taxi to hotel" transport found, no-op', existingTaxi.id)
       return
@@ -18622,7 +18624,7 @@ function applyRouteDataToSlot(slot, data) {
     rows.push({
       kind: 'endpoint',
       time: cursor,
-      name: fromName || 'Origin',
+      name: fromName || dt('Origin','出発地'),
       position: 'first',
     })
     collapsed.forEach((s, i) => {
@@ -18647,7 +18649,7 @@ function applyRouteDataToSlot(slot, data) {
       }
     })
     // Final endpoint — the destination venue.
-    rows.push({ kind: 'endpoint', time: cursor, name: toName || 'Destination', position: 'last' })
+    rows.push({ kind: 'endpoint', time: cursor, name: toName || dt('Destination','目的地'), position: 'last' })
 
     stepsHost.innerHTML = rows.map((r, idx) => {
       if (r.kind === 'endpoint') {
@@ -19565,7 +19567,7 @@ function _renderRouteMapInto(host, slot) {
     const note = document.createElement('div')
     note.className = 'transport-map-note'
     note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:var(--text-3);line-height:1.4;border-left:2px solid var(--border);'
-    note.textContent = `${data.distanceKm.toFixed(1)} km · ${data.durationMin} min · route shown matches the grid above (Google Routes API).`
+    note.textContent = `${data.distanceKm.toFixed(1)} km · ${data.durationMin} min · ${dt('route shown matches the grid above (Google Routes API).','表示中のルートは上のグリッドと一致しています（Google Routes API）。')}`
     host.appendChild(note)
   }).catch(err => {
     console.warn('[map] render failed —', err.message, '— falling back to embed iframe')
@@ -19585,10 +19587,10 @@ function _renderRouteMapInto(host, slot) {
       const note = document.createElement('div')
       note.className = 'transport-map-note'
       note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:#8a5f1c;line-height:1.4;background:rgba(193,125,42,0.08);border-left:2px solid rgba(193,125,42,0.45);'
-      note.textContent = '⚠ Showing fallback Google Maps preview. Enable "Maps JavaScript API" in your Google Cloud Console to use the synced custom map (grid + map will then show the SAME route).'
+      note.textContent = dt('⚠ Showing fallback Google Maps preview. Enable "Maps JavaScript API" in your Google Cloud Console to use the synced custom map (grid + map will then show the SAME route).','⚠ 代替の Google マップ プレビューを表示しています。同期されたカスタムマップを使うには、Google Cloud Console で「Maps JavaScript API」を有効にしてください（グリッドとマップが同じルートを表示します）。')
       host.appendChild(note)
     } else {
-      host.innerHTML = '<div style="padding:14px;color:var(--text-3);font-size:12px;">Map unavailable — link both ends as Google Places to render a route.</div>'
+      host.innerHTML = `<div style="padding:14px;color:var(--text-3);font-size:12px;">${dt('Map unavailable — link both ends as Google Places to render a route.','マップを表示できません — 両端を Google Places としてリンクするとルートが表示されます。')}</div>`
     }
   })
   return true
