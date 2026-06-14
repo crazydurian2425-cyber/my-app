@@ -20133,7 +20133,7 @@ function _buildLockedAnchor({ type, title, subtitle, method, badge, footer }) {
   // Right-side: profile-match badge (only on end-of-day) OR the "auto" pill.
   const rightHtml = badge
     ? `<span class="anchor-badge anchor-badge-${badge.state}">${escapeHtml(badge.label)}</span>`
-    : `<span class="anchor-lock"><span class="anchor-lock-icon"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>${dt('auto','自動')}</span>`
+    : `<span class="anchor-lock">🔒 ${dt('auto','自動')}</span>`
   el.innerHTML = `
     <div class="anchor-row">
       <span class="anchor-icon">${_anchorIconFor(type, method)}</span>
