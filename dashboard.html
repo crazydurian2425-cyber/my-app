@@ -18429,9 +18429,26 @@ function _transitFareEstimate(km) {
   const f = 180 + (Number(km) || 0) * 30
   return Math.min(520, Math.max(160, Math.round(f / 10) * 10))
 }
+// GO taxi fare model — mirrors Japan's regulated meter the way GO quotes it
+// (its upfront "fixed fare", 事前確定運賃): ¥500 flag-fall covering the first
+// 1.0 km, then ¥100 per 255 m (≈¥392/km), plus GO's all-in overhead (¥100 app
+// fee + ~¥300 pickup/dispatch ≈ ¥400). Distance-only — the in-traffic time
+// charge that GO's fixed fare also omits is left out (Google doesn't expose the
+// slow-speed seconds). `km` is the REAL Google road distance (or haversine×1.25
+// before it resolves). Returns the WHOLE-CAR fare; _perPaxTransportCost then
+// splits it across the group. No ¥1,500 floor — the ¥500 flag-fall is the
+// natural minimum.
+const GO_TAXI_BASE   = 500   // flag-fall, covers first 1.0 km
+const GO_TAXI_PER_KM = 392   // ¥100 / 255 m
+const GO_TAXI_FEE    = 400   // ¥100 GO app fee + ~¥300 dispatch (迎車料金)
+function _goTaxiFare(km) {
+  const k = Math.max(0, Number(km) || 0)
+  const meter = GO_TAXI_BASE + GO_TAXI_PER_KM * Math.max(0, k - 1.0)
+  return Math.round(meter + GO_TAXI_FEE)
+}
 function _costFromRealKm(mode, km) {
   if (mode === 'walk') return 0
-  if (mode === 'taxi') return Math.max(1500, Math.round(550 + km * 350))
+  if (mode === 'taxi') return _goTaxiFare(km)
   if (mode === 'car')  return Math.round(1500 + km * 55)
   if (mode === 'transit') return _transitFareEstimate(km)   // when Google gives no fare
   if (mode === 'train') return Math.round(2750 + km * 73)
@@ -18691,12 +18708,11 @@ function _transportEstimates(mode, km) {
     return { mins: Math.max(6, round(kmWalk * 11)), costEur: 0 }
   }
   if (mode === 'taxi') {
-    // Taxi heuristic shown before Routes API resolves. Same model as
-    // _costFromRealKm: ¥550 base + ¥350 per ROAD km (kmCar = haversine ×1.25),
-    // ¥1,500 minimum. Matches Japanese taxi fares (~¥430–500 initial fare,
-    // then ≈¥350–400/km in city traffic). (Re-scaled ×183 from the prior euro model.)
+    // Taxi heuristic shown before the Routes API resolves. Same GO fare model
+    // as _costFromRealKm, on the road-adjusted distance (kmCar = haversine
+    // ×1.25): ¥500 flag-fall (first 1 km) + ¥392/km + ¥400 GO overhead.
     const mins = Math.max(4, round(kmCar * 3))
-    const cost = Math.max(1500, round(550 + kmCar * 350))
+    const cost = _goTaxiFare(kmCar)
     return { mins, costEur: cost }
   }
   if (mode === 'transit') {
