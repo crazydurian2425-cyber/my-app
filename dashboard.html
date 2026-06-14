@@ -18164,6 +18164,30 @@ function _localDepartISO(dateStr, dayOffset, hhmm, tz) {
 // frequency, night-bus, line shutdowns) and driving uses traffic patterns
 // for that hour, so feeding the real depart time gives a route + duration
 // that actually matches what the traveler will experience.
+
+// DRIVE-route anchor: Google's TRANSIT mode returns nothing for Japan, but
+// DRIVE works — so for a transit leg we fetch the driving route to get the REAL
+// road distance + drive time, then estimate transit from those (far better than
+// a straight-line guess). Returns { distanceKm, driveMin, polyline } or null.
+async function _fetchDriveAnchor(fromId, toId) {
+  try {
+    const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+        'X-Goog-FieldMask': 'routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline',
+      },
+      body: JSON.stringify({ origin: { placeId: fromId }, destination: { placeId: toId }, travelMode: 'DRIVE', units: 'METRIC' }),
+    })
+    if (!resp.ok) return null
+    const d = await resp.json()
+    const r = (d.routes || [])[0]
+    if (!r) return null
+    const driveSec = parseInt(String(r.duration || '0s').replace('s', ''), 10) || 0
+    return { distanceKm: (r.distanceMeters || 0) / 1000, driveMin: Math.round(driveSec / 60), polyline: r.polyline?.encodedPolyline || null }
+  } catch (e) { return null }
+}
 async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
   const fromId = fromSlot?._placeData?.google_place_id
   const toId   = toSlot?._placeData?.google_place_id
@@ -18259,7 +18283,26 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
     // fastest-duration one. Pick by min duration so the grid value lines
     // up with what the planner sees on the map.
     const allRoutes = Array.isArray(data.routes) ? data.routes : []
-    if (!allRoutes.length) return null
+    if (!allRoutes.length) {
+      // Japan transit: Google returns NO transit routes. Fall back to the DRIVE
+      // route (which works) for the REAL road distance + drive time, then
+      // estimate transit from them — grounded in real geography, not a straight
+      // line. Flagged estimated so the card keeps the "~" and the planner can
+      // still override with the exact Google-Maps figure.
+      if (travelMode === 'TRANSIT') {
+        const dr = await _fetchDriveAnchor(fromId, toId)
+        if (dr && Number.isFinite(dr.distanceKm) && dr.distanceKm > 0) {
+          const km = dr.distanceKm
+          // Transit ≈ real drive time + a small wait/transfer/walk buffer; floor 8 min.
+          const mins = Math.max(8, Math.round((dr.driveMin || (km * 2.5)) * 1.05) + 4)
+          const est = { durationMin: mins, distanceKm: km, costEur: _transitFareEstimate(km), polyline: dr.polyline || null, steps: [], estimated: true }
+          try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: est })) } catch (e) {}
+          _bumpRoutesDaily()
+          return est
+        }
+      }
+      return null
+    }
     const _durSec = (r) => parseInt(String(r?.duration || '0s').replace('s',''), 10) || Infinity
     const _hasTransit = (r) => (r?.legs || []).some(l => (l?.steps || []).some(s => s.travelMode === 'TRANSIT'))
     // For a TRANSIT leg, prefer the fastest route that ACTUALLY rides transit —
