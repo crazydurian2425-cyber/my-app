@@ -16377,6 +16377,7 @@ function _parseTipsValue(raw) {
           .slice(0, TIP_MAX)
         out.legacy = o.legacy ? String(o.legacy) : ''
         if (o.cost != null && Number.isFinite(Number(o.cost))) out.cost = Math.round(Number(o.cost))
+        if (o.durMins != null && Number.isFinite(Number(o.durMins))) out.durMins = Math.round(Number(o.durMins))
         return out
       }
     } catch (e) { /* fall through to legacy */ }
@@ -16388,10 +16389,12 @@ function _serializeTips(state) {
   const hasTips = state.tips && state.tips.length
   const hasLegacy = state.legacy && state.legacy.trim()
   const hasCost = state.cost != null && state.cost !== '' && Number.isFinite(Number(state.cost))
-  if (!hasTips && !hasLegacy && !hasCost) return ''
+  const hasDur  = state.durMins != null && state.durMins !== '' && Number.isFinite(Number(state.durMins)) && Number(state.durMins) > 0
+  if (!hasTips && !hasLegacy && !hasCost && !hasDur) return ''
   const o = { tips: state.tips || [] }
   if (hasLegacy) o.legacy = state.legacy
-  if (hasCost) o.cost = Math.round(Number(state.cost))   // est. cost / pax (¥)
+  if (hasCost) o.cost = Math.round(Number(state.cost))   // est. / confirmed cost per pax (¥)
+  if (hasDur)  o.durMins = Math.round(Number(state.durMins))   // planner-confirmed transit minutes (from Google Maps)
   return JSON.stringify(o)
 }
 // Live handler for the per-pax cost box — persist (autosave) + refresh the
@@ -16400,6 +16403,45 @@ function _onSlotCostInput(el) {
   if (typeof autoSaveDraft === 'function') autoSaveDraft()
   const dc = el.closest('[id^="slots-day-"]')
   if (dc && typeof refreshDaySummary === 'function') refreshDaySummary(dc)
+}
+
+// ── Transport "exact from Google Maps" override ──────────────────────────────
+// Google's Routes API returns NO transit data for Japan, so the card shows an
+// estimate. This lets the planner type the EXACT minutes + fare they see in
+// Google Maps (one tap away via "Open in Google Maps"). Stored in the slot's
+// tips JSON (durMins + cost) so it persists; it wins over the estimate, shows as
+// confirmed (no "~"), and feeds the arrival-time chain. Reuses the proven
+// notes-JSON persistence, so no new DB column.
+function _toggleTransportOverride(id) {
+  const s = document.getElementById(id); const f = s?.querySelector('.to-fields')
+  if (f) { f.hidden = !f.hidden; if (!f.hidden) s.querySelector('.to-min')?.focus() }
+}
+function _applyTransportOverride(id) {
+  const s = document.getElementById(id); if (!s) return
+  const ta = s.querySelector('.slot-notes-input'); if (!ta) return
+  const min  = parseInt(String(s.querySelector('.to-min')?.value  || '').replace(/[^0-9]/g, ''), 10)
+  const fare = parseInt(String(s.querySelector('.to-fare')?.value || '').replace(/[^0-9]/g, ''), 10)
+  const st = _parseTipsValue(ta.value)
+  if (Number.isFinite(min)  && min  > 0)  st.durMins = min;  else delete st.durMins
+  if (Number.isFinite(fare) && fare >= 0) st.cost    = fare; else delete st.cost
+  ta.value = _serializeTips(st)
+  _afterTransportOverride(s)
+}
+function _clearTransportOverride(id) {
+  const s = document.getElementById(id); if (!s) return
+  const ta = s.querySelector('.slot-notes-input'); if (!ta) return
+  const st = _parseTipsValue(ta.value); delete st.durMins; delete st.cost
+  ta.value = _serializeTips(st)
+  delete s.dataset.manualMins; delete s.dataset.manualFare; delete s.dataset.routeMins
+  _afterTransportOverride(s)
+}
+function _afterTransportOverride(s) {
+  if (typeof refreshTransportSlot === 'function') refreshTransportSlot(s)   // re-render grid with the confirmed values
+  const dc = s.closest('[id^="slots-day-"]')
+  if (dc && typeof _enforceTimeChain === 'function') _enforceTimeChain(dc)  // propagate the new duration down the day
+  if (dc && typeof renderDayBookends === 'function') { const m = dc.id.match(/slots-day-(\d+)/); renderDayBookends(dc, m ? parseInt(m[1], 10) : 1, (typeof dayCount === 'number') ? dayCount : null) }
+  if (dc && typeof refreshDaySummary === 'function') refreshDaySummary(dc)
+  if (typeof autoSaveDraft === 'function') autoSaveDraft()
 }
 
 // Render the chip UI into a slot's .slot-tips host from the textarea JSON.
@@ -18421,14 +18463,28 @@ function applyRouteDataToSlot(slot, data) {
       _renderRouteMapInto(mapHost, slot)
     }
   }
+  // Self-guard against a load-order race: re-derive the planner's exact override
+  // straight from the notes JSON here, at fetch-resolve time. The first
+  // refreshTransportSlot (from addSlot during a draft load) can run BEFORE the
+  // notes textarea is populated, so the manualMins/manualFare flags wouldn't be
+  // set yet when an early fetch resolves. By the time THIS runs (async), the
+  // notes are populated, so reading them here guarantees a saved override is
+  // never overwritten by the estimate.
+  try {
+    const _ov = _parseTipsValue(slot.querySelector('.slot-notes-input')?.value || '')
+    const _om = (Number.isFinite(Number(_ov.durMins)) && Number(_ov.durMins) > 0) ? Math.round(Number(_ov.durMins)) : null
+    const _of = (Number.isFinite(Number(_ov.cost))    && Number(_ov.cost)    >= 0) ? Math.round(Number(_ov.cost))    : null
+    if (_om != null) { slot.dataset.routeMins = String(_om); slot.dataset.manualMins = '1' }
+    if (_of != null) { slot.dataset.manualFare = '1' }
+  } catch (e) { /* notes not JSON — no override to protect */ }
   const cells = host.querySelectorAll('.transport-grid .tg-value')
   if (cells[0]) { cells[0].textContent = Number.isFinite(data.distanceKm) ? `${data.distanceKm.toFixed(1)} km` : '—'; cells[0].classList.remove('tg-blank') }
-  if (cells[1]) { cells[1].textContent = Number.isFinite(data.durationMin) ? `${data.durationMin} min` : '—'; cells[1].classList.remove('tg-blank') }
+  if (cells[1] && slot.dataset.manualMins !== '1') { cells[1].textContent = Number.isFinite(data.durationMin) ? `${data.durationMin} min` : '—'; cells[1].classList.remove('tg-blank') }
   // Persist the REAL Google travel time so the read-only summary + admin review
   // can show "Uber · 25 min" instead of a straight-line estimate — and so the
   // ARRIVAL hop (origin = airport, which isn't a saved stop, so it can't be
   // estimated) gets a duration at all. Saved by _persistDraft for transport.
-  if (Number.isFinite(data.durationMin)) {
+  if (Number.isFinite(data.durationMin) && slot.dataset.manualMins !== '1') {
     slot.dataset.routeMins = String(data.durationMin)
     if (typeof autoSaveDraft === 'function') autoSaveDraft()
   }
@@ -18436,7 +18492,7 @@ function applyRouteDataToSlot(slot, data) {
   // recompute from the REAL road km the API returned — previously we were
   // showing the Haversine-based heuristic cost which lagged behind the
   // (correctly updated) road distance.
-  if (cells[2]) {
+  if (cells[2] && slot.dataset.manualFare !== '1') {
     const _mode = slot.dataset.transportMode || 'taxi'
     if (data.costEur != null) {
       cells[2].textContent = _fmtCostPax(_perPaxTransportCost(_mode, data.costEur, window._currentGroupSize))
@@ -18452,7 +18508,10 @@ function applyRouteDataToSlot(slot, data) {
   // Refresh the depart→arrive time range with the real duration.
   const departHHMM = slot.querySelector('.slot-time-input')?.value
   if (departHHMM) {
-    const arrive = _addMinutes(departHHMM, data.durationMin)
+    // Use the planner's confirmed minutes when set, so the chain re-snaps to the
+    // real arrival rather than the (absent-for-Japan) Google transit estimate.
+    const effMin = (slot.dataset.manualMins === '1') ? (parseInt(slot.dataset.routeMins, 10) || data.durationMin) : data.durationMin
+    const arrive = _addMinutes(departHHMM, effMin)
     const range = host.querySelector('.transport-time-range')
     if (range) range.textContent = `${formatTimeDisplay(departHHMM)} → ${formatTimeDisplay(arrive)}`
     // ── Re-snap next venue against the REAL arrival time ──
@@ -18944,9 +19003,21 @@ function refreshTransportSlot(slot) {
   const toHtml   = toName   ? `<span>${escapeHtml(toName)}</span>`   : `<span class="tft-blank">${dt('next stop','次の立ち寄り先')}</span>`
   // For absurd distances, blank the grid + show a red warning row instead
   // of "39097 min · ¥39100" which would look like real numbers.
+  // Planner override — exact duration/fare typed from Google Maps (which DOES
+  // have Japan transit). Stored in the slot's tips JSON (durMins + cost). When
+  // set it WINS over the estimate, shows as confirmed (no "~"), and feeds the
+  // arrival-time chain via routeMins.
+  const _ovr = _parseTipsValue(slot.querySelector('.slot-notes-input')?.value || '')
+  const _ovrMin  = (Number.isFinite(Number(_ovr.durMins)) && Number(_ovr.durMins) > 0) ? Math.round(Number(_ovr.durMins)) : null
+  const _ovrFare = (Number.isFinite(Number(_ovr.cost))    && Number(_ovr.cost)    >= 0) ? Math.round(Number(_ovr.cost))    : null
+  // Only drop routeMins when it was OUR manual value — never clobber a legit
+  // Google-fetched routeMins (which carries no manualMins flag).
+  if (_ovrMin != null) { slot.dataset.routeMins = String(_ovrMin); slot.dataset.manualMins = '1' } else { if (slot.dataset.manualMins === '1') delete slot.dataset.routeMins; delete slot.dataset.manualMins }
+  if (_ovrFare != null) { slot.dataset.manualFare = '1' } else { delete slot.dataset.manualFare }
   const kmTxt   = (km != null) ? `${km.toFixed(1)} km` : '—'
-  const minsTxt = (tooFar) ? '—' : ((est.mins != null) ? `${est.mins} min` : '—')
+  const minsTxt = (tooFar) ? '—' : (_ovrMin != null ? `${_ovrMin} min` : ((est.mins != null) ? `${est.mins} min` : '—'))
   const costTxt = (tooFar) ? '—'
+                : (_ovrFare != null) ? `¥${_ovrFare.toLocaleString('en-GB')}`
                 : (est.costEur == null) ? '—'
                 : _fmtCostPax(_perPaxTransportCost(mode, est.costEur, window._currentGroupSize))
   // Depart time recomputes from the PREVIOUS slot's start + its stay
@@ -18990,7 +19061,7 @@ function refreshTransportSlot(slot) {
       _applySlotTime(slot, corrected)
     }
   }
-  const arriveHHMM = _addMinutes(departHHMM, est.mins || 0)
+  const arriveHHMM = _addMinutes(departHHMM, (_ovrMin != null ? _ovrMin : est.mins) || 0)
   // ── Auto-sync next venue's start time to the transport's arrival ──
   // Always snap next to _snapUp30(arrive) — the planner's stated mental
   // model is "transport arrives 5:14 PM → next stop starts 5:15 PM" with
@@ -19007,7 +19078,7 @@ function refreshTransportSlot(slot) {
   // endpoint isn't linked yet). Without a real km / Routes API value, the
   // heuristic returns null and pushing `next` to depart-time-snapped would
   // clobber the planner's saved time with a meaningless value.
-  if (next && est.mins != null) {
+  if (next && (_ovrMin != null || est.mins != null)) {
     const nextHidden = next.querySelector('.slot-time-input')
     const nextCurrent = nextHidden?.value || '23:59'
     const minStart = _snapUp30(arriveHHMM)
@@ -19134,8 +19205,20 @@ function refreshTransportSlot(slot) {
     </div>
     <div class="transport-grid">
       <div><div class="tg-label">${dt('Distance','距離')}</div><div class="tg-value${km==null?' tg-blank':''}">${escapeHtml(kmTxt)}</div></div>
-      <div><div class="tg-label">${dt('Duration','所要時間')}</div><div class="tg-value${(tooFar||est.mins==null)?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
-      <div><div class="tg-label">${dt('Cost / pax','費用 / 人')}</div><div class="tg-value${(tooFar||est.costEur==null)?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
+      <div><div class="tg-label">${dt('Duration','所要時間')}</div><div class="tg-value${(tooFar||(_ovrMin==null&&est.mins==null))?' tg-blank':''}">${escapeHtml(minsTxt)}</div></div>
+      <div><div class="tg-label">${dt('Cost / pax','費用 / 人')}</div><div class="tg-value${(tooFar||(_ovrFare==null&&est.costEur==null))?' tg-blank':''}">${escapeHtml(costTxt)}</div></div>
+    </div>
+    <div class="transport-override" style="margin-top:8px;">
+      <button type="button" class="to-toggle" onclick="_toggleTransportOverride('${slot.id}')" style="background:none;border:none;color:var(--green,#1a7a5e);cursor:pointer;font-family:inherit;font-size:11.5px;padding:0;display:inline-flex;align-items:center;gap:5px;">
+        ${(_ovrMin!=null||_ovrFare!=null) ? dt('✓ Exact set · edit','✓ 実値を設定済み · 編集') : dt('✎ Set exact duration / fare (from Google Maps)','✎ 正確な所要時間・運賃を入力（Googleマップから）')}
+      </button>
+      <div class="to-fields" hidden style="margin-top:7px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3,#7a6b4a);">
+        <input class="to-min form-input" inputmode="numeric" placeholder="${dt('min','分')}" value="${_ovrMin!=null?_ovrMin:''}" style="width:62px;padding:5px 8px;">
+        <span>${dt('min','分')}</span><span>·</span><span>¥</span>
+        <input class="to-fare form-input" inputmode="numeric" placeholder="${dt('fare','運賃')}" value="${_ovrFare!=null?_ovrFare:''}" style="width:74px;padding:5px 8px;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="_applyTransportOverride('${slot.id}')" style="padding:5px 12px;font-size:11.5px;">${dt('Save','保存')}</button>
+        <button type="button" onclick="_clearTransportOverride('${slot.id}')" style="background:none;border:none;color:var(--text-3,#7a6b4a);cursor:pointer;font-size:11.5px;text-decoration:underline;">${dt('Clear','クリア')}</button>
+      </div>
     </div>
     ${directionsLink}
     ${tooFarBanner}`
@@ -19232,6 +19315,13 @@ function _enforceTimeChain(dayContainer) {
     const txt = cells[1]?.textContent || ''
     const m = txt.match(/(\d+)\s*min/i)
     if (m) return dep + parseInt(m[1], 10)
+    // Planner override: the grid cell is blanked for absurd-distance (tooFar)
+    // legs, but a manual duration still lives on the dataset — honor it so the
+    // arrival chain propagates instead of stalling.
+    if (slot.dataset.manualMins === '1') {
+      const rm = parseInt(slot.dataset.routeMins, 10)
+      if (Number.isFinite(rm)) return dep + rm
+    }
     // Fallback heuristic — needs BOTH endpoints linked. If we can't compute
     // a real travel estimate, return null so the chain enforcement skips
     // this pair (rather than clobbering `next` with depart-time).
@@ -21051,12 +21141,15 @@ function computeDaySummary(dayContainer) {
     const costTxt = cells[2]?.textContent || ''
     const distMatch = distTxt.match(/(\d+(?:\.\d+)?)\s*km/i)
     // The displayed cost is ALREADY per-pax (split for Uber/taxi/car), and the
-    // ¥ sits before the number — grab the first number.
-    const costMatch = costTxt.match(/(\d+(?:\.\d+)?)/)
+    // ¥ sits before the number — grab the first number. Allow thousands commas
+    // ("¥1,500" from toLocaleString in both the estimate and the override) and
+    // strip them before parsing, else parseFloat stops at the comma → ~1000x
+    // undercount.
+    const costMatch = costTxt.match(/([0-9,]+(?:\.\d+)?)/)
     if (distMatch && (costMatch || /free/i.test(costTxt))) {
       const liveKm = parseFloat(distMatch[1])
       if (mode === 'walk') walkingKm += liveKm
-      transportSpend += costMatch ? parseFloat(costMatch[1]) : 0
+      transportSpend += costMatch ? parseFloat(costMatch[1].replace(/,/g, '')) : 0
       return
     }
     // 2. Fallback to neighbors-based heuristic. Use the transport slot's
