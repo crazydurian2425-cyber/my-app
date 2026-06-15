@@ -20396,12 +20396,16 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
                      : _depMethod === 'train' || _depMethod === 'bus' ? 'station'
                      : _depMethod === 'car'                    ? 'pickup'
                      :                                            'airport'
+      const _depDestJa = _depMethod === 'flight'                 ? '空港'
+                       : _depMethod === 'train' || _depMethod === 'bus' ? '駅'
+                       : _depMethod === 'car'                    ? '送迎場所'
+                       :                                            '空港'
       const _row = document.createElement('div')
       _row.className = 'end-day-row'
       _row.innerHTML = `
         <button type="button" class="end-day-btn" onclick="endTripToAirport('${dayContainer.id}')">
           <span class="edb-icon">${_depIcon}</span>
-          <span class="edb-text">End trip · transport to ${_depDest}</span>
+          <span class="edb-text">${dt(`End trip · transport to ${_depDest}`, `旅行を終える · ${_depDestJa}へ移動`)}</span>
         </button>
       `
       dayContainer.insertBefore(_row, bottomAnchor)
