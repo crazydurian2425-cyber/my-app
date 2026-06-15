@@ -12449,15 +12449,15 @@ async function saveProfile() {
         if (isMissingColumnErr(r2.error)) {
           // Even core has a missing column — pare down to name/city only
           const r3 = await sb.from('planners').update({ name: core.name, city: core.city }).eq('id', planner.id)
-          if (r3.error) { showToast('Save failed: ' + r3.error.message); return }
+          if (r3.error) { showToast(dt('Save failed: ','保存に失敗しました: ') +r3.error.message); return }
           showToast('Partially saved — ask admin to run the profile SQL migration')
           return
         }
-        showToast('Save failed: ' + r2.error.message); return
+        showToast(dt('Save failed: ','保存に失敗しました: ') +r2.error.message); return
       }
       showToast(t('toast.profileSaved') + ' · specialties pending DB migration')
     } else {
-      showToast('Save failed: ' + error.message); return
+      showToast(dt('Save failed: ','保存に失敗しました: ') +error.message); return
     }
   } else {
     showToast(t('toast.profileSaved'))
@@ -13287,7 +13287,7 @@ async function openItineraryForm(planId) {
     const demoPlan = plans.find(p => p.status === 'current')
     plan = realPlan || demoPlan
   }
-  if (!plan) { showToast('No active plan found'); return }
+  if (!plan) { showToast(dt('No active plan found','有効なプランが見つかりません')); return }
   // ── Fresh-fetch from DB ──
   // The in-memory `plans` array can be stale if admin reassigned the set
   // (plans deleted + recreated with new IDs, hotel_* nulled, etc.) while
@@ -13305,7 +13305,7 @@ async function openItineraryForm(planId) {
       // in-memory `plans` array has stale IDs. Force a dashboard
       // refresh so the tile list re-renders with the new plan IDs.
       console.log('[plan-open] plan id no longer exists in DB — refreshing dashboard')
-      showToast('Plan was reassigned — refreshing your dashboard')
+      showToast(dt('Plan was reassigned — refreshing your dashboard','プランが再割り当てされました — ダッシュボードを更新します'))
       closeModal('modal-submit')
       if (typeof initDashboard === 'function') setTimeout(() => initDashboard(), 200)
       return
@@ -22371,7 +22371,7 @@ async function submitPlan() {
       if (_prevStatus) {
         await sb.from('plans').update({ status: _prevStatus }).eq('id', currentPlanId)
       }
-      showToast('Activities save failed: ' + (itemErr.message || 'unknown'))
+      showToast(dt('Activities save failed: ','アクティビティの保存に失敗しました: ') + (itemErr.message || 'unknown'))
       if (submitBtn) submitBtn.disabled = false
       if (submitLabel) submitLabel.textContent = t('dash.btn.submitPlan','Submit plan')
       return
@@ -22398,7 +22398,7 @@ async function submitPlan() {
       if (entries.length) uploadedBySortOrder[sortOrder] = entries
     }
     if (uploadFail > 0) {
-      showToast(`${uploadFail} image upload(s) failed: ${lastUploadErr?.message || 'unknown'}`)
+      showToast(`${uploadFail} ${dt('image upload(s) failed','件の画像アップロードに失敗')}: ${lastUploadErr?.message || 'unknown'}`)
     }
 
     const imageRows = []
@@ -22419,7 +22419,7 @@ async function submitPlan() {
       const { error: imgErr } = await sb.from('item_images').insert(imageRows)
       if (imgErr) {
         console.error('item_images insert failed', imgErr, imageRows)
-        showToast('Image save failed: ' + (imgErr.message || 'unknown'))
+        showToast(dt('Image save failed: ','画像の保存に失敗しました: ') + (imgErr.message || 'unknown'))
       }
     } else if (uploadOk > 0) {
       // Uploaded files but ended up with zero rows — means the sort_order keys
@@ -22711,7 +22711,7 @@ async function _persistDraft(planId) {
 }
 
 async function saveDraft() {
-  if (!currentPlanId) { showToast('No active plan'); return }
+  if (!currentPlanId) { showToast(dt('No active plan','有効なプランがありません')); return }
   const ok = await _persistDraft()
   if (!ok) { showToast(t('toast.saveFailed','Save failed — try again')); return }
   closeModal('modal-submit')
@@ -22983,7 +22983,7 @@ function saveAvailability(value) {
 
 // ── PASSWORD RESET ───────────────────────────────────────────
 function sendPasswordReset() {
-  if (!planner?.email) { showToast('No email found'); return }
+  if (!planner?.email) { showToast(dt('No email found','メールアドレスが見つかりません')); return }
   // Just navigate. reset.html will send the code on load.
   window.location.href = 'reset.html?email=' + encodeURIComponent(planner.email) + '&autosend=1'
 }
@@ -23067,7 +23067,7 @@ async function notifyBondPayment() {
   const isBondMarkerOrEmpty = !curNotes || curNotes === 'BOND_NOTIFIED' || curNotes.startsWith('BOND_CONFIRMED:')
   if (isBondMarkerOrEmpty) {
     const { error } = await sb.from('plans').update({ admin_notes: 'BOND_NOTIFIED' }).eq('id', currentBondPlanId)
-    if (error) { btn.disabled = false; btn.textContent = t('bond.btn.sent',"I've sent the payment"); showToast('Error: ' + error.message); return }
+    if (error) { btn.disabled = false; btn.textContent = t('bond.btn.sent',"I've sent the payment"); showToast(dt('Error: ','エラー: ') + error.message); return }
   }
   btn.disabled = false; btn.textContent = t('bond.btn.sent',"I've sent the payment")
 
@@ -23229,7 +23229,7 @@ async function openCsChat(prefillMessage) {
   // setProperty('important') is needed to beat the mobile media query's !important.
   document.querySelectorAll('.mobile-fab').forEach(el => el.style.setProperty('display', 'none', 'important'))
   const conv = await ensureCsConversation()
-  if (!conv) { showToast('Chat unavailable — try again'); return }
+  if (!conv) { showToast(dt('Chat unavailable — try again','チャットを利用できません — もう一度お試しください')); return }
   await loadCsMessages()
   // Clear unread
   await sb.from('conversations').update({ unread_for_planner: 0 }).eq('id', conv.id)
@@ -23304,7 +23304,7 @@ async function handleCsImagePick(e) {
   if (!file) return
   if (!csConversation) { await ensureCsConversation() }
   if (!csConversation) return
-  if (file.size > 8 * 1024 * 1024) { showToast('Image too large — max 8MB'); return }
+  if (file.size > 8 * 1024 * 1024) { showToast(dt('Image too large — max 8MB','画像が大きすぎます — 最大8MB')); return }
 
   // Optimistic local preview
   const tempId = 'tmp-' + Date.now()
@@ -23347,7 +23347,7 @@ async function handleCsImagePick(e) {
   } catch (err) {
     csMessages = csMessages.filter(m => m.id !== tempId)
     renderCsMessages()
-    showToast('Upload failed: ' + (err.message || err))
+    showToast(dt('Upload failed: ','アップロードに失敗しました: ') + (err.message || err))
   }
 }
 
@@ -23382,7 +23382,7 @@ async function sendCsMessage(e) {
   if (error) {
     csMessages = csMessages.filter(m => m.id !== tempId)
     renderCsMessages()
-    showToast('Send failed: ' + error.message)
+    showToast(dt('Send failed: ','送信に失敗しました: ') + error.message)
     input.value = body
     return
   }
