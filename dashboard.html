@@ -1086,18 +1086,22 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
   border-radius:11px;padding:9px 13px;}
 /* Day-closing node — overnight (moon) on normal days, departure (plane) on the last. */
 .ps-row--end > .ps-dot{top:9px;left:14px;}
-.ps-ico--night {background:rgba(60,72,104,0.12);color:#41506e;}
-.ps-ico--depart{background:rgba(212,145,61,0.16);color:#A26821;}
+.ps-ico--night {background:#5b6e8a;color:#fff;}
+.ps-ico--depart{background:#c2682e;color:#fff;}
 .ps-end-card{background:rgba(60,72,104,0.07);border:1px solid rgba(60,72,104,0.14);border-radius:11px;padding:8px 13px;}
 .ps-end-card--depart{background:rgba(212,145,61,0.08);border-color:rgba(212,145,61,0.18);}
 .ps-end-title{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:#41506e;}
 .ps-end-card--depart .ps-end-title{color:#8a5a14;}
 /* Day-opening arrival node — where the traveller lands (gateway + method). */
 .ps-row--start > .ps-dot{top:9px;left:14px;}
-.ps-ico--arrive{background:rgba(70,120,150,0.14);color:#2f6b8a;}
+.ps-ico--arrive{background:#3a6f8f;color:#fff;}
 .ps-start-card{background:rgba(70,120,150,0.07);border:1px solid rgba(70,120,150,0.16);border-radius:11px;padding:8px 13px;}
 .ps-start-title{font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:600;color:#235a78;}
 .ps-start-meta{font-size:11.5px;color:#5a7d92;margin-top:2px;}
+/* Day 2+ "start at the hotel" card — amber to match the hotel node */
+.ps-start-card--hotel{background:rgba(194,135,46,0.08);border-color:rgba(194,135,46,0.20);}
+.ps-start-card--hotel .ps-start-title{color:#8a5f1c;}
+.ps-start-card--hotel .ps-start-meta{color:#9a7b4a;}
 /* Google rating star woven into a stop's meta line. */
 .ps-rate{color:#b0892f;font-weight:600;}
 .ps-time{
@@ -1151,13 +1155,13 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
 .ps-ico svg{width:15px;height:15px;display:block;}
 .ps-ico--sm{width:22px;height:22px;}
 .ps-ico--sm svg{width:12px;height:12px;}
-.ps-ico--activity{background:rgba(94,123,110,0.15);color:#3F5A4C;}
-.ps-ico--meal    {background:rgba(201,169,97,0.18);color:#8a6a1e;}
-.ps-ico--shop    {background:rgba(201,169,97,0.18);color:#8a6a1e;}
-.ps-ico--ent     {background:rgba(70,95,120,0.15);color:#46627a;}
-.ps-ico--free    {background:rgba(94,123,110,0.13);color:#3F5A4C;}
-.ps-ico--hotel   {background:rgba(94,123,110,0.17);color:#2f5240;}
-.ps-ico--transit {background:rgba(70,95,120,0.13);color:#46627a;}
+.ps-ico--activity{background:rgba(47,143,134,0.14);color:#2c8079;}
+.ps-ico--meal    {background:rgba(212,145,61,0.17);color:#b3742c;}
+.ps-ico--shop    {background:rgba(194,94,134,0.15);color:#b0517a;}
+.ps-ico--ent     {background:rgba(122,94,168,0.15);color:#6d52a0;}
+.ps-ico--free    {background:rgba(154,123,62,0.16);color:#876c33;}
+.ps-ico--hotel   {background:#c2872e;color:#fff;}
+.ps-ico--transit {background:#FFFDF8;color:#9a958a;box-shadow:inset 0 0 0 1.5px #e3dccd, 0 0 0 3px #FFFDF8;}
 /* Day-type chip in the day header (replaces the misleading "0 stops"). */
 .ps-day-chip{display:inline-flex;align-items:center;font-family:'DM Sans',sans-serif;
   font-size:11px;font-weight:600;padding:4px 11px;border-radius:99px;white-space:nowrap;letter-spacing:0;}
@@ -5526,12 +5530,14 @@ body.theme-dark #modal-plan-summary .ps-dot,
 body.theme-dark.theme-premium #modal-plan-summary .ps-dot{box-shadow:0 0 0 3px #2a231b!important;}
 body.theme-dark #modal-plan-summary .ps-cell--card,
 body.theme-dark.theme-premium #modal-plan-summary .ps-cell--card{background:rgba(255,255,255,0.045)!important;border-color:rgba(255,255,255,0.09)!important;}
-body.theme-dark #modal-plan-summary .ps-ico--activity, body.theme-dark #modal-plan-summary .ps-ico--hotel, body.theme-dark #modal-plan-summary .ps-ico--free,
-body.theme-dark.theme-premium #modal-plan-summary .ps-ico--activity, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--hotel, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--free{background:rgba(94,123,110,0.30)!important;color:#bcd3c6!important;}
-body.theme-dark #modal-plan-summary .ps-ico--meal, body.theme-dark #modal-plan-summary .ps-ico--shop,
-body.theme-dark.theme-premium #modal-plan-summary .ps-ico--meal, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--shop{background:rgba(201,169,97,0.28)!important;color:#e7c98a!important;}
-body.theme-dark #modal-plan-summary .ps-ico--ent, body.theme-dark #modal-plan-summary .ps-ico--transit,
-body.theme-dark.theme-premium #modal-plan-summary .ps-ico--ent, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--transit{background:rgba(120,150,180,0.26)!important;color:#bcd0e6!important;}
+/* Option B stop nodes — dark (hotel solid; activities tinted; transit hollow) */
+body.theme-dark #modal-plan-summary .ps-ico--hotel, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--hotel{background:#b07d2a!important;color:#fff!important;}
+body.theme-dark #modal-plan-summary .ps-ico--activity, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--activity{background:rgba(47,143,134,0.30)!important;color:#9fded4!important;}
+body.theme-dark #modal-plan-summary .ps-ico--meal, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--meal{background:rgba(212,145,61,0.28)!important;color:#e7c98a!important;}
+body.theme-dark #modal-plan-summary .ps-ico--shop, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--shop{background:rgba(194,94,134,0.28)!important;color:#e6a8c4!important;}
+body.theme-dark #modal-plan-summary .ps-ico--ent, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--ent{background:rgba(122,94,168,0.30)!important;color:#c9b6e6!important;}
+body.theme-dark #modal-plan-summary .ps-ico--free, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--free{background:rgba(154,123,62,0.28)!important;color:#d8c08a!important;}
+body.theme-dark #modal-plan-summary .ps-ico--transit, body.theme-dark.theme-premium #modal-plan-summary .ps-ico--transit{background:transparent!important;color:#9aa0ac!important;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.20), 0 0 0 3px #23272b!important;}
 /* Day-closing node on dark */
 body.theme-dark #modal-plan-summary .ps-end-card,
 body.theme-dark.theme-premium #modal-plan-summary .ps-end-card{background:rgba(255,255,255,0.05)!important;border-color:rgba(255,255,255,0.10)!important;}
@@ -5540,9 +5546,9 @@ body.theme-dark.theme-premium #modal-plan-summary .ps-end-title{color:#cdd5e6!im
 body.theme-dark #modal-plan-summary .ps-end-card--depart .ps-end-title,
 body.theme-dark.theme-premium #modal-plan-summary .ps-end-card--depart .ps-end-title{color:#e7c98a!important;}
 body.theme-dark #modal-plan-summary .ps-ico--night,
-body.theme-dark.theme-premium #modal-plan-summary .ps-ico--night{background:rgba(120,140,180,0.26)!important;color:#bcd0e6!important;}
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--night{background:#566a86!important;color:#fff!important;}
 body.theme-dark #modal-plan-summary .ps-ico--depart,
-body.theme-dark.theme-premium #modal-plan-summary .ps-ico--depart{background:rgba(212,145,61,0.26)!important;color:#e7c98a!important;}
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--depart{background:#b35f29!important;color:#fff!important;}
 /* Arrival node + rating on dark */
 body.theme-dark #modal-plan-summary .ps-start-card,
 body.theme-dark.theme-premium #modal-plan-summary .ps-start-card{background:rgba(255,255,255,0.05)!important;border-color:rgba(255,255,255,0.10)!important;}
@@ -5551,7 +5557,14 @@ body.theme-dark.theme-premium #modal-plan-summary .ps-start-title{color:#bcd0e6!
 body.theme-dark #modal-plan-summary .ps-start-meta,
 body.theme-dark.theme-premium #modal-plan-summary .ps-start-meta{color:#9fb3c4!important;}
 body.theme-dark #modal-plan-summary .ps-ico--arrive,
-body.theme-dark.theme-premium #modal-plan-summary .ps-ico--arrive{background:rgba(70,120,150,0.26)!important;color:#bcd0e6!important;}
+body.theme-dark.theme-premium #modal-plan-summary .ps-ico--arrive{background:#3a6f8f!important;color:#fff!important;}
+/* Day-2+ hotel start card — keep its amber identity on dark too */
+body.theme-dark #modal-plan-summary .ps-start-card--hotel,
+body.theme-dark.theme-premium #modal-plan-summary .ps-start-card--hotel{background:rgba(176,125,42,0.16)!important;border-color:rgba(176,125,42,0.28)!important;}
+body.theme-dark #modal-plan-summary .ps-start-card--hotel .ps-start-title,
+body.theme-dark.theme-premium #modal-plan-summary .ps-start-card--hotel .ps-start-title{color:#e7c98a!important;}
+body.theme-dark #modal-plan-summary .ps-start-card--hotel .ps-start-meta,
+body.theme-dark.theme-premium #modal-plan-summary .ps-start-card--hotel .ps-start-meta{color:#cda765!important;}
 body.theme-dark #modal-plan-summary .ps-rate,
 body.theme-dark.theme-premium #modal-plan-summary .ps-rate{color:#e7c98a!important;}
 /* Top blocks on dark surface */
@@ -13895,12 +13908,12 @@ async function openPlanSummary(plan) {
   // transit legs speak ONE icon language. The kind drives the badge tint (CSS).
   const _svgIco = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
   const _STOP_ICON = {
-    activity: _svgIco('<path d="M3 22h18"/><path d="M6 18V11M10 18V11M14 18V11M18 18V11"/><path d="m12 3 7 5H5z"/>'),
+    activity: _svgIco('<rect x="3" y="7" width="18" height="12.5" rx="2.5"/><circle cx="12" cy="13.2" r="3.2"/><path d="M8.3 7l1-2h5.4l1 2"/>'),
     meal:     _svgIco('<path d="M4 3v7a2 2 0 0 0 4 0V3"/><path d="M6 12v9"/><path d="M18 3a3 3 0 0 0-3 3v6h3Z"/><path d="M18 12v9"/>'),
     shop:     _svgIco('<path d="M6 2 4 6v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6l-2-4Z"/><path d="M4 6h16"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
     ent:      _svgIco('<path d="M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4Z"/><path d="M14 6v12"/>'),
     free:     _svgIco('<path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 1v3M10 1v3M14 1v3"/>'),
-    hotel:    _svgIco('<path d="M2 4v16"/><path d="M2 9h18a2 2 0 0 1 2 2v9"/><path d="M2 16h20"/><path d="M7 9V6h6v3"/>'),
+    hotel:    _svgIco('<path d="M3 8v11"/><path d="M3 14h18v5"/><path d="M21 19v-4.5a2 2 0 0 0-2-2H10v2.5"/><circle cx="6.8" cy="11.6" r="1.5"/>'),
     pin:      _svgIco('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
   }
   const _stopKind = (s) => {
@@ -14029,7 +14042,7 @@ async function openPlanSummary(plan) {
                      || plan.hotel_name || window._currentHotelName || ''
   const _MOON_ICO  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`
   const _PLANE_ICO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/></svg>`
-  const _BED_ICO   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8v11"/><path d="M2 15h20v4"/><path d="M22 19v-5a2 2 0 0 0-2-2H9v3"/><circle cx="6" cy="11" r="1.4"/></svg>`
+  const _BED_ICO   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8v11"/><path d="M3 14h18v5"/><path d="M21 19v-4.5a2 2 0 0 0-2-2H10v2.5"/><circle cx="6.8" cy="11.6" r="1.5"/></svg>`
 
   // Arrival START node — opens day 1 with WHERE the traveller lands (gateway +
   // method + time) so the first transport leg has a clear origin instead of a
@@ -14176,9 +14189,9 @@ async function openPlanSummary(plan) {
       // first transport leg has a clear origin instead of a bare "GO Taxi".
       startHtml = `
         <li class="ps-row ps-row--start">
-          <span class="ps-ico ps-ico--arrive ps-dot">${_BED_ICO}</span>
+          <span class="ps-ico ps-ico--hotel ps-dot">${_BED_ICO}</span>
           <div class="ps-time">${escapeHtml(_startWakeStr || dt('morning','朝'))}</div>
-          <div class="ps-cell"><div class="ps-start-card"><div class="ps-start-title">${escapeHtml(dt('Start','スタート'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div><div class="ps-start-meta">${escapeHtml(dt('Day begins at the hotel','ホテルから出発'))}</div></div></div>
+          <div class="ps-cell"><div class="ps-start-card ps-start-card--hotel"><div class="ps-start-title">${escapeHtml(dt('Start','スタート'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div><div class="ps-start-meta">${escapeHtml(dt('Day begins at the hotel','ホテルから出発'))}</div></div></div>
         </li>`
     }
     daysHtml += `
