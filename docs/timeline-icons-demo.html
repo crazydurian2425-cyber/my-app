@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timeline node redesign — demo</title>
+<style>
+  :root{
+    --bg:#FBF7EF; --card:#FFFDF8; --ink:#1A2E25; --ink2:#5a5a52; --ink3:#9a8f7d; --line:#e7dfce;
+    --arrive:#2d7a5e; --hotel:#c2872e; --play:#2f8f86; --meal:#d4913d; --shop:#c25e86;
+    --free:#9a7b3e; --ent:#7a5ea8; --night:#5b6e8a; --depart:#c2682e; --transit:#9a958a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.45;padding:28px 16px 90px;}
+  .wrap{max-width:1120px;margin:0 auto;}
+  h1{font-family:Georgia,serif;font-size:25px;margin:0 0 4px;}
+  .sub{color:var(--ink2);font-size:13px;margin:0 0 26px;max-width:760px;}
+  h3.sec{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:34px 0 14px;border-top:1px solid var(--line);padding-top:18px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(308px,1fr));gap:18px;align-items:start;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 22px;box-shadow:0 1px 2px rgba(60,50,30,.04);}
+  .panel h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin:0 0 2px;}
+  .panel .tag{font-size:11px;color:var(--ink2);margin:0 0 16px;min-height:30px;}
+
+  .tl{position:relative;list-style:none;margin:0;padding:0;}
+  .tl::before{content:"";position:absolute;left:55px;top:18px;bottom:18px;width:2px;background:var(--line);}
+  .row{position:relative;display:grid;grid-template-columns:42px 34px 1fr;align-items:center;gap:12px;padding:7px 0;}
+  .row.leg{padding:3px 0;}
+  .row .t{font-size:11.5px;color:var(--ink2);text-align:right;white-space:nowrap;}
+  .row .name{font-size:13px;font-weight:600;color:var(--ink);}
+  .row .meta{font-size:11px;color:var(--ink3);margin-top:1px;}
+  .leg .name{font-weight:600;color:var(--ink2);font-size:12px;}
+  .ico{display:flex;align-items:center;justify-content:center;border-radius:50%;width:34px;height:34px;}
+  .leg .ico{width:26px;height:26px;margin-left:4px;}
+  .ico svg{display:block;}
+
+  /* V0 — CURRENT */
+  .v0 .ico{background:#f3eee3;box-shadow:0 0 0 3px var(--card);}
+  .v0 .ico svg{stroke:#9a958a;stroke-width:1.6;}
+
+  /* V1 — SOFT TINTED */
+  .v1 .ico{box-shadow:0 0 0 3px var(--card);}
+  .v1 .ico svg{stroke-width:1.7;}
+  .v1 .n-arrive{background:rgba(45,122,94,.12)} .v1 .n-arrive svg{stroke:var(--arrive)}
+  .v1 .n-hotel {background:rgba(194,135,46,.15)} .v1 .n-hotel  svg{stroke:var(--hotel)}
+  .v1 .n-play  {background:rgba(47,143,134,.13)} .v1 .n-play   svg{stroke:var(--play)}
+  .v1 .n-meal  {background:rgba(212,145,61,.16)} .v1 .n-meal   svg{stroke:var(--meal)}
+  .v1 .n-shop  {background:rgba(194,94,134,.13)} .v1 .n-shop   svg{stroke:var(--shop)}
+  .v1 .n-free  {background:rgba(154,123,62,.14)} .v1 .n-free   svg{stroke:var(--free)}
+  .v1 .n-ent   {background:rgba(122,94,168,.13)} .v1 .n-ent    svg{stroke:var(--ent)}
+  .v1 .n-night {background:rgba(91,110,138,.13)} .v1 .n-night  svg{stroke:var(--night)}
+  .v1 .n-depart{background:rgba(194,104,46,.15)} .v1 .n-depart svg{stroke:var(--depart)}
+  .v1 .leg .ico{background:#f1ede4} .v1 .leg .ico svg{stroke:var(--transit);stroke-width:1.6}
+
+  /* V2 — FILLED ACCENT */
+  .v2 .ico{box-shadow:0 0 0 3px var(--card);}
+  .v2 .ico svg{stroke-width:1.85;}
+  .v2 .n-arrive{background:var(--arrive)} .v2 .n-hotel{background:var(--hotel)}
+  .v2 .n-depart{background:var(--depart)} .v2 .n-night{background:var(--night)}
+  .v2 .n-arrive svg,.v2 .n-hotel svg,.v2 .n-depart svg,.v2 .n-night svg{stroke:#fff}
+  .v2 .n-play{background:rgba(47,143,134,.15)} .v2 .n-play svg{stroke:var(--play)}
+  .v2 .n-meal{background:rgba(212,145,61,.17)} .v2 .n-meal svg{stroke:var(--meal)}
+  .v2 .n-shop{background:rgba(194,94,134,.15)} .v2 .n-shop svg{stroke:var(--shop)}
+  .v2 .n-free{background:rgba(154,123,62,.16)} .v2 .n-free svg{stroke:var(--free)}
+  .v2 .n-ent {background:rgba(122,94,168,.15)} .v2 .n-ent  svg{stroke:var(--ent)}
+  .v2 .leg .ico{background:#fff;box-shadow:inset 0 0 0 1.5px #e3dccd} .v2 .leg .ico svg{stroke:var(--transit);stroke-width:1.6}
+
+  /* legend */
+  .legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:14px;}
+  .lg{display:flex;align-items:center;gap:10px;}
+  .lg .ico{width:36px;height:36px;flex:0 0 auto;}
+  .lg .lbl{font-size:12px;color:var(--ink2);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Timeline node redesign</h1>
+  <p class="sub">The current nodes are flat grey circles with one-weight icons. Here are two redesigns. Each gives nodes a gentle per-type colour so the eye scans <b>arrival → hotel → stops → departure</b> instantly, with crisper icons. Same Day 2 below in all three; the full icon set is at the bottom. Tell me <b>A</b>, <b>B</b>, or a tweak — then I'll port it into the planner.</p>
+
+  <h3 class="sec">Sample day — Day 2 (your screenshot)</h3>
+  <div class="grid">
+    <div class="panel v0"><h2>Current</h2><div class="tag">Flat grey · one-weight icons</div><ul class="tl" id="tl0"></ul></div>
+    <div class="panel v1"><h2>Option A · Soft tinted</h2><div class="tag">Pastel node + colour-matched line icon. Calm, editorial.</div><ul class="tl" id="tl1"></ul></div>
+    <div class="panel v2"><h2>Option B · Filled accent</h2><div class="tag">Arrival/hotel/departure solid + white icon; stops tinted; legs hollow.</div><ul class="tl" id="tl2"></ul></div>
+  </div>
+
+  <h3 class="sec">Full node set</h3>
+  <div class="grid">
+    <div class="panel v1"><h2>Option A — all types</h2><div class="tag">&nbsp;</div><div class="legend" id="lg1"></div></div>
+    <div class="panel v2"><h2>Option B — all types</h2><div class="tag">&nbsp;</div><div class="legend" id="lg2"></div></div>
+  </div>
+</div>
+
+<script>
+const I = {
+  plane:'<path d="M17.8 19.2 16 11l3.6-3.6a2 2 0 1 0-2.8-2.8L13.2 8 5 6.2a1 1 0 0 0-.9 1.6l4.9 4-2 2-2.4-.5a1 1 0 0 0-.9 1.5L6.8 19l2 2 1.6-1.7.7-2.4 4 4.9a1 1 0 0 0 1.6-.9z"/>',
+  bed:'<path d="M3 8v11"/><path d="M3 14h18v5"/><path d="M21 19v-4.5a2 2 0 0 0-2-2H10v2.5"/><circle cx="6.8" cy="11.6" r="1.5"/>',
+  car:'<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/>',
+  bus:'<rect x="4" y="5" width="16" height="10" rx="2.5"/><path d="M4 10.5h16"/><path d="M8 5v5.5M16 5v5.5"/><circle cx="7.5" cy="17.5" r="1.4"/><circle cx="16.5" cy="17.5" r="1.4"/>',
+  train:'<rect x="5" y="4" width="14" height="12" rx="2.5"/><path d="M5 11h14"/><path d="M9 4v7M15 4v7"/><path d="M7.5 19l-1.5 2.5M16.5 19l1.5 2.5"/><path d="M8 19h8"/>',
+  ferry:'<path d="M3 18.5c1 .8 2 .8 3 0s2-.8 3 0 2 .8 3 0 2-.8 3 0 2 .8 3 0"/><path d="M5.2 17l1.1-3.8a1 1 0 0 1 1-.7h9.4a1 1 0 0 1 1 .7L18.8 17"/><path d="M12 12.5V8M8.5 8h7"/>',
+  walk:'<circle cx="13" cy="4.5" r="1.4"/><path d="M12.5 8.5 10 13l2.2 2 1.3 5"/><path d="M12.5 8.5l3.2 1.3 1.8 2.7"/><path d="M10 13l-2.2 4.8"/>',
+  camera:'<rect x="3" y="7" width="18" height="12.5" rx="2.5"/><circle cx="12" cy="13.2" r="3.2"/><path d="M8.3 7l1-2h5.4l1 2"/>',
+  utensils:'<path d="M4 3v6a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3"/><path d="M6 11v10"/><path d="M18 3c-1.6 0-2.8 2-2.8 5s1 4 2.8 4v9"/>',
+  bag:'<path d="M5.5 8h13l-1 12.5h-11L5.5 8Z"/><path d="M8.5 8V6.2a3.5 3.5 0 0 1 7 0V8"/>',
+  coffee:'<path d="M5 9h12v4.5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9Z"/><path d="M17 10h1.8a2 2 0 0 1 0 4H17"/><path d="M8 3.5v2M11 3v2.5M14 3.5v2"/>',
+  ticket:'<path d="M4 8.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H6a2 2 0 0 1-2-2 2 2 0 0 0 0-4Z"/><path d="M14 7v10"/>',
+  moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+};
+const svg=(n,sz=18)=>`<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]||''}</svg>`;
+
+const DAY=[
+  {kind:'node',cls:'n-hotel', ico:'bed', t:'8:30 am', name:'Start · hotel Beppu Ekimae',meta:'Day begins at the hotel'},
+  {kind:'leg', ico:'car', name:'GO Taxi',meta:'30 min'},
+  {kind:'node',cls:'n-play', ico:'camera',t:'9:00 am', name:'LUXE GAME',meta:'Matsubaramachi · ★ 4.8 · 1 h 30'},
+  {kind:'leg', ico:'car', name:'GO Taxi',meta:'37 min'},
+  {kind:'node',cls:'n-hotel', ico:'bed', t:'11:15 am',name:'hotel Beppu Ekimae',meta:'Shiomichō, Beppu · 15 min'},
+  {kind:'leg', ico:'car', name:'GO Taxi',meta:'26 min'},
+  {kind:'node',cls:'n-meal', ico:'utensils',t:'12:00 pm',name:'WASD — eSports Facility',meta:'Takasagomachi · ★ 4.8 · 30 min'},
+  {kind:'leg', ico:'car', name:'GO Taxi',meta:'23 min'},
+  {kind:'node',cls:'n-depart',ico:'bus', t:'1:10 pm', name:'Departure · Beppu Station',meta:'Bus to Yufuin'}
+];
+function renderDay(id){
+  document.getElementById(id).innerHTML=DAY.map(r=>r.kind==='leg'
+    ? `<li class="row leg"><div class="t"></div><span class="ico">${svg(r.ico,15)}</span><div><div class="name">${r.name} · <span style="font-weight:500;color:var(--ink3)">${r.meta}</span></div></div></li>`
+    : `<li class="row"><div class="t">${r.t}</div><span class="ico ${r.cls}">${svg(r.ico,18)}</span><div><div class="name">${r.name}</div><div class="meta">${r.meta}</div></div></li>`
+  ).join('');
+}
+['tl0','tl1','tl2'].forEach(renderDay);
+
+const LEGEND=[
+  ['n-arrive','plane','Arrival'],['n-hotel','bed','Hotel / Start'],['n-play','camera','Activity'],
+  ['n-meal','utensils','Meal'],['n-shop','bag','Shopping'],['n-free','coffee','Free time'],
+  ['n-ent','ticket','Entertainment'],['n-night','moon','Overnight'],['n-depart','plane','Departure'],
+  ['','walk','Walk'],['','car','Taxi / car'],['','bus','Bus'],['','train','Train / Shinkansen'],['','ferry','Ferry']
+];
+function renderLegend(id){
+  document.getElementById(id).innerHTML=LEGEND.map(([cls,ico,lbl])=>{
+    const leg = cls==='' ? 'leg' : '';
+    return `<div class="lg ${leg}"><span class="ico ${cls}">${svg(ico, cls===''?15:18)}</span><span class="lbl">${lbl}</span></div>`;
+  }).join('');
+}
+['lg1','lg2'].forEach(renderLegend);
+</script>
+</body>
+</html>
