@@ -9698,7 +9698,7 @@ const BRIEF_LABEL_FR = {
   'Destination':'目的地', 'Duration':'期間', 'Pace':'ペース', 'Occasion':'目的・機会',
   'Group type':'グループの種類', 'Ages':'年齢', 'Languages':'言語', 'Mobility':'移動のしやすさ',
   'Previous visits':'過去の訪問', 'From':'出発地',
-  'Daily / pax':'1日 / 人', 'Hotel / night':'ホテル / 泊',
+  'Daily / pax':'1日 / 人', 'Hotel / night':'ホテル / 泊', 'Hotel / night · all rooms':'ホテル / 泊 · 全室合計',
   'Splurge willingness':'贅沢への意欲', 'Booking authority':'予約の決定権',
   'Type':'タイプ', 'Room':'部屋', 'Room type':'部屋のタイプ', 'Must-haves':'必須条件',
   'Dietary':'食事制限', 'Dining style':'食事のスタイル', 'Cuisine interests':'好みの料理',
@@ -13048,7 +13048,7 @@ async function renderTravelerBrief(plan, t, notes) {
     ${sectionHeader('wallet', 'Budgets')}
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
-      ${cell('Hotel / night', hotelTxt)}
+      ${cell('Hotel / night · all rooms', hotelTxt)}
       ${cell('Splurge willingness', escapeHtml(splurgeTxt))}
       ${cell('Booking authority', escapeHtml(bookingTxt))}
     `)}
