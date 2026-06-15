@@ -14059,7 +14059,11 @@ async function openPlanSummary(plan) {
   const _depTimeStr = _arrMeta.unit_departure_time ? _fmtLower(_arrMeta.unit_departure_time) : ''
   const _depToStr   = String(_arrMeta.unit_departure_to || '').trim()
   const _depMethodK = String(_arrMeta.unit_departure_method || '').toLowerCase()
+  const _depLoc     = String(_arrMeta.unit_departure_location || '').trim()
   const _depSub     = [_arrMethodWord(_depMethodK), _depToStr ? `${dt('to','〜へ')} ${_depToStr}` : ''].filter(Boolean).join(' ')
+  // Days 2+ start at the hotel at the traveler's wake time (early 7:00 / standard
+  // 8:30 / late 9:30) — same mapping the day-form's morning anchor uses.
+  const _startWakeStr = (typeof _wakeTimeForTiming === 'function') ? _fmtLower(_wakeTimeForTiming(_arrMeta.daily_timing)) : ''
 
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
@@ -14135,7 +14139,7 @@ async function openPlanSummary(plan) {
         <li class="ps-row ps-row--end">
           <span class="ps-ico ps-ico--depart ps-dot">${_depMethodK ? _legIcon(_depMethodK) : _PLANE_ICO}</span>
           <div class="ps-time">${escapeHtml(_depTimeStr || '—')}</div>
-          <div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">${escapeHtml(dt('Departure','出発'))}${_depSub ? ' · ' + escapeHtml(_depSub) : ''}</div></div></div>
+          <div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">${escapeHtml(dt('Departure','出発'))}${_depLoc ? ' · ' + escapeHtml(_depLoc) : ''}</div>${_depSub ? `<div class="ps-start-meta">${escapeHtml(_depSub)}</div>` : ''}</div></div></div>
         </li>`
     }
     // Open day 1 with the arrival node (where the traveller lands) when we know
@@ -14156,7 +14160,7 @@ async function openPlanSummary(plan) {
       startHtml = `
         <li class="ps-row ps-row--start">
           <span class="ps-ico ps-ico--arrive ps-dot">${_BED_ICO}</span>
-          <div class="ps-time ps-time--t">${escapeHtml(dt('morning','朝'))}</div>
+          <div class="ps-time">${escapeHtml(_startWakeStr || dt('morning','朝'))}</div>
           <div class="ps-cell"><div class="ps-start-card"><div class="ps-start-title">${escapeHtml(dt('Start','スタート'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div><div class="ps-start-meta">${escapeHtml(dt('Day begins at the hotel','ホテルから出発'))}</div></div></div>
         </li>`
     }
