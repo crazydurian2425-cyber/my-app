@@ -9709,6 +9709,8 @@ const BRIEF_LABEL_FR = {
 // applied centrally inside titleCaseEnum(). Keyed by the raw lowercase enum.
 const ENUM_FR = {
   slow:'ゆったり', moderate:'ほどほど', active:'活動的', packed:'びっしり', relaxed:'のんびり', balanced:'バランス型',
+  family:'家族', couple:'カップル', solo:'一人旅', group:'グループ',
+
   standard:'標準', early:'早め', late:'遅め',
   occasional:'時々', frequent:'頻繁', rare:'まれ', never:'なし', luxury:'ラグジュアリー',
   planner_recommends:'プランナーのおすすめ', traveler_decides:'旅行者が決定', collaborative:'相談しながら',
@@ -12792,7 +12794,7 @@ function fmtBriefDateShort(s) {
   if (!s) return ''
   try {
     const d = new Date(s + 'T00:00:00')
-    return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+    return d.toLocaleDateString(isPlannerFR() ? 'ja-JP' : 'en-GB', { day:'numeric', month:'short' })
   } catch (e) { return s }
 }
 // Add N days to a YYYY-MM-DD date string, return YYYY-MM-DD.
@@ -12953,6 +12955,18 @@ async function renderTravelerBrief(plan, t, notes) {
   const isFirstUnit = !prevUnit
   const isLastUnit  = !nextUnit
 
+  // Transport method → natural Japanese word, for the arrival/departure lines.
+  const _mWord = (m) => {
+    const k = String(m || '').toLowerCase()
+    if (/flight|plane|air/.test(k))  return '飛行機'
+    if (/shinkansen|新幹線/.test(k)) return '新幹線'
+    if (/train|rail|電車/.test(k))   return '電車'
+    if (/bus|coach/.test(k))         return 'バス'
+    if (/ferry|boat|ship/.test(k))   return 'フェリー'
+    if (/car|drive|taxi/.test(k))    return '車'
+    if (/walk|foot/.test(k))         return '徒歩'
+    return m || ''
+  }
   // — ARRIVAL TO THIS UNIT —
   const arrMethod = meta.unit_arrival_method
                   || (isFirstUnit ? 'flight' : 'train')
@@ -12968,7 +12982,7 @@ async function renderTravelerBrief(plan, t, notes) {
         fmtBriefDateShort(arrDate),
         arrTime ? fmtTimeColon(arrTime) : null,
         arrLoc || null,
-        arrFrom ? `(${arrMethod} from ${arrFrom})` : null,
+        arrFrom ? dt(`(${arrMethod} from ${arrFrom})`, `（${arrFrom}から${_mWord(arrMethod)}）`) : null,
       ].filter(Boolean).join(' · ')
     : ''
   const arrivalLabel = dt(`Arrival to ${t.destination || 'this unit'}`, `${t.destination || 'この区間'}への到着`)
@@ -12992,7 +13006,7 @@ async function renderTravelerBrief(plan, t, notes) {
         fmtBriefDateShort(depDate),
         depTime ? fmtTimeColon(depTime) : null,
         depLoc || null,
-        depTo ? `→ ${depMethod} to ${depTo}` : null,
+        depTo ? dt(`→ ${depMethod} to ${depTo}`, `→ ${_mWord(depMethod)}で${depTo}へ`) : null,
         depTrailer,
       ].filter(Boolean).join(' · ')
     : ''
@@ -13015,8 +13029,8 @@ async function renderTravelerBrief(plan, t, notes) {
 
   // ── SECTION 2: travelers ──
   const groupTypeTxt = t.traveler_type
-    ? `${titleCaseEnum(t.traveler_type)}${t.group_size ? ' · ' + t.group_size + ' pax' : ''}`
-    : (t.group_size ? `${t.group_size} pax` : '')
+    ? `${titleCaseEnum(t.traveler_type)}${t.group_size ? ' · ' + t.group_size + dt(' pax','名') : ''}`
+    : (t.group_size ? `${t.group_size}${dt(' pax','名')}` : '')
   const fromTxt = origin ? `${flag ? flag + ' ' : ''}${escapeHtml(origin)}` : ''
   const sectionTravelers = wrap(`
     ${sectionHeader('users', 'Travelers')}
