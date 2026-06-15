@@ -14029,6 +14029,7 @@ async function openPlanSummary(plan) {
                      || plan.hotel_name || window._currentHotelName || ''
   const _MOON_ICO  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`
   const _PLANE_ICO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/></svg>`
+  const _BED_ICO   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8v11"/><path d="M2 15h20v4"/><path d="M22 19v-5a2 2 0 0 0-2-2H9v3"/><circle cx="6" cy="11" r="1.4"/></svg>`
 
   // Arrival START node — opens day 1 with WHERE the traveller lands (gateway +
   // method + time) so the first transport leg has a clear origin instead of a
@@ -14052,6 +14053,13 @@ async function openPlanSummary(plan) {
     if (/car|drive|taxi|車|タクシー/.test(m))   return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/>')
     return w('<path d="M2 22h20"/><path d="M3.8 16.6 21 11l-1-3-5.5 1.2L8 3 6 3.5l3.2 6.3-4.7 1L3 8 1.5 8.4Z"/>')   // plane landing (default)
   }
+
+  // Departure node fields (the plan's onward/home leg) — method-aware icon +
+  // the real departure time + "Flight/Train to <dest>". One value per plan.
+  const _depTimeStr = _arrMeta.unit_departure_time ? _fmtLower(_arrMeta.unit_departure_time) : ''
+  const _depToStr   = String(_arrMeta.unit_departure_to || '').trim()
+  const _depMethodK = String(_arrMeta.unit_departure_method || '').toLowerCase()
+  const _depSub     = [_arrMethodWord(_depMethodK), _depToStr ? `${dt('to','〜へ')} ${_depToStr}` : ''].filter(Boolean).join(' ')
 
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
@@ -14125,9 +14133,9 @@ async function openPlanSummary(plan) {
     } else if (slots.length && d === totalDays && _lastIsTransport) {
       closeHtml = `
         <li class="ps-row ps-row--end">
-          <span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span>
-          <div class="ps-time ps-time--t"></div>
-          <div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">${escapeHtml(dt('Departure','出発'))}</div></div></div>
+          <span class="ps-ico ps-ico--depart ps-dot">${_depMethodK ? _legIcon(_depMethodK) : _PLANE_ICO}</span>
+          <div class="ps-time">${escapeHtml(_depTimeStr || '—')}</div>
+          <div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">${escapeHtml(dt('Departure','出発'))}${_depSub ? ' · ' + escapeHtml(_depSub) : ''}</div></div></div>
         </li>`
     }
     // Open day 1 with the arrival node (where the traveller lands) when we know
@@ -14141,6 +14149,15 @@ async function openPlanSummary(plan) {
           <span class="ps-ico ps-ico--arrive ps-dot">${_arrIco(_arrMethodK)}</span>
           <div class="ps-time">${escapeHtml(_arrTimeStr || '—')}</div>
           <div class="ps-cell"><div class="ps-start-card"><div class="ps-start-title">${escapeHtml(dt('Arrive','到着'))}${_arrGateway ? ' · ' + escapeHtml(_arrGateway) : ''}</div>${_sub ? `<div class="ps-start-meta">${escapeHtml(_sub)}</div>` : ''}</div></div>
+        </li>`
+    } else if (d >= 2 && slots.length) {
+      // Days 2+ open at the hotel they woke in (one plan = one hotel), so the
+      // first transport leg has a clear origin instead of a bare "GO Taxi".
+      startHtml = `
+        <li class="ps-row ps-row--start">
+          <span class="ps-ico ps-ico--arrive ps-dot">${_BED_ICO}</span>
+          <div class="ps-time ps-time--t">${escapeHtml(dt('morning','朝'))}</div>
+          <div class="ps-cell"><div class="ps-start-card"><div class="ps-start-title">${escapeHtml(dt('Start','スタート'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div><div class="ps-start-meta">${escapeHtml(dt('Day begins at the hotel','ホテルから出発'))}</div></div></div>
         </li>`
     }
     daysHtml += `
