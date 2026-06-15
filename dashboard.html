@@ -14064,6 +14064,21 @@ async function openPlanSummary(plan) {
   // Days 2+ start at the hotel at the traveler's wake time (early 7:00 / standard
   // 8:30 / late 9:30) — same mapping the day-form's morning anchor uses.
   const _startWakeStr = (typeof _wakeTimeForTiming === 'function') ? _fmtLower(_wakeTimeForTiming(_arrMeta.daily_timing)) : ''
+  // Last non-transport activity's end (start + stay) — shown as the "back at the
+  // hotel" time on the Overnight node instead of a vague "night".
+  const _psLastEnd = (sl) => {
+    for (let i = sl.length - 1; i >= 0; i--) {
+      const s = sl[i]
+      if (String(s.type || '').toLowerCase() === 'transport') continue
+      const mm = String(s.time || '').match(/^(\d{1,2}):(\d{2})/)
+      if (!mm) continue
+      let end = parseInt(mm[1], 10) * 60 + parseInt(mm[2], 10)
+      const dur = parseInt(s.duration_minutes, 10)
+      if (Number.isFinite(dur) && dur > 0) end += dur
+      return Math.min(end, 23 * 60 + 59)
+    }
+    return null
+  }
 
   let daysHtml = ''
   for (let d = 1; d <= totalDays; d++) {
@@ -14128,10 +14143,12 @@ async function openPlanSummary(plan) {
     const _lastIsTransport = _lastSlot && String(_lastSlot.type||'').toLowerCase() === 'transport'
     let closeHtml = ''
     if (slots.length && d !== totalDays) {
+      const _ovEnd  = _psLastEnd(slots)
+      const _ovTime = _ovEnd != null ? _fmtLower(minsToHHMM(_ovEnd)) : dt('night','夜')
       closeHtml = `
         <li class="ps-row ps-row--end">
           <span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span>
-          <div class="ps-time ps-time--t">${escapeHtml(dt('night','夜'))}</div>
+          <div class="ps-time ps-time--t">${escapeHtml(_ovTime)}</div>
           <div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">${escapeHtml(dt('Overnight','宿泊'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div></div></div>
         </li>`
     } else if (slots.length && d === totalDays && _lastIsTransport) {
