@@ -75,6 +75,13 @@ UPDATE public.travelers SET meta = jsonb_set(meta, '{unit_arrival_method}', '"fe
 WHERE meta->>'seed_batch'='jp-01' AND meta->>'unit_arrival_method'='train'
   AND destination = 'Miyajima';
 
+-- 4c) BUS BUFFER — bus legs use 20 min (must run AFTER the mode switches above,
+--     so the train->bus legs are already 'bus')
+UPDATE public.travelers
+SET meta = jsonb_set(meta, '{airport_buffer_minutes}', '20')
+WHERE meta->>'seed_batch'='jp-01' AND meta->>'unit_departure_method'='bus'
+  AND (meta->>'airport_buffer_minutes')::int <> 20;
+
 -- 5) TOKYO ARRIVAL — normalize all first-leg Tokyo flights to Haneda (HND)
 UPDATE public.travelers
 SET meta = jsonb_set(meta, '{unit_arrival_location}', '"Haneda Airport (HND)"')
