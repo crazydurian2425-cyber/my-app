@@ -8689,6 +8689,7 @@ const TM_I18N = {
     'brief.forNights':'for {n} nights',
     'brief.perNight':'/night',
     'brief.perPaxNight':'/night per pax',
+    'brief.perNightTotal':'/night · all rooms',
     'brief.label.pace':'Pace',
     'brief.label.payout':'Your payout',
     'brief.label.bondRequired':'Bond required',
@@ -9409,6 +9410,7 @@ const TM_I18N = {
     'brief.forNights':'{n}泊分',
     'brief.perNight':'/泊',
     'brief.perPaxNight':'/泊 · 1人あたり',
+    'brief.perNightTotal':'/泊 · 全室合計',
     'brief.label.payout':'あなたの報酬',
     'brief.label.bondRequired':'必要な保証金',
     'brief.label.specialNote':'特記事項',
@@ -11935,11 +11937,14 @@ function updateBriefCard(plan, trav) {
   const effectiveCommission = (plan.planner_payout_override != null ? plan.planner_payout_override : (trav.planner_payout || 0))
   const payoutLine = effectiveCommission > 0 ? fmtMoney(effectiveCommission) : '—'
   const bondLine   = trav.requires_bond ? (trav.bond_amount ? fmtMoney(trav.bond_amount) : '?') : t('brief.notRequired','Not required')
-  // Hotel budget is now stored as per-night-per-pax (admin enters that
-  // directly). Show the column value as-is with the unit on the label.
-  const hotelLine = trav.hotel_budget ? fmtMoney(trav.hotel_budget) : '—'
-  const hotelLabelSuffix = trav.hotel_budget
-    ? ` <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">${t('brief.perPaxNight','/night per pax')}</span>`
+  // Hotel budget shown as TOTAL per night (all rooms combined). The column
+  // stores per-night-per-pax, so total = meta total when present, else
+  // per-pax × group size.
+  const _hbPax   = Math.max(1, parseInt(trav.group_size, 10) || 1)
+  const _hbTotal = Number(trav.meta?.hotel_budget_per_night_eur) || (trav.hotel_budget ? trav.hotel_budget * _hbPax : 0)
+  const hotelLine = _hbTotal ? fmtMoney(_hbTotal) : '—'
+  const hotelLabelSuffix = _hbTotal
+    ? ` <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">${t('brief.perNightTotal','/night · all rooms')}</span>`
     : ''
 
   document.getElementById('brief-details').innerHTML = `
@@ -13731,9 +13736,13 @@ async function openPlanSummary(plan) {
   }
   const briefRow = (iconKey, label, val) => val ? `<div class="ps-brief-cell">${_bi(BICON[iconKey] || BICON.dest)}<div style="min-width:0;"><div class="ps-brief-label">${escapeHtml(label)}</div><div class="ps-brief-val">${escapeHtml(String(val))}</div></div></div>` : ''
   const commissionSummary = (plan.planner_payout_override != null ? plan.planner_payout_override : (trav.planner_payout || 0))
-  // Hotel budget: column now stores per-night-per-pax directly.
-  const _hotelStr = trav.hotel_budget ? fmtMoney(trav.hotel_budget) : null
-  const _hotelLabelSuffix = trav.hotel_budget ? ` ${tPrime('brief.perPaxNight','/night per pax')}` : ''
+  // Hotel budget shown as TOTAL per night (all rooms combined), matching the
+  // admin form + the France brief. The hotel_budget column stores per-night-
+  // PER-PAX, so total = meta total when present, else per-pax × group size.
+  const _hotelPax   = Math.max(1, parseInt(trav.group_size, 10) || 1)
+  const _hotelTotal = Number(trav.meta?.hotel_budget_per_night_eur) || (trav.hotel_budget ? trav.hotel_budget * _hotelPax : 0)
+  const _hotelStr = _hotelTotal ? fmtMoney(_hotelTotal) : null
+  const _hotelLabelSuffix = _hotelTotal ? ` ${tPrime('brief.perNightTotal','/night · all rooms')}` : ''
   const commissionRow = commissionSummary > 0
     ? `<div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;margin-top:4px;border-radius:13px;background:linear-gradient(135deg,#1a7a5e,#0f5240);box-shadow:0 8px 22px rgba(15,82,64,0.22);">
          <div style="display:flex;align-items:center;gap:12px;">
