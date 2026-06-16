@@ -537,7 +537,7 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:18px 36px 28px 36px;">
         <div style="height:1px;background:rgba(0,0,0,0.06);margin-bottom:14px;"></div>
-        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a Japan travel planner. Please review your service agreement using the button above, then sign and return it. This link is personal to you; please don't share it.</p>
+        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review your service agreement using the button above, then sign and return it. This link is personal to you; please don't share it.</p>
       </td></tr>
 
       <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
