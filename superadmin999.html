@@ -2739,8 +2739,12 @@ const pageNames = {
   'payments':'Payments','weekly-salary':'Weekly salary','invoices':'Invoices','planners':'Manage planners','applications':'Planner applications'
 }
 
+let _plannersRefreshTimer = null
 function showPage(id, btn) {
   try { closeSidebar() } catch(e) {}
+  // Live presence: auto-refresh the planner list while it's open so "Active now"
+  // reflects reality without a manual reload. Cleared whenever we leave the page.
+  if (_plannersRefreshTimer) { clearInterval(_plannersRefreshTimer); _plannersRefreshTimer = null }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
   document.getElementById('page-'+id).classList.add('active')
@@ -2757,7 +2761,7 @@ function showPage(id, btn) {
   if (id === 'payout-requests') loadPayoutRequests()
   if (id === 'weekly-salary')   loadWeeklySalaries()
   if (id === 'invoices')        loadBillsList()
-  if (id === 'planners')    loadPlanners()
+  if (id === 'planners')    { loadPlanners(); _plannersRefreshTimer = setInterval(loadPlanners, 60000) }
   if (id === 'applications') loadApplications()
   if (id === 'post-job')    loadPostJob()
   if (id === 'new-traveler') { /* form page, no data to load */ }
@@ -5730,8 +5734,10 @@ function _timeAgo(iso){
   const mo = Math.floor(dd/30); if (mo < 12) return mo + 'mo ago'
   return Math.floor(mo/12) + 'y ago'
 }
-// "Online now" = a presence heartbeat (last_seen_at) within the last 3 minutes.
-function _isOnline(iso){ return !!iso && (Date.now() - new Date(iso).getTime()) < 3*60*1000 }
+// "Active now" = a real-interaction heartbeat (last_seen_at) within the last 2
+// minutes. The dashboard only stamps last_seen_at while the planner is actually
+// interacting, so this means "working right now", not just "tab open".
+function _isOnline(iso){ return !!iso && (Date.now() - new Date(iso).getTime()) < 2*60*1000 }
 
 function renderPlanners(planners, meta) {
   const list  = document.getElementById('planners-list')
@@ -5786,8 +5792,10 @@ function renderPlanners(planners, meta) {
           <div class="p-meta">${escapeHtml(p.city)} · ${escapeHtml(p.email)} · Joined ${joined}</div>
           <div class="p-meta" style="margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             ${_isOnline(p.last_seen_at)
-              ? '<span style="display:inline-flex;align-items:center;gap:4px;color:#1a7a5e;font-weight:600;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,0.25);display:inline-block;"></span>Online now</span>'
-              : `<span style="display:inline-flex;align-items:center;gap:4px;color:var(--ink-3);"><span style="width:7px;height:7px;border-radius:50%;background:#c7cdc8;display:inline-block;"></span>${p.last_seen_at ? 'Last seen ' + _timeAgo(p.last_seen_at) : 'Never online'}</span>`}
+              ? '<span style="display:inline-flex;align-items:center;gap:4px;color:#1a7a5e;font-weight:600;"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,0.25);display:inline-block;"></span>Active now</span>'
+              : (p.last_seen_at
+                  ? `<span style="display:inline-flex;align-items:center;gap:4px;color:#b07d18;"><span style="width:7px;height:7px;border-radius:50%;background:#e0a106;display:inline-block;"></span>Last active ${_timeAgo(p.last_seen_at)}</span>`
+                  : '<span style="display:inline-flex;align-items:center;gap:4px;color:var(--ink-3);"><span style="width:7px;height:7px;border-radius:50%;background:#c7cdc8;display:inline-block;"></span>Offline</span>')}
             <span style="color:var(--ink-3);">·</span>
             <span style="color:var(--ink-3);">Last login ${p.last_login_at ? _timeAgo(p.last_login_at) : 'never'}</span>
           </div>

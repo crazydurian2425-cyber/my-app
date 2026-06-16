@@ -9965,18 +9965,26 @@ function resolveCityKey(rawCity){
   return ci || 'Other'
 }
 
-// Online-presence heartbeat — updates planners.last_seen_at so the admin's
-// "Manage planners" list can show who's active right now. Pings on load and
-// every 90s while the tab is visible. Starts once; fails silently if the
-// last_seen_at column hasn't been added yet (safe to deploy before the SQL).
+// Online-presence heartbeat — "active now" means the planner has actually
+// INTERACTED (mouse / keyboard / scroll) recently AND has the tab in front, not
+// merely that a tab is open. It stamps planners.last_seen_at with the real
+// last-interaction time every 60s while active, and stops once idle (3 min with
+// no interaction) so an AFK tab falls to "Away". Fails silently if the column
+// is missing (safe to deploy before the migration).
+let _lastActivityAt = Date.now()
+;['mousemove','mousedown','keydown','scroll','touchstart','click','wheel'].forEach(ev =>
+  window.addEventListener(ev, () => { _lastActivityAt = Date.now() }, { passive: true, capture: true })
+)
 function _startPresenceHeartbeat(plannerId){
   if (!plannerId || window._presenceTimer) return
+  const IDLE_MS = 3 * 60 * 1000   // 3 min with no interaction → treated as away
   const ping = () => {
     if (typeof document.visibilityState === 'string' && document.visibilityState !== 'visible') return
-    try { sb.from('planners').update({ last_seen_at: new Date().toISOString() }).eq('id', plannerId).then(()=>{}, ()=>{}) } catch (e) {}
+    if (Date.now() - _lastActivityAt > IDLE_MS) return   // idle: stop refreshing presence
+    try { sb.from('planners').update({ last_seen_at: new Date(_lastActivityAt).toISOString() }).eq('id', plannerId).then(()=>{}, ()=>{}) } catch (e) {}
   }
   ping()
-  window._presenceTimer = setInterval(ping, 90 * 1000)
+  window._presenceTimer = setInterval(ping, 60 * 1000)
 }
 function applyDashHero(city){
   const img = document.getElementById('dash-hero-img')
@@ -23136,6 +23144,14 @@ async function acceptRules(){
 
 // ── LOGOUT ───────────────────────────────────────────────────
 async function logout() {
+  // Instant offline — stop the heartbeat and clear presence BEFORE the session
+  // ends, so the admin's "active now" drops immediately instead of trailing.
+  try {
+    if (window._presenceTimer) { clearInterval(window._presenceTimer); window._presenceTimer = null }
+    if (typeof planner !== 'undefined' && planner?.id) {
+      await sb.from('planners').update({ last_seen_at: null }).eq('id', planner.id)
+    }
+  } catch (e) {}
   await sb.auth.signOut()
   localStorage.clear()
   window.location.href = 'login.html'
