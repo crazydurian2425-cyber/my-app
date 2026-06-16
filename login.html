@@ -972,6 +972,11 @@ async function login() {
     }
   })()
 
+  // Presence stamp — write last_seen_at on every login, NOT gated on the geo
+  // lookup above, so the admin "online now" indicator lights up immediately
+  // (and confirms the column is writable). Same proven path that records login.
+  try { sb.from('planners').update({ last_seen_at: new Date().toISOString() }).eq('id', planner.id).then(()=>{}, ()=>{}) } catch (e) {}
+
   localStorage.setItem('jj_token',   data.session.access_token)
   localStorage.setItem('jj_refresh', data.session.refresh_token)
   localStorage.setItem('jj_planner', JSON.stringify(planner))
