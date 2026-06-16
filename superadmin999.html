@@ -3933,7 +3933,7 @@ async function approveFullSet(setId, plannerId) {
     const { error: insErr } = await sb.from('set_assignments').insert({
       set_id: setId, planner_id: plannerId,
       claimed_at: setRow?.claimed_at || new Date().toISOString(),
-      deadline: setRow?.deadline || new Date().toISOString().split('T')[0],
+      deadline: setRow?.deadline || new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date()),
       status: 'completed',
       completed_at: new Date().toISOString()
     })
@@ -7310,7 +7310,11 @@ async function doAssign(setId, plannerId) {
   if (plannerErr) { console.error(tag('planner-lookup'), plannerErr); showToast('Planner lookup failed: ' + plannerErr.message); return false }
   if (!plannerData) { console.error(tag('planner-lookup'), 'no row for', plannerId); showToast('Planner not found — refresh and retry'); return false }
   const days = plannerData.deadline_days || 2
-  const deadlineStr = new Date(Date.now() + days * 86400 * 1000).toISOString().split('T')[0]
+  // Deadline = today (Japan / Asia-Tokyo) + N days. Anchor to Japan's calendar date
+  // so it doesn't drift a day behind during the 00:00–09:00 JST window (UTC was the bug).
+  const _dl = new Date(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date()) + 'T00:00:00Z')
+  _dl.setUTCDate(_dl.getUTCDate() + days)
+  const deadlineStr = _dl.toISOString().split('T')[0]
 
   // Confirm reset if the planner has ANY prior work on this set (active,
   // completed, OR paid). Previous version blocked paid-set re-assigns
