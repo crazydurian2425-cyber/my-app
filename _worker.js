@@ -516,11 +516,11 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:24px 36px 4px 36px;">
         <h1 style="margin:0 0 12px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
-          <em style="font-style:italic;color:#1a7a5e;">業務委託契約書</em>のご確認をお願いいたします
+          <em style="font-style:italic;color:#1a7a5e;">業務委託契約書</em>ご確認のお願い
         </h1>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${firstName} 様</p>
-        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">この度は Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。</p>
-        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより業務委託契約書をご確認のうえ、ご署名いただき、ご返送くださいますようお願いいたします。このリンクはあなた専用のものです。第三者と共有なさらないようお願いいたします。</p>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">この度は、Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。</p>
+        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより業務委託契約書をご確認のうえ、ご署名をお願いいたします。このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。</p>
       </td></tr>
 
       <tr><td style="padding:0 36px 8px 36px;">
@@ -532,12 +532,12 @@ async function handleSendEmploymentLetter(request, url) {
       </td></tr>
 
       <tr><td style="padding:0 36px 4px 36px;">
-        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">ボタンが動作しない場合は、こちらのリンクをコピーしてブラウザに貼り付けてください：<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">ボタンが動作しない場合は、以下のリンクをコピーしてブラウザに貼り付けてください：<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
       </td></tr>
 
       <tr><td style="padding:18px 36px 28px 36px;">
         <div style="height:1px;background:rgba(0,0,0,0.06);margin-bottom:14px;"></div>
-        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review your service agreement using the button above, then sign and return it. This link is personal to you; please don't share it.</p>
+        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review and sign your service agreement using the button above. This link is personal to you; please do not share it.</p>
       </td></tr>
 
       <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
