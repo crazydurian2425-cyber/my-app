@@ -223,7 +223,7 @@ function translateAuthError(msg, fallback) {
   const m = (msg || '').toLowerCase()
   if (!m) return fallback || ''
   if (m.includes('different from the old password')) return '新しいパスワードは以前のものと異なる必要があります'
-  if (m.includes('password should be at least')) return 'パスワードは6文字以上で入力してください'
+  if (m.includes('password should be at least')) return 'パスワードは8文字以上で入力してください'
   if (m.includes('weak password') || m.includes('password is too weak')) return 'パスワードが脆弱です。より強固なものを選んでください。'
   if (m.includes('for security purposes') || m.includes('only request this after')) {
     const s = (m.match(/after (\d+) second/) || [])[1]
@@ -243,7 +243,7 @@ async function setPassword() {
   const btn      = document.getElementById('btn-set')
 
   if (!password)             { showError('新しいパスワードを入力してください'); return }
-  if (password.length < 6)   { showError('パスワードは6文字以上で入力してください'); return }
+  if (password.length < 8)   { showError('パスワードは8文字以上で入力してください'); return }
   if (password !== confirm)  { showError('パスワードが一致しません'); return }
 
   hideMessages()

@@ -429,7 +429,7 @@ html[lang="ja"] .hero-footer strong{font-family:'Noto Sans JP',sans-serif;}
           <label class="label" for="password" data-i18n="apply.passwordLabel">Password</label>
           <div class="input-wrap">
             <input class="input has-icon" type="password" id="password" name="password"
-                   placeholder="At least 6 characters" data-i18n-ph="apply.passwordPh"
+                   placeholder="At least 8 characters" data-i18n-ph="apply.passwordPh"
                    autocomplete="new-password" required aria-describedby="pw-hint"
                    oninput="onPasswordInput()" maxlength="80">
             <button type="button" class="pw-toggle" id="pw-toggle" onclick="togglePassword()"
@@ -623,7 +623,7 @@ const APPLY_I18N = {
     'apply.emailPh':'your@email.com',
     'apply.emailHint':"We'll email you here once you're approved.",
     'apply.passwordLabel':'Password',
-    'apply.passwordPh':'At least 6 characters',
+    'apply.passwordPh':'At least 8 characters',
     'apply.pw.empty':"Choose the password you'll use to log in after approval.",
     'apply.pw.weak':'Too short or too simple — add length and variety.',
     'apply.pw.med':'Okay — add an uppercase letter or symbol to strengthen.',
@@ -675,7 +675,7 @@ const APPLY_I18N = {
     'err.lang':'Please pick at least one language',
     'err.heard':'Please tell us where you heard about Journey Junction',
     'err.pw':'Please choose a password',
-    'err.pwShort':'Password must be at least 6 characters',
+    'err.pwShort':'Password must be at least 8 characters',
     'err.tos':'Please accept the Terms of Service to continue',
     'err.dup':"We already have an application from this email. Check your inbox — we'll reply there.",
     'err.authDup':"An account with this email already exists. Try signing in, or use a different email to apply.",
@@ -703,7 +703,7 @@ const APPLY_I18N = {
     'apply.emailPh':'your@email.com',
     'apply.emailHint':'承認後、こちらのメールアドレス宛にご連絡いたします。',
     'apply.passwordLabel':'パスワード',
-    'apply.passwordPh':'6文字以上',
+    'apply.passwordPh':'8文字以上',
     'apply.pw.empty':'承認後、ログイン時に使用するパスワードを設定してください。',
     'apply.pw.weak':'短すぎるか単純すぎます — 長さと種類を増やしてください。',
     'apply.pw.med':'まずまずです — 大文字や記号を加えると、より強固になります。',
@@ -755,7 +755,7 @@ const APPLY_I18N = {
     'err.lang':'少なくとも1つの言語を選択してください',
     'err.heard':'Journey Junction をどこでお知りになったかをお聞かせください',
     'err.pw':'パスワードを設定してください',
-    'err.pwShort':'パスワードは6文字以上で設定してください',
+    'err.pwShort':'パスワードは8文字以上で設定してください',
     'err.tos':'続行するには利用規約に同意してください',
     'err.dup':'このメールアドレスからのご応募はすでに受け付けております。受信トレイをご確認ください — そちらへご返信いたします。',
     'err.authDup':'このメールアドレスのアカウントはすでに存在します。ログインをお試しいただくか、別のアドレスでご応募ください。',
@@ -942,7 +942,7 @@ function togglePassword(){
 }
 function passwordScore(pw){
   let s = 0
-  if (pw.length >= 6)  s++
+  if (pw.length >= 8)  s++
   if (pw.length >= 10) s++
   if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++
   if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) s++
@@ -982,7 +982,7 @@ async function submitApplication(){
   if (!name)                { showError(t('err.name')); return }
   if (!email || !/.+@.+\..+/.test(email)) { showError(t('err.email')); return }
   if (!password)            { showError(t('err.pw')); return }
-  if (password.length < 6)  { showError(t('err.pwShort')); return }
+  if (password.length < 8)  { showError(t('err.pwShort')); return }
   if (!city)                { showError(t('err.city')); return }
   if (!japan_depth)         { showError(t('err.depth')); return }
   if (languages.length === 0){ showError(t('err.lang')); return }
