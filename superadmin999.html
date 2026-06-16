@@ -6399,8 +6399,9 @@ async function openEmploymentLetterModal() {
   document.getElementById('el-planner-name').textContent = p.name + ' · ' + (p.email || '—')
   document.getElementById('el-name').value = p.name || ''
   document.getElementById('el-email').value = p.email || ''
-  // Default start date = today
-  const today = new Date().toISOString().slice(0, 10)
+  // Default start date = today in Japan time (JST / Asia/Tokyo), NOT UTC.
+  // new Date().toISOString() is UTC and drifts a day behind during 00:00–09:00 JST.
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date())
   document.getElementById('el-start-date').value = today
   const btn = document.getElementById('el-submit-btn')
   if (btn) { btn.disabled = false; btn.textContent = 'Send letter' }
