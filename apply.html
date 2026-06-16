@@ -94,6 +94,8 @@ html[lang="ja"] .form-sub{font-style:normal;font-family:'Noto Sans JP','Lora',se
 .field-hint{font-size:11.5px;color:var(--ink-3);margin-top:5px;font-family:'Lora',serif;font-style:italic;line-height:1.4;}
 html[lang="ja"] .field-hint{font-style:normal;font-family:'Noto Sans JP',sans-serif;}
 .label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-2);margin-bottom:7px;display:block;}
+/* Labels containing the brand name keep normal case so "Journey Junction" isn't forced to ugly ALL-CAPS */
+.label[for="heard_from"]{text-transform:none;letter-spacing:0.02em;}
 .input-wrap{position:relative;}
 .input{
   width:100%;padding:13px 14px;background:#fff;
@@ -727,7 +729,7 @@ const APPLY_I18N = {
     'apply.lang.de':'ドイツ語',
     'apply.lang.it':'イタリア語',
     'apply.lang.other':'その他',
-    'apply.heardLabel':'Journey Junction をどこでお知りになりましたか？',
+    'apply.heardLabel':'Journey Junction をどこで知りましたか？',
     'apply.heard.ph':'— 選択してください —',
     'apply.heard.referral':'友人・知人からの紹介',
     'apply.heard.facebook':'Facebook または Instagram',
