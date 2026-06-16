@@ -13546,6 +13546,9 @@ async function openItineraryForm(planId) {
   // ages[] and occasion drive the kid/senior caps + the honeymoon minimum.
   window._currentAges         = Array.isArray(_tmeta.ages) ? _tmeta.ages.slice() : []
   window._currentOccasion     = (_tmeta.occasion || '').toLowerCase()
+  // Traveler TYPE drives the honeymoon late-night floor — robust to free-text
+  // occasion wording (see _computeExpectedDayEnd).
+  window._currentTravelerType = (t.traveler_type || '').toLowerCase()
   // Departure time on the LAST day controls the day-before-early-flight
   // adjustment (-60 min if the flight leaves before 09:00).
   window._currentDepartureHourInt = (function () {
@@ -20192,9 +20195,10 @@ function _computeExpectedDayEnd(dayNum, totalDays) {
     else if (a >= 70)  cap = Math.min(cap ?? Infinity, 22 * 60)
   }
   if (cap != null) base = Math.min(base, cap)
-  // Honeymoon minimum.
-  const occ = String(window._currentOccasion || '').toLowerCase()
-  if (occ === 'honeymoon' || occ === 'anniversary') {
+  // Honeymoon minimum — gate on the traveler TYPE, not the free-text occasion.
+  // (Anniversary trips can be families with young children whose earlier age
+  // cap must win, so they intentionally do NOT get this floor.)
+  if (String(window._currentTravelerType || '').toLowerCase() === 'honeymoon') {
     base = Math.max(base, 22 * 60 + 30)
   }
   // Day-type adjustments.
