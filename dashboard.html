@@ -13055,10 +13055,10 @@ async function renderTravelerBrief(plan, t, notes) {
   // price by room, not by person. Daily spend stays per-pax (food +
   // activities scale with group_size).
   const hotelTxt = meta.hotel_budget_per_night_eur ? fmtEur(meta.hotel_budget_per_night_eur) : ''
-  const splurgeAmt = splurgeAmountForTier(meta.budget_tier)
-  const splurgeTxt = meta.splurge_willingness
-    ? `${titleCaseEnum(meta.splurge_willingness)}${splurgeAmt ? ' (' + fmtEur(splurgeAmt) + '+)' : ''}`
-    : ''
+  // Splurge willingness removed from the brief — it duplicated the budget signal
+  // and showed a competing ¥ figure next to the daily budget. The field still
+  // drives spend-warning leniency (window._currentSplurgeWillingness); it's just
+  // no longer displayed on the brief.
   const bookingTxt = meta.booking_authority ? titleCaseEnum(meta.booking_authority) : ''
   // Budgets always renders — empty fields fall back to "—" via the cell helper.
   // Tier pill removed per latest mockup; section header is icon + label only.
@@ -13067,7 +13067,6 @@ async function renderTravelerBrief(plan, t, notes) {
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
       ${cell('Hotel / night · all rooms', hotelTxt)}
-      ${cell('Splurge willingness', escapeHtml(splurgeTxt))}
       ${cell('Booking authority', escapeHtml(bookingTxt))}
     `)}
   `)
