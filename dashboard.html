@@ -9725,6 +9725,10 @@ const ENUM_FR = {
   beach:'ビーチ', cellar_tours:'酒蔵見学', cuisine:'料理', family_activities:'家族向けアクティビティ',
   hiking:'ハイキング', history:'歴史', lavender_fields:'花畑', luxury_brands:'高級ブランド',
   nature:'自然', nightlife:'ナイトライフ', shopping:'ショッピング', spa:'温泉・スパ', theme_parks:'テーマパーク',
+  // Japan-specific interest enums (seed jp-01)
+  onsen:'温泉', temples_shrines:'寺・神社', gardens:'庭園', castles:'城・城跡',
+  food_dining:'食事・グルメ', ramen_streetfood:'ラーメン・屋台', nature_hiking:'自然・ハイキング',
+  anime_pop_culture:'アニメ・ポップカルチャー', sake_whisky:'日本酒・ウイスキー',
   none:'なし',
 }
 // Cuisine-interest values are display strings (not snake_case enums), so they
@@ -15658,9 +15662,10 @@ function addDayBlock(dayNum, totalDays) {
 function formatTimeDisplay(val){
   const [h,m] = val.split(':').map(Number)
   const mm  = String(m).padStart(2,'0')
-  // French uses 24-hour ("14h30"). English uses 12-hour ("2.30 pm").
+  // Japanese uses the 24-hour clock with a colon ("08:30", "14:00").
+  // English uses 12-hour ("2.30 pm").
   if (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') {
-    return `${String(h).padStart(2,'0')}h${mm}`
+    return `${String(h).padStart(2,'0')}:${mm}`
   }
   const ap = h >= 12 ? 'pm' : 'am'
   const h12 = ((h + 11) % 12) + 1
@@ -21382,6 +21387,9 @@ function computeDaySummary(dayContainer) {
 function _fmtActiveHours(mins) {
   if (!mins) return '—'
   const h = Math.floor(mins / 60), m = mins % 60
+  if (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') {
+    return m === 0 ? `${h}時間` : `${h}時間${m}分`
+  }
   if (m === 0) return `${h}h`
   return `${h}h ${String(m).padStart(2,'0')}m`
 }
