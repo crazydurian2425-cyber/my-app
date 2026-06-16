@@ -2206,7 +2206,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           </div>
           <div class="form-row">
             <div class="form-group"><label class="form-label">Departure to <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· next city or home</span></label><input class="form-input" id="et-meta-dep-to" placeholder="例：箱根 または ブエノスアイレス"></div>
-            <div class="form-group"><label class="form-label">Buffer (min) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· flight 180 · train 30 · bus 20 · car 15</span></label><input class="form-input" type="number" id="et-meta-buffer" min="0" placeholder="auto-fills from method"></div>
+            <div class="form-group"><label class="form-label">Buffer (min) <span style="font-weight:400;color:var(--ink-3);font-size:11px;">· flight 180 · train/shinkansen/ferry 30 · bus 20 · car 15</span></label><input class="form-input" type="number" id="et-meta-buffer" min="0" placeholder="auto-fills from method"></div>
           </div>
         </div>
       </details>
@@ -6653,12 +6653,12 @@ async function loadPostJob() {
 }
 
 // Auto-fill the BUFFER (MIN) field when the departure method changes.
-// Mirrors the dashboard's per-method floor (dashboard.html ~12861):
-//   flight 180 · train 30 · bus 20 · car 15
+// Mirrors the dashboard's per-method floor:
+//   flight 180 · train/shinkansen/ferry 30 · bus 20 · car 15
 // Only overwrites the buffer when it's empty OR equals another method's
-// default — so a hand-typed custom value (e.g. 60 for a far gare) is
+// default — so a hand-typed custom value (e.g. 90 for a far airport) is
 // preserved when the admin toggles back and forth.
-const _BUFFER_DEFAULTS = { flight: 180, train: 30, bus: 20, car: 15 }
+const _BUFFER_DEFAULTS = { flight: 180, train: 30, shinkansen: 30, ferry: 30, bus: 20, car: 15 }
 function autoFillBufferForMethod(method) {
   const bufInput = document.getElementById('et-meta-buffer')
   if (!bufInput) return

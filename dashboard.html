@@ -13420,26 +13420,24 @@ async function openItineraryForm(planId) {
   // Group size — used to split per-vehicle transport fares (Uber/taxi/car are
   // priced per CAR, shared by the group) into a true per-pax cost.
   window._currentGroupSize         = parseInt(t.group_size, 10) || 1
-  // Airport buffer in minutes — represents the WHOLE time the traveler
-  // needs between their last activity ending and the flight/train doors
-  // (airport travel + check-in + security + boarding gate).
+  // Airport/station buffer in minutes — PURE time the traveler needs AT the
+  // airport/station before the doors (check-in + security + boarding gate).
+  // The travel FROM the last activity TO the airport/station is a SEPARATE
+  // subtraction (see _departureTransferMins), so a far airport pulls the last
+  // stop earlier instead of silently eating the buffer.
   //
-  // Per-method FLOORS (minimum buffer the admin can't go below) — these
-  // are realistic minimums so no one accidentally schedules a traveler
-  // to miss their departure:
-  //   flight 180 · train 30 · bus 20 · car 15  (default 30)
-  // The admin's BUFFER (MIN) field in superadmin999.html auto-fills with
-  // these per-method defaults, and can be bumped HIGHER (e.g. a 60-min
-  // train buffer for a far-out gare) — never below the floor.
+  // Per-method FLOORS (admin can bump HIGHER, never below):
+  //   flight 180 · train/shinkansen/ferry 30 · bus 20 · car 15  (default 30)
   //
-  // Last-day cutoff = departure_time − buffer (no extra cushion — the
-  // buffer itself is already padding).
+  // Last-day cutoff = departure_time − buffer − airport_transfer.
   const _depMethodForBuf = _tmeta.unit_departure_method
-  const _bufFloor = _depMethodForBuf === 'flight' ? 180
-                  : _depMethodForBuf === 'train'  ? 30
-                  : _depMethodForBuf === 'bus'    ? 20
-                  : _depMethodForBuf === 'car'    ? 15
-                  :                                  30
+  const _bufFloor = _depMethodForBuf === 'flight'     ? 180
+                  : _depMethodForBuf === 'train'      ? 30
+                  : _depMethodForBuf === 'shinkansen' ? 30
+                  : _depMethodForBuf === 'ferry'      ? 30
+                  : _depMethodForBuf === 'bus'        ? 20
+                  : _depMethodForBuf === 'car'        ? 15
+                  :                                      30
   const _bufMeta  = Number(_tmeta.airport_buffer_minutes)
   window._currentAirportBuffer = Number.isFinite(_bufMeta)
     ? Math.max(_bufMeta, _bufFloor)
@@ -15480,24 +15478,45 @@ function dayTimeWindow(dayNum, totalDays) {
     out.reason = dt(`Traveler arrives at ${arr} — earliest stop is ${out.defaultFirst}`, `旅行者は ${arr} に到着 — 最初の立ち寄り先は早くて ${out.defaultFirst} です`)
   }
   if (dayNum === totalDays && totalDays >= 1 && dep) {
-    // Cutoff: last stop must end before transit-to-airport begins.
-    //   cutoff = departure − airport_buffer
-    // No extra cushion — the buffer itself already accounts for airport
-    // travel + check-in + security + gate. Sofia (5 PM flight, 240 min
-    // buffer) → last activity ends by 1 PM, matching the planner's
-    // mental model of "4 hours before flight".
+    // Cutoff: the last stop must end early enough that the ride to the
+    // airport/station lands the traveler there a FULL buffer before the doors.
+    //   cutoff = departure − buffer − airport_transfer
+    // The buffer is pure airport/station time; the transfer is the real
+    // duration of the to-airport leg (0 until the planner adds it). So a 5 PM
+    // flight, 180-min buffer, 70-min airport ride → last stop ends by 11:50.
     const [h, m] = dep.split(':').map(Number)
-    let total = h * 60 + m - buf
+    const transfer = _departureTransferMins(totalDays)
+    let total = h * 60 + m - buf - transfer
     if (total < 0) total = 0
     // Snap DOWN so cutoff aligns to the grid (planner can't pick 14:30 if cutoff is 14:30)
     total = Math.floor(total / 30) * 30
     out.maxTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
     const hours = (buf / 60).toFixed(buf % 60 === 0 ? 0 : 1)
-    const why = dt(`${hours} h ${window._currentDepartureMethod === 'flight' ? 'airport' : 'station'} buffer`, `${window._currentDepartureMethod === 'flight' ? '空港' : '駅'}まで ${hours} 時間の余裕`)
+    const _isAir = window._currentDepartureMethod === 'flight'
+    const why = transfer > 0
+      ? dt(`${transfer} min to ${_isAir ? 'airport' : 'station'} + ${hours} h buffer`, `${_isAir ? '空港' : '駅'}まで ${transfer}分 ＋ ${hours}時間の余裕`)
+      : dt(`${hours} h ${_isAir ? 'airport' : 'station'} buffer`, `${_isAir ? '空港' : '駅'}で ${hours}時間の余裕`)
     out.reason = (out.reason ? out.reason + ' · ' : '') +
                  dt(`Departs ${dep} — last stop must end by ${out.maxTime} (${why})`, `${dep} 出発 — 最後の立ち寄り先は ${out.maxTime} までに終える必要があります（${why}）`)
   }
   return out
+}
+
+// Minutes for the to-airport/station transfer on the departure day — the
+// duration of the to-airport transport leg (the last non-locked slot before
+// the departure anchor). The last-stop cutoff subtracts this on top of the
+// airport buffer so the buffer stays PURE airport/station time: a far airport
+// pulls the last stop earlier. 0 until the planner adds the leg.
+function _departureTransferMins(totalDays) {
+  const cont = document.getElementById('slots-day-' + totalDays)
+  if (!cont) return 0
+  const slots = [...cont.querySelectorAll(':scope > .activity-slot')].filter(s => !s.classList.contains('is-locked'))
+  if (!slots.length) return 0
+  const last = slots[slots.length - 1]
+  if (!last.classList.contains('slot-type-transport')) return 0
+  const cells = last.querySelectorAll('.transport-grid .tg-value')
+  const mm = ((cells[1] && cells[1].textContent) || '').match(/(\d+)\s*min/i)
+  return mm ? parseInt(mm[1], 10) : 0
 }
 
 // Banner HTML shown at the top of the day-section-body for Day 1 / Last Day.
