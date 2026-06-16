@@ -47,7 +47,7 @@ body{font-family:'Noto Sans JP','DM Sans',system-ui,sans-serif;background:#f5f4f
 <body>
 <div class="card">
   <div class="logo"><img src="jj.jpg" alt="JJ"/>Journey<span>Junction</span></div>
-  <div class="sub" id="sub">メールでお送りした認証コードを入力し、新しいパスワードを設定してください。</div>
+  <div class="sub" id="sub">ご登録のメールアドレスに認証コードを送信しました。メールで届いた認証コードを入力し、新しいパスワードを設定してください。</div>
   <div id="email-line" class="sub" style="margin-top:-12px;margin-bottom:18px;"></div>
 
   <div class="error" id="err"></div>
@@ -63,30 +63,30 @@ body{font-family:'Noto Sans JP','DM Sans',system-ui,sans-serif;background:#f5f4f
 
   <!-- STEP 2: enter code + new password -->
   <div id="step-code" style="display:none;">
-    <label class="label">メールで届いた認証コード</label>
+    <label class="label">認証コード</label>
     <input class="input code" type="text" id="code" inputmode="numeric" maxlength="10" autocomplete="one-time-code" placeholder="••••••">
     <label class="label">新しいパスワード</label>
     <div class="pw-wrap">
-      <input class="input" type="password" id="password" placeholder="強固なパスワードを設定してください" autocomplete="new-password" oninput="updatePwRules()">
+      <input class="input" type="password" id="password" placeholder="新しいパスワードを入力してください" autocomplete="new-password" oninput="updatePwRules()">
       <button type="button" class="pw-toggle" onclick="togglePw('password', this)" aria-label="パスワードを表示">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
     <ul class="pw-rules" id="pw-rules">
       <li id="pw-len">8文字以上</li>
-      <li id="pw-letter">英字を1文字以上</li>
-      <li id="pw-digit">数字を1文字以上</li>
+      <li id="pw-letter">英字を1文字以上含めてください</li>
+      <li id="pw-digit">数字を1文字以上含めてください</li>
     </ul>
     <label class="label">パスワードの確認</label>
     <div class="pw-wrap">
-      <input class="input" type="password" id="confirm" placeholder="パスワードをもう一度入力してください" autocomplete="new-password">
+      <input class="input" type="password" id="confirm" placeholder="新しいパスワードをもう一度入力してください" autocomplete="new-password">
       <button type="button" class="pw-toggle" onclick="togglePw('confirm', this)" aria-label="パスワードを表示">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
     </div>
-    <button class="btn" id="btn-set" onclick="setPassword()">新しいパスワードを設定</button>
+    <button class="btn" id="btn-set" onclick="setPassword()">新しいパスワードを設定する</button>
     <div class="foot">
-      認証コードが届きませんか？ <button class="btn-link" onclick="resendCode()">再送信</button>
+      認証コードが届かない場合 <button class="btn-link" onclick="resendCode()">再送信</button>
       &nbsp;·&nbsp; <a href="login.html">ログイン</a>
     </div>
   </div>
@@ -167,7 +167,7 @@ function showStep(which) {
   document.getElementById('step-code').style.display  = which === 'code'  ? 'block' : 'none'
   if (which === 'code' && userEmail) {
     document.getElementById('email-line').innerHTML =
-      '<span class="email-pill">' + escapeHtml(userEmail) + '</span> に認証コードを送信しました'
+      '認証コードを <span class="email-pill">' + escapeHtml(userEmail) + '</span> に送信しました。'
     document.getElementById('email-line').style.display = 'block'
     setTimeout(() => document.getElementById('code')?.focus(), 50)
   }
@@ -255,25 +255,25 @@ async function setPassword() {
   if (code !== '__session__') {
     if (!/^\d{4,10}$/.test(code)) {
       showError('メールに記載された数字の認証コードを入力してください')
-      btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
+      btn.disabled = false; btn.textContent = '新しいパスワードを設定する'; return
     }
     if (!userEmail) {
       showError('メールアドレスが不明です。前の画面に戻り、もう一度入力してください。')
-      btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
+      btn.disabled = false; btn.textContent = '新しいパスワードを設定する'; return
     }
     const { error: otpErr } = await sb.auth.verifyOtp({
       email: userEmail, token: code, type: 'recovery'
     })
     if (otpErr) {
       showError(translateAuthError(otpErr.message, '認証コードが無効、または有効期限が切れています'))
-      btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
+      btn.disabled = false; btn.textContent = '新しいパスワードを設定する'; return
     }
   }
 
   const { error } = await sb.auth.updateUser({ password })
   if (error) {
     showError(translateAuthError(error.message, 'パスワードの更新に失敗しました'))
-    btn.disabled = false; btn.textContent = '新しいパスワードを設定'; return
+    btn.disabled = false; btn.textContent = '新しいパスワードを設定する'; return
   }
 
   document.getElementById('step-code').style.display = 'none'
