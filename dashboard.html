@@ -9965,6 +9965,19 @@ function resolveCityKey(rawCity){
   return ci || 'Other'
 }
 
+// Online-presence heartbeat — updates planners.last_seen_at so the admin's
+// "Manage planners" list can show who's active right now. Pings on load and
+// every 90s while the tab is visible. Starts once; fails silently if the
+// last_seen_at column hasn't been added yet (safe to deploy before the SQL).
+function _startPresenceHeartbeat(plannerId){
+  if (!plannerId || window._presenceTimer) return
+  const ping = () => {
+    if (typeof document.visibilityState === 'string' && document.visibilityState !== 'visible') return
+    try { sb.from('planners').update({ last_seen_at: new Date().toISOString() }).eq('id', plannerId).then(()=>{}, ()=>{}) } catch (e) {}
+  }
+  ping()
+  window._presenceTimer = setInterval(ping, 90 * 1000)
+}
 function applyDashHero(city){
   const img = document.getElementById('dash-hero-img')
   const eyebrow = document.getElementById('dash-hero-eyebrow')
@@ -10993,6 +11006,8 @@ async function initDashboard() {
     if (dashSub) dashSub.textContent = t('dash.loading')
     // City-aware hero banner — driven by planner profile city
     applyDashHero(planner.city)
+    // Online-presence heartbeat for the admin's "active now" indicator.
+    _startPresenceHeartbeat(planner.id)
   }
 
   
