@@ -1630,6 +1630,9 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <option value="holiday">On holiday</option>
           <option value="break">On break</option>
         </select>
+        <select id="planner-mentor" onchange="onPlannerFiltersChange()" style="padding:8px 10px;border:1px solid var(--border-med);border-radius:8px;background:var(--surface);font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--ink);cursor:pointer;">
+          <option value="">All mentors</option>
+        </select>
         <select id="planner-sort" onchange="onPlannerFiltersChange()" style="padding:8px 10px;border:1px solid var(--border-med);border-radius:8px;background:var(--surface);font-size:12.5px;font-family:'DM Sans',sans-serif;color:var(--ink);cursor:pointer;">
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
@@ -5633,7 +5636,9 @@ let currentFilter = 'all'
 let viewingPlannerId = null
 
 // ── PLANNER LIST STATE ──────────────────────────────────────
-const _plState = { filter:'all', search:'', city:'', avail:'', sort:'newest', page:1, pageSize:20 }
+const _plState = { filter:'all', search:'', city:'', avail:'', mentor:'', sort:'newest', page:1, pageSize:20 }
+// Onboarding mentors a planner can be tagged with (editable inline in the list).
+const ONBOARDING_MENTORS = ['FCKING','JT','KIT']
 
 async function loadPlanners() {
   const { data, error } = await sb.from('planners').select('*').order('created_at', { ascending: false })
@@ -5644,6 +5649,13 @@ async function loadPlanners() {
   if (citySel) {
     const cities = [...new Set(allPlanners.map(p => (p.city || '').trim()).filter(Boolean))].sort()
     citySel.innerHTML = '<option value="">All cities</option>' + cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')
+  }
+  // Mentor filter — populate once (guard so the 60s auto-refresh doesn't reset the selection)
+  const mentorSel = document.getElementById('planner-mentor')
+  if (mentorSel && mentorSel.options.length <= 1) {
+    mentorSel.innerHTML = '<option value="">All mentors</option>'
+      + ONBOARDING_MENTORS.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('')
+      + '<option value="__none__">— Unassigned —</option>'
   }
   applyPlannerFilters()
   const active = allPlanners.filter(p => p.status === 'active').length
@@ -5663,16 +5675,18 @@ function onPlannerFiltersChange(){
   _plState.search = (document.getElementById('planner-search')?.value || '').trim().toLowerCase()
   _plState.city   = document.getElementById('planner-city')?.value || ''
   _plState.avail  = document.getElementById('planner-avail')?.value || ''
+  _plState.mentor = document.getElementById('planner-mentor')?.value || ''
   _plState.sort   = document.getElementById('planner-sort')?.value || 'newest'
   _plState.page   = 1
   applyPlannerFilters()
 }
 
 function resetPlannerFilters(){
-  _plState.filter='all'; _plState.search=''; _plState.city=''; _plState.avail=''; _plState.sort='newest'; _plState.page=1
+  _plState.filter='all'; _plState.search=''; _plState.city=''; _plState.avail=''; _plState.mentor=''; _plState.sort='newest'; _plState.page=1
   const s = document.getElementById('planner-search'); if (s) s.value = ''
   const c = document.getElementById('planner-city'); if (c) c.value = ''
   const a = document.getElementById('planner-avail'); if (a) a.value = ''
+  const mn = document.getElementById('planner-mentor'); if (mn) mn.value = ''
   const so = document.getElementById('planner-sort'); if (so) so.value = 'newest'
   document.querySelectorAll('#page-planners .tab').forEach(t => t.classList.remove('active'))
   document.querySelector('#page-planners .tab')?.classList.add('active')
@@ -5704,6 +5718,9 @@ function applyPlannerFilters(){
   if (_plState.city) filtered = filtered.filter(p => (p.city || '').trim() === _plState.city)
   // Availability
   if (_plState.avail) filtered = filtered.filter(p => (p.availability || 'available') === _plState.avail)
+  if (_plState.mentor) filtered = (_plState.mentor === '__none__')
+    ? filtered.filter(p => !p.onboarding_mentor)
+    : filtered.filter(p => p.onboarding_mentor === _plState.mentor)
   // Sort
   const cmp = {
     'newest':   (a,b) => new Date(b.created_at) - new Date(a.created_at),
@@ -5738,6 +5755,15 @@ function _timeAgo(iso){
 // minutes. The dashboard only stamps last_seen_at while the planner is actually
 // interacting, so this means "working right now", not just "tab open".
 function _isOnline(iso){ return !!iso && (Date.now() - new Date(iso).getTime()) < 2*60*1000 }
+
+// Assign / clear a planner's onboarding mentor from the list (inline dropdown).
+async function setPlannerMentor(id, value){
+  const v = value || null
+  const { error } = await sb.from('planners').update({ onboarding_mentor: v }).eq('id', id)
+  if (error) { showToast('Could not set mentor: ' + error.message); return }
+  const row = allPlanners.find(p => p.id === id); if (row) row.onboarding_mentor = v
+  showToast(v ? ('Mentor set to ' + v) : 'Mentor cleared')
+}
 
 function renderPlanners(planners, meta) {
   const list  = document.getElementById('planners-list')
@@ -5805,6 +5831,10 @@ function renderPlanners(planners, meta) {
           <div><div class="p-stat-val" style="font-size:12px;">${escapeHtml(p.phone||'—')}</div><div style="font-size:11px;color:var(--ink-3)">phone</div></div>
         </div>
         <span class="status ${statusColor}" style="margin-left:8px;"><span class="status-dot"></span>${statusLabel}</span>
+        <select onclick="event.stopPropagation()" onchange="event.stopPropagation();setPlannerMentor('${jsEsc(p.id)}', this.value)" title="Onboarding mentor" style="margin-left:8px;padding:5px 8px;border:1px solid var(--border-med);border-radius:7px;background:var(--surface);font-size:11.5px;font-family:'DM Sans',sans-serif;color:var(--ink);cursor:pointer;">
+          <option value="">— Mentor —</option>
+          ${ONBOARDING_MENTORS.map(m => `<option value="${escapeHtml(m)}"${p.onboarding_mentor===m?' selected':''}>${escapeHtml(m)}</option>`).join('')}
+        </select>
         <button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="event.stopPropagation();viewPlanner('${jsEsc(p.id)}')">View</button>
         <button class="btn btn-primary btn-sm" style="margin-left:4px;" onclick="event.stopPropagation();openAssignFromPlanner('${jsEsc(p.id)}','${jsEsc(p.name)}',${JSON.stringify(p.availability||'available').replace(/"/g,'&quot;')})">Assign set</button>
       </div>`
