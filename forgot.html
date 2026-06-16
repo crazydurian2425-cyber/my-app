@@ -485,6 +485,10 @@ function translateAuthError(msg, fallback) {
   if (m.includes('unable to validate email') || m.includes('invalid format') || m.includes('invalid email')) {
     return isJa ? 'メールアドレスの形式が正しくありません' : msg
   }
+  if (m.includes('for security purposes') || m.includes('only request this after')) {
+    const s = (m.match(/after (\d+) second/) || [])[1]
+    return isJa ? (s ? `セキュリティのため、${s}秒後に再度お試しください。` : 'セキュリティのため、しばらくしてから再度お試しください。') : msg
+  }
   if (m.includes('rate limit') || m.includes('too many') || m.includes('429')) {
     return isJa ? '試行回数が多すぎます。しばらくしてから再度お試しください。' : msg
   }

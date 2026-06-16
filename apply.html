@@ -1044,7 +1044,15 @@ async function submitApplication(){
       console.error('[apply] auth signUp failed (application row already saved)', authErr)
       const msg = (authErr.message || '').toLowerCase()
       if (msg.includes('registered') || msg.includes('exist')) { showError(t('err.authDup')); resetBtn(); return }
-      showError(authErr.message || t('err.generic')); resetBtn(); return
+      const isJa = TM_LANG === 'ja'
+      const genericOrRaw = isJa ? t('err.generic') : (authErr.message || t('err.generic'))
+      if (msg.includes('for security purposes') || msg.includes('only request this after')) {
+        const s = (msg.match(/after (\d+) second/) || [])[1]
+        showError(isJa ? (s ? `セキュリティのため、${s}秒後に再度お試しください。` : 'セキュリティのため、しばらくしてから再度お試しください。') : genericOrRaw); resetBtn(); return
+      }
+      if (msg.includes('rate limit') || msg.includes('too many')) { showError(isJa ? '試行回数が多すぎます。しばらくしてから再度お試しください。' : genericOrRaw); resetBtn(); return }
+      if (msg.includes('weak password') || msg.includes('too weak') || (msg.includes('password') && msg.includes('at least'))) { showError(t('err.pwShort')); resetBtn(); return }
+      showError(genericOrRaw); resetBtn(); return
     }
     const user_id = auth?.user?.id || null
 

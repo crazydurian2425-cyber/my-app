@@ -871,6 +871,10 @@ function translateAuthError(msg, fallback) {
   if (m.includes('email not confirmed')) {
     return isJa ? 'メールアドレスが確認されていません。確認メールをご確認ください。' : msg
   }
+  if (m.includes('for security purposes') || m.includes('only request this after')) {
+    const s = (m.match(/after (\d+) second/) || [])[1]
+    return isJa ? (s ? `セキュリティのため、${s}秒後に再度お試しください。` : 'セキュリティのため、しばらくしてから再度お試しください。') : msg
+  }
   if (m.includes('rate limit') || m.includes('too many')) {
     return isJa ? '試行回数が多すぎます。少し時間をおいてから再度お試しください。' : msg
   }

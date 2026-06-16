@@ -155,7 +155,7 @@ let userEmail = null
     sb.auth.resetPasswordForEmail(userEmail, {
       redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(userEmail)
     }).then(({ error }) => {
-      if (error) showError(error.message)
+      if (error) showError(translateAuthError(error.message, '認証コードの送信に失敗しました'))
       else showSuccess(escapeHtml(userEmail) + ' に認証コードを送信しました。受信トレイをご確認ください。')
     })
     history.replaceState(null, '', 'reset.html?email=' + encodeURIComponent(userEmail))
@@ -181,7 +181,7 @@ async function sendCode() {
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(email)
   })
-  if (error) { showError(error.message); return }
+  if (error) { showError(translateAuthError(error.message, '認証コードの送信に失敗しました')); return }
 
   userEmail = email
   showStep('code')
@@ -194,7 +194,7 @@ async function resendCode() {
   const { error } = await sb.auth.resetPasswordForEmail(userEmail, {
     redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(userEmail)
   })
-  if (error) return showError(error.message)
+  if (error) return showError(translateAuthError(error.message, '認証コードの再送信に失敗しました'))
   showSuccess(escapeHtml(userEmail) + ' に新しい認証コードを送信しました')
 }
 
@@ -225,6 +225,10 @@ function translateAuthError(msg, fallback) {
   if (m.includes('different from the old password')) return '新しいパスワードは以前のものと異なる必要があります'
   if (m.includes('password should be at least')) return 'パスワードは6文字以上で入力してください'
   if (m.includes('weak password') || m.includes('password is too weak')) return 'パスワードが脆弱です。より強固なものを選んでください。'
+  if (m.includes('for security purposes') || m.includes('only request this after')) {
+    const s = (m.match(/after (\d+) second/) || [])[1]
+    return s ? `セキュリティのため、${s}秒後に再度お試しください。` : 'セキュリティのため、しばらくしてから再度お試しください。'
+  }
   if (m.includes('rate limit') || m.includes('too many')) return '試行回数が多すぎます。しばらく待ってから再度お試しください。'
   if (m.includes('invalid') && m.includes('token')) return '認証コードが無効、または有効期限が切れています'
   if (m.includes('expired') || m.includes('not valid')) return '認証コードが無効、または有効期限が切れています'
