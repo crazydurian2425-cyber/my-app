@@ -8957,7 +8957,7 @@ const TM_I18N = {
     'nav.profile':'プロフィール',
     'nav.settings':'設定',
     'nav.support':'サポートに問い合わせ',
-    'dash.greeting':'こんにちは、',
+    'dash.greeting':'おはようございます、',
     'dash.greeting.afternoon':'こんにちは、',
     'dash.greeting.evening':'こんばんは、',
     'dash.loading':'ダッシュボードを読み込み中…',
@@ -14028,7 +14028,7 @@ async function openPlanSummary(plan) {
   const _fmtLower = (tm) => tm ? formatTimeDisplay(tm).toLowerCase() : ''
   const _fmtBare  = (tm) => _fmtLower(tm).replace(/\s*(am|pm)\s*$/i,'')   // transit: drop the meridiem
   const _toMin = (tm) => { const m = String(tm||'').match(/(\d{1,2}):(\d{2})/); return m ? (+m[1]*60 + +m[2]) : null }
-  const _travFirst = String(trav.name || '').trim().split(/\s+/)[0] || dt('旅行者','旅行者')
+  const _travFirst = String(trav.name || '').trim().split(/\s+/)[0] || dt('the traveler','旅行者')
 
   // ── Quality-scan helpers ────────────────────────────────────────────────
   // A stop is something the traveller spends time at — NOT transport, hotel
@@ -17976,7 +17976,7 @@ function describeStopDistance(km) {
   }
   if (km < 8) {
     const mins = Math.max(8, Math.round(km * 3))
-    return { tier: 'warn', icon: '→', label: dt(`${km.toFixed(1)} km · タクシー ${mins} 分`, `${km.toFixed(1)} km · タクシー ${mins} 分`) }
+    return { tier: 'warn', icon: '→', label: dt(`${km.toFixed(1)} km · ${mins} min by taxi`, `${km.toFixed(1)} km · タクシー ${mins} 分`) }
   }
   const mins = Math.max(20, Math.round(km * 3))
   return { tier: 'danger', icon: '⚠', label: dt(`${km.toFixed(1)} km · ${mins} min — too far`, `${km.toFixed(1)} km · ${mins} 分 — 遠すぎます`) }
@@ -18834,7 +18834,7 @@ function applyRouteDataToSlot(slot, data) {
           <span class="ts-time"></span>
           <span class="ts-marker"><span class="ts-walk-icon" aria-hidden="true">🚶</span></span>
           <div class="ts-content is-segment">
-            <div class="ts-title">${dt('Walk','徒歩')} · ${r.mins} min</div>
+            <div class="ts-title">${dt('Walk','徒歩')} · ${r.mins} ${dt('min','分')}</div>
             <div class="ts-sub">${escapeHtml(r.distTxt)}</div>
           </div>`
       }
@@ -18848,7 +18848,7 @@ function applyRouteDataToSlot(slot, data) {
         <span class="ts-time"></span>
         <span class="ts-marker">${linePill}</span>
         <div class="ts-content is-segment">
-          <div class="ts-title">${escapeHtml(s.lineName)} · ${s.mins} min${stopBit}</div>
+          <div class="ts-title">${escapeHtml(s.lineName)} · ${s.mins} ${dt('min','分')}${stopBit}</div>
           <div class="ts-sub">${head ? dt('Towards' + head, head + '方面') : ''}</div>
         </div>`
     }).join('')
@@ -21650,11 +21650,11 @@ function buildDaySummaryHtml(dayNum, summary) {
     if (pe.isDepartureDay && pe.departureMethod) {
       // Hard departure-risk: the last stop runs past the airport/station cut-off.
       const ride  = (pe.departureMethod === 'flight') ? dt('flight','飛行機') : dt('train','電車')
-      const toBit = pe.departureTo ? dt(` to ${pe.departureTo}`, `${pe.departureTo}へ`) : ''
+      const toBit = pe.departureTo ? dt(` to ${pe.departureTo}`, `${pe.departureTo}行きの`) : ''
       const depAt = pe.departureTime ? (' ' + formatTimeDisplay(pe.departureTime)) : ''
       lines.push({ level:'red', text: dt(
         `⚠ Last stop ends ${pe.actualStr} — ${lateMin} min past the ${pe.expectedStr} departure cut-off. Move or trim it, or they may miss the${depAt} ${ride}${toBit}.`,
-        `⚠ 最後の立ち寄り先が ${pe.actualStr} に終わります — ${pe.expectedStr} の出発締切を ${lateMin} 分超過しています。移動するか短くしないと、${depAt} の${ride}${toBit}に乗り遅れる恐れがあります。`
+        `⚠ 最後の立ち寄り先が ${pe.actualStr} に終わります — ${pe.expectedStr} の出発締切を ${lateMin} 分超過しています。移動するか短くしないと、${depAt} の${toBit}${ride}に乗り遅れる恐れがあります。`
       )})
     } else {
       lines.push({ level:'amber', text: dt(
