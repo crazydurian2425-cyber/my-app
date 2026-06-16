@@ -9770,6 +9770,56 @@ function localizeCuisineCsv(raw){
   }).join(', ')
 }
 
+// Brief structured fields (room type, must-haves, languages) are bilingual:
+// stored in EITHER language, rendered in the current UI language. Pairs are
+// [English, 日本語]; _biLabel matches on either side so it works no matter which
+// language the row was saved in (mirrors localizeCuisineCsv — no DB change).
+const _MUSTHAVE_BI = [
+  ['Onsen','温泉'],['Family room','ファミリールーム'],['Near station','駅近'],
+  ['Central location','中心部の立地'],['Quiet room','静かな部屋'],['Mountain view','山ビュー'],
+  ['Garden view','庭園ビュー'],['King bed','キングベッド'],['Breakfast','朝食'],
+]
+const _ROOMTYPE_BI = [
+  ['1 single room · 1 guest','シングル1室 · 1名'],
+  ['1 double room · 2 guests','ダブル1室 · 2名'],
+  ['1 junior suite · 2 guests','ジュニアスイート1室 · 2名'],
+  ['2 connecting rooms · 4 guests (2 adults + 2 children)','コネクティング2室 · 4名（大人2・子供2）'],
+  ['3 connecting rooms · 5 guests (2 per room + 1)','コネクティング3室 · 5名（1室2名＋1名）'],
+  ['2 rooms · 3 guests (1 double + 1 twin for the teens)','2室 · 3名（ダブル1・ツイン1〈ティーン用〉）'],
+  ['2 twin rooms · 4 guests (2 per room)','ツイン2室 · 4名（1室2名）'],
+  ['2 rooms · 4 guests (2 per room)','2室 · 4名（1室2名）'],
+  ['2 rooms · 3 guests (1 double + 1 single)','2室 · 3名（ダブル1・シングル1）'],
+]
+const _LANGBASE_BI = [
+  ['Afrikaans','アフリカーンス語'],['Arabic','アラビア語'],['Catalan','カタルーニャ語'],['Dutch','オランダ語'],
+  ['English','英語'],['Filipino','フィリピン語'],['French','フランス語'],['German','ドイツ語'],['Hindi','ヒンディー語'],
+  ['Italian','イタリア語'],['Japanese','日本語'],['Kannada','カンナダ語'],['Korean','韓国語'],['Malay','マレー語'],
+  ['Mandarin','中国語'],['Maori','マオリ語'],['Norwegian','ノルウェー語'],['Portuguese','ポルトガル語'],['Spanish','スペイン語'],
+  ['Swedish','スウェーデン語'],['Tamil','タミル語'],['Thai','タイ語'],['Zulu','ズールー語'],
+]
+const _LANGQUAL_BI = [['fluent','流暢'],['intermediate','中級'],['native','ネイティブ'],['conversational','日常会話'],['basic','初級']]
+function _biLabel(pairs, v){
+  const s = String(v == null ? '' : v).trim()
+  const hit = pairs.find(p => p[0].toLowerCase() === s.toLowerCase() || p[1] === s)
+  if (!hit) return v
+  return isPlannerFR() ? hit[1] : hit[0]
+}
+function localizeMustHaves(arr){
+  if (!Array.isArray(arr)) return ''
+  return arr.map(m => _biLabel(_MUSTHAVE_BI, m)).join(' · ')
+}
+function localizeRoomType(v){ return v ? _biLabel(_ROOMTYPE_BI, v) : '' }
+function localizeLanguages(arr){
+  if (!Array.isArray(arr)) return ''
+  return arr.map(item => {
+    const m = String(item).match(/^(.+?)\s*[（(]\s*([^）)]+?)\s*[）)]\s*$/)
+    if (!m) return _biLabel(_LANGBASE_BI, item)
+    const base = _biLabel(_LANGBASE_BI, m[1])
+    const qual = _biLabel(_LANGQUAL_BI, m[2])
+    return isPlannerFR() ? `${base}（${qual}）` : `${base} (${qual})`
+  }).join(' · ')
+}
+
 function applyLang(lang){
   if (lang !== 'en' && lang !== 'ja') lang = 'en'
   TM_LANG = lang
@@ -12906,7 +12956,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // ── ages ──
   const ages = Array.isArray(meta.ages) && meta.ages.length ? meta.ages.join(', ') : ''
   // ── languages — keep just first 2 prettified (e.g. "English · Basic French") ──
-  const langs = Array.isArray(meta.languages) ? meta.languages.join(' · ') : ''
+  const langs = localizeLanguages(meta.languages)
 
   // ── dietary / mobility critical state ──
   const diet = meta.dietary_restrictions
@@ -13079,10 +13129,10 @@ async function renderTravelerBrief(plan, t, notes) {
   // keys, so every traveler whose data used the canonical keys showed "—".
   // Accommodation "type" was removed (room_type already conveys it, and the
   // old dropdown's "Airbnb" steered planners to listings Google can't link).
-  const roomTxt = meta.room_type || meta.accommodation_room || ''
+  const roomTxt = localizeRoomType(meta.room_type || meta.accommodation_room || '')
   const _mh = Array.isArray(meta.accommodation_musthaves) ? meta.accommodation_musthaves
             : (Array.isArray(meta.accommodation_must_haves) ? meta.accommodation_must_haves : null)
-  const accomMustHaves = _mh ? _mh.join(' · ') : ''
+  const accomMustHaves = _mh ? localizeMustHaves(_mh) : ''
   // Accommodation always renders — keeps the brief structurally consistent.
   const sectionAccom = wrap(`
     ${sectionHeader('bed', 'Accommodation')}
