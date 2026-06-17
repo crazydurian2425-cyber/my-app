@@ -8077,6 +8077,12 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
 
       <!-- Bank snapshot -->
       <div id="pr-bank-block" style="padding:12px 14px;background:var(--cream,#faf5ea);border:1px solid rgba(31,28,22,0.06);border-radius:10px;margin-bottom:14px;">
+        <!-- Payout-method picker — choose PayPay or bank for THIS payout (and it
+             becomes your saved default). Methods without saved details are dimmed. -->
+        <div id="pr-method-toggle" style="display:flex;gap:8px;margin-bottom:10px;">
+          <button type="button" id="pr-method-paypay" onclick="prSelectMethod('paypay')" data-i18n="pr.method.paypay" style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;border:1px solid rgba(31,28,22,0.12);background:var(--cream,#faf5ea);color:var(--text);cursor:pointer;transition:all .15s;">PayPay</button>
+          <button type="button" id="pr-method-bank" onclick="prSelectMethod('bank')" data-i18n="pr.method.bank" style="flex:1;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:600;text-align:center;border:1px solid rgba(31,28,22,0.12);background:var(--cream,#faf5ea);color:var(--text);cursor:pointer;transition:all .15s;">Bank transfer</button>
+        </div>
         <div data-i18n="pr.payingTo" style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-3);font-weight:600;margin-bottom:6px;">Paying to</div>
         <div id="pr-bank-name" style="font-size:13px;font-weight:600;color:var(--text);">—</div>
         <div id="pr-bank-acct" style="font-size:12px;color:var(--text-2);margin-top:2px;">—</div>
@@ -8522,6 +8528,10 @@ const TM_I18N = {
     'pr.locked':'Locked',
     'pr.available':'Available',
     'pr.payingTo':'Paying to',
+    'pr.method.paypay':'PayPay',
+    'pr.method.bank':'Bank transfer',
+    'pr.addPaypayFirst':'Add PayPay details in Profile → Payment first',
+    'pr.addBankFirst':'Add bank details in Profile → Payment first',
     'pr.updateBankHint':'Update payout details in Profile → Payment',
     'toast.addPayoutMethodFirst':'Add your PayPay or bank payout details in Profile first',
     'pr.amount':'Amount to withdraw',
@@ -9255,6 +9265,10 @@ const TM_I18N = {
     'pr.locked':'保留',
     'pr.available':'利用可能',
     'pr.payingTo':'支払い先',
+    'pr.method.paypay':'PayPay',
+    'pr.method.bank':'銀行振込',
+    'pr.addPaypayFirst':'先にプロフィール → 支払い情報で PayPay を登録してください',
+    'pr.addBankFirst':'先にプロフィール → 支払い情報で銀行口座を登録してください',
     'pr.updateBankHint':'プロフィール → 支払い で情報を編集してください',
     'toast.addPayoutMethodFirst':'プロフィールで PayPay または銀行口座を追加してください',
     'pr.amount':'金額',
@@ -10545,8 +10559,13 @@ function _isValidBic(raw) {
 // per planner.payout_method). Returns a uniform shape with a render-ready
 // title, detail line, and the snapshot we attach to wallet_requests (which the
 // admin payout list already knows how to render for either method).
-function getPlannerPayoutMethod() {
-  const active = (planner?.payout_method === 'bank') ? 'bank' : 'paypay'
+function getPlannerPayoutMethod(forceMethod) {
+  // forceMethod lets callers (e.g. the payout modal's method picker) ask for a
+  // specific method's details regardless of the saved default. No arg → use the
+  // planner's saved payout_method.
+  const active = (forceMethod === 'bank' || forceMethod === 'paypay')
+    ? forceMethod
+    : ((planner?.payout_method === 'bank') ? 'bank' : 'paypay')
 
   if (active === 'bank') {
     const bankName = (planner?.bank_name || '').trim()
@@ -10877,6 +10896,50 @@ async function loadWalletAdjustments() {
   }).join('')
 }
 
+// Which payout method the planner picked in the payout modal (PayPay / bank).
+// Defaults to their saved payout_method when the modal opens; selecting one also
+// becomes the new saved default on submit.
+let _prSelectedMethod = null
+
+// A method is "available" only if its details are actually saved (bank needs an
+// account number, PayPay needs an ID) — getPlannerPayoutMethod returns 'none' otherwise.
+function prMethodAvailable(which) {
+  return getPlannerPayoutMethod(which).method !== 'none'
+}
+
+// Re-render the "Paying to" block + toggle buttons for the current selection.
+function prRenderMethod() {
+  const m = getPlannerPayoutMethod(_prSelectedMethod)
+  const s = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt }
+  s('pr-bank-name', m.title)
+  s('pr-bank-acct', m.detail)
+  const methods = ['paypay', 'bank']
+  methods.forEach(w => {
+    const btn = document.getElementById('pr-method-' + w)
+    if (!btn) return
+    const avail  = prMethodAvailable(w)
+    const active = (w === _prSelectedMethod)
+    btn.style.opacity    = avail ? '1' : '0.45'
+    btn.style.cursor     = avail ? 'pointer' : 'not-allowed'
+    btn.style.background = active ? 'var(--green-dark,#4A6759)' : 'var(--cream,#faf5ea)'
+    btn.style.color      = active ? '#fff' : 'var(--text)'
+    btn.style.fontWeight = active ? '700' : '600'
+    btn.style.border     = active ? '1px solid var(--green-dark,#4A6759)' : '1px solid rgba(31,28,22,0.12)'
+  })
+}
+
+// Planner clicked a method tab in the payout modal.
+function prSelectMethod(which) {
+  if (!prMethodAvailable(which)) {
+    showToast(which === 'paypay'
+      ? t('pr.addPaypayFirst', 'Add PayPay details in Profile → Payment first')
+      : t('pr.addBankFirst',   'Add bank details in Profile → Payment first'))
+    return
+  }
+  _prSelectedMethod = which
+  prRenderMethod()
+}
+
 function openPayoutRequestModal() {
   if (_walletState.effectiveMax <= 0) {
     let msg
@@ -10911,10 +10974,15 @@ function openPayoutRequestModal() {
   const pendingAmt   = _walletState._pendingAmt || 0
   s('pr-locked', fmtMoney(retentionAmt + pendingAmt))
   s('pr-available', fmtMoney(_walletState.effectiveMax))
-  // Payment method snapshot — PayPay preferred over bank when configured
-  const prMethod = getPlannerPayoutMethod()
-  s('pr-bank-name', prMethod.title)
-  s('pr-bank-acct', prMethod.detail)
+  // Payment method picker — default to the saved method; if that one has no
+  // details saved, fall back to whichever method does. prRenderMethod paints
+  // the "Paying to" lines + toggle buttons.
+  _prSelectedMethod = (planner?.payout_method === 'bank') ? 'bank' : 'paypay'
+  if (!prMethodAvailable(_prSelectedMethod)) {
+    if (prMethodAvailable('bank'))        _prSelectedMethod = 'bank'
+    else if (prMethodAvailable('paypay')) _prSelectedMethod = 'paypay'
+  }
+  prRenderMethod()
   // Short, contextual hint under the amount input — breakdown of what's
   // available so the planner can see "X bond refund + Y commission".
   const hint = document.getElementById('pr-amount-hint')
@@ -10975,8 +11043,8 @@ async function submitPayoutRequest() {
   const amount = Math.round((Number(_walletState.effectiveMax) || 0) * 100) / 100
   const note   = (noteInput?.value || '').trim()
   if (!Number.isFinite(amount) || amount <= 0) { showToast(t('toast.validAmount','No balance available to withdraw')); return }
-  // Either PayPay OR bank is enough — PayPay is preferred when both are set.
-  const submitMethod = getPlannerPayoutMethod()
+  // Use the method the planner picked in the modal (falls back to saved default).
+  const submitMethod = getPlannerPayoutMethod(_prSelectedMethod)
   if (submitMethod.method === 'none') {
     showToast(t('toast.addPayoutMethodFirst','Add instant payment or bank details in Profile first'))
     return
@@ -10992,6 +11060,15 @@ async function submitPayoutRequest() {
     bank_snapshot: submitMethod.snapshot
   })
   if (error) { showToast(dt('Failed: ','失敗: ') + error.message); btn.disabled = false; btn.textContent = t('pr.submit','Submit request'); return }
+
+  // Persist the picked method as the new saved default so it sticks next time
+  // (and Profile stays in sync). Best-effort — the request snapshot above is
+  // already authoritative for this payout regardless of this update.
+  if (submitMethod.method !== 'none' && _prSelectedMethod && planner.payout_method !== _prSelectedMethod) {
+    planner.payout_method = _prSelectedMethod
+    try { localStorage.setItem('jj_planner', JSON.stringify(planner)) } catch(e){}
+    sb.from('planners').update({ payout_method: _prSelectedMethod }).eq('id', planner.id).then(() => {}, () => {})
+  }
 
   closeModal('modal-payout-request')
   showToast(t('toast.requestSubmitted','Request submitted — {amt} pending review').replace('{amt}', fmtMoney(amount)))
