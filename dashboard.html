@@ -12242,6 +12242,12 @@ function dedupePlansByPlanner(plans, plannerId){
 // ── NAV ──
 function showPage(id, btn) {
   closeSidebar()
+  // Safety net: navigating with no modal open should never leave a stray
+  // scroll-lock behind. Guards against any modal-dismiss path that forgot to
+  // release body.modal-open (which made Profile/Settings unscrollable).
+  if (!document.querySelector('.modal-overlay.open')) {
+    document.body.classList.remove('modal-open')
+  }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
   document.getElementById('page-'+id).classList.add('active')
@@ -12861,12 +12867,11 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('mousedown', e => { startedOnOverlay = (e.target === o); });
   o.addEventListener('click', e => {
     if (startedOnOverlay && e.target === o) {
-      // Same flush — backdrop-dismiss path skips closeModal entirely so it
-      // would otherwise leave a pending autosave dangling.
-      if (o.id === 'modal-submit' && typeof _flushAutoSave === 'function') {
-        _flushAutoSave()
-      }
-      o.classList.remove('open');
+      // Route through closeModal so the autosave flush AND the body-scroll-lock
+      // release both happen. Removing only `.open` here used to leave
+      // `body.modal-open` (overflow:hidden) stuck — which is why scrolling broke
+      // on Profile/Settings after dismissing a modal by clicking the backdrop.
+      closeModal(o.id)
     }
     startedOnOverlay = false;
   });
