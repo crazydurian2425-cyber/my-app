@@ -468,6 +468,10 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
       <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></div>
       <div class="cmain"><div class="clabel">City</div><div class="cval" id="info-city">—</div></div>
     </div>
+    <div class="contact-row" id="row-mentor">
+      <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="cmain"><div class="clabel">Onboarding mentor</div><div class="cval" id="info-mentor">—</div></div>
+    </div>
     <div class="contact-row" id="row-joined">
       <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
       <div class="cmain"><div class="clabel">Joined</div><div class="cval" id="info-joined">—</div></div>
@@ -1070,7 +1074,7 @@ async function loadConversations(opts = {}) {
 
     // Step 2: conversations matching by preview OR planner_id
     let q = sb.from('conversations')
-      .select('*, planners:planner_id(id,name,email,phone,city,status)')
+      .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)')
       .not('last_message_at', 'is', null)   // hide conversations that never had a real message
       .order('pinned', { ascending: false })
       .order('last_message_at', { ascending: false, nullsFirst: false })
@@ -1092,7 +1096,7 @@ async function loadConversations(opts = {}) {
   }
 
   let q = sb.from('conversations')
-    .select('*, planners:planner_id(id,name,email,phone,city,status)', { count: 'exact' })
+    .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)', { count: 'exact' })
     .not('last_message_at', 'is', null)
     .order('pinned', { ascending: false })  // pinned to top
     .order('last_message_at', { ascending: false, nullsFirst: false })
@@ -1167,8 +1171,10 @@ function renderInbox() {
     const assigneeChip = c.assigned_to
       ? `<span class="conv-assignee" title="Assigned to ${escapeHtml(c.assigned_to)}">${escapeHtml(initials(c.assigned_to))}</span>` : ''
     const pinMark = pinned ? '<span class="conv-pin-mark" title="Pinned">📌</span>' : ''
-    const chipsRow = (shownTags.length || tagOverflow || assigneeChip)
-      ? `<div class="conv-chips">${tagChipsHtml}${tagOverflow}${assigneeChip}</div>` : ''
+    const mentorChip = p.onboarding_mentor
+      ? `<span class="conv-tag" style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.4);" title="Onboarding mentor">👤 ${escapeHtml(p.onboarding_mentor)}</span>` : ''
+    const chipsRow = (mentorChip || shownTags.length || tagOverflow || assigneeChip)
+      ? `<div class="conv-chips">${mentorChip}${tagChipsHtml}${tagOverflow}${assigneeChip}</div>` : ''
 
     return `
       <div class="conv-row ${unread?'unread':''} ${isActive?'active':''} ${pinned?'pinned':''}" onclick="openConversation('${escapeHtml(c.id)}')">
@@ -1219,7 +1225,7 @@ async function openConversation(id) {
     // beyond what's loaded). Fetch directly so deep links + cross-filter
     // links keep working.
     const { data } = await sb.from('conversations')
-      .select('*, planners:planner_id(id,name,email,phone,city,status)')
+      .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)')
       .eq('id', id).maybeSingle()
     conv = data
   }
@@ -1239,7 +1245,7 @@ async function openConversation(id) {
   const avEl = document.getElementById('info-avatar'); if (avEl) avEl.textContent = initials(p.name)
   document.getElementById('chat-head-av').textContent = initials(p.name)
   document.getElementById('chat-head-name').textContent = p.name || 'Unknown planner'
-  document.getElementById('chat-head-meta').textContent = `${p.email || '—'}${p.phone ? ' · ' + p.phone : ''}`
+  document.getElementById('chat-head-meta').textContent = `${p.email || '—'}${p.phone ? ' · ' + p.phone : ''}${p.onboarding_mentor ? ' · Mentor: ' + p.onboarding_mentor : ''}`
   document.getElementById('info-name').textContent  = p.name || '—'
   document.getElementById('info-email').textContent = p.email || '—'
   document.getElementById('info-phone').textContent = p.phone || '—'
@@ -1247,6 +1253,8 @@ async function openConversation(id) {
   const rowEmail = document.getElementById('row-email'); if (rowEmail){ rowEmail.setAttribute('data-copy', p.email || ''); rowEmail.classList.toggle('empty', !p.email) }
   const rowPhone = document.getElementById('row-phone'); if (rowPhone){ rowPhone.setAttribute('data-copy', p.phone || ''); rowPhone.classList.toggle('empty', !p.phone) }
   const rowCity  = document.getElementById('row-city');  if (rowCity)  rowCity.classList.toggle('empty', !p.city)
+  const elMentor = document.getElementById('info-mentor'); if (elMentor) elMentor.textContent = p.onboarding_mentor || '—'
+  const rowMentor = document.getElementById('row-mentor'); if (rowMentor) rowMentor.classList.toggle('empty', !p.onboarding_mentor)
   const badge = document.getElementById('info-status')
   badge.textContent = p.status || 'active'
   badge.className = 'info-badge ' + (p.status === 'active' ? 'ok' : 'amber')
@@ -2595,7 +2603,7 @@ async function upsertConvFromRealtime(convId) {
   if (!convId) return
   const { data: row } = await sb
     .from('conversations')
-    .select('*, planners:planner_id(id,name,email,phone,city,status)')
+    .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)')
     .eq('id', convId)
     .maybeSingle()
   if (!row) return removeConvFromRealtime(convId)
