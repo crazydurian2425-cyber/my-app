@@ -7986,7 +7986,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
         <!-- ── Section 3 · Commission + submit bar ───────────────────── -->
         <div class="review-submit-bar">
           <div class="review-submit-left">
-            <div class="review-submit-earn-label">You will earn</div>
+            <div class="review-submit-earn-label" id="review-earn-label">You will earn</div>
             <div class="review-submit-earn-amount" id="review-commission">¥—</div>
           </div>
           <!-- Submit happens via the footer "Submit plan" button, which runs the
@@ -21594,17 +21594,17 @@ function buildReviewPage() {
   // through to "—" (no badge) when the traveler row didn't set a budget.
   const dailyBudget = Number(window._currentDailyBudget) || null
   let budgetTone = 'ok'
-  let budgetLabel = '✓ in budget'
-  let budgetDetail = dailyBudget ? `${fmtMoney(dailyBudget)} limit` : ''
+  let budgetLabel = dt('✓ in budget','✓ 予算内')
+  let budgetDetail = dailyBudget ? dt(`${fmtMoney(dailyBudget)} limit`, `上限 ${fmtMoney(dailyBudget)}`) : ''
   if (dailyBudget && avgSpendEur > dailyBudget) {
     const overPct = ((avgSpendEur - dailyBudget) / dailyBudget) * 100
-    if (overPct > 15) { budgetTone = 'red';   budgetLabel = '✗ over'   }
-    else              { budgetTone = 'amber'; budgetLabel = '⚠ over'   }
-    budgetDetail = `${fmtMoney(dailyBudget)} limit`
+    if (overPct > 15) { budgetTone = 'red';   budgetLabel = dt('✗ over','✗ 超過')   }
+    else              { budgetTone = 'amber'; budgetLabel = dt('⚠ over','⚠ 超過')   }
+    budgetDetail = dt(`${fmtMoney(dailyBudget)} limit`, `上限 ${fmtMoney(dailyBudget)}`)
   } else if (!dailyBudget) {
     budgetTone = 'ok'
     budgetLabel = '—'
-    budgetDetail = 'no budget set'
+    budgetDetail = dt('no budget set','予算の設定なし')
   }
   // 3. Render the 4-tile grid.
   const wrap = document.getElementById('review-summary')
@@ -21616,28 +21616,32 @@ function buildReviewPage() {
     wrap.innerHTML = `
       <div class="${tileClassFor('stops')}">
         <div class="review-stat-value">${totalStops}</div>
-        <div class="review-stat-label">stops</div>
+        <div class="review-stat-label">${dt('stops','立ち寄り先')}</div>
       </div>
       <div class="${tileClassFor('walk')}">
         <div class="review-stat-value">${avgWalkingKm.toFixed(1)} km</div>
-        <div class="review-stat-label">avg walking/day</div>
+        <div class="review-stat-label">${dt('avg walking/day','平均徒歩/日')}</div>
       </div>
       <div class="${tileClassFor('spend')}">
         <div class="review-stat-value">${fmtMoney(Math.round(avgSpendEur))}</div>
-        <div class="review-stat-label">avg spend/day</div>
+        <div class="review-stat-label">${dt('avg spend/day','平均支出/日')}</div>
       </div>
       <div class="${tileClassFor('budget')}">
         <div class="review-stat-value">${escapeHtml(budgetLabel)}</div>
-        <div class="review-stat-label">${escapeHtml(budgetDetail || 'budget')}</div>
+        <div class="review-stat-label">${escapeHtml(budgetDetail || dt('budget','予算'))}</div>
       </div>
     `
   }
   // 4. Personal-note label uses the traveler's first name when available.
   const labelEl = document.getElementById('review-note-label')
   if (labelEl) {
-    const first = window._currentFirstName || 'the traveler'
-    labelEl.textContent = `Personal note to ${first}`
+    const fn = window._currentFirstName || ''
+    labelEl.textContent = fn
+      ? dt(`Personal note to ${fn}`, `${fn}さんへのメッセージ`)
+      : dt('Personal note to the traveler', '旅行者へのメッセージ')
   }
+  const earnLbl = document.getElementById('review-earn-label')
+  if (earnLbl) earnLbl.textContent = dt('You will earn', '獲得予定額')
   const ta = document.getElementById('review-personal-message')
   if (ta) {
     const first = window._currentFirstName || ''
@@ -21649,11 +21653,20 @@ function buildReviewPage() {
     const _city  = (window._currentDestination || '').trim()
     const _fromCity = (window._currentArrivalFrom || '').split(',')[0].trim()
     const _cityTxt = _city ? ` in ${_city}` : ''
-    let _body
-    if (_order <= 1)                        _body = 'welcome to Japan...'
-    else if (_total > 1 && _order >= _total) _body = `for your last stop${_cityTxt} — and safe travels home...`
-    else _body = _fromCity ? `hope ${_fromCity} was wonderful — for your time${_cityTxt}...` : `for your time${_cityTxt}...`
-    ta.placeholder = first ? `${first}, ${_body}` : (_body.charAt(0).toUpperCase() + _body.slice(1))
+    const _cityTxtJa = _city ? `${_city}での` : ''
+    let _body, _bodyJa
+    if (_order <= 1) {
+      _body = 'welcome to Japan...'; _bodyJa = '日本へようこそ…'
+    } else if (_total > 1 && _order >= _total) {
+      _body = `for your last stop${_cityTxt} — and safe travels home...`
+      _bodyJa = `${_cityTxtJa}最後の滞在に向けて — お気をつけてお帰りください…`
+    } else {
+      _body = _fromCity ? `hope ${_fromCity} was wonderful — for your time${_cityTxt}...` : `for your time${_cityTxt}...`
+      _bodyJa = _fromCity ? `${_fromCity}はいかがでしたか。${_cityTxtJa}滞在に向けて…` : `${_cityTxtJa}滞在に向けて…`
+    }
+    const _phEn = first ? `${first}, ${_body}` : (_body.charAt(0).toUpperCase() + _body.slice(1))
+    const _phJa = first ? `${first}さん、${_bodyJa}` : _bodyJa
+    ta.placeholder = dt(_phEn, _phJa)
     // Hydrate from the open plan row (loaded onto window._currentPersonalMessage).
     if (typeof window._currentPersonalMessage === 'string' && ta.value !== window._currentPersonalMessage) {
       ta.value = window._currentPersonalMessage
@@ -21677,7 +21690,7 @@ function _refreshReviewWordCount() {
              : words < 50  ? 'is-short'
              : words > 200 ? 'is-overflow'
              :               'is-good'
-  counter.textContent = `${words} / 200 words`
+  counter.textContent = dt(`${words} / 200 words`, `${words} / 200 語`)
   counter.className = 'review-note-counter ' + tone
 }
 
