@@ -20,17 +20,18 @@
 --     FROM pg_constraint WHERE conname = 'planners_bank_account_type_check';
 --   SELECT bank_account_type, count(*) FROM public.planners GROUP BY 1 ORDER BY 2 DESC;
 
--- 1) Normalise any legacy / English-style values to the JA values the app uses,
---    and blank strings to NULL — so the new constraint cannot fail on old rows.
+-- 1) Force bank_account_type into the only valid set. '普通'/'当座' are the only
+--    legal values; map common English variants, and set EVERYTHING else
+--    (blanks, crypto-payout leftovers like 'USDT', junk) to NULL — otherwise
+--    the ADD CONSTRAINT below fails on those rows. (A crypto/PayPay planner has
+--    no bank account type, so NULL is the correct value for them anyway.)
 UPDATE public.planners
 SET bank_account_type = CASE
-  WHEN lower(btrim(bank_account_type)) IN ('futsu','ordinary','savings','普通')  THEN '普通'
-  WHEN lower(btrim(bank_account_type)) IN ('touza','current','checking','当座')  THEN '当座'
-  WHEN btrim(coalesce(bank_account_type, '')) = ''                               THEN NULL
-  ELSE bank_account_type
-END
-WHERE bank_account_type IS NOT NULL
-  AND (bank_account_type NOT IN ('普通','当座') OR btrim(bank_account_type) = '');
+  WHEN lower(btrim(bank_account_type)) IN ('futsu','ordinary','savings') THEN '普通'
+  WHEN lower(btrim(bank_account_type)) IN ('touza','current','checking') THEN '当座'
+  WHEN bank_account_type IN ('普通','当座')                              THEN bank_account_type
+  ELSE NULL
+END;
 
 -- 2) Replace the drifted constraint with one matching the app contract.
 ALTER TABLE public.planners
