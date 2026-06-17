@@ -898,7 +898,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     </button>
     <button class="nav-item" onclick="showPage('weekly-salary',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h12M6 4l-4 4 4 4M14 12V4"/></svg>
-      Weekly salary
+      Performance bonus
       <span class="nav-badge" id="badge-weekly-salary" style="display:none;background:var(--amber);">0</span>
     </button>
     <button class="nav-item" onclick="showPage('invoices',this)">
@@ -1544,7 +1544,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
   <div id="page-weekly-salary" class="page">
     <div class="ph">
       <div>
-        <div class="ph-title">Weekly salary</div>
+        <div class="ph-title">Performance bonus</div>
         <div class="ph-sub">¥150,000 per rolling 7-day cycle if a planner completes ≥2 sets · cycles anchored to each planner's first set completion</div>
       </div>
     </div>
@@ -1696,7 +1696,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
           <input type="checkbox" id="cp-subaccount" style="margin-top:3px;flex-shrink:0;width:16px;height:16px;cursor:pointer;accent-color:var(--accent,#b47828);">
           <span style="flex:1;">
             <span style="display:block;font-weight:600;font-size:13px;color:var(--ink);">Sub-account · training mode</span>
-            <span style="display:block;font-size:11.5px;color:var(--ink-2);line-height:1.5;margin-top:3px;">Shared mentor account for onboarding new planners. Submit unlocks once <strong>Day 1 has at least 3 activities</strong> (morning / afternoon / evening) — mentor completes the remaining days. Commission, bond, and weekly salary all behave normally.</span>
+            <span style="display:block;font-size:11.5px;color:var(--ink-2);line-height:1.5;margin-top:3px;">Shared mentor account for onboarding new planners. Submit unlocks once <strong>Day 1 has at least 3 activities</strong> (morning / afternoon / evening) — mentor completes the remaining days. Commission, bond, and the performance bonus all behave normally.</span>
           </span>
         </label>
 
@@ -2739,7 +2739,7 @@ const pageNames = {
   'overview':'Dashboard','travelers':'All travelers','new-traveler':'Add traveler','create-planner':'Create planner',
   'post-job':'Post job set','active-jobs':'Active sets','review':'Review itineraries','bonds':'Bond approvals',
   'approval-history':'Approval history',
-  'payments':'Payments','weekly-salary':'Weekly salary','invoices':'Invoices','planners':'Manage planners','applications':'Planner applications'
+  'payments':'Payments','weekly-salary':'Performance bonus','invoices':'Invoices','planners':'Manage planners','applications':'Planner applications'
 }
 
 let _plannersRefreshTimer = null
@@ -4857,8 +4857,8 @@ async function payWeeklySalary(plannerId, cycleNumber, btn){
   const { error } = await sb.from('wallet_adjustments').insert({
     planner_id: plannerId,
     amount: WEEKLY_SALARY_AMOUNT,
-    reason: 'Weekly salary',
-    reason_ja: '週給',
+    reason: 'Performance bonus',
+    reason_ja: '条件達成ボーナス',
     notes: notesKey,
     bypass_retention: true,
     created_by: actor
@@ -4869,7 +4869,7 @@ async function payWeeklySalary(plannerId, cycleNumber, btn){
     return
   }
   auditLog('weekly_salary.award', 'planner', plannerId, { amount: WEEKLY_SALARY_AMOUNT, cycle: Number(cycleNumber) })
-  showToast(`¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} weekly salary paid (cycle ${cycleNumber})`)
+  showToast(`¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} performance bonus paid (cycle ${cycleNumber})`)
   loadWeeklySalaries()
   if (typeof loadPayments === 'function') setTimeout(loadPayments, 300)
 }
@@ -4894,8 +4894,8 @@ async function payWeeklySalaryEarly(plannerId, cycleNumber, plannerName, btn){
   const { error } = await sb.from('wallet_adjustments').insert({
     planner_id: plannerId,
     amount: WEEKLY_SALARY_AMOUNT,
-    reason: 'Weekly salary (early)',
-    reason_ja: '週給（前払い）',
+    reason: 'Performance bonus (early)',
+    reason_ja: '条件達成ボーナス（前払い）',
     notes: notesKey,
     bypass_retention: true,
     created_by: actor
@@ -4913,7 +4913,7 @@ async function payWeeklySalaryEarly(plannerId, cycleNumber, plannerName, btn){
 
 async function revertWeeklySalary(adjustmentId, plannerId, plannerName, btn){
   if (!adjustmentId) return
-  if (!confirm(`Revert ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} weekly salary for ${plannerName || 'this planner'}?\n\nThe credit will be removed from their wallet and they'll appear in the Ready-to-pay list again. If they've already withdrawn the salary, the cash stays with them — only the wallet credit is reversed.`)) return
+  if (!confirm(`Revert ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} performance bonus for ${plannerName || 'this planner'}?\n\nThe credit will be removed from their wallet and they'll appear in the Ready-to-pay list again. If they've already withdrawn the bonus, the cash stays with them — only the wallet credit is reversed.`)) return
   if (btn) { btn.disabled = true; btn.textContent = 'Reverting…' }
   const { error } = await sb.from('wallet_adjustments').delete().eq('id', adjustmentId)
   if (error) {
@@ -4945,8 +4945,8 @@ async function payAllWeeklySalaries(btn){
     const { error } = await sb.from('wallet_adjustments').insert({
       planner_id: plannerId,
       amount: WEEKLY_SALARY_AMOUNT,
-      reason: 'Weekly salary',
-      reason_ja: '週給',
+      reason: 'Performance bonus',
+      reason_ja: '条件達成ボーナス',
       notes: notesKey,
       bypass_retention: true,
       created_by: actor
