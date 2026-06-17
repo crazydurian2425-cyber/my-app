@@ -1783,6 +1783,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       </div>
       <div id="legal-status" style="font-size:12px;color:var(--ink-3);margin:6px 0 12px;"></div>
       <div id="legal-fields"></div>
+      <button class="btn btn-ghost" id="legal-add-btn" style="margin-top:10px;" onclick="legalAddSection()">+ Add section</button>
     </div>
   </div>
 
@@ -7210,7 +7211,8 @@ function _legalGroupTitle(prefix){
   if (prefix === '_header') return 'Page header'
   const t = _legalDict.en[prefix + '.title']
   const plain = t ? String(t).replace(/<[^>]+>/g,'').trim() : ''
-  return plain || prefix.toUpperCase()
+  if (plain) return plain
+  return /^custom\d+$/.test(prefix) ? 'New section (untitled)' : prefix.toUpperCase()
 }
 function renderLegalFields() {
   const fields = document.getElementById('legal-fields')
@@ -7222,7 +7224,8 @@ function renderLegalFields() {
     const g = _legalGroupOf(k)
     if (g !== lastGroup) {
       if (lastGroup !== null) html += '</div>'
-      html += `<div style="margin:20px 0 8px;font-size:13.5px;font-weight:700;color:var(--green-dark,#2f6b53);border-bottom:1px solid var(--line,#e5e1d8);padding-bottom:5px;">${_legalEsc(_legalGroupTitle(g))}</div><div>`
+      const _del = /^custom\d+$/.test(g) ? `<button class="btn btn-ghost" style="padding:2px 8px;font-size:11px;color:#b84a3e;" onclick="legalDeleteSection('${g}')">Delete section</button>` : ''
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:20px 0 8px;border-bottom:1px solid var(--line,#e5e1d8);padding-bottom:5px;"><span style="font-size:13.5px;font-weight:700;color:var(--green-dark,#2f6b53);">${_legalEsc(_legalGroupTitle(g))}</span>${_del}</div><div>`
       lastGroup = g
     }
     const en = _legalDict.en[k] || '', ja = _legalDict.ja[k] || ''
@@ -7237,6 +7240,33 @@ function renderLegalFields() {
   }
   if (lastGroup !== null) html += '</div>'
   fields.innerHTML = html
+}
+// Pull current textarea values back into _legalDict so add/delete re-renders
+// don't drop unsaved edits.
+function _legalCollect(){
+  document.querySelectorAll('#legal-fields textarea[data-legal-key]').forEach(ta => {
+    const k = ta.getAttribute('data-legal-key')
+    if (ta.getAttribute('data-legal-lang') === 'en') _legalDict.en[k] = ta.value; else _legalDict.ja[k] = ta.value
+  })
+}
+function legalAddSection(){
+  _legalCollect()
+  let n = 1; while (('custom'+n+'.title') in _legalDict.en || ('custom'+n+'.body') in _legalDict.en) n++
+  _legalDict.en['custom'+n+'.title'] = ''; _legalDict.en['custom'+n+'.body'] = ''
+  _legalDict.ja['custom'+n+'.title'] = ''; _legalDict.ja['custom'+n+'.body'] = ''
+  renderLegalFields()
+  const f = document.getElementById('legal-fields')
+  if (f && f.lastElementChild) f.lastElementChild.scrollIntoView({ behavior:'smooth', block:'center' })
+  const status = document.getElementById('legal-status')
+  if (status) status.textContent = 'New section added at the bottom — fill the Heading + Body (EN + 日本語), then Save changes.'
+}
+function legalDeleteSection(prefix){
+  if (!/^custom\d+$/.test(prefix)) return
+  if (!confirm('Delete this section? It is removed from the Terms page when you Save changes.')) return
+  _legalCollect()
+  Object.keys(_legalDict.en).forEach(k => { if (k === prefix || k.startsWith(prefix+'.')) delete _legalDict.en[k] })
+  Object.keys(_legalDict.ja).forEach(k => { if (k === prefix || k.startsWith(prefix+'.')) delete _legalDict.ja[k] })
+  renderLegalFields()
 }
 async function saveLegalDoc() {
   const btn = document.getElementById('legal-save-btn')

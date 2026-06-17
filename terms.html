@@ -208,6 +208,9 @@ a:hover{color:var(--green-d);}
     <h2><span class="n">10.</span><span data-i18n-html="s11.title">Governing law</span></h2>
     <p data-i18n-html="s11.p1">These Terms are governed by the laws of <strong>Japan</strong>. Although Journey Junction Ltd is incorporated in the United Kingdom, the service is provided to the Japan market and any dispute not resolved informally will be submitted to the exclusive jurisdiction of the Tokyo District Court (東京地方裁判所).</p>
 
+    <!-- Admin-added sections (from the Terms editor) render here. -->
+    <div id="terms-custom"></div>
+
     <div class="contact-card">
       <h3 data-i18n-html="contact.title">Contact</h3>
       <p data-i18n-html="contact.body">Questions about these Terms? Reach out via the <a href="support.html">in-app support chat</a>, or email <strong>hello@thejourneyjunction.co.uk</strong>.</p>
@@ -350,6 +353,28 @@ function applyLang(){
   document.querySelectorAll('[data-i18n]:not([data-i18n-html])').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')) })
   document.querySelectorAll('.lang-pill button').forEach(b => b.classList.toggle('active', b.dataset.lang === TM_LANG))
   document.title = TM_LANG === 'ja' ? 'Journey Junction — 利用規約' : 'Journey Junction — Terms of Service'
+  renderCustomSections()
+}
+// Admin-added sections live in the dict as custom1.title / custom1.body … with
+// no fixed HTML slot — render them here, numbered after the built-in sections.
+// Falls back to the English value when the current language's value is blank.
+function renderCustomSections(){
+  const host = document.getElementById('terms-custom')
+  if (!host) return
+  host.innerHTML = ''
+  const en = TM_I18N.en || {}, cur = TM_I18N[TM_LANG] || {}
+  const pick = k => { const v = cur[k]; return (v != null && String(v).trim()) ? v : (en[k] || '') }
+  const nums = [...new Set(Object.keys(en).filter(k => /^custom\d+\.title$/.test(k)).map(k => +k.match(/^custom(\d+)\./)[1]))].sort((a,b)=>a-b)
+  if (!nums.length) return
+  const base = document.querySelectorAll('h2 .n').length   // built-in numbered sections (host is empty here)
+  let shown = 0, html = ''
+  nums.forEach(n => {
+    const title = String(pick('custom'+n+'.title')), body = String(pick('custom'+n+'.body'))
+    if (!title.trim() && !body.trim()) return
+    shown++
+    html += `<h2><span class="n">${base+shown}.</span><span>${title}</span></h2><p>${body}</p>`
+  })
+  host.innerHTML = html
 }
 function setLang(l){ if (l === TM_LANG) return; TM_LANG = l; localStorage.setItem('jj_planner_lang', l); applyLang() }
 applyLang()
