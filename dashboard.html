@@ -12240,6 +12240,26 @@ function dedupePlansByPlanner(plans, plannerId){
 }
 
 // ── NAV ──
+// English → Japanese place names for the Japanese itinerary/brief. Unknown
+// names (e.g. foreign origin cities) pass through unchanged. Used only on the
+// JA side of dt(), so English mode is unaffected.
+const _JA_PLACES = {
+  'Tokyo':'東京','Shibuya':'渋谷','Shinjuku':'新宿','Asakusa':'浅草','Ginza':'銀座','Yokohama':'横浜','Chiba':'千葉','Saitama':'埼玉','Odaiba':'お台場',
+  'Kyoto':'京都','Arashiyama':'嵐山','Gion':'祇園','Uji':'宇治','Osaka':'大阪','Kobe':'神戸','Nara':'奈良','Himeji':'姫路','Hyogo':'兵庫',
+  'Nagoya':'名古屋','Aichi':'愛知','Takayama':'高山','Shirakawa-go':'白川郷','Kanazawa':'金沢','Ishikawa':'石川','Nagano':'長野','Matsumoto':'松本','Karuizawa':'軽井沢',
+  'Hakone':'箱根','Kawaguchiko':'河口湖','Mt. Fuji':'富士山','Mount Fuji':'富士山','Fuji':'富士','Shizuoka':'静岡','Atami':'熱海','Izu':'伊豆','Kamakura':'鎌倉','Nikko':'日光',
+  'Sendai':'仙台','Miyagi':'宮城','Aomori':'青森',
+  'Hiroshima':'広島','Miyajima':'宮島','Okayama':'岡山','Naoshima':'直島','Takamatsu':'高松','Matsuyama':'松山',
+  'Fukuoka':'福岡','Kyushu':'九州','Beppu':'別府','Yufuin':'湯布院','Kumamoto':'熊本','Nagasaki':'長崎','Kagoshima':'鹿児島',
+  'Hokkaido':'北海道','Sapporo':'札幌','Otaru':'小樽','Niseko':'ニセコ','Furano':'富良野','Hakodate':'函館','Noboribetsu':'登別','Asahikawa':'旭川',
+  'Okinawa':'沖縄','Naha':'那覇','Ishigaki':'石垣島','Koyasan':'高野山','Mount Koya':'高野山','Ise':'伊勢',
+}
+function jaPlace(name){
+  if (name == null) return name
+  const k = String(name).trim()
+  return _JA_PLACES[k] || name
+}
+
 function showPage(id, btn) {
   closeSidebar()
   // Safety net: navigating with no modal open should never leave a stray
@@ -13159,10 +13179,10 @@ async function renderTravelerBrief(plan, t, notes) {
         fmtBriefDateShort(arrDate),
         arrTime ? fmtTimeColon(arrTime) : null,
         arrLoc || null,
-        arrFrom ? dt(`(${arrMethod} from ${arrFrom})`, `（${arrFrom}から${_mWord(arrMethod)}）`) : null,
+        arrFrom ? dt(`(${arrMethod} from ${arrFrom})`, `（${jaPlace(arrFrom)}から${_mWord(arrMethod)}）`) : null,
       ].filter(Boolean).join(' · ')
     : ''
-  const arrivalLabel = dt(`Arrival to ${t.destination || 'this unit'}`, `${t.destination || 'この区間'}への到着`)
+  const arrivalLabel = dt(`Arrival to ${t.destination || 'this unit'}`, `${jaPlace(t.destination) || 'この区間'}への到着`)
 
   // — DEPARTURE FROM THIS UNIT —
   const depDate   = meta.unit_departure_date || unitEnd
@@ -13183,11 +13203,11 @@ async function renderTravelerBrief(plan, t, notes) {
         fmtBriefDateShort(depDate),
         depTime ? fmtTimeColon(depTime) : null,
         depLoc || null,
-        depTo ? dt(`→ ${depMethod} to ${depTo}`, `→ ${_mWord(depMethod)}で${depTo}へ`) : null,
+        depTo ? dt(`→ ${depMethod} to ${depTo}`, `→ ${_mWord(depMethod)}で${jaPlace(depTo)}へ`) : null,
         depTrailer,
       ].filter(Boolean).join(' · ')
     : ''
-  const departureLabel = dt(`Departure from ${t.destination || 'this unit'}`, `${t.destination || 'この区間'}からの出発`)
+  const departureLabel = dt(`Departure from ${t.destination || 'this unit'}`, `${jaPlace(t.destination) || 'この区間'}からの出発`)
 
   // Occasion is free text (can't dict-localize). Show meta.occasion_ja in JA
   // mode when present; otherwise fall back to the title-cased English occasion.
@@ -13198,7 +13218,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const sectionBasics = wrap(`
     ${sectionHeader('route', 'Trip basics')}
     ${grid2(`
-      ${cell('Destination', escapeHtml(t.destination || ''))}
+      ${cell('Destination', escapeHtml(dt(t.destination || '', jaPlace(t.destination || ''))))}
       ${cell('Duration', escapeHtml(fmtDuration(t.duration) || ''))}
       ${cell(arrivalLabel, escapeHtml(arrivalTxt), { span2: true })}
       ${cell(departureLabel, escapeHtml(departureTxt), { span2: true })}
@@ -13386,13 +13406,13 @@ async function renderTravelerBrief(plan, t, notes) {
     if (prevUnit) {
       tipParts.push(dt(
         `Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} — keep the arrival day relaxed.`,
-        `旅行者は ${fmtBriefDateShort(t.arrival_date)} に <strong>${escapeHtml(prevUnit.destination)}</strong> から到着します — 到着日はゆったりと過ごせるようにしましょう。`
+        `旅行者は ${fmtBriefDateShort(t.arrival_date)} に <strong>${escapeHtml(jaPlace(prevUnit.destination))}</strong> から到着します — 到着日はゆったりと過ごせるようにしましょう。`
       ))
     }
     if (nextUnit && unitEnd) {
       tipParts.push(dt(
         `Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} — leave time on the last day.`,
-        `旅行者は ${fmtBriefDateShort(unitEnd)} に <strong>${escapeHtml(nextUnit.destination)}</strong> へ出発します — 最終日は時間に余裕を持たせましょう。`
+        `旅行者は ${fmtBriefDateShort(unitEnd)} に <strong>${escapeHtml(jaPlace(nextUnit.destination))}</strong> へ出発します — 最終日は時間に余裕を持たせましょう。`
       ))
     }
     const tipHtml = tipParts.length
@@ -20524,7 +20544,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
         // EN: "Car to Niseko" · JA: "車でNisekoへ" (method word localised; the
         // destination keeps its stored name). methodLabel used to leave 'Car'/
         // 'Train' in English on the JA timeline.
-        title: `${formatTimeDisplay(depTime)} · ${dt(`${_mEn} to ${depTo}`, `${_mJa}で${depTo}へ`)}`,
+        title: `${formatTimeDisplay(depTime)} · ${dt(`${_mEn} to ${depTo}`, `${_mJa}で${jaPlace(depTo)}へ`)}`,
         subtitle: dt(`Day ${dayNum} ends with departure`, `${dayNum}日目は出発で終わります`),
       })
     }
