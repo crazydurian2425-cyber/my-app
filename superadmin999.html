@@ -7190,22 +7190,53 @@ async function loadLegalEditor() {
       : 'Load failed: ' + msg
   }
 }
+// Friendly labels so the editor reads in plain English instead of raw keys.
+const _LEGAL_SUFFIX_LABEL = {
+  title:'Heading', sub:'Subtitle', body:'Body', body1:'Body', body2:'Body',
+  p1:'Paragraph', p2:'Paragraph', p3:'Paragraph', pW:'Paragraph',
+  h1:'Subheading', h2:'Subheading', hW:'Subheading',
+  l1:'List item', l2:'List item', l3:'List item', l4:'List item', l5:'List item'
+}
+const _LEGAL_TOP_LABEL = {
+  back:'Back button', banner:'Draft banner', eyebrow:'Eyebrow (small label above title)',
+  title:'Page title', lastUpdated:'"Last updated" line'
+}
+function _legalFieldLabel(key){
+  if (key.includes('.')) { const suf = key.split('.').slice(1).join('.'); return _LEGAL_SUFFIX_LABEL[suf] || suf }
+  return _LEGAL_TOP_LABEL[key] || key
+}
+function _legalGroupOf(key){ return key.includes('.') ? key.split('.')[0] : '_header' }
+function _legalGroupTitle(prefix){
+  if (prefix === '_header') return 'Page header'
+  const t = _legalDict.en[prefix + '.title']
+  const plain = t ? String(t).replace(/<[^>]+>/g,'').trim() : ''
+  return plain || prefix.toUpperCase()
+}
 function renderLegalFields() {
   const fields = document.getElementById('legal-fields')
   if (!fields) return
   const keys = Object.keys(_legalDict.en)
-  fields.innerHTML = keys.map(k => {
+  const taStyle = "width:100%;font-size:12.5px;font-family:'DM Sans',sans-serif;line-height:1.5;border:1px solid var(--line,#e5e1d8);border-radius:6px;padding:6px 8px;resize:vertical;box-sizing:border-box;background:var(--bg,#fff);color:var(--ink);"
+  let html = '', lastGroup = null
+  for (const k of keys) {
+    const g = _legalGroupOf(k)
+    if (g !== lastGroup) {
+      if (lastGroup !== null) html += '</div>'
+      html += `<div style="margin:20px 0 8px;font-size:13.5px;font-weight:700;color:var(--green-dark,#2f6b53);border-bottom:1px solid var(--line,#e5e1d8);padding-bottom:5px;">${_legalEsc(_legalGroupTitle(g))}</div><div>`
+      lastGroup = g
+    }
     const en = _legalDict.en[k] || '', ja = _legalDict.ja[k] || ''
     const rows = Math.min(7, Math.max(1, Math.ceil(((en.length||10)+1)/78)))
-    const taStyle = "width:100%;font-size:12.5px;font-family:'DM Sans',sans-serif;line-height:1.5;border:1px solid var(--line,#e5e1d8);border-radius:6px;padding:6px 8px;resize:vertical;box-sizing:border-box;background:var(--bg,#fff);color:var(--ink);"
-    return `<div style="border:1px solid var(--line,#e5e1d8);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-3);font-weight:700;margin-bottom:6px;">${_legalEsc(k)}</div>
+    html += `<div style="border:1px solid var(--line,#e5e1d8);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:600;color:var(--ink-2);margin-bottom:6px;">${_legalEsc(_legalFieldLabel(k))} <span style="font-size:9.5px;color:var(--ink-3);font-weight:400;">· ${_legalEsc(k)}</span></div>
       <div style="font-size:9.5px;color:var(--ink-3);margin-bottom:2px;">EN</div>
       <textarea data-legal-key="${_legalEsc(k)}" data-legal-lang="en" rows="${rows}" style="${taStyle}margin-bottom:6px;">${_legalEsc(en)}</textarea>
       <div style="font-size:9.5px;color:var(--ink-3);margin-bottom:2px;">日本語</div>
       <textarea data-legal-key="${_legalEsc(k)}" data-legal-lang="ja" rows="${rows}" style="${taStyle}">${_legalEsc(ja)}</textarea>
     </div>`
-  }).join('')
+  }
+  if (lastGroup !== null) html += '</div>'
+  fields.innerHTML = html
 }
 async function saveLegalDoc() {
   const btn = document.getElementById('legal-save-btn')
