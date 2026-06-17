@@ -7183,7 +7183,11 @@ async function loadLegalEditor() {
     renderLegalFields()
     if (status) status.textContent = 'Last updated: ' + (data.updated_at ? new Date(data.updated_at).toLocaleString() : '—') + (data.updated_by ? ' · by ' + data.updated_by : '')
   } catch (e) {
-    if (status) status.textContent = 'Load failed: ' + (e.message || e)
+    const msg = (e && (e.message || e.error_description || e.details || e.hint)) || (typeof e === 'string' ? e : JSON.stringify(e))
+    const missing = /relation .* does not exist|could not find the table|does not exist|schema cache|not found|42P01|PGRST20[12]|\b404\b/i.test(msg + ' ' + ((e && e.code) || ''))
+    if (status) status.innerHTML = missing
+      ? 'The <strong>legal_docs</strong> table is not set up yet — run <strong>docs/schema/legal-docs.sql</strong> in the Supabase SQL editor once, then click Reload.'
+      : 'Load failed: ' + msg
   }
 }
 function renderLegalFields() {
@@ -7222,8 +7226,9 @@ async function saveLegalDoc() {
     if (status) status.textContent = '✓ Saved — live on the public Terms page now.'
     try { if (typeof auditLog === 'function') auditLog('edit', 'legal_doc', 'terms', {}) } catch(e){}
   } catch (e) {
-    if (status) status.textContent = 'Save failed: ' + (e.message || e)
-    showToast('Save failed — ' + (e.message || 'try again'))
+    const msg = (e && (e.message || e.error_description || e.details || e.hint)) || (typeof e === 'string' ? e : JSON.stringify(e))
+    if (status) status.textContent = 'Save failed: ' + msg
+    showToast('Save failed — ' + (msg || 'try again'))
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save changes' }
   }
