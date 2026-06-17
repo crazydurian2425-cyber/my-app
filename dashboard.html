@@ -13184,7 +13184,10 @@ async function renderTravelerBrief(plan, t, notes) {
     : ''
   const departureLabel = dt(`Departure from ${t.destination || 'this unit'}`, `${t.destination || 'この区間'}からの出発`)
 
-  const occasion = meta.occasion ? titleCaseEnum(meta.occasion) : ''
+  // Occasion is free text (can't dict-localize). Show meta.occasion_ja in JA
+  // mode when present; otherwise fall back to the title-cased English occasion.
+  const _occEn = meta.occasion ? titleCaseEnum(meta.occasion) : ''
+  const occasion = meta.occasion ? dt(_occEn, meta.occasion_ja || _occEn) : ''
   const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
 
   const sectionBasics = wrap(`
