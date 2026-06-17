@@ -85,7 +85,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
     </div>
 
     <div class="title">業務委託契約書</div>
-    <div class="subtitle">以下の内容をご確認のうえ、ご署名いただき、書類をご送信ください。</div>
+    <div class="subtitle">以下の内容をご確認のうえ、ご署名ください。</div>
 
     <!-- Letter details (snapshot from DB) -->
     <div style="background:rgba(26,122,94,0.04);border:1px solid rgba(26,122,94,0.20);border-radius:10px;padding:16px 20px;margin-bottom:24px;">
@@ -105,24 +105,24 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
 
     <!-- Letter body (Japanese) -->
     <div class="letter-block">
-      <p>本書は、上記に記載の契約開始日より、<strong>Journey Junction</strong> の訪日旅行プランナーとして業務委託契約を締結することを確認するものです。</p>
+      <p>本書は、上記に記載の契約開始日より、<strong>Journey Junction</strong>の訪日旅行プランナーとして業務委託契約を締結することを確認するものです。</p>
 
       <h3>業務内容および報酬</h3>
       <ul>
-        <li>Journey Junction の依頼に基づき、旅行者向けにカスタマイズされた旅行プランを作成していただきます。</li>
+        <li>Journey Junctionの依頼に基づき、旅行者向けにカスタマイズされた旅程を作成していただきます。</li>
         <li>報酬は<strong>プランごとの成果報酬制</strong>とし、各案件について定められた報酬額に従ってお支払いします。固定給はありません。</li>
-        <li>プレミアム案件（保証金付き）については、案件ごとに、別途返金可能な保証金をお預かりする場合があります。その場合、対応する報酬はより高い金額に設定されます。</li>
-        <li>上記の成果報酬に加えて、7日間のローリングサイクル内に<strong>2件以上のロット</strong>を完了された場合、サイクル終了時に<strong>週次ボーナス&nbsp;<span style="white-space:nowrap">¥183,000</span></strong>がウォレットに支払われます。最初のサイクルは、初めてのロットを完了した日から開始し、以降のサイクルは同日を起点とする連続した7日間とします。完了したロットが2件未満のサイクルは対象外となります。</li>
+        <li>プレミアム案件（保証金付き）については、案件ごとに、返金対象となる保証金をお預かりする場合があります。その場合、対応する報酬は通常案件より高い金額に設定されます。</li>
+        <li>上記の成果報酬に加えて、7日間単位のサイクル内に<strong>2件以上のセット</strong>を完了し、承認された場合、サイクル終了時に<strong>条件達成ボーナスとして&nbsp;<span style="white-space:nowrap">¥183,000</span></strong>がウォレットに反映されます。最初のサイクルは、初めてのセットを完了した日から開始し、以降のサイクルは同日を起点とする連続した7日間とします。完了・承認されたセットが2件未満のサイクルは、ボーナス対象外となります。</li>
         <li>プランの承認後、報酬はご登録いただいたお支払い方法（PayPay、または日本国内の銀行振込）に従ってお支払いします。</li>
       </ul>
 
       <h3>契約条件</h3>
       <ul>
-        <li>本契約は業務委託契約（個人事業主）であり、雇用契約ではありません。</li>
-        <li>ロットを引き受けるか否かは、ご自身の裁量で自由に決定いただけます。</li>
-        <li>所得税、社会保険料、必要となる許認可・免許等は、適用される法令に従い、ご自身の責任において対応していただきます。</li>
-        <li>各当事者は、合理的な予告期間をもって、いつでも本契約を解除することができます。進行中の案件については、合意した報酬額に基づいてお支払いします。</li>
-        <li>旅行者に関する情報は機密として取り扱い、旅行プランの作成以外の目的に使用しないことに同意していただきます。</li>
+        <li>本契約は業務委託契約であり、雇用契約ではありません。プランナーは、個人事業主または独立した業務委託者として業務を行うものとします。</li>
+        <li>案件またはセットを引き受けるか否かは、ご自身の裁量で自由に決定いただけます。</li>
+        <li>所得税、社会保険料、その他必要となる手続きについては、適用される法令に従い、ご自身の責任において対応していただきます。</li>
+        <li>各当事者は、合理的な予告期間をもって、いつでも本契約を解除することができます。進行中の案件については、完了・承認された業務内容に応じて、合意した報酬額に基づきお支払いします。</li>
+        <li>旅行者に関する情報は機密として取り扱い、旅程作成以外の目的に使用しないことに同意していただきます。</li>
       </ul>
 
       <p style="margin-top:14px;">以下にご署名いただくことにより、上記の内容を確認・理解し、本契約の条件に同意されたものとみなされます。</p>
@@ -140,18 +140,18 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
           <canvas id="sig"></canvas>
         </div>
         <div class="sig-actions">
-          <button class="btn" type="button" onclick="clearSig()">消去してやり直す</button>
+          <button class="btn" type="button" onclick="clearSig()">署名をクリアしてやり直す</button>
         </div>
 
         <div class="confirm-row">
           <input type="checkbox" id="confirm-box">
-          <label for="confirm-box">上記の契約内容を確認し、これに同意することを確認します。</label>
+          <label for="confirm-box">上記の契約内容を確認し、同意します。</label>
         </div>
 
         <div id="status-msg" class="status-msg"></div>
 
         <button class="btn btn-primary" id="submit-btn" type="button" onclick="submitSignature()" disabled style="width:100%;padding:14px;font-size:15px;">
-          署名した契約書を送信
+          署名済み契約書を送信
         </button>
       </div>
 
@@ -299,14 +299,14 @@ async function submitSignature() {
     })
   } catch (e) {
     showStatus(false, "通信エラーが発生しました。ネットワーク接続をご確認のうえ、再度お試しください。")
-    btn.disabled = false; btn.textContent = '署名した契約書を送信'
+    btn.disabled = false; btn.textContent = '署名済み契約書を送信'
     return
   }
 
   const result = await resp.json().catch(() => ({}))
   if (!resp.ok) {
     showStatus(false, "送信に失敗しました：" + (result.error || resp.status))
-    btn.disabled = false; btn.textContent = '署名した契約書を送信'
+    btn.disabled = false; btn.textContent = '署名済み契約書を送信'
     return
   }
 
