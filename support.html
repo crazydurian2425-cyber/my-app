@@ -468,7 +468,7 @@ body.theme-dark .compose-send:hover{background:#3FA17D!important;}
         <div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q1">How do payouts work?</span><span class="plus">+</span></div>
-            <div class="faq-a" data-i18n="sup.faq.a1">You get paid when your full set (15 plans) is reviewed and approved by admin. Your commission plus any bond deposits you paid are released together to your registered bank account, usually within 1hr of approval.</div>
+            <div class="faq-a" data-i18n="sup.faq.a1">You get paid when your full set (5-15 itinerary plans) is reviewed and approved by admin. Your commission plus any bond deposits you paid are released together to your registered bank account, usually within 1hour of approval.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.qW">Is there a performance bonus?</span><span class="plus">+</span></div>
@@ -476,7 +476,7 @@ body.theme-dark .compose-send:hover{background:#3FA17D!important;}
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q2">What's a bond plan?</span><span class="plus">+</span></div>
-            <div class="faq-a" data-i18n="sup.faq.a2">Premium bookings (corporate, VIP, or large groups) require a refundable bond to secure the plan. The bond is returned in full together with your commission once all 15 plans are approved.</div>
+            <div class="faq-a" data-i18n="sup.faq.a2">Premium bookings (corporate, VIP, or large groups) require a refundable bond to secure the plan. The bond is returned in full together with your commission once all 5-15 itinerary plans are approved.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q3">Admin requested a revision — now what?</span><span class="plus">+</span></div>
@@ -484,11 +484,11 @@ body.theme-dark .compose-send:hover{background:#3FA17D!important;}
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q4">Can I skip a plan I'm stuck on?</span><span class="plus">+</span></div>
-            <div class="faq-a" data-i18n="sup.faq.a4">Plans go in order — you can't skip. If a plan's brief doesn't have enough info, chat us here with the plan number and we'll help you unblock.</div>
+            <div class="faq-a" data-i18n="sup.faq.a4">All assigned itineraries are required and cannot be skipped or declined. They help ensure reliable, high-quality travel plans and reduce last-minute changes or cancellations. Completing all assigned plans is required to remain eligible for the basic salary.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q5">How long does admin review take?</span><span class="plus">+</span></div>
-            <div class="faq-a" data-i18n="sup.faq.a5">Usually within 1hr of your last plan being submitted. If it's been longer, chat us and we'll nudge the reviewer.</div>
+            <div class="faq-a" data-i18n="sup.faq.a5">Usually within 1hour of your last plan being submitted. If it's been longer, chat us and we'll nudge the reviewer.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q6">Can I work on multiple sets at once?</span><span class="plus">+</span></div>
@@ -496,7 +496,7 @@ body.theme-dark .compose-send:hover{background:#3FA17D!important;}
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="this.parentElement.classList.toggle('open')"><span data-i18n="sup.faq.q7">I missed my deadline. What happens?</span><span class="plus">+</span></div>
-            <div class="faq-a" data-i18n="sup.faq.a7">Message us before the deadline — we can often extend it. If you've ghosted the set, admin may reassign it and any bond on that set may be forfeited.</div>
+            <div class="faq-a" data-i18n="sup.faq.a7">Message us before the deadline, we can often extend it. If you ghost your assigned set, you will forfeit your eligibility for the ¥150,000 performance bonus.</div>
           </div>
         </div>
       </div>
@@ -589,21 +589,21 @@ const SUP_I18N = {
     'prefill.bug':'Hi support, I found a bug / something looks wrong: ',
     'sup.faq.title':'Frequently asked',
     'sup.faq.q1':'How do payouts work?',
-    'sup.faq.a1':'You get paid when your full set (15 plans) is reviewed and approved by admin. Your commission plus any bond deposits you paid are released together to your registered payout method — PayPay or a Japanese bank transfer. PayPay usually arrives within 1hr of approval; bank transfers take 1–2 business days.',
+    'sup.faq.a1':'You get paid when your full set (5-15 itinerary plans) is reviewed and approved by admin. Your commission plus any bond deposits you paid are released together to your registered payout method — PayPay or a Japanese bank transfer. PayPay usually arrives within 1hour of approval; bank transfers take 1–2 business days.',
     'sup.faq.qW':'Is there a performance bonus?',
     'sup.faq.aW':'Yes — a ¥150,000 performance bonus each 7-day cycle, as long as you complete and get approval for at least 2 sets in that cycle. Your first cycle starts the day you complete your first-ever set; the next cycle starts 7 days later, and so on. The bonus is credited to your wallet after each cycle ends, on top of per-plan commission — it\'s not a guaranteed salary. Cycles with fewer than 2 completed and approved sets don\'t qualify.',
     'sup.faq.q2':"What's a bond plan?",
-    'sup.faq.a2':'Premium bookings (corporate, VIP, or large groups) require a refundable bond to secure the plan. The bond is returned in full together with your commission once all 15 plans are approved.',
+    'sup.faq.a2':'Premium bookings (corporate, VIP, or large groups) require a refundable bond to secure the plan. The bond is returned in full together with your commission once all 5-15 itinerary plans are approved.',
     'sup.faq.q3':'Admin requested a revision — now what?',
     'sup.faq.a3':'Open Dashboard — the "Revisions requested" card at the top shows the admin\'s notes. Click "Fix now" to reopen the itinerary form, apply the changes, and submit again.',
     'sup.faq.q4':"Can I skip a plan I'm stuck on?",
-    'sup.faq.a4':"Plans go in order — you can't skip. If a plan's brief doesn't have enough info, chat us here with the plan number and we'll help you unblock.",
+    'sup.faq.a4':"All assigned itineraries are required and cannot be skipped or declined. They help ensure reliable, high-quality travel plans and reduce last-minute changes or cancellations. Completing all assigned plans is required to remain eligible for the basic salary.",
     'sup.faq.q5':'How long does admin review take?',
-    'sup.faq.a5':"Usually within 1hr of your last plan being submitted. If it's been longer, chat us and we'll nudge the reviewer.",
+    'sup.faq.a5':"Usually within 1hour of your last plan being submitted. If it's been longer, chat us and we'll nudge the reviewer.",
     'sup.faq.q6':'Can I work on multiple sets at once?',
     'sup.faq.a6':'Not right now — one active set at a time. Once your current set is paid out, a new set can be assigned to you.',
     'sup.faq.q7':'I missed my deadline. What happens?',
-    'sup.faq.a7':"Message us before the deadline — we can often extend it. If you've ghosted the set, admin may reassign it and any bond on that set may be forfeited.",
+    'sup.faq.a7':"Message us before the deadline, we can often extend it. If you ghost your assigned set, you will forfeit your eligibility for the ¥150,000 performance bonus.",
     'sup.tips.title':'Tips for faster help',
     'sup.tips.1':'Include your plan number and traveler name when asking about a specific itinerary.',
     'sup.tips.2':'Attach screenshots (clip icon) for payment proofs or bugs — much faster than describing.',
