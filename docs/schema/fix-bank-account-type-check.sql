@@ -4,27 +4,31 @@
 -- Symptom (Profile → save bank): 保存に失敗しました: new row for relation
 --   "planners" violates check constraint "planners_bank_account_type_check"
 --
--- Cause: SCHEMA DRIFT. The app + repo migration (add-bank-account-type.sql)
---   store bank_account_type as the Japanese values '普通' / '当座' (and NULL
---   when PayPay is the payout method). The live DB, however, carries a CHECK
---   constraint — NOT present in the repo — that only allows some other set
---   (e.g. English 'ordinary'/'current'), so '普通'/'当座' are rejected.
+-- Cause: SCHEMA DRIFT. The live constraint allows ENGLISH account types
+--   ('futsu'/'touza'/…) and existing rows store English (confirmed: a planner
+--   row has bank_account_type = 'futsu'). The app + repo migration
+--   (add-bank-account-type.sql), however, read/write the JAPANESE values
+--   '普通' / '当座' (or NULL for PayPay/crypto). So every bank save is rejected.
 --
--- Fix: realign the live constraint with what the app actually sends:
---   '普通', '当座', or NULL. Idempotent and safe to re-run.
+-- Fix: realign the live data + constraint to the app contract ('普通'/'当座'/NULL).
+--
+-- IMPORTANT ORDERING: the constraint must be DROPPED *before* the UPDATE.
+--   Otherwise the UPDATE's attempt to write '普通' is itself checked against the
+--   still-active English-only constraint and fails (this is what made earlier
+--   attempts roll back with the value showing as '普通'). Idempotent, safe to re-run.
 -- ============================================================================
 
--- 0) (optional) Inspect what the live constraint currently allows + existing
---    values, before changing anything:
---   SELECT pg_get_constraintdef(oid) AS def
---     FROM pg_constraint WHERE conname = 'planners_bank_account_type_check';
+-- 0) (optional) Inspect the live constraint + existing values before changing:
+--   SELECT pg_get_constraintdef(oid) FROM pg_constraint
+--     WHERE conname = 'planners_bank_account_type_check';
 --   SELECT bank_account_type, count(*) FROM public.planners GROUP BY 1 ORDER BY 2 DESC;
 
--- 1) Force bank_account_type into the only valid set. '普通'/'当座' are the only
---    legal values; map common English variants, and set EVERYTHING else
---    (blanks, crypto-payout leftovers like 'USDT', junk) to NULL — otherwise
---    the ADD CONSTRAINT below fails on those rows. (A crypto/PayPay planner has
---    no bank account type, so NULL is the correct value for them anyway.)
+-- 1) Drop the drifted (English-only) constraint FIRST, so values can be rewritten.
+ALTER TABLE public.planners
+  DROP CONSTRAINT IF EXISTS planners_bank_account_type_check;
+
+-- 2) Normalise every row to the only valid set. Map English variants to the JA
+--    values; force anything else (blanks, crypto leftovers, junk) to NULL.
 UPDATE public.planners
 SET bank_account_type = CASE
   WHEN lower(btrim(bank_account_type)) IN ('futsu','ordinary','savings') THEN '普通'
@@ -33,15 +37,13 @@ SET bank_account_type = CASE
   ELSE NULL
 END;
 
--- 2) Replace the drifted constraint with one matching the app contract.
-ALTER TABLE public.planners
-  DROP CONSTRAINT IF EXISTS planners_bank_account_type_check;
-
+-- 3) Add the constraint that matches what the app actually sends.
 ALTER TABLE public.planners
   ADD CONSTRAINT planners_bank_account_type_check
   CHECK (bank_account_type IS NULL OR bank_account_type IN ('普通','当座'));
 
--- 3) Verify:
+-- 4) Verify:
 --   SELECT pg_get_constraintdef(oid) FROM pg_constraint
 --     WHERE conname = 'planners_bank_account_type_check';
---   -- expect: CHECK ((bank_account_type IS NULL OR bank_account_type = ANY (ARRAY['普通','当座'])))
+--   SELECT bank_account_type, count(*) FROM public.planners GROUP BY 1;
+--   -- expect only 普通 / 当座 / NULL
