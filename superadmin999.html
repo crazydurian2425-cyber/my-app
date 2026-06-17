@@ -7054,7 +7054,7 @@ function editTraveler(id) {
   const s = (eid, val) => { const e = document.getElementById(eid); if(e) e.value = val||'' }
   s('et-name', t.name); s('et-phone', t.phone); s('et-arrival', t.arrival_date); s('et-arrival-time', t.arrival_time || '')
   s('et-group', t.group_size||1)
-  s('et-avoid', t.must_avoid)
+  s('et-avoid', (t.meta && t.meta.must_avoid) || t.must_avoid)
   s('et-notes', t.special_notes); s('et-payout', t.planner_payout)
   s('et-traveler-total', t.traveler_total)
   loadEtDestFromString(t.destination || 'Tokyo')
@@ -7150,7 +7150,6 @@ async function saveTravelerEdit() {
     arrival_date: g('et-arrival'), arrival_time: g('et-arrival-time') || null, duration: g('et-duration'),
     group_size: parseInt(g('et-group'))||1,
     pace: (g('et-pace') || 'moderate').toLowerCase(),
-    must_avoid: g('et-avoid')?.trim(),
     special_notes: g('et-notes')?.trim(),
     planner_payout: parseFloat(g('et-payout'))||null,
     traveler_total: parseFloat(g('et-traveler-total'))||null,
@@ -7193,6 +7192,7 @@ async function saveTravelerEdit() {
   set(patch, 'dining_style',                      g('et-meta-dining-style') || undefined)
   set(patch, 'cuisine_interests',                 csvToArr(g('et-meta-cuisine')))
   set(patch, 'interests',                         csvToArr(g('et-meta-interests')))
+  set(patch, 'must_avoid',                        g('et-avoid')?.trim() || undefined)
   set(patch, 'intensity',                         g('et-meta-intensity') || undefined)
   set(patch, 'daily_timing',                      g('et-meta-daily-timing') || undefined)
   set(patch, 'unit_arrival_method',               g('et-meta-arr-method') || undefined)
