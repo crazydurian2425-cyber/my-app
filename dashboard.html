@@ -20437,7 +20437,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     .forEach(el => el.remove())
   const isFirstDay  = (dayNum === 1)
   const isLastDay   = (totalDays && dayNum === totalDays)
-  const hotelName   = window._currentHotelName || 'the hotel'
+  const hotelName   = window._currentHotelName || dt('the hotel','ホテル')
   const wakeTime    = _wakeTimeForTiming(window._currentDailyTiming)
   // ── Top anchor ───────────────────────────────────────────────
   let topAnchor = null
@@ -20508,11 +20508,23 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     if (method) {
       const depTime = window._currentDepartureTime || '17:00'
       const depTo   = window._currentDepartureTo   || dt('next stop','次の立ち寄り先')
-      const methodLabel = method === 'flight' ? dt('Flight','飛行機') : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
+      const _mEn = method === 'flight' ? 'Flight' : (method.charAt(0).toUpperCase() + method.slice(1))
+      const _mk = String(method || '').toLowerCase()
+      const _mJa = /flight|plane|air/.test(_mk) ? '飛行機'
+                 : /shinkansen/.test(_mk)       ? '新幹線'
+                 : /train|rail/.test(_mk)        ? '電車'
+                 : /bus|coach/.test(_mk)         ? 'バス'
+                 : /ferry|boat|ship/.test(_mk)   ? 'フェリー'
+                 : /car|drive|taxi/.test(_mk)    ? '車'
+                 : /walk|foot/.test(_mk)         ? '徒歩'
+                 : (method || '')
       bottomAnchor = _buildLockedAnchor({
         type: 'departure',
         method,
-        title: `${formatTimeDisplay(depTime)} · ${methodLabel} ${dt(`to ${depTo}`, `${depTo}へ`)}`,
+        // EN: "Car to Niseko" · JA: "車でNisekoへ" (method word localised; the
+        // destination keeps its stored name). methodLabel used to leave 'Car'/
+        // 'Train' in English on the JA timeline.
+        title: `${formatTimeDisplay(depTime)} · ${dt(`${_mEn} to ${depTo}`, `${_mJa}で${depTo}へ`)}`,
         subtitle: dt(`Day ${dayNum} ends with departure`, `${dayNum}日目は出発で終わります`),
       })
     }
