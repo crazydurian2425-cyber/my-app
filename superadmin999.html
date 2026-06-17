@@ -1545,7 +1545,7 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
     <div class="ph">
       <div>
         <div class="ph-title">Weekly salary</div>
-        <div class="ph-sub">¥183,000 per rolling 7-day cycle if a planner completes ≥2 sets · cycles anchored to each planner's first set completion</div>
+        <div class="ph-sub">¥150,000 per rolling 7-day cycle if a planner completes ≥2 sets · cycles anchored to each planner's first set completion</div>
       </div>
     </div>
     <div class="card" id="weekly-salaries-card">
@@ -4624,13 +4624,13 @@ async function loadPayments() {
     }).join('')
 }
 
-// ── Weekly planner salaries (¥183,000 per rolling 7-day cycle) ───────
+// ── Weekly planner salaries (¥150,000 per rolling 7-day cycle) ───────
 // Cycles are anchored to each planner's first-ever set completion. From that
 // timestamp, count 7-day windows: cycle 1 = [anchor, anchor+7d), cycle 2 =
 // [anchor+7d, anchor+14d), etc. Admin can pay a planner for cycle N only
 // after cycle N is fully ended (i.e. the planner is in cycle N+1).
 // Idempotency: notes = `weekly_salary_cycle_<N>` per (planner_id, cycle).
-const WEEKLY_SALARY_AMOUNT = 183000
+const WEEKLY_SALARY_AMOUNT = 150000
 const WEEKLY_SALARY_WEEK_MS = 7 * 24 * 3600 * 1000
 const WEEKLY_SALARY_MIN_SETS = 2   // sets a planner must complete in a cycle to qualify
 
