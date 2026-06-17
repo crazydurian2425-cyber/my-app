@@ -236,6 +236,15 @@ function translateAuthError(msg, fallback) {
   return fallback || msg
 }
 
+// Live checklist under the new-password field — toggles the ✓ on each rule.
+function updatePwRules() {
+  const pw = document.getElementById('password').value || ''
+  const set = (id, ok) => { const el = document.getElementById(id); if (el) el.classList.toggle('ok', ok) }
+  set('pw-len', pw.length >= 8)
+  set('pw-letter', /[A-Za-z]/.test(pw))
+  set('pw-digit', /\d/.test(pw))
+}
+
 async function setPassword() {
   const code     = document.getElementById('code').value.trim()
   const password = document.getElementById('password').value
@@ -244,6 +253,8 @@ async function setPassword() {
 
   if (!password)             { showError('新しいパスワードを入力してください'); return }
   if (password.length < 8)   { showError('パスワードは8文字以上で入力してください'); return }
+  if (!/[A-Za-z]/.test(password)) { showError('パスワードには英字を1文字以上含めてください'); return }
+  if (!/\d/.test(password))       { showError('パスワードには数字を1文字以上含めてください'); return }
   if (password !== confirm)  { showError('パスワードが一致しません'); return }
 
   hideMessages()

@@ -676,6 +676,7 @@ const APPLY_I18N = {
     'err.heard':'Please tell us where you heard about Journey Junction',
     'err.pw':'Please choose a password',
     'err.pwShort':'Password must be at least 8 characters',
+    'err.pwRules':'Password must include at least one letter and one digit',
     'err.tos':'Please accept the Terms of Service to continue',
     'err.dup':"We already have an application from this email. Check your inbox — we'll reply there.",
     'err.authDup':"An account with this email already exists. Try signing in, or use a different email to apply.",
@@ -756,6 +757,7 @@ const APPLY_I18N = {
     'err.heard':'Journey Junction をどこでお知りになったかをお聞かせください',
     'err.pw':'パスワードを設定してください',
     'err.pwShort':'パスワードは8文字以上で設定してください',
+    'err.pwRules':'パスワードには英字と数字をそれぞれ1文字以上含めてください',
     'err.tos':'続行するには利用規約に同意してください',
     'err.dup':'このメールアドレスからのご応募はすでに受け付けております。受信トレイをご確認ください — そちらへご返信いたします。',
     'err.authDup':'このメールアドレスのアカウントはすでに存在します。ログインをお試しいただくか、別のアドレスでご応募ください。',
@@ -983,6 +985,7 @@ async function submitApplication(){
   if (!email || !/.+@.+\..+/.test(email)) { showError(t('err.email')); return }
   if (!password)            { showError(t('err.pw')); return }
   if (password.length < 8)  { showError(t('err.pwShort')); return }
+  if (!/[A-Za-z]/.test(password) || !/\d/.test(password)) { showError(t('err.pwRules')); return }
   if (!city)                { showError(t('err.city')); return }
   if (!japan_depth)         { showError(t('err.depth')); return }
   if (languages.length === 0){ showError(t('err.lang')); return }
