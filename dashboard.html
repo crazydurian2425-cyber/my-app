@@ -7523,7 +7523,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color:var(--e-amber,#c17d2a);flex-shrink:0;"><path d="M10 1.5l7 3.5v5c0 4-3 7.5-7 9-4-1.5-7-5-7-9v-5l7-3.5z"/></svg>
               <div data-i18n="wallet.protection.badge" style="font-size:13.5px;font-weight:600;color:var(--e-ink,#1f1c16);">Fraud &amp; chargeback buffer</div>
             </div>
-            <p data-i18n-html="wallet.protection.body1" style="margin:0 0 10px;">We hold a one-time <strong><span id="w-protection-min">¥91,500</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. It stays held until you have <strong>completed <span id="w-protection-sets">3</span> sets</strong>; until then you can still withdraw anything earned <strong>above</strong> the buffer. Once you reach that, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.</p>
+            <p data-i18n-html="wallet.protection.body1" style="margin:0 0 10px;">We hold a one-time <strong><span id="w-protection-min">¥…</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. It stays held until you have <strong>completed <span id="w-protection-sets">3</span> sets</strong>; until then you can still withdraw anything earned <strong>above</strong> the buffer. Once you reach that, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.</p>
             <p data-i18n-html="wallet.protection.body2" style="margin:0;">Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>. You have completed <strong><span id="w-protection-done">0</span></strong> set(s) so far — once you reach the target the buffer releases and everything becomes fully withdrawable.</p>
           </div>
         </div>
@@ -8321,7 +8321,7 @@ const TM_I18N = {
     'wallet.protection.title':'Wallet protection buffer',
     'wallet.protection.sub':'Fraud & chargeback buffer',
     'wallet.protection.badge':'Fraud & chargeback buffer',
-    'wallet.protection.body1':'We hold a one-time <strong><span id="w-protection-min">¥91,500</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. It stays held until you have <strong>completed <span id="w-protection-sets">3</span> sets</strong>; until then you can still withdraw anything earned <strong>above</strong> the buffer. Once you reach that, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
+    'wallet.protection.body1':'We hold a one-time <strong><span id="w-protection-min">¥…</span></strong> safety buffer to cover any post-approval adjustments — disputed plans, bond corrections, reversed set approvals. It stays held until you have <strong>completed <span id="w-protection-sets">3</span> sets</strong>; until then you can still withdraw anything earned <strong>above</strong> the buffer. Once you reach that, the buffer <strong>unlocks permanently</strong> and every later withdrawal can drain your wallet fully.',
     'wallet.protection.body2':'Max withdrawable now: <strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>. You have completed <strong><span id="w-protection-done">0</span></strong> set(s) so far — once you reach the target the buffer releases and everything becomes fully withdrawable.',
     'wallet.bank.title':'Payout wallet',
     'wallet.bank.label':'Bank',
@@ -9065,7 +9065,7 @@ const TM_I18N = {
     'wallet.protection.title':'ウォレット保護リザーブ',
     'wallet.protection.sub':'不正利用や支払いトラブルに備えた安全保留分',
     'wallet.protection.badge':'不正・トラブル用リザーブ',
-    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、安全リザーブとして一度だけ <strong><span id="w-protection-min">¥91,500</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもリザーブを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、リザーブは<strong>恒久的に解除</strong>され、以降の出金ではウォレットを空にすることもできます。',
+    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、安全リザーブとして一度だけ <strong><span id="w-protection-min">¥…</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもリザーブを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、リザーブは<strong>恒久的に解除</strong>され、以降の出金ではウォレットを空にすることもできます。',
     'wallet.protection.body2':'現在の上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。これまでに <strong><span id="w-protection-done">0</span></strong> セットを完了しています — しきい値に達するとリザーブが解除され、すべて自由に出金できるようになります。',
     'wallet.bank.title':'支払い先',
     'wallet.bank.label':'銀行',
@@ -10663,7 +10663,7 @@ async function loadWallet() {
     completedSetsCount = count || 0
   } catch(e) { /* table might be missing in old schemas — treat as 0 */ }
   // Buffer releases permanently once the planner has completed the configured
-  // number of sets (default 3) — NOT on the first payout. Until then the ¥91,500
+  // number of sets (default 3) — NOT on the first payout. Until then the retention buffer
   // stays held and only earnings ABOVE it are withdrawable.
   const retentionReleased = completedSetsCount >= FIRST_PAYOUT_RETENTION_SETS
   const bufferReleased = retentionReleased   // drives downstream UI checks
