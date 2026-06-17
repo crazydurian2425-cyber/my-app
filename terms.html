@@ -353,6 +353,26 @@ function applyLang(){
 }
 function setLang(l){ if (l === TM_LANG) return; TM_LANG = l; localStorage.setItem('jj_planner_lang', l); applyLang() }
 applyLang()
+
+// Overlay admin-edited Terms content (from legal_docs) onto the baked-in
+// defaults above, then re-render. The static text is the fallback — the page
+// still works if this fetch fails or the row is missing.
+;(async () => {
+  try {
+    const SB_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
+    const SB_ANON = 'sb_publishable_EQBMG6WS1qd1F9jMNrog1g_gU1n9grr'
+    const res = await fetch(SB_URL + '/rest/v1/legal_docs?slug=eq.terms&select=dict', {
+      headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
+    })
+    if (!res.ok) return
+    const rows = await res.json()
+    const dict = rows && rows[0] && rows[0].dict
+    if (!dict) return
+    if (dict.en && typeof dict.en === 'object') Object.assign(TM_I18N.en, dict.en)
+    if (dict.ja && typeof dict.ja === 'object') Object.assign(TM_I18N.ja, dict.ja)
+    applyLang()
+  } catch (e) { /* keep baked-in defaults */ }
+})()
 </script>
 </body>
 </html>

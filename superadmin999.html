@@ -906,6 +906,12 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       Invoices
     </button>
 
+    <div class="nav-section">Content</div>
+    <button class="nav-item" onclick="showPage('legal',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1.5h7.5L13 4v10.5H3z"/><path d="M5.5 6h5M5.5 8.5h5M5.5 11h3"/></svg>
+      Terms editor
+    </button>
+
     <div class="nav-section">Support</div>
     <a class="nav-item" href="supercs999.html" target="_blank" style="text-decoration:none;">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 10a2 2 0 0 1-2 2H5l-3 3V3a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v7z"/></svg>
@@ -1759,6 +1765,24 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <span class="badge b-gray" id="apps-count">—</span>
       </div>
       <div id="apps-list"><div style="padding:24px;text-align:center;font-size:13px;color:var(--ink-3)">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- TERMS EDITOR -->
+  <div id="page-legal" class="page">
+    <div class="card" style="max-width:920px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
+        <div>
+          <div class="card-title">Terms of Service — editor</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.45;max-width:560px;">Edits go live on the public <a href="terms.html" target="_blank" rel="noopener" style="color:var(--green);text-decoration:none;">Terms page</a> immediately. Each field has English + 日本語. HTML tags (e.g. &lt;strong&gt;, &lt;a href&gt;) are allowed and rendered as-is — keep them balanced.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn btn-ghost" onclick="loadLegalEditor()">Reload</button>
+          <button class="btn btn-primary" id="legal-save-btn" onclick="saveLegalDoc()">Save changes</button>
+        </div>
+      </div>
+      <div id="legal-status" style="font-size:12px;color:var(--ink-3);margin:6px 0 12px;"></div>
+      <div id="legal-fields"></div>
     </div>
   </div>
 
@@ -2739,7 +2763,8 @@ const pageNames = {
   'overview':'Dashboard','travelers':'All travelers','new-traveler':'Add traveler','create-planner':'Create planner',
   'post-job':'Post job set','active-jobs':'Active sets','review':'Review itineraries','bonds':'Bond approvals',
   'approval-history':'Approval history',
-  'payments':'Payments','weekly-salary':'Performance bonus','invoices':'Invoices','planners':'Manage planners','applications':'Planner applications'
+  'payments':'Payments','weekly-salary':'Performance bonus','invoices':'Invoices','planners':'Manage planners','applications':'Planner applications',
+  'legal':'Terms editor'
 }
 
 let _plannersRefreshTimer = null
@@ -2770,6 +2795,7 @@ function showPage(id, btn) {
   if (id === 'new-traveler') { /* form page, no data to load */ }
   if (id === 'create-planner') renderRecentPlanners()
   if (id === 'support')      loadSupport()
+  if (id === 'legal')        loadLegalEditor()
 }
 
 function showPageByName(id) {
@@ -7131,6 +7157,75 @@ async function autoTranslateField(srcId, dstId, btn) {
     console.warn('translate failed', e)
     showToast('Translate failed — ' + (e.message || 'try again'))
     if (btn) { btn.disabled = false; btn.textContent = original }
+  }
+}
+
+// ── Terms editor ───────────────────────────────────────────────────────────
+// Loads/saves the editable Terms content (legal_docs row, slug='terms') as a
+// per-field EN/JA dictionary. Writes go through the service_role proxy (`sb`),
+// so they bypass RLS. terms.html reads the same row (anon) and overlays it on
+// its baked-in defaults.
+let _legalDict = { en:{}, ja:{} }
+function _legalEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+async function loadLegalEditor() {
+  const status = document.getElementById('legal-status')
+  const fields = document.getElementById('legal-fields')
+  if (status) status.textContent = 'Loading…'
+  if (fields) fields.innerHTML = ''
+  try {
+    const { data, error } = await sb.from('legal_docs').select('dict, updated_at, updated_by').eq('slug','terms').maybeSingle()
+    if (error) throw error
+    if (!data || !data.dict || !data.dict.en) {
+      if (status) status.innerHTML = 'No Terms content saved yet — run <strong>docs/schema/legal-docs.sql</strong> in Supabase once to seed it, then reload.'
+      return
+    }
+    _legalDict = { en: data.dict.en || {}, ja: data.dict.ja || {} }
+    renderLegalFields()
+    if (status) status.textContent = 'Last updated: ' + (data.updated_at ? new Date(data.updated_at).toLocaleString() : '—') + (data.updated_by ? ' · by ' + data.updated_by : '')
+  } catch (e) {
+    if (status) status.textContent = 'Load failed: ' + (e.message || e)
+  }
+}
+function renderLegalFields() {
+  const fields = document.getElementById('legal-fields')
+  if (!fields) return
+  const keys = Object.keys(_legalDict.en)
+  fields.innerHTML = keys.map(k => {
+    const en = _legalDict.en[k] || '', ja = _legalDict.ja[k] || ''
+    const rows = Math.min(7, Math.max(1, Math.ceil(((en.length||10)+1)/78)))
+    const taStyle = "width:100%;font-size:12.5px;font-family:'DM Sans',sans-serif;line-height:1.5;border:1px solid var(--line,#e5e1d8);border-radius:6px;padding:6px 8px;resize:vertical;box-sizing:border-box;background:var(--bg,#fff);color:var(--ink);"
+    return `<div style="border:1px solid var(--line,#e5e1d8);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-3);font-weight:700;margin-bottom:6px;">${_legalEsc(k)}</div>
+      <div style="font-size:9.5px;color:var(--ink-3);margin-bottom:2px;">EN</div>
+      <textarea data-legal-key="${_legalEsc(k)}" data-legal-lang="en" rows="${rows}" style="${taStyle}margin-bottom:6px;">${_legalEsc(en)}</textarea>
+      <div style="font-size:9.5px;color:var(--ink-3);margin-bottom:2px;">日本語</div>
+      <textarea data-legal-key="${_legalEsc(k)}" data-legal-lang="ja" rows="${rows}" style="${taStyle}">${_legalEsc(ja)}</textarea>
+    </div>`
+  }).join('')
+}
+async function saveLegalDoc() {
+  const btn = document.getElementById('legal-save-btn')
+  const status = document.getElementById('legal-status')
+  const en = {}, ja = {}
+  document.querySelectorAll('#legal-fields textarea[data-legal-key]').forEach(ta => {
+    const k = ta.getAttribute('data-legal-key')
+    if (ta.getAttribute('data-legal-lang') === 'en') en[k] = ta.value; else ja[k] = ta.value
+  })
+  if (!Object.keys(en).length) { showToast('Nothing to save — load the Terms first'); return }
+  const dict = { en, ja }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…' }
+  try {
+    const actor = (window.currentAdmin && window.currentAdmin.email) || sessionStorage.getItem('admin_email') || 'admin'
+    const { error } = await sb.from('legal_docs').upsert({ slug:'terms', dict, updated_at: new Date().toISOString(), updated_by: actor }, { onConflict: 'slug' })
+    if (error) throw error
+    _legalDict = dict
+    if (status) status.textContent = '✓ Saved — live on the public Terms page now.'
+    try { if (typeof auditLog === 'function') auditLog('edit', 'legal_doc', 'terms', {}) } catch(e){}
+  } catch (e) {
+    if (status) status.textContent = 'Save failed: ' + (e.message || e)
+    showToast('Save failed — ' + (e.message || 'try again'))
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save changes' }
   }
 }
 
