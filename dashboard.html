@@ -12387,15 +12387,17 @@ async function loadProfile() {
   // paypay_holder; bank lives in bank_name / bank_branch_code (branch code) /
   // bank_account (account number) / bank_holder (katakana) / bank_account_type.
   const _isBank = (p.payout_method === 'bank')
-  el('profile-paypay-id',     _isBank ? '' : (p.paypay_id || ''))
-  el('profile-paypay-holder', _isBank ? '' : (p.paypay_holder || ''))
-  // Bank fields only carry real bank data when bank is the active method.
-  el('profile-bank-name',   _isBank ? (p.bank_name || '') : '')
-  el('profile-bank-branch', _isBank ? (p.bank_branch_code || '') : '')
-  el('profile-bank-number', _isBank ? (p.bank_account || '') : '')
-  el('profile-bank-holder', _isBank ? (p.bank_holder || '') : '')
+  // Populate BOTH payout methods from the saved profile — not just the active
+  // one. Saving one method no longer wipes the other, so the toggle should show
+  // whatever was last entered for each. payout_method decides the active tab.
+  el('profile-paypay-id',     p.paypay_id || '')
+  el('profile-paypay-holder', p.paypay_holder || '')
+  el('profile-bank-name',   p.bank_name || '')
+  el('profile-bank-branch', p.bank_branch_code || '')
+  el('profile-bank-number', p.bank_account || '')
+  el('profile-bank-holder', p.bank_holder || '')
   const _btSel = document.getElementById('profile-bank-type')
-  if (_btSel) _btSel.value = (_isBank && p.bank_account_type === '当座') ? '当座' : '普通'
+  if (_btSel) _btSel.value = (p.bank_account_type === '当座') ? '当座' : '普通'
   if (typeof setPayoutMethodTab === 'function') setPayoutMethodTab(_isBank ? 'bank' : 'paypay')
   // Cities-you-cover + hidden specialty fields (langs + types) are persisted as
   // plain strings in planners.specialty_* columns. If the columns don't exist,
@@ -12493,23 +12495,34 @@ async function saveProfile() {
     // (普通/当座) + account number + holder name in katakana. Branch code and
     // account number are digits-only; we don't hard-block (ゆうちょ / legacy
     // account lengths vary), just strip non-digits.
-    const bankName = (document.getElementById('profile-bank-name')?.value || '').trim()
-    const branch   = (document.getElementById('profile-bank-branch')?.value || '').replace(/[^0-9]/g, '')
-    const acctType = (document.getElementById('profile-bank-type')?.value === '当座') ? '当座' : '普通'
-    const acctNum  = (document.getElementById('profile-bank-number')?.value || '').replace(/[^0-9]/g, '')
-    const holder   = (document.getElementById('profile-bank-holder')?.value || '').trim()
+    const bankName  = (document.getElementById('profile-bank-name')?.value || '').trim()
+    const branchRaw = (document.getElementById('profile-bank-branch')?.value || '').trim()
+    const branch    = branchRaw.replace(/[^0-9]/g, '')
+    const acctType  = (document.getElementById('profile-bank-type')?.value === '当座') ? '当座' : '普通'
+    const acctRaw   = (document.getElementById('profile-bank-number')?.value || '').trim()
+    const acctNum   = acctRaw.replace(/[^0-9]/g, '')
+    const holder    = (document.getElementById('profile-bank-holder')?.value || '').trim()
+    // Branch code + account number are digits-only (JP furikomi). If the planner
+    // typed something with NO digits at all, warn instead of silently saving it
+    // as blank — that silent drop looked like the data "disappearing" on reload.
+    if ((branchRaw && !branch) || (acctRaw && !acctNum)) {
+      showToast(dt('Branch code and account number must be digits.','支店コードと口座番号は数字で入力してください。'))
+      return
+    }
     // bank_name = bank, bank_branch_code = branch code, bank_account = account
-    // number, bank_holder = katakana holder. Clear the PayPay fields so the
-    // inactive method doesn't linger.
-    _payoutCore     = { bank_name: bankName || null, bank_branch_code: branch || null, bank_account: acctNum || null, bank_holder: holder || null, paypay_id: null, paypay_holder: null, payout_method: 'bank' }
+    // number, bank_holder = katakana holder. PayPay fields are LEFT INTACT so
+    // switching methods doesn't wipe the other — payout_method decides which is
+    // actually used for payouts (see getPlannerPayoutMethod).
+    _payoutCore     = { bank_name: bankName || null, bank_branch_code: branch || null, bank_account: acctNum || null, bank_holder: holder || null, payout_method: 'bank' }
     _payoutOptional = { bank_account_type: acctType }
   } else {
     // PayPay. Store the PayPay ID (or registered phone) + account holder name.
-    // Clear the bank_* columns so the inactive method doesn't linger.
+    // bank_* columns are LEFT INTACT so switching methods doesn't wipe the other
+    // — payout_method decides which is actually used for payouts.
     const ppId     = (document.getElementById('profile-paypay-id')?.value || '').trim() || null
     const ppHolder = (document.getElementById('profile-paypay-holder')?.value || '').trim() || null
-    _payoutCore     = { paypay_id: ppId, paypay_holder: ppHolder, bank_name: null, bank_branch_code: null, bank_account: null, bank_holder: null, payout_method: 'paypay' }
-    _payoutOptional = { bank_account_type: null }
+    _payoutCore     = { paypay_id: ppId, paypay_holder: ppHolder, payout_method: 'paypay' }
+    _payoutOptional = {}
   }
   const core = {
     name:  document.getElementById('profile-name')?.value?.trim(),
