@@ -5153,7 +5153,7 @@ async function creditPaidInvoice(id, plannerName, amount){
     planner_id: bill.planner_id,
     amount: Number(amount),
     reason: `Invoice paid: ${bill.reason || 'Invoice'}`,
-    reason_ja: bill.reason_ja ? `Facture payée : ${bill.reason_ja}` : null,
+    reason_ja: bill.reason_ja ? `請求支払い済み：${bill.reason_ja}` : null,
     notes: bill.paid_reference ? `Bank reference: ${bill.paid_reference} (retro credit)` : 'Retro credit for already-paid invoice',
     bypass_retention: true,
     created_by: actor
@@ -7106,7 +7106,7 @@ function editTraveler(id) {
 // ── Auto-translate (MyMemory free API) ─────────────────────
 // MyMemory: https://mymemory.translated.net/doc/spec.php
 // Free, no key, ~1k words/day per IP. CORS-friendly so we call directly.
-async function translateText(text, from = 'en', to = 'fr') {
+async function translateText(text, from = 'en', to = 'ja') {
   if (!text || !text.trim()) return ''
   const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + from + '|' + to
   const r = await fetch(url)
@@ -7124,7 +7124,7 @@ async function autoTranslateField(srcId, dstId, btn) {
   const original = btn?.textContent
   if (btn) { btn.disabled = true; btn.textContent = 'Translating…' }
   try {
-    const out = await translateText(src, 'en', 'fr')
+    const out = await translateText(src, 'en', 'ja')
     dst.value = out
     if (btn) { btn.textContent = '✓ Done' ; setTimeout(() => { btn.textContent = original; btn.disabled = false }, 1500) }
   } catch (e) {
