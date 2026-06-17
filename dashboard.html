@@ -13377,14 +13377,14 @@ async function renderTravelerBrief(plan, t, notes) {
     const tipParts = []
     if (prevUnit) {
       tipParts.push(dt(
-        `Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} ${guessTransport(prevUnit.destination, t.destination)} — keep the arrival day relaxed.`,
-        `旅行者は ${fmtBriefDateShort(t.arrival_date)} に <strong>${escapeHtml(prevUnit.destination)}</strong> から${guessTransport(prevUnit.destination, t.destination)}到着します — 到着日はゆったりと過ごせるようにしましょう。`
+        `Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} — keep the arrival day relaxed.`,
+        `旅行者は ${fmtBriefDateShort(t.arrival_date)} に <strong>${escapeHtml(prevUnit.destination)}</strong> から到着します — 到着日はゆったりと過ごせるようにしましょう。`
       ))
     }
     if (nextUnit && unitEnd) {
       tipParts.push(dt(
-        `Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} ${guessTransport(t.destination, nextUnit.destination)} — leave time on the last day.`,
-        `旅行者は ${fmtBriefDateShort(unitEnd)} に <strong>${escapeHtml(nextUnit.destination)}</strong> へ${guessTransport(t.destination, nextUnit.destination)}出発します — 最終日は時間に余裕を持たせましょう。`
+        `Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} — leave time on the last day.`,
+        `旅行者は ${fmtBriefDateShort(unitEnd)} に <strong>${escapeHtml(nextUnit.destination)}</strong> へ出発します — 最終日は時間に余裕を持たせましょう。`
       ))
     }
     const tipHtml = tipParts.length
