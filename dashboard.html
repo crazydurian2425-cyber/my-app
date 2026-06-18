@@ -10076,8 +10076,14 @@ function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c => ({'&':'&am
 // back to the English original if the JA column is empty.
 function travLocale(trav, field) {
   if (!trav) return ''
-  if (TM_LANG === 'ja' && trav[field + '_ja']) return trav[field + '_ja']
-  return trav[field] || ''
+  const meta = (trav.meta && typeof trav.meta === 'object') ? trav.meta : {}
+  // JA: prefer a localized value, stored either as a top-level <field>_ja column
+  // or inside meta (where occasion_ja / special_notes_ja / must_avoid_ja live).
+  if (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') {
+    if (trav[field + '_ja']) return trav[field + '_ja']
+    if (meta[field + '_ja'])  return meta[field + '_ja']
+  }
+  return trav[field] || meta[field] || ''
 }
 
 // Set both the hidden date input value (used at form-submit time) and the
@@ -12141,7 +12147,7 @@ function updateBriefCard(plan, trav) {
     <div class="brief-item"><div class="brief-label">${t('brief.label.bondRequired','Bond required')}</div><div class="brief-val" style="${trav.requires_bond ? 'color:var(--e-amber,#c17d2a);font-weight:600;' : ''}">${escapeHtml(bondLine)}</div></div>
     <div class="brief-item" style="grid-column:1/-1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(94,123,110,0.10);border:1px solid rgba(94,123,110,0.28);border-radius:10px;margin-top:2px;"><div class="brief-label" style="color:#4A6759;letter-spacing:0.14em;font-weight:700;margin:0;">${t('brief.label.commission','Your commission')}</div><div class="brief-val" style="font-family:'Fraunces','DM Serif Display',serif;font-size:22px;line-height:1;color:#1F3A2E;font-weight:600;letter-spacing:-0.01em;margin:0;">${escapeHtml(payoutLine)}</div></div>
     <div class="brief-item" style="grid-column:1/-1;"><div class="brief-label">${t('brief.label.interests','Interests')}</div><div class="brief-val">${escapeHtml(localizeFree(travLocale(trav,'interests')) || '—')}</div></div>
-    <div class="brief-item" style="grid-column:1/-1;"><div class="brief-label">${t('brief.label.avoid','Must avoid')}</div><div class="brief-val">${escapeHtml(localizeFree((trav.meta && trav.meta.must_avoid) || travLocale(trav,'must_avoid')) || '—')}</div></div>
+    <div class="brief-item" style="grid-column:1/-1;"><div class="brief-label">${t('brief.label.avoid','Must avoid')}</div><div class="brief-val">${escapeHtml(localizeFree(travLocale(trav,'must_avoid')) || '—')}</div></div>
     ${travLocale(trav,'special_notes') ? `<div class="brief-item" style="grid-column:1/-1;background:rgba(201,135,58,0.06);border-left:3px solid var(--e-amber,#c17d2a);padding-left:14px;"><div class="brief-label" style="color:var(--e-amber,#c17d2a);">${t('brief.label.specialNote','Special note')}</div><div class="brief-val" style="font-family:'Lora',serif;font-style:italic;">${escapeHtml(travLocale(trav,'special_notes'))}</div></div>` : ''}`
 
   // Reset checklist — keep data-i18n tags so applyLang can retranslate
@@ -13337,7 +13343,8 @@ async function renderTravelerBrief(plan, t, notes) {
     const wakeDisplay = wake ? (typeof formatTimeDisplay === 'function' ? formatTimeDisplay(wake) : wake) : ''
     return wakeDisplay ? `${label} · ${wakeDisplay}` : label
   })()
-  const mustAvoid = meta.must_avoid ? meta.must_avoid.split(/\s*,\s*/).join(' · ') : ''
+  const _maSrc = (typeof TM_LANG !== 'undefined' && TM_LANG === 'ja' && meta.must_avoid_ja) ? meta.must_avoid_ja : meta.must_avoid
+  const mustAvoid = _maSrc ? _maSrc.split(/\s*,\s*/).join(' · ') : ''
   // Interests always renders. Pills row stays on top spanning 2 cols even
   // when empty, so the layout doesn't reflow plan-to-plan.
   const sectionInterests = wrap(`
