@@ -7976,11 +7976,11 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
           <label class="review-note-label" id="review-note-label" for="review-personal-message">Personal note to traveler</label>
           <textarea id="review-personal-message"
                     class="review-note-textarea"
-                    maxlength="2000"
+                    maxlength="500"
                     rows="6"
                     placeholder="日本へようこそ…"
                     oninput="autoGrow(this); _refreshReviewWordCount(); autoSaveDraft()"></textarea>
-          <div class="review-note-counter" id="review-note-counter">0 / 200 words</div>
+          <div class="review-note-counter" id="review-note-counter">0 / 500 characters</div>
         </div>
 
         <!-- ── Section 3 · Commission + submit bar ───────────────────── -->
@@ -21786,12 +21786,17 @@ function _refreshReviewWordCount() {
   const ta = document.getElementById('review-personal-message')
   const counter = document.getElementById('review-note-counter')
   if (!ta || !counter) return
-  const words = (ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0)
-  const tone = words === 0 ? 'is-short'
-             : words < 50  ? 'is-short'
-             : words > 200 ? 'is-overflow'
-             :               'is-good'
-  counter.textContent = dt(`${words} / 200 words`, `${words} / 200 語`)
+  // Count CHARACTERS, not whitespace-separated words. Japanese has no spaces, so
+  // splitting on /\s+/ counted an entire JA message as a single "word" — the
+  // limit was effectively unenforced for JA. Spread into code points so emoji /
+  // surrogate pairs count as one. 文字数 is the natural unit for a JP-market app.
+  const LIMIT = 500
+  const chars = [...ta.value].length
+  const tone = chars === 0   ? 'is-short'
+             : chars < 40     ? 'is-short'
+             : chars > LIMIT  ? 'is-overflow'
+             :                  'is-good'
+  counter.textContent = dt(`${chars} / ${LIMIT} characters`, `${chars} / ${LIMIT} 文字`)
   counter.className = 'review-note-counter ' + tone
 }
 
