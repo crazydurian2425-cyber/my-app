@@ -7350,7 +7350,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
             <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">
               <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);">
                 <span style="font-size:16px;flex-shrink:0;">🌅</span>
-                <div><div data-i18n="brief.guide.breakfast" style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">Breakfast spot</div><div data-i18n="brief.guide.breakfast.sub" style="font-size:12px;color:var(--text-3);">1 halal breakfast recommendation with address and what to order</div></div>
+                <div><div data-i18n="brief.guide.breakfast" style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">Breakfast spot</div><div data-i18n="brief.guide.breakfast.sub" style="font-size:12px;color:var(--text-3);">Café or bakery — address + recommendation</div></div>
               </div>
               <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);">
                 <span style="font-size:16px;flex-shrink:0;">🗺️</span>
@@ -7358,7 +7358,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               </div>
               <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);">
                 <span style="font-size:16px;flex-shrink:0;">🍜</span>
-                <div><div data-i18n="brief.guide.meals" style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">Lunch & dinner picks</div><div data-i18n="brief.guide.meals.sub" style="font-size:12px;color:var(--text-3);">Halal confirmed · include price range per pax</div></div>
+                <div><div data-i18n="brief.guide.meals" style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;">Lunch & dinner picks</div><div data-i18n="brief.guide.meals.sub" style="font-size:12px;color:var(--text-3);">Include price range per pax</div></div>
               </div>
               <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);">
                 <span style="font-size:16px;flex-shrink:0;">🚗</span>
@@ -7375,7 +7375,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
             <div data-i18n="brief.checklist.title" style="font-size:11px;text-transform:uppercase;letter-spacing:0.07em;font-weight:500;color:var(--text-3);margin-bottom:10px;">Submission checklist</div>
             <div class="checklist" id="checklist">
               <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.schedule">Day-by-day schedule with timings</span></div>
-              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.restaurants">Restaurant picks (halal confirmed)</span></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.restaurants">Restaurant picks (dietary needs confirmed)</span></div>
               <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.transport">Getting around — transport tips</span></div>
               <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.spend">Estimated spend breakdown</span></div>
               <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.tips">Local tips and hidden gems</span></div>
@@ -8245,18 +8245,18 @@ const TM_I18N = {
     'brief.label.notes':'Special notes',
     'brief.guide.title':'What to include in the itinerary',
     'brief.guide.breakfast':'Breakfast spot',
-    'brief.guide.breakfast.sub':'1 halal breakfast recommendation with address and what to order',
+    'brief.guide.breakfast.sub':'Café or bakery — address + recommendation',
     'brief.guide.dest':'2–3 destinations to visit',
     'brief.guide.dest.sub':'Local spots, markets, cultural sites — avoid tourist traps',
     'brief.guide.meals':'Lunch & dinner picks',
-    'brief.guide.meals.sub':'Halal confirmed · include price range per pax',
+    'brief.guide.meals.sub':'Include price range per pax',
     'brief.guide.transport':'How to get around',
     'brief.guide.transport.sub':'GO taxi, JR / subway, walking — include estimated cost',
     'brief.guide.tips':'Local tips',
     'brief.guide.tips.sub':'Best time to visit, hidden gems, what to watch out for',
     'brief.checklist.title':'Submission checklist',
     'brief.check.schedule':'Day-by-day schedule with timings',
-    'brief.check.restaurants':'Restaurant picks (halal confirmed)',
+    'brief.check.restaurants':'Restaurant picks (dietary needs confirmed)',
     'brief.check.transport':'Getting around — transport tips',
     'brief.check.spend':'Estimated spend breakdown',
     'brief.check.tips':'Local tips and hidden gems',
@@ -9075,7 +9075,7 @@ const TM_I18N = {
     'wallet.protection.title':'ウォレット保護バッファ',
     'wallet.protection.sub':'不正利用や支払いトラブルに備えた保護バッファ',
     'wallet.protection.badge':'不正・トラブル用バッファ',
-    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、保護バッファとして一度だけ <strong><span id="w-protection-min">¥…</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもバッファを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、バッファは<strong>恒久的に解除</strong>され、以降の出金ではウォレットを空にすることもできます。',
+    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、保護バッファとして一度だけ <strong><span id="w-protection-min">¥…</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもバッファを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、バッファは<strong>恒久的に解除</strong>され、以降は残高を全額出金できるようになります。',
     'wallet.protection.body2':'現在の上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。これまでに <strong><span id="w-protection-done">0</span></strong> セットを完了しています — しきい値に達するとバッファが解除され、すべて自由に出金できるようになります。',
     'wallet.bank.title':'支払い先',
     'wallet.bank.label':'銀行',
@@ -9238,14 +9238,14 @@ const TM_I18N = {
     'tip.bestTime':'おすすめの時間',
     'tip.whatToOrder':'何を注文するか',
     'tip.skip':'避けるべきこと',
-    'tip.insider':'お得情報',
+    'tip.insider':'裏ワザ',
     'tip.photo':'撮影スポット',
     'tip.money':'節約',
     'tip.phrase':'役立つフレーズ',
     'tip.bestTimeText':'⏰ おすすめの時間：',
     'tip.whatToOrderText':'🍜 何を注文するか：',
     'tip.skipText':'⚠️ 避けるべきこと：',
-    'tip.insiderText':'💡 お得情報：',
+    'tip.insiderText':'💡 裏ワザ：',
     'tip.photoText':'📸 撮影スポット：',
     'tip.moneyText':'💰 節約：',
     'tip.phraseText':'🗣️ 役立つフレーズ：',
@@ -9292,7 +9292,7 @@ const TM_I18N = {
     // 旅程の日次ビルダー
     'day.header':'日目',
     'day.headerN':'{n}日目',
-    'day.addActivity':'アクティビティを追加：',
+    'day.addActivity':'この日にアクティビティを追加',
     'day.addActivityN':'{n}日目にアクティビティを追加',
     'day.metaOne':'アクティビティ 1件',
     'day.metaN':'アクティビティ {n}件',
@@ -9311,7 +9311,7 @@ const TM_I18N = {
     'guide.item.lunch':'昼食',
     'guide.item.dinner':'夕食',
     'guide.tip.arrival':'旅行者は疲れて到着します — ホテル近くの落ち着いた予定を組みましょう。',
-    'guide.tip.departure':'空港や駅の近くで締めくくります。不測の事態に備えて時間に余裕を持たせましょう。',
+    'guide.tip.departure':'空港や駅の近くで締めくくります。渋滞に備えて時間に余裕を持たせましょう。',
     'guide.tip.dayTrip':'移動を抑えるため、観光をエリアごとにまとめましょう。詰め込みすぎは禁物です。',
     'guide.tip.fullDay':'アクティビティと休憩を交互に。スポット間の徒歩は1.5km以内に抑えましょう。',
     'guide.tip.fullDay.1':'活発な観光と休憩を組み合わせて。スポット間の徒歩は1.5km未満に。',
@@ -9623,7 +9623,7 @@ const TM_I18N = {
     'completed.availableInWallet':'収入がウォレットに入金されました — いつでも出金できます。',
     'completed.availableLabel':'このセットの報酬',
     'completed.breakdown':'内訳',
-    'between.title':'セット支払済み',
+    'between.title':'お支払いが完了しました',
     'between.sub':'お疲れさまでした。新しいセットをリクエストいただければ、すぐに割り当てます。',
     'completed.walletHint':'ウォレットから出金をリクエストしてください — PayPay 残高へ送金、通常1時間以内です。',
     'completed.btn.checkPayout':'支払いを確認',
@@ -16419,12 +16419,15 @@ function toggleTimeDD(btn, e){
         const m = container.id.match(/slots-day-(\d+)/)
         const thisDay = m ? parseInt(m[1], 10) : null
         const isLastDay = (thisDay != null && thisDay === dayCount)
-        if (isLastDay && window._currentDepartureTime) maxVal = window._currentDepartureTime
+        // Use the same airport cutoff (departure − buffer − cushion) the options
+        // were built with, so re-opening can't disagree with the baked-in disables.
+        if (isLastDay) { const w = dayTimeWindow(thisDay, dayCount); if (w && w.maxTime) maxVal = w.maxTime }
       }
       dd.querySelectorAll('.time-dd-option').forEach(opt => {
         const match = opt.getAttribute('onclick')?.match(/'(\d\d:\d\d)'/)
         const val   = match ? match[1] : null
-        const disabled = !!(val && maxVal && val > maxVal)
+        if (!val) return  // build-time-disabled option (no onclick) — leave its state, don't re-enable
+        const disabled = !!(maxVal && val >= maxVal)
         opt.classList.toggle('is-disabled', disabled)
         opt.disabled = disabled
       })
@@ -20363,7 +20366,7 @@ function _computeExpectedDayEnd(dayNum, totalDays) {
 // Actual day-end time (minutes since midnight) — last venue's effective
 // end + 20-min back-to-hotel buffer. Returns null when the day has no
 // non-locked venues yet (planner hasn't started filling it).
-function _computeActualDayEnd(dayContainer) {
+function _computeActualDayEnd(dayContainer, isLastDay) {
   if (!dayContainer) return null
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('is-locked'))
@@ -20377,13 +20380,15 @@ function _computeActualDayEnd(dayContainer) {
     const m = (cells[1]?.textContent || '').match(/(\d+)\s*min/i)
     return startMin + (m ? parseInt(m[1], 10) : 0)
   }
-  // Venue: end = start + stay + 20-min back-to-hotel buffer.
+  // Venue: end = start + stay + 20-min back-to-hotel buffer. On the departure
+  // day there is no hotel to return to (the traveler heads to the gateway), so
+  // the buffer is dropped — otherwise it falsely trips the "⚠ too late" badge.
   const type = last.querySelector('.slot-type-select')?.value || 'activity'
   let stay = parseInt(last.querySelector('.slot-duration-input')?.value || '0', 10) || 0
   if (type === 'accommodation') stay = Math.max(stay, 30)
   else if (type === 'meal')     stay = Math.max(stay, 30)
   if (stay <= 0) stay = 15
-  return startMin + stay + 20
+  return startMin + stay + (isLastDay ? 0 : 20)
 }
 
 // Compare actual vs expected end-of-day. Returns:
@@ -20392,7 +20397,7 @@ function _computeActualDayEnd(dayContainer) {
 //     gapMin (positive when actual is later than expected) }
 function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
   const expected = _computeExpectedDayEnd(dayNum, totalDays)
-  const actual   = _computeActualDayEnd(dayContainer)
+  const actual   = _computeActualDayEnd(dayContainer, Number(dayNum) === Number(totalDays))
   const expectedStr = formatTimeDisplay(minsToHHMM(expected))
   if (actual == null) return { state: null, expected, actual: null, expectedStr, actualStr: null, gapMin: null }
   const gap = actual - expected   // +ve = late, -ve = early
@@ -22385,6 +22390,10 @@ async function submitPlan() {
   const title = document.getElementById('itin-title').value.trim()
   if (!title) { showToast(dt('Please add an itinerary title first','先に旅程のタイトルを追加してください')); return }
   if (!currentPlanId) { showToast(dt('No active plan found','進行中のプランが見つかりません')); return }
+  // Cancel any pending debounced autosave so it can't fire mid-submit and race
+  // submit's own delete-then-insert on the same plan (which could delete the
+  // just-submitted rows or leave duplicates). Submit reads the live DOM anyway.
+  if (typeof _autoSaveTimer !== 'undefined' && _autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null; _autoSavePendingPlanId = null }
   // Hard block: never allow submit on a bond-locked plan
   const activePlan = plans.find(p => p.id === currentPlanId)
   if (activePlan?.status === 'bond_pending') {
