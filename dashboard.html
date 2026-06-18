@@ -14397,11 +14397,28 @@ async function openPlanSummary(plan) {
           <div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">${escapeHtml(dt('Overnight','宿泊'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div></div></div>
         </li>`
     } else if (slots.length && d === totalDays && _lastIsTransport) {
+      // Time beside the departure node = when the chain actually gets the
+      // traveler to the station (last venue's end + the trailing ride), NOT the
+      // train's scheduled departure. That keeps the timeline consistent (every
+      // node shows an arrival time) and surfaces a too-tight transfer. The
+      // scheduled departure moves into the subtitle so it isn't lost.
+      const _depArr = (() => {
+        const venueEnd = _psLastEnd(slots)
+        if (venueEnd == null) return null
+        let extra = 0
+        for (let i = slots.length - 1; i >= 0; i--) {
+          if (String(slots[i].type || '').toLowerCase() !== 'transport') break
+          const mm = _legMins(slots[i]); if (Number.isFinite(mm)) extra += mm
+        }
+        return Math.min(venueEnd + extra, 23 * 60 + 59)
+      })()
+      const _depArrStr = _depArr != null ? _fmtLower(minsToHHMM(_depArr)) : ''
+      const _depSub2 = [_depSub, _depTimeStr ? dt(`departs ${_depTimeStr}`, `${_depTimeStr} 発`) : ''].filter(Boolean).join(' · ')
       closeHtml = `
         <li class="ps-row ps-row--end">
           <span class="ps-ico ps-ico--depart ps-dot">${_depMethodK ? _legIcon(_depMethodK) : _PLANE_ICO}</span>
-          <div class="ps-time">${escapeHtml(_depTimeStr || '—')}</div>
-          <div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">${escapeHtml(dt('Departure','出発'))}${_depLoc ? ' · ' + escapeHtml(_depLoc) : ''}</div>${_depSub ? `<div class="ps-start-meta">${escapeHtml(_depSub)}</div>` : ''}</div></div></div>
+          <div class="ps-time">${escapeHtml(_depArrStr || _depTimeStr || '—')}</div>
+          <div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">${escapeHtml(dt('Departure','出発'))}${_depLoc ? ' · ' + escapeHtml(_depLoc) : ''}</div>${_depSub2 ? `<div class="ps-start-meta">${escapeHtml(_depSub2)}</div>` : ''}</div></div></div>
         </li>`
     }
     // Open day 1 with the arrival node (where the traveller lands) when we know
