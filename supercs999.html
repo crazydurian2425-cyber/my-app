@@ -1493,6 +1493,16 @@ async function loadPlannerContext(plannerId) {
       if (pl.travelers?.requires_bond && ['submitted','approved'].includes(pl.status) && !paidSetIds.has(pl.set_id)) bondHeld += bo(pl)
     }
   }
+  // Override paid/pending with the planner's ACTUAL wallet_requests so CS matches
+  // the planner's own wallet exactly. The plan-commission totals above over-report
+  // "paid out" — earned commission ≠ money actually withdrawn once the retention
+  // buffer / partial withdrawals are in play (e.g. CS showed ¥65,100 vs the
+  // planner's real ¥37,100). Same source/formula as dashboard loadWallet().
+  try {
+    const { data: _wreqs } = await sb.from('wallet_requests').select('amount, status').eq('planner_id', plannerId)
+    paidAmt    = (_wreqs||[]).filter(r => r.status === 'paid').reduce((s,r) => s + Number(r.amount||0), 0)
+    pendingAmt = (_wreqs||[]).filter(r => r.status === 'pending').reduce((s,r) => s + Number(r.amount||0), 0)
+  } catch(e) { /* keep the plan-derived fallback if wallet_requests is unavailable */ }
   el('info-earned').textContent = `¥${Math.round(paidAmt).toLocaleString("ja-JP")}`
   el('info-pending').textContent = `¥${Math.round(pendingAmt).toLocaleString("ja-JP")}`
   el('info-bond-hold').textContent = `¥${Math.round(bondHeld).toLocaleString("ja-JP")}`
