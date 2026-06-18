@@ -1506,7 +1506,7 @@ async function loadPlannerContext(plannerId) {
   el('info-earned').textContent = `¥${Math.round(paidAmt).toLocaleString("ja-JP")}`
   el('info-pending').textContent = `¥${Math.round(pendingAmt).toLocaleString("ja-JP")}`
   el('info-bond-hold').textContent = `¥${Math.round(bondHeld).toLocaleString("ja-JP")}`
-  el('info-sets-done').textContent = paid.length
+  el('info-sets-done').textContent = paid.length + completed.length
 
   // Mini progress bars — scaled against max(paidAmt, pendingAmt, bondHeld, 1)
   const scale = Math.max(paidAmt, pendingAmt, bondHeld, 1)
@@ -1777,8 +1777,8 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🏦 Bond bank details', text: 'Hi {first_name}, here are the bond payment details:\n\nBank: [bank name]\nAccount: [account number]\nName: Journey Junction\nReference: BOND-{set_num}-{planner_short}\n\nOnce transferred, please share the screenshot here and we\'ll confirm shortly.' },
     { label: '💳 Verifying bond', text: 'Got it {first_name} — we\'ll verify your transfer shortly and confirm as soon as it clears (usually under 30 min during business hours).' },
     { label: '✅ Bond received', text: 'Bond payment confirmed — your plan is now unlocked. Happy planning!' },
-    { label: '💰 Payout update', text: 'Hi {first_name}, your payout of ¥{pending_amt} is queued for release. You\'ll receive it in your registered bank account within 24 hours.' },
-    { label: '💰 Payout processed', text: 'Payout has been released to your bank account. Please allow 1-2 business days for it to reflect.' },
+    { label: '💰 Payout update', text: 'Hi {first_name}, your payout of ¥{pending_amt} is queued for release. You\'ll receive it in your registered payout method within 24 hours.' },
+    { label: '💰 Payout processed', text: 'Payout has been released. PayPay usually arrives within 1 hour; bank transfers take 1–2 business days.' },
     { label: '📋 Checking sets', text: 'Hi {first_name}, let me check what\'s available in your city and I\'ll assign you a set shortly.' },
     { label: '⏰ How many days?', text: 'No problem {first_name} — how many extra days do you need, and could you share the reason briefly so we can log it?' },
     { label: '⏰ Extension granted', text: 'Done — we\'ve extended your deadline. The updated date is on your dashboard.' },
@@ -2067,7 +2067,7 @@ function renderQuickReplies() {
     const color  = isSuggested ? 'var(--green-dark,#0f5240)' : 'var(--ink-2)'
     const weight = isSuggested ? '600' : '400'
     const ring   = isSuggested ? 'box-shadow:0 0 0 3px rgba(26,122,94,0.08);' : ''
-    const hint   = isSuggested ? `<span style="font-size:9px;opacity:0.85;margin-left:4px;font-weight:700;letter-spacing:0.05em;">${CS_QR_LANG==='ja'?'· SUGGÉRÉ':'· SUGGESTED'}</span>` : ''
+    const hint   = isSuggested ? `<span style="font-size:9px;opacity:0.85;margin-left:4px;font-weight:700;letter-spacing:0.05em;">${CS_QR_LANG==='ja'?'· おすすめ':'· SUGGESTED'}</span>` : ''
     return `<button onclick="applyQuickReply(${i})" style="padding:5px 10px;background:${bg};border:1px solid ${border};border-radius:99px;font-size:11px;cursor:pointer;color:${color};font-weight:${weight};font-family:'DM Sans',sans-serif;white-space:nowrap;${ring}" onmouseover="this.style.background='var(--green-light)';this.style.borderColor='var(--green-mid)'" onmouseout="this.style.background='${bg}';this.style.borderColor='${border}'">${escapeHtml(q.label)}${hint}</button>`
   }).join('')
 
@@ -2712,7 +2712,7 @@ async function handleDeepLink() {
     openConversation(convParam)
   } else if (plannerParam) {
     // Find or create conversation for this planner
-    let { data: existing } = await sb.from('conversations').select('*').eq('planner_id', plannerParam).maybeSingle()
+    let { data: existing } = await sb.from('conversations').select('*').eq('planner_id', plannerParam).limit(1).maybeSingle()
     if (!existing) {
       const { data: created } = await sb.from('conversations').insert({ planner_id: plannerParam }).select().single()
       existing = created
@@ -2845,7 +2845,7 @@ function renderNewChatResults(term){
 async function startChatWithPlanner(plannerId){
   if (!plannerId) return
   // Find or create the conversation row (same flow handleDeepLink uses).
-  let { data: existing } = await sb.from('conversations').select('*').eq('planner_id', plannerId).maybeSingle()
+  let { data: existing } = await sb.from('conversations').select('*').eq('planner_id', plannerId).limit(1).maybeSingle()
   if (!existing) {
     const { data: created, error } = await sb.from('conversations').insert({ planner_id: plannerId }).select().single()
     if (error || !created) { showToast('Failed to start chat: ' + (error?.message || 'unknown')); return }
