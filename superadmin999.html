@@ -5665,7 +5665,7 @@ let viewingPlannerId = null
 // ── PLANNER LIST STATE ──────────────────────────────────────
 const _plState = { filter:'all', search:'', city:'', avail:'', mentor:'', sort:'newest', page:1, pageSize:20 }
 // Onboarding mentors a planner can be tagged with (editable inline in the list).
-const ONBOARDING_MENTORS = ['FCKING','JT','KIT']
+const ONBOARDING_MENTORS = ['FCKING','TT','KIT']
 
 async function loadPlanners() {
   const { data, error } = await sb.from('planners').select('*').order('created_at', { ascending: false })
