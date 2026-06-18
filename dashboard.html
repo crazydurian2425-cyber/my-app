@@ -14388,12 +14388,26 @@ async function openPlanSummary(plan) {
     const _lastIsTransport = _lastSlot && String(_lastSlot.type||'').toLowerCase() === 'transport'
     let closeHtml = ''
     if (slots.length && d !== totalDays) {
-      const _ovEnd  = _psLastEnd(slots)
+      // Time on the Overnight node = when the traveler actually gets back to the
+      // hotel (last venue's end + the trailing back-to-hotel ride), snapped to the
+      // nearest 15 min. Mirrors the departure node so both day-closing markers
+      // show a real arrival time, not the bare activity end.
+      const _ovEnd = (() => {
+        const venueEnd = _psLastEnd(slots)
+        if (venueEnd == null) return null
+        let extra = 0
+        for (let i = slots.length - 1; i >= 0; i--) {
+          if (String(slots[i].type || '').toLowerCase() !== 'transport') break
+          const mm = _legMins(slots[i]); if (Number.isFinite(mm)) extra += mm
+        }
+        const total = Math.round((venueEnd + extra) / 15) * 15   // snap to nearest 15 min
+        return Math.min(total, 23 * 60 + 59)
+      })()
       const _ovTime = _ovEnd != null ? _fmtLower(minsToHHMM(_ovEnd)) : dt('night','夜')
       closeHtml = `
         <li class="ps-row ps-row--end">
           <span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span>
-          <div class="ps-time ps-time--t">${escapeHtml(_ovTime)}</div>
+          <div class="ps-time">${escapeHtml(_ovTime)}</div>
           <div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">${escapeHtml(dt('Overnight','宿泊'))}${_psHotelName ? ' · ' + escapeHtml(_psHotelName) : ''}</div></div></div>
         </li>`
     } else if (slots.length && d === totalDays && _lastIsTransport) {
