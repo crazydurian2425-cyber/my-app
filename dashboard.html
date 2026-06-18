@@ -8209,7 +8209,7 @@ const TM_I18N = {
     'nav.wallet':'Wallet',
     'nav.profile':'Profile',
     'nav.settings':'Settings',
-    'nav.support':'Contact support',
+    'nav.support':'Support',
     // dashboard
     'dash.greeting':'Good morning,',
     'dash.greeting.afternoon':'Good afternoon,',
@@ -8667,7 +8667,7 @@ const TM_I18N = {
     // "Set complete" celebration card
     'complete.title':'Set complete',
     'complete.sub':'All {total} plans submitted. Notify admin to fast-track your review.',
-    'complete.badge':'Task done',
+    'complete.badge':'Set complete',
     'complete.set':'Set #{n}',
     'complete.eta':'Review typically within 1hr',
     'complete.btn.notify':'Notify admin for review',
@@ -8889,7 +8889,7 @@ const TM_I18N = {
     'assign.btn.requestSet':'Request a set',
     'idle.title':'Ready when you are',
     'idle.sub':"Our ops team assigns sets based on your availability. You'll get notified the moment one lands.",
-    'idle.viewSupport':'View support center →',
+    'idle.viewSupport':'Contact support →',
     // Completion breakdown
     'completed.commissionEarned':'Commission earned',
     'completed.bondRefund':'Bond refund',
@@ -8966,7 +8966,7 @@ const TM_I18N = {
     'nav.wallet':'ウォレット',
     'nav.profile':'プロフィール',
     'nav.settings':'設定',
-    'nav.support':'サポートに問い合わせ',
+    'nav.support':'サポート',
     'dash.greeting':'おはようございます、',
     'dash.greeting.afternoon':'こんにちは、',
     'dash.greeting.evening':'こんばんは、',
@@ -8975,7 +8975,7 @@ const TM_I18N = {
     'dash.m.currentEarning.note':'未払い · 進行中のセット',
     'dash.m.earned':'支払い済み',
     'dash.m.earned.note':'累計 · ウォレットへ',
-    'dash.m.bond':'保証金（保留中）',
+    'dash.m.bond':'保証金（預かり中）',
     'dash.m.bond.note':'セット完了まで保留',
     'dash.m.sets':'完了済みセット',
     'dash.m.sets.note':'累計',
@@ -9018,7 +9018,7 @@ const TM_I18N = {
     'assign.sub':'管理者が、あなたの地域と専門分野に基づいてセットを割り当てます',
     'assign.pending':'割り当て待ち',
     'assign.pending.sub':'チームがあなたの地域と得意分野に合ったセットを割り当てます。割り当てられるとここに表示されます。',
-    'assign.supportLink':'ご質問は？ サポートにお問い合わせください →',
+    'assign.supportLink':'ご不明な点は？ サポートにお問い合わせください →',
     'perf.title':'あなたの実績',
     'perf.ontime':'納期遵守率',
     'perf.approval':'承認率',
@@ -9033,7 +9033,7 @@ const TM_I18N = {
     'history.sub':'ウォレットのすべての出金、入金、控除、請求',
     'history.totalEarned':'支払い済み',
     'history.avgPerSet':'利用可能',
-    'history.standardRate':'ウォレット内の残高',
+    'history.standardRate':'ウォレット残高',
     'history.pending':'出金保留中',
     'history.inProgress':'支払い処理中',
     'history.payoutRow':'出金',
@@ -9059,7 +9059,7 @@ const TM_I18N = {
     'walletSnap.lifetime':'出金済み総額',
     'walletSnap.lastPayout':'前回の出金',
     'walletSnap.payoutRule':'進行中のセット内のすべてのプランが管理者に承認されると、出金できるようになります。',
-    'walletSnap.weeklyRule':'<strong>条件達成ボーナス ¥150,000</strong> — 7日間単位のサイクル内に2件以上のセットを完了し、承認された場合にウォレットへ反映されます。',
+    'walletSnap.weeklyRule':'<strong>条件達成ボーナス ¥150,000</strong> — 7日ごとのサイクル内に2件以上のセットを完了し、承認されると、ウォレットに加算されます。',
     'walletSnap.cta':'ウォレットを開く',
     'wallet.m.available':'利用可能',
     'wallet.m.earnedTotal':'獲得総額',
@@ -9072,11 +9072,11 @@ const TM_I18N = {
     'wallet.requests.sub':'最近の出金と保留中の出金',
     'wallet.btn.request':'出金をリクエスト',
     'wallet.empty':'まだ出金リクエストはありません',
-    'wallet.protection.title':'ウォレット保護リザーブ',
-    'wallet.protection.sub':'不正利用や支払いトラブルに備えた安全保留分',
-    'wallet.protection.badge':'不正・トラブル用リザーブ',
-    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、安全リザーブとして一度だけ <strong><span id="w-protection-min">¥…</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもリザーブを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、リザーブは<strong>恒久的に解除</strong>され、以降の出金ではウォレットを空にすることもできます。',
-    'wallet.protection.body2':'現在の上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。これまでに <strong><span id="w-protection-done">0</span></strong> セットを完了しています — しきい値に達するとリザーブが解除され、すべて自由に出金できるようになります。',
+    'wallet.protection.title':'ウォレット保護バッファ',
+    'wallet.protection.sub':'不正利用や支払いトラブルに備えた保護バッファ',
+    'wallet.protection.badge':'不正・トラブル用バッファ',
+    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、保護バッファとして一度だけ <strong><span id="w-protection-min">¥…</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもバッファを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、バッファは<strong>恒久的に解除</strong>され、以降の出金ではウォレットを空にすることもできます。',
+    'wallet.protection.body2':'現在の上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。これまでに <strong><span id="w-protection-done">0</span></strong> セットを完了しています — しきい値に達するとバッファが解除され、すべて自由に出金できるようになります。',
     'wallet.bank.title':'支払い先',
     'wallet.bank.label':'銀行',
     'wallet.account.label':'口座',
@@ -9175,7 +9175,7 @@ const TM_I18N = {
     'settings.avail.holiday':'休暇中',
     'settings.avail.holiday.sub':'進行中の依頼は完了しますが、新規は受け付けません',
     'settings.avail.break':'休止中',
-    'settings.avail.break.sub':'すべて一時停止 — ダッシュボードから離れます',
+    'settings.avail.break.sub':'すべて一時停止 — しばらくお休みします',
     'settings.display':'表示と言語',
     'settings.display.sub':'Journey Junction の表示設定',
     'settings.theme':'テーマ',
@@ -9348,7 +9348,7 @@ const TM_I18N = {
     'slot.label.name.dinner':'夕食（レストラン名）',
     'slot.label.addr.default':'住所',
     'slot.label.addr.transport':'出発 → 到着（例：東京 → 京都）',
-    'slot.label.notes.activity':'ヒント（外せないポイント、撮影スポット…）',
+    'slot.label.notes.activity':'メモ（見どころ、撮影スポット…）',
     'slot.label.notes.meal':'おすすめ料理',
     'slot.label.notes.accommodation':'予約メモ、部屋の詳細',
     'slot.label.notes.transport':'メモ（時刻、乗り換え、切符…）',
@@ -9396,7 +9396,7 @@ const TM_I18N = {
     'dash.btn.awaitingReview':'承認待ち',
     'complete.title':'セット完了',
     'complete.sub':'{total}件すべてのプランを提出しました。承認を早めるには管理者に通知してください。',
-    'complete.badge':'ミッション完了',
+    'complete.badge':'セット完了',
     'complete.set':'セット #{n}',
     'complete.eta':'通常1時間以内に承認されます',
     'complete.btn.notify':'承認をリクエスト',
@@ -9431,7 +9431,7 @@ const TM_I18N = {
     'brief.label.specialNote':'特記事項',
     'bond.title':'返金可能な保証金について',
     'bond.amountLabel':'保証金',
-    'bond.body1':'この依頼はプレミアム旅程です。開始前に、全額返金可能な保証金を保留します。これは費用ではなく — 期日どおりに納品するというあなたの約束を確保するものです。プランが承認され次第、保証金は報酬とともに返還されます。差し引きはありません。',
+    'bond.body1':'この依頼はプレミアム旅程です。開始前に、全額返金可能な保証金を保留します。これは費用ではなく、期日どおりに納品するというあなたの約束を担保するものです。プランが承認され次第、保証金は報酬とともに返還されます。差し引きはありません。',
     'bond.body2':'プレミアム依頼では、旅行者は特に丁寧なプランを期待しています。あなたの報酬は標準の依頼よりも大幅に高くなります。ご不明な点があれば、サポートにお問い合わせください。',
     'bond.lockedNote':'このプランは保証金でロックされています。編集するには上記の金額を支払ってください。',
     'bond.unlockedNote':'保証金が支払われました。このプランを通常どおり提出できます。',
@@ -9456,7 +9456,7 @@ const TM_I18N = {
     'travelerTypeShort.group':'グループ',
     'travelerTypeShort.business':'ビジネス',
     'pace.relaxed':'ゆったり',
-    'pace.balanced':'バランス型',
+    'pace.balanced':'バランス',
     'pace.moderate':'ほどほど',
     'pace.packed':'びっしり',
     'pace.fast':'速い',
@@ -9490,7 +9490,7 @@ const TM_I18N = {
     'bond.preview.notify':'支払いの準備を — 事前に管理者へ通知してください',
     'bond.preview.note':'このプランはまだ有効ではありません — 保証金はプラン {n} に到達した時点で必要になります。早めに管理者へ通知すると承認が早まります。',
     'bond.why.title':'なぜ保証金が必要か',
-    'bond.why.p1':'このプランは<strong>プレミアム予約</strong>です — 通常、法人のお客様、大人数のグループ、または高予算の旅行者です。納期は厳格で、遅延や不備があると航空券、ホテル、予約が無効になり、Journey Junction の評判に直接影響します。',
+    'bond.why.p1':'このプランは<strong>プレミアム予約</strong>です。多くは法人の旅行者、大人数のグループ、または高予算の旅行者によるものです。納期は厳格で、遅延や不備があると航空券、ホテル、予約が無効になり、Journey Junction の評判に直接影響します。',
     'bond.why.p2':'保証金は、セットを期日どおりに納品するというあなたの約束を示すものです。依頼の「席の確保」とお考えください。',
     'bond.know.title':'知っておくべきこと',
     'bond.know.1':'<strong>全額返金可能</strong> — セットのすべてのプランが提出・承認され次第、返還されます。',
@@ -9559,13 +9559,13 @@ const TM_I18N = {
     'wallet.bankNotSet2':'ウォレット未設定',
     'wallet.acctNotSet':'ウォレット未設定',
     'wallet.btn.noFunds':'利用可能な資金がありません',
-    'wallet.btn.needMore':'リザーブを {amt} 超えると出金可能になります',
-    'wallet.btn.lockedUntilSets':'{n}セットを完了するとリザーブが解除されます',
+    'wallet.btn.needMore':'バッファを {amt} 超えると出金可能になります',
+    'wallet.btn.lockedUntilSets':'{n}セットを完了するとバッファが解除されます',
     'wallet.noFundsYet':'出金可能な資金がありません',
-    'wallet.bufferLockedUntilNext':'出金できる残高はありません — 現在の残高 {min} はすべて安全リザーブとして保留されています。',
-    'wallet.bufferLockedUntilSets':'{min} は、あなたが {n}セットを完了する（{done}/{n} 完了）まで安全リザーブとして保留されます。それまでは {min} を超える分の収入のみ出金できます。',
+    'wallet.bufferLockedUntilNext':'出金できる残高はありません — 現在の残高 {min} はすべて保護バッファとして保留されています。',
+    'wallet.bufferLockedUntilSets':'{min} は、あなたが {n}セットを完了する（{done}/{n} 完了）まで保護バッファとして保留されます。それまでは {min} を超える分の収入のみ出金できます。',
     'wallet.needFirstBuffer':'初回出金：ウォレットに少なくとも {min} を残す必要があります。残高：{bal}。',
-    'pr.firstBufferHtml':'🛡️ 安全リザーブ：トラブルや調整に備えて <strong>{min}</strong> を保留します。現在の出金上限：<strong>{max}</strong>。{n}セットを完了すると解除されます。',
+    'pr.firstBufferHtml':'🛡️ 保護バッファ：トラブルや調整に備えて <strong>{min}</strong> を保留します。現在の出金上限：<strong>{max}</strong>。{n}セットを完了すると解除されます。',
     'pr.firstBufferShort':'🛡️ {n}セットを完了する（{done}/{n}）まで {amt} が保留されます。',
     // プラットフォーム請求
     'pp.banner.title.one':'未払いのプラットフォーム請求があります',
@@ -9599,7 +9599,7 @@ const TM_I18N = {
     'assign.btn.requestSet':'セットをリクエスト',
     'idle.title':'対応可能',
     'idle.sub':'チームがあなたの対応状況に合わせてセットを割り当てます。セットが届き次第、通知されます。',
-    'idle.viewSupport':'ヘルプセンターを見る →',
+    'idle.viewSupport':'サポートに問い合わせる →',
     'completed.commissionEarned':'獲得報酬',
     'completed.bondRefund':'保証金の返還',
     'completed.totalPayout':'支払い合計',
@@ -9624,7 +9624,7 @@ const TM_I18N = {
     'completed.availableLabel':'このセットの報酬',
     'completed.breakdown':'内訳',
     'between.title':'セット支払済み',
-    'between.sub':'お疲れさまでした — 新しいセットをリクエストいただければ、すぐに割り当てます。',
+    'between.sub':'お疲れさまでした。新しいセットをリクエストいただければ、すぐに割り当てます。',
     'completed.walletHint':'ウォレットから出金をリクエストしてください — PayPay 残高へ送金、通常1時間以内です。',
     'completed.btn.checkPayout':'支払いを確認',
     'completed.btn.requestNew':'新しいセットをリクエスト',
@@ -14077,13 +14077,13 @@ async function openPlanSummary(plan) {
     let pts = s.place_types
     if (typeof pts === 'string') pts = pts.split(',').map(x=>x.trim())
     if (!Array.isArray(pts)) return ''
-    const M = { cafe:dt('café','カフェ'), bakery:dt('bakery','ベーカリー'), bar:'bar',
+    const M = { cafe:dt('café','カフェ'), bakery:dt('bakery','ベーカリー'), bar:dt('bar','バー'),
       restaurant:dt('restaurant','レストラン'), meal_takeaway:dt('takeaway','テイクアウト'),
       museum:dt('museum','美術館'), art_gallery:dt('gallery','ギャラリー'), park:dt('park','公園'),
       tourist_attraction:dt('sight','名所'), church:dt('church','教会'),
       book_store:dt('bookshop','書店'), shopping_mall:dt('mall','ショッピングモール'),
       department_store:dt('store','百貨店'), store:dt('shop','店'),
-      night_club:dt('nightclub','ナイトクラブ'), spa:'spa', amusement_park:dt('park','公園') }
+      night_club:dt('nightclub','ナイトクラブ'), spa:dt('spa','スパ'), amusement_park:dt('amusement park','遊園地') }
     for (const p of (pts||[])) if (M[p]) return M[p]
     return ''
   }
@@ -20472,7 +20472,10 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
       const arrLoc = window._currentArrivalStationResolvedName
                   || window._currentArrivalLocation
                   || ''
-      const methodLabel = method === 'flight' ? dt('Flight','飛行機') : (method === 'train' ? 'Train' : (method.charAt(0).toUpperCase() + method.slice(1)))
+      const _aEn = method === 'flight' ? 'Flight' : (method.charAt(0).toUpperCase() + method.slice(1))
+      const _ak = String(method || '').toLowerCase()
+      const _aJa = /flight|plane|air/.test(_ak) ? '飛行機' : /shinkansen/.test(_ak) ? '新幹線' : /train|rail/.test(_ak) ? '電車' : /bus|coach/.test(_ak) ? 'バス' : /ferry|boat|ship/.test(_ak) ? 'フェリー' : /car|drive|taxi/.test(_ak) ? '車' : /walk|foot/.test(_ak) ? '徒歩' : (method || '')
+      const methodLabel = dt(_aEn, _aJa)
       const locBit = arrLoc ? dt(` at ${arrLoc}`, ` ${arrLoc}にて`) : ''
       topAnchor = _buildLockedAnchor({
         type: 'arrival',
