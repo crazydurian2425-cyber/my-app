@@ -13463,7 +13463,7 @@ async function renderTravelerBrief(plan, t, notes) {
   box.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;">
       <i class="ti ti-map-pin" style="font-size:18px;color:#2C5F2D;" aria-hidden="true"></i>
-      <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:#2C5F2D;">TRAVELER BRIEF</span>
+      <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:#2C5F2D;">${dt('TRAVELER BRIEF','旅行者の依頼内容')}</span>
     </div>
     ${sectionBasics}
     ${sectionTravelers}
