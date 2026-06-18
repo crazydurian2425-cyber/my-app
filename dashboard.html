@@ -15206,6 +15206,25 @@ function _autoSeedDay1HotelIfNeeded() {
     if (!Number.isFinite(arrHour) || arrHour < 13) { console.log('[day1-seed] skip: no afternoon arrival'); return }
     const day1 = document.getElementById('slots-day-1')
     if (!day1) { console.log('[day1-seed] skip: no day-1 container'); return }
+    // REPAIR existing plans: an arrival taxi seeded by the old order sits AFTER
+    // the hotel check-in, so the station→hotel ride looked missing and a stray
+    // transport showed up next to "back to hotel". If the locked arrival taxi is
+    // positioned after the first venue, move it back to right before that venue
+    // and re-time it to the arrival time.
+    const _seededTaxi = day1.querySelector(':scope > .activity-slot[data-auto-seeded-arrival-taxi="true"]')
+    if (_seededTaxi) {
+      const _firstVenue = [...day1.querySelectorAll(':scope > .activity-slot')].find(s =>
+        s !== _seededTaxi &&
+        !(s.classList.contains('is-locked') && s.dataset.anchorType) &&
+        !s.classList.contains('slot-type-transport'))
+      if (_firstVenue && (_seededTaxi.compareDocumentPosition(_firstVenue) & Node.DOCUMENT_POSITION_PRECEDING)) {
+        day1.insertBefore(_seededTaxi, _firstVenue)
+        _applySlotTime(_seededTaxi, window._currentArrivalTime || '14:00')
+        if (typeof refreshDayDistances === 'function') refreshDayDistances(day1)
+        if (typeof autoSaveDraft === 'function') autoSaveDraft()
+        console.log('[day1-seed] repaired: moved arrival taxi back before first venue')
+      }
+    }
     // Exclude only locked ANCHOR bookends — NOT the locked auto-seeded hotel
     // check-in, which is a real first venue the arrival taxi must precede.
     // (Excluding it made firstStop land on the end-of-day transport, so the
@@ -15215,13 +15234,15 @@ function _autoSeedDay1HotelIfNeeded() {
     const firstStop = userStops[0] || null
     console.log('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
     if (userStops.length === 0) {
-      console.log('[day1-seed] empty day → adding taxi + hotel')
-      _insertArrivalTaxi(null)
-      // Snapshot existing hotel_checkin slots BEFORE addSlot so we can
-      // pick out the freshly-inserted one and lock it. Locking marks
-      // the row as "always needed" — the × delete button is hidden so
-      // the planner can't accidentally remove the first action of the
-      // arrival day.
+      console.log('[day1-seed] empty day → adding hotel + taxi')
+      // Add the Hotel check-in FIRST, then slot the arrival taxi in BEFORE it,
+      // so the order is locked in as: arrival anchor → taxi → hotel_checkin.
+      // Seeding the taxi first with no anchor (beforeEl=null) left it
+      // un-positioned, so it ended up AFTER the hotel — the bug this fixes.
+      // This now mirrors the saved-plan path, which already passes a beforeEl.
+      // Snapshot existing hotel_checkin slots BEFORE addSlot so we can pick out
+      // the freshly-inserted one and lock it (hides the × so the planner can't
+      // accidentally remove the first action of the arrival day).
       const _beforeAdd = new Set([...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')])
       addSlot(1, { icon: 'hotel' })
       const newHotel = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')]
@@ -15230,8 +15251,9 @@ function _autoSeedDay1HotelIfNeeded() {
         newHotel.dataset.isLocked = 'true'
         newHotel.dataset.autoSeededHotelCheckin = 'true'
       }
-      // _insertArrivalTaxi already queues an autosave; the hotel addSlot
-      // doesn't, so kick it explicitly so both new rows persist.
+      _insertArrivalTaxi(newHotel || null)
+      // _insertArrivalTaxi already queues an autosave; kick one more so the
+      // locked hotel row persists too.
       if (typeof autoSaveDraft === 'function') autoSaveDraft()
       return
     }
