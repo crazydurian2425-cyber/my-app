@@ -21520,10 +21520,17 @@ function computeDaySummary(dayContainer) {
       if (Number.isFinite(fl) && Number.isFinite(fg)) a = { lat: fl, lng: fg }
     }
     const b = next ? getSlotLatLng(next) : null
-    const km = (a && b) ? haversineKm(a.lat, a.lng, b.lat, b.lng) : 0
+    // Only estimate when BOTH endpoints could be placed. With no location
+    // linked yet the distance is UNKNOWN (not 0), so we must not fabricate the
+    // taxi minimum (~¥900 flag-fall + dispatch) — that inflated an untouched day
+    // to ¥900 even though the leg's own cost cell correctly shows "—".
+    const resolved = !!(a && b)
+    const km = resolved ? haversineKm(a.lat, a.lng, b.lat, b.lng) : 0
     if (mode === 'walk') walkingKm += km
-    const est = _transportEstimates(mode, km)
-    if (est?.costEur != null) transportSpend += _perPaxTransportCost(mode, est.costEur, window._currentGroupSize)
+    if (resolved) {
+      const est = _transportEstimates(mode, km)
+      if (est?.costEur != null) transportSpend += _perPaxTransportCost(mode, est.costEur, window._currentGroupSize)
+    }
   })
   // Stop spend — estimated per-pax cost for each linked venue. Hotel
   // check-in/out are excluded by slot type too (belt + braces with the
