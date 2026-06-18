@@ -11939,7 +11939,7 @@ function renderRevisionInbox(plansList) {
     // Show traveler type + duration instead so the planner still has context
     // (matches how the bond modal and locked plan tiles handle it).
     const typeTxt = trav.traveler_type ? t('travelerTypeShort.'+trav.traveler_type.toLowerCase(), trav.traveler_type) : ''
-    const metaBits = [typeTxt, trav.duration].filter(Boolean).join(' · ')
+    const metaBits = [typeTxt, fmtDuration(trav.duration || trav.meta?.trip_total_duration)].filter(Boolean).join(' · ')
     return `
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:11px 13px;background:rgba(255,255,255,0.50);border:1px solid rgba(193,125,42,0.22);border-radius:8px;">
         <div style="flex:1;min-width:0;">
@@ -11977,7 +11977,7 @@ function renderGrid() {
     // Approved/submitted/in-progress/revision plans show details; pending/bond-pending stay anonymous.
     const showInfo = ['approved','submitted','in_progress','revision'].includes(p.status)
     const infoLine = showInfo
-      ? `<div class="tile-info">${escapeHtml(typeTxt)} · ${escapeHtml(fmtDuration(trav?.duration) || '')}</div>`
+      ? `<div class="tile-info">${escapeHtml(typeTxt)} · ${escapeHtml(fmtDuration(trav?.duration || trav?.meta?.trip_total_duration) || '')}</div>`
       : `<div class="tile-info" style="opacity:0.5;">${t('tile.locked','pending')}</div>`
     return `
       <div class="plan-tile ${statusClass}" onclick="tileClick('${p.id}',${p.plan_number},'${p.status}')">
@@ -13704,7 +13704,7 @@ async function openItineraryForm(planId) {
     return m ? parseInt(m[1], 10) : null
   }())
   const travType = t.traveler_type || plan.type || ''
-  const duration = t.duration     || plan.duration || '3D2N'
+  const duration = t.duration     || plan.duration || (t.meta && t.meta.trip_total_duration) || '3D2N'
   const isBond   = t.requires_bond || plan.deposit || false
   const notes    = travLocale(t,'special_notes') || t.notes || ''
 
@@ -13913,7 +13913,7 @@ async function openPlanSummary(plan) {
   if (plan.arrival_date_snapshot) trav = { ...trav, arrival_date: plan.arrival_date_snapshot }
   const planNum = plan.plan_number || plan.num || '?'
   const travType = trav.traveler_type || plan.type || ''
-  const duration = trav.duration || plan.duration || ''
+  const duration = trav.duration || plan.duration || (trav.meta && trav.meta.trip_total_duration) || ''
   const tPrime = window.t || ((k,f)=>f)
 
   // Header — "{traveler}'s {destination}" + "Solo · N nights · curated by {planner}"
