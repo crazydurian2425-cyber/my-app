@@ -302,7 +302,7 @@ async function handleCreatePlanner(request) {
 // cleanup loop and the postpone dev tool). Anything else is denied.
 const PROXY_ALLOWED_TABLES = new Set([
   'audit_log','conversations','cs_quick_replies','employment_letters',
-  'itinerary_items','legal_docs','messages','payouts','planner_applications','planners',
+  'itinerary_items','item_images','legal_docs','messages','payouts','planner_applications','planners',
   'plans','platform_settings','set_assignments','sets','support_tickets',
   'travelers','wallet_adjustments','wallet_pending_payments','wallet_requests',
   // Best-effort cleanup targets (may not exist; wrapped in try/catch client-side)
