@@ -3847,20 +3847,14 @@ function renderPlanSummary(plan){
         ${_catBadge(s)}
         <div class="ps-time">${escapeHtml(_t(s.time) || '—')}</div>
         <div class="ps-cell ps-cell--card">
-          <div class="ps-name"><span>${escapeHtml(s.title || '(untitled)')}${cat ? `<span class="ps-cat"> · ${escapeHtml(cat)}</span>` : ''}</span></div>
+          <div class="ps-name"><span>${escapeHtml(s.title || '(untitled)')}</span></div>
           ${_metaParts.length ? `<div class="ps-meta">${_metaParts.join(' · ')}</div>` : ''}
           ${chips}${legacy}${imgHtml}
         </div>
       </li>`
     }).join('') : `<li class="ps-empty">No activities logged for this day.</li>`
 
-    let warnHtml = ''
-    const hasMeal = stops.some(s => String(s.type||'').toLowerCase() === 'meal')
-    let lastEnd = null
-    for (const s of stops) { const mm = _toMin(s.time); if (mm == null) continue; lastEnd = Math.max(lastEnd ?? 0, mm + (parseInt(s.duration_minutes,10) || 0)) }
-    if (stops.length >= 2 && !hasMeal && lastEnd != null && lastEnd >= 12*60 + 30) {
-      warnHtml = `<div class="ps-warn">⚠ ${escapeHtml(`No lunch scheduled — ${_travFirst} will be hungry by 1 PM`)}</div>`
-    }
+    const warnHtml = ''   // "No lunch" review banner removed — admin shows only what the planner submitted
 
     const statBits = []
     if (stops.length > 0) statBits.push(`${stops.length} ${stops.length === 1 ? 'stop' : 'stops'}`)
@@ -3943,6 +3937,7 @@ function renderPlanSummary(plan){
   const extra = (label, val) => val && String(val).trim()
     ? `<section class="ps-extra"><div class="ps-extra-label">${escapeHtml(label)}</div><div class="ps-extra-val">${escapeHtml(String(val).trim())}</div></section>` : ''
   const extrasHtml = `
+    ${extra('Personal note to traveler', plan.personal_message_to_traveler)}
     ${extra('Transport tips', plan.transport_tips)}
     ${extra('Estimated spend breakdown', plan.spend_breakdown)}
     ${extra('Local tips & hidden gems', plan.local_tips)}`
