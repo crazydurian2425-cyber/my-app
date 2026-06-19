@@ -17379,6 +17379,10 @@ function applyPlaceToSlot(slot, place) {
     const suggested = suggestStayDuration({ slotType, placeTypes, startTime })
     if (suggested) applyDurationSuggestion(slot, suggested)
   }
+  // Dismiss the on-screen keyboard BEFORE the chip swap so its (async) close
+  // re-flow happens predictably; the scroll restore at the end then re-applies
+  // after it. Without this, mobile bounced the planner to the top of the form.
+  try { const _ti = slot.querySelector('.slot-title-input'); if (_ti && document.activeElement === _ti) _ti.blur() } catch (e) {}
   renderLinkedChip(slot)
   slot.classList.add('slot-place-linked')
   hidePlacesDropdown(slot)
@@ -17442,9 +17446,19 @@ function applyPlaceToSlot(slot, place) {
     console.warn('[applyPlace] _gapFillTransportsForDay NOT DEFINED — function definition broke?')
   }
   autoSaveDraft()
-  // Restore modal scroll position last — every step above could have
-  // shifted layout and let the browser snap to top.
-  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
+  // Restore modal scroll position — re-applied across several ticks because the
+  // mobile keyboard-dismiss re-flow lands a few frames AFTER this function
+  // returns, so a single synchronous set gets overwritten and snapped the
+  // planner to the top. Re-applying over ~400ms outlasts that re-flow. The
+  // >1px guard means we only correct an actual jump, not a deliberate scroll.
+  if (modalBody && savedScrollTop != null) {
+    const _restoreScroll = () => { try { if (Math.abs(modalBody.scrollTop - savedScrollTop) > 1) modalBody.scrollTop = savedScrollTop } catch (e) {} }
+    _restoreScroll()
+    requestAnimationFrame(_restoreScroll)
+    setTimeout(_restoreScroll, 60)
+    setTimeout(_restoreScroll, 200)
+    setTimeout(_restoreScroll, 400)
+  }
 }
 
 // Map Google place types → our slot type enum. Order matters: the first match
