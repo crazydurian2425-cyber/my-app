@@ -10017,6 +10017,13 @@ let _lastActivityAt = Date.now()
 )
 function _startPresenceHeartbeat(plannerId){
   if (!plannerId || window._presenceTimer) return
+  // Stamp last_login_at ONCE per session entry — a fresh form login OR a resumed
+  // saved session (most planners stay signed in, so the login *form* rarely runs
+  // and last_login_at was stuck at "never" in admin even for active planners).
+  // This runs once per dashboard load (the _presenceTimer guard above prevents
+  // re-entry). login.html still also writes it (with geo) on a real form login.
+  // Fire-and-forget + guarded so it can never block or break the dashboard.
+  try { sb.from('planners').update({ last_login_at: new Date().toISOString() }).eq('id', plannerId).then(()=>{}, ()=>{}) } catch (e) {}
   const IDLE_MS = 3 * 60 * 1000   // 3 min with no interaction → treated as away
   const ping = () => {
     if (typeof document.visibilityState === 'string' && document.visibilityState !== 'visible') return
