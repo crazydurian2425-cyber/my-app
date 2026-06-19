@@ -22611,43 +22611,72 @@ async function submitPlan() {
     return
   }
 
-  // ── Per-day structure requirement (normal planners) ──────────────────────
-  // Submit is blocked until each day has its required shape. "attraction" =
-  // activity | shopping | entertainment | freetime; "meal" = a meal stop.
+  // ── Per-day structure + end-of-day timing gate (normal planners) ─────────
+  // Submit is blocked until each day has its required shape AND ends near its
+  // suggested time. "attraction" = activity | shopping | entertainment |
+  // freetime; "meal" = a meal stop.
   //   • Arrival day (Day 1):    >=2 attractions, >=1 meal, a hotel check-in
   //   • Full day (middle days): >=2 attractions, >=2 meals
   //   • Departure day (last):   >=1 attraction (meal optional; check-out is auto)
-  // Trips are always 2+ days, so Day 1 is always arrival and the last day is
-  // always departure. Sub-accounts only finish Day 1 (their own >=3 rule below),
-  // so they're skipped here. Shows ONE day at a time (jumps + flashes it),
-  // matching the existing per-slot validation flow.
+  // Timing: the day's last stop must end within ±15 min of its suggested end
+  // (the same value the "too early / too late" badge already shows). Arrival +
+  // full days block on EITHER side; the departure day blocks only when TOO LATE
+  // (an early finish is fine for early departures, and the cut-off already bakes
+  // in the method's buffer — flight/train/shinkansen/car). Trips are always 2+
+  // days, so Day 1 is arrival and the last day is departure. Sub-accounts
+  // (Day-1-only training) are skipped. One day shown at a time (jumps + flashes).
   if (!window._isSubaccount) {
     const _ATTRACT = new Set(['activity', 'shopping', 'entertainment', 'freetime'])
     const _total = (typeof dayCount === 'number' && dayCount >= 2)
       ? dayCount
       : Math.max(2, ...items.map(i => i.day_number || 1))
     for (let d = 1; d <= _total; d++) {
-      const _di   = items.filter(i => (i.day_number || 1) === d)
-      const _attr = _di.filter(i => _ATTRACT.has(String(i.type || '').toLowerCase())).length
-      const _meal = _di.filter(i => String(i.type || '').toLowerCase() === 'meal').length
-      const _ci   = _di.filter(i => String(i.type || '').toLowerCase() === 'hotel_checkin').length
+      const _di    = items.filter(i => (i.day_number || 1) === d)
+      const _attr  = _di.filter(i => _ATTRACT.has(String(i.type || '').toLowerCase())).length
+      const _meal  = _di.filter(i => String(i.type || '').toLowerCase() === 'meal').length
+      const _ci    = _di.filter(i => String(i.type || '').toLowerCase() === 'hotel_checkin').length
+      const _isDep = (d === _total)
+      const _lbl   = (d === 1) ? dt(`Day ${d} (arrival day)`,   `${d}日目（到着日）`)
+                   : _isDep    ? dt(`Day ${d} (departure day)`, `${d}日目（出発日）`)
+                   :             dt(`Day ${d}`,                 `${d}日目`)
+      // (a) structure — "at least N (have M)" so planners know N is the floor.
       const _need = []
       if (d === 1) {                       // arrival day
-        if (_attr < 2) _need.push(dt(`${2 - _attr} more attraction${(2 - _attr) > 1 ? 's' : ''} (${_attr}/2)`, `見どころあと${2 - _attr}件（${_attr}/2）`))
-        if (_meal < 1) _need.push(dt('a meal (e.g. dinner)', '食事（夕食など）1件'))
+        if (_attr < 2) _need.push(dt(`at least 2 attractions (have ${_attr})`, `見どころ2件以上（現在${_attr}件）`))
+        if (_meal < 1) _need.push(dt(`at least 1 meal — e.g. dinner (have ${_meal})`, `食事1件以上（夕食など）（現在${_meal}件）`))
         if (_ci   < 1) _need.push(dt('a hotel check-in', 'ホテルチェックイン'))
-      } else if (d === _total) {           // departure day
-        if (_attr < 1) _need.push(dt('at least 1 attraction', '見どころ1件以上'))
+      } else if (_isDep) {                 // departure day
+        if (_attr < 1) _need.push(dt(`at least 1 attraction (have ${_attr})`, `見どころ1件以上（現在${_attr}件）`))
       } else {                             // full day
-        if (_attr < 2) _need.push(dt(`${2 - _attr} more attraction${(2 - _attr) > 1 ? 's' : ''} (${_attr}/2)`, `見どころあと${2 - _attr}件（${_attr}/2）`))
-        if (_meal < 2) _need.push(dt(`${2 - _meal} more meal${(2 - _meal) > 1 ? 's' : ''} (${_meal}/2)`, `食事あと${2 - _meal}件（${_meal}/2）`))
+        if (_attr < 2) _need.push(dt(`at least 2 attractions (have ${_attr})`, `見どころ2件以上（現在${_attr}件）`))
+        if (_meal < 2) _need.push(dt(`at least 2 meals — lunch & dinner (have ${_meal})`, `食事2件以上（昼食・夕食）（現在${_meal}件）`))
       }
       if (_need.length) {
-        const _lbl = (d === 1)      ? dt(`Day ${d} (arrival day)`,   `${d}日目（到着日）`)
-                   : (d === _total) ? dt(`Day ${d} (departure day)`, `${d}日目（出発日）`)
-                   :                  dt(`Day ${d}`,                 `${d}日目`)
         flashFormError({ target: document.getElementById('day-' + d) || undefined, message: _lbl + dt(' needs: ', 'に追加が必要：') + _need.join(dt(', ', '、')) })
         return
+      }
+      // (b) end-of-day timing (±15 min) — reuses the day-end badge's compare.
+      if (typeof _dayEndProfileCompare === 'function') {
+        const _sc = document.getElementById('slots-day-' + d)
+        if (_sc) {
+          const _cmp = _dayEndProfileCompare(_sc, d, _total)
+          const _block = _isDep ? (_cmp.state === 'late') : (_cmp.state === 'early' || _cmp.state === 'late')
+          if (_block && _cmp.actualStr && _cmp.expectedStr) {
+            let _em
+            if (_cmp.state === 'late') {
+              _em = _isDep
+                ? dt(`${_lbl} ends too late — the last stop ends ${_cmp.actualStr}, past the ${_cmp.expectedStr} cut-off to leave in time. Trim or move a stop so it ends within 15 min of ${_cmp.expectedStr}.`,
+                     `${_lbl}の終了が遅すぎます — 最後の立ち寄り先が${_cmp.actualStr}に終わり、出発に間に合う締切${_cmp.expectedStr}を過ぎています。${_cmp.expectedStr}の±15分以内に収めてください。`)
+                : dt(`${_lbl} ends too late — the last stop ends ${_cmp.actualStr}; the suggested end is about ${_cmp.expectedStr}. Trim or move a stop so it ends within 15 min of ${_cmp.expectedStr}.`,
+                     `${_lbl}の終了が遅すぎます — 最後の立ち寄り先が${_cmp.actualStr}に終わります。目安は約${_cmp.expectedStr}です。${_cmp.expectedStr}の±15分以内に収めてください。`)
+            } else {
+              _em = dt(`${_lbl} ends too early — the last stop ends ${_cmp.actualStr}, but the suggested end is about ${_cmp.expectedStr}. Add or extend a stop so the day ends within 15 min of ${_cmp.expectedStr}.`,
+                       `${_lbl}の終了が早すぎます — 最後の立ち寄り先が${_cmp.actualStr}に終わりますが、目安は約${_cmp.expectedStr}です。立ち寄り先を追加・延長し、${_cmp.expectedStr}の±15分以内に終わるようにしてください。`)
+            }
+            flashFormError({ target: document.getElementById('day-' + d) || undefined, message: _em })
+            return
+          }
+        }
       }
     }
   }
