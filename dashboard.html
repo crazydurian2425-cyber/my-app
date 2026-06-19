@@ -22693,6 +22693,20 @@ async function submitPlan() {
         }
       }
     }
+    // Personal note to the traveler must be a real message (>=10 chars) before
+    // submit — the grey placeholder doesn't count (we read .value, not the
+    // placeholder). Plan-level (Review step), checked once here after the
+    // per-day gates. Sub-accounts are skipped (this block is gated on !_isSubaccount).
+    const _pmEl   = document.getElementById('review-personal-message')
+    const _pmVal  = (_pmEl?.value || '').trim()
+    const _pmTrav = window._currentFirstName || dt('the traveler', '旅行者')
+    if (_pmVal.length < 10) {
+      const _pmMsg = _pmVal.length === 0
+        ? dt(`Add a personal note to ${_pmTrav} before submitting.`, `提出前に${_pmTrav}さんへのメッセージを入力してください。`)
+        : dt(`Your note to ${_pmTrav} is a little short — write at least a sentence (10+ characters) before submitting.`, `${_pmTrav}さんへのメッセージが少し短いです — 提出前にひとこと（10文字以上）書いてください。`)
+      flashFormError({ target: _pmEl || undefined, focusInput: _pmEl || undefined, message: _pmMsg })
+      return
+    }
   }
 
   // Sub-account training mode: Day 1 must hold at least 3 fully-completed
