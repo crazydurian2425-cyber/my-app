@@ -2028,7 +2028,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   border-radius:8px;
   font-size:12.5px;line-height:1.45;color:#5a3a18;
 }
-.day-time-banner .dtb-icon{flex:0 0 auto;color:#E08B3A;font-size:15px;}
+.day-time-banner .dtb-icon{flex:0 0 auto;color:#E08B3A;font-size:15px;line-height:1;}
 .day-time-banner .dtb-body{flex:1;min-width:0;}
 .day-time-banner strong{color:#3a2410;font-weight:600;}
 
@@ -15825,7 +15825,7 @@ function buildDayTimeBanner(dayNum, totalDays) {
     lines.push(dt(`Traveler departs <strong>${dep}</strong>${locBit}${toBit} — last stop must end by <strong>${w.maxTime}</strong>`, `旅行者は<strong>${dep}</strong>${locBit}${toBit}に出発 — 最後の立ち寄り先は<strong>${w.maxTime}</strong>までに終える必要があります`))
   }
   return `<div class="day-time-banner">
-    <i class="ti ti-clock dtb-icon" aria-hidden="true"></i>
+    <span class="dtb-icon" aria-hidden="true">🕐</span>
     <div class="dtb-body">${lines.join('<br>')}</div>
   </div>`
 }
