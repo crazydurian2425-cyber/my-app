@@ -3801,6 +3801,13 @@ function renderPlanSummary(plan){
   const _arrTimeStr = trav.arrival_time ? _t(trav.arrival_time) : ''
   const _arrMethodWord = (m) => { if(/flight|plane|air|vol/.test(m))return'Flight'; if(/train|tgv|rail/.test(m))return'Train'; if(/car|drive|voiture|taxi/.test(m))return'Car'; if(/bus|coach|autocar/.test(m))return'Bus'; if(/ferry|boat|bateau/.test(m))return'Ferry'; return'' }
   const _arrIco = (m) => { if(/flight|plane|air/.test(m))return '✈️'; if(/train|tgv|rail/.test(m))return '🚆'; if(/car|drive|taxi/.test(m))return '🚕'; if(/bus/.test(m))return '🚌'; if(/ferry|boat/.test(m))return '⛴️'; return '🚆' }
+  // Departure node details (mirror the planner: location in the title + a
+  // "<Method> to <dest> · departs <time>" subtitle). English, for the admin console.
+  const _depLoc     = String(_arrMeta.unit_departure_location||'').trim()
+  const _depMethodK = String(_arrMeta.unit_departure_method||'').toLowerCase()
+  const _depToStr   = String(_arrMeta.unit_departure_to||'').trim()
+  const _depTimeStr = _arrMeta.unit_departure_time ? _t(_arrMeta.unit_departure_time) : ''
+  const _depSubMeta = [[_arrMethodWord(_depMethodK), _depToStr ? `to ${_depToStr}` : ''].filter(Boolean).join(' '), _depTimeStr ? `departs ${_depTimeStr}` : ''].filter(Boolean).join(' · ')
 
   let daysHtml = ''
   const _maxDay = Math.max(totalDays, Object.keys(byDay).length)
@@ -3888,7 +3895,7 @@ function renderPlanSummary(plan){
         return Math.min(Math.round((venueEnd + extra) / 15) * 15, 23 * 60 + 59)
       })()
       const _ovTime = _ovEnd != null ? (_t(_hhmm(_ovEnd)) || 'night') : 'night'
-      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span><div class="ps-time ps-time--t">${escapeHtml(_ovTime)}</div><div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">Overnight${_psHotelName?' · '+escapeHtml(_psHotelName):''}</div></div></div></li>`
+      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span><div class="ps-time">${escapeHtml(_ovTime)}</div><div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">Overnight${_psHotelName?' · '+escapeHtml(_psHotelName):''}</div></div></div></li>`
     } else if (slots.length && d === _maxDay && _lastIsTransport) {
       // Departure time = last venue's end + trailing legs (NO 15-min snap —
       // mirrors the planner's chain-arrival time). Empty when not computable.
@@ -3903,7 +3910,7 @@ function renderPlanSummary(plan){
         return Math.min(venueEnd + extra, 23 * 60 + 59)
       })()
       const _depArrStr = _depArr != null ? (_t(_hhmm(_depArr)) || '') : ''
-      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span><div class="ps-time ps-time--t">${escapeHtml(_depArrStr)}</div><div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">Departure</div></div></div></li>`
+      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span><div class="ps-time">${escapeHtml(_depArrStr)}</div><div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">Departure${_depLoc ? ' · ' + escapeHtml(_depLoc) : ''}</div>${_depSubMeta ? `<div class="ps-start-meta">${escapeHtml(_depSubMeta)}</div>` : ''}</div></div></li>`
     }
     let startHtml = ''
     if (d === 1 && slots.length && (_arrGateway || _arrTimeStr)) {
