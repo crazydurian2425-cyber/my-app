@@ -1579,7 +1579,7 @@ async function renderInlineActions() {
     if (bondPending && bondPending.length) {
       const bp = bondPending[0]
       const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
-      bondChipText.textContent = `保証金未払い · プラン ${bp.plan_number} · ¥${escapeHtml(amt)}`
+      bondChipText.textContent = `保証金未払い · プラン${bp.plan_number} · ¥${escapeHtml(amt)}`
       bondChip.style.display = 'inline-flex'
     } else {
       bondChip.style.display = 'none'
@@ -1595,7 +1595,7 @@ async function renderInlineActions() {
   for (const bp of (bondPending || [])) {
     const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
     const notified = bp.admin_notes === 'BOND_NOTIFIED' ? ' · 送信済み' : ''
-    html += actionBtn(`保証金を確認 · プラン ${bp.plan_number} (¥${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
+    html += actionBtn(`保証金を確認 · プラン${bp.plan_number} (¥${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
   }
   // Revert button for recently-confirmed bond plans (safe window: no work started)
   for (const rc of (recentlyConfirmed || [])) {
@@ -1627,7 +1627,7 @@ function loadCsNotesIntoPanel(p) {
   if (meta) {
     if (p?.cs_notes_updated_at) {
       const when = new Date(p.cs_notes_updated_at).toLocaleString('ja-JP',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
-      meta.textContent = `最終編集 ${when}${p.cs_notes_updated_by ? ' · ' + p.cs_notes_updated_by : ''}`
+      meta.textContent = `最終編集${when}${p.cs_notes_updated_by ? ' · ' + p.cs_notes_updated_by : ''}`
     } else {
       meta.textContent = '未編集'
     }
@@ -1804,7 +1804,7 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '🔍 詳細をお願いします', text: 'もう少し詳しくお聞かせいただけますでしょうか。特定のプランに関するご質問でしたら、プラン番号と旅行者のお名前をお知らせいただけますと大変助かります。' },
     { label: '📸 スクリーンショットをお願いします', text: 'スクリーンショットをお送りいただけますでしょうか。チャット内の📎アイコンをクリックすると画像を添付できます。' },
     { label: '🙏 お礼', text: 'お問い合わせいただきありがとうございます。他にもご不明な点がございましたら、お気軽にお知らせください。' },
-    { label: '📨 審査待ちに登録', text: '{first_name}さん、承知いたしました。ありがとうございます。案件番号 {set_num} を管理者の審査待ちリストに登録いたしました。各プランが承認され次第（通常24～48時間以内）、順次ご連絡いたします。素晴らしいお仕事をありがとうございます。' },
+    { label: '📨 審査待ちに登録', text: '{first_name}さん、承知いたしました。ありがとうございます。案件番号{set_num}を管理者の審査待ちリストに登録いたしました。各プランが承認され次第（通常24～48時間以内）、順次ご連絡いたします。素晴らしいお仕事をありがとうございます。' },
     { label: '✨ 新しい案件を割り当て', text: '{first_name}さん、よいお知らせです。新しい案件を割り当ていたしました。ダッシュボードで旅行者の概要をご確認ください。プランニングを始める前に、旅行者情報に誤りがあればお知らせください。' },
     { label: '📝 修正のご依頼', text: '{first_name}さん、承知いたしました。管理者がいくつかのプランについて、コメント付きで修正が必要と判断いたしました。ダッシュボードから該当のプランを開き、修正依頼の内容をご確認のうえ、更新して再提出してください。ご不明な点がございましたらご連絡ください。' },
     { label: '🎉 プラン承認', text: 'プランが承認されました。{first_name}さん、お見事です。報酬は記録され、案件一式がすべて承認された時点でお支払い方法に応じて支払われます。' },

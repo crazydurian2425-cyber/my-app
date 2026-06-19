@@ -1162,6 +1162,13 @@ html[lang="ja"] .ps-day-sub{font-style:normal;font-family:'Noto Sans JP',sans-se
 .ps-ico--free    {background:rgba(154,123,62,0.16);color:#876c33;}
 .ps-ico--hotel   {background:#c2872e;color:#fff;}
 .ps-ico--transit {background:#FFFDF8;color:#9a958a;box-shadow:inset 0 0 0 1.5px #e3dccd, 0 0 0 3px #FFFDF8;}
+/* Emoji glyphs (replacing the old line-SVGs) are text, so they need a
+   font-size on the chip itself — the `… svg{}` rules above are now harmless. */
+.ps-ico{font-size:17px;line-height:1;}
+.ps-ico--sm{font-size:12.5px;}
+/* Traveler-brief section-header emoji (replacing the old Tabler line-icons). */
+.brief-sec-ico{display:inline-flex;align-items:center;justify-content:center;
+  font-size:15px;line-height:1;flex-shrink:0;}
 /* Day-type chip in the day header (replaces the misleading "0 stops"). */
 .ps-day-chip{display:inline-flex;align-items:center;font-family:'DM Sans',sans-serif;
   font-size:11px;font-weight:600;padding:4px 11px;border-radius:99px;white-space:nowrap;letter-spacing:0;}
@@ -1905,7 +1912,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .activity-slot.is-locked .anchor-row{display:flex;align-items:center;gap:10px;}
 .activity-slot.is-locked .anchor-icon{
   width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
-  font-size:14px;flex-shrink:0;
+  font-size:15px;line-height:1;flex-shrink:0;
 }
 .activity-slot.is-locked.anchor-morning  .anchor-icon{color:#c98a2b;}
 .activity-slot.is-locked.anchor-end-of-day  .anchor-icon{color:#5b6e8a;}
@@ -9000,7 +9007,7 @@ const TM_I18N = {
     'brief.guide.title':'旅程に含めるべき内容',
     'brief.guide.breakfast':'朝食',
     'brief.guide.breakfast.sub':'カフェ・ベーカリー（住所＋おすすめ）',
-    'brief.guide.dest':'訪問先 2〜3か所',
+    'brief.guide.dest':'訪問先2〜3か所',
     'brief.guide.dest.sub':'地元のスポット、市場、文化施設 — 観光客向けの罠は避ける',
     'brief.guide.meals':'昼食・夕食のおすすめ',
     'brief.guide.meals.sub':'一人あたりの価格帯付き',
@@ -9075,8 +9082,8 @@ const TM_I18N = {
     'wallet.protection.title':'ウォレット保護バッファ',
     'wallet.protection.sub':'不正利用や支払いトラブルに備えた保護バッファ',
     'wallet.protection.badge':'不正・トラブル用バッファ',
-    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、保護バッファとして一度だけ <strong><span id="w-protection-min">¥…</span></strong> を保留します。これは <strong><span id="w-protection-sets">3</span> セットを完了する</strong>まで保留されますが、それまでもバッファを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、バッファは<strong>恒久的に解除</strong>され、以降は残高を全額出金できるようになります。',
-    'wallet.protection.body2':'現在の上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。これまでに <strong><span id="w-protection-done">0</span></strong> セットを完了しています — しきい値に達するとバッファが解除され、すべて自由に出金できるようになります。',
+    'wallet.protection.body1':'承認後の調整（トラブル、保証金の修正、承認の取り消し）に備えて、保護バッファとして一度だけ<strong><span id="w-protection-min">¥…</span></strong>を保留します。これは<strong><span id="w-protection-sets">3</span>セットを完了する</strong>まで保留されますが、それまでもバッファを<strong>超える</strong>分の収入は出金できます。このしきい値に達すると、バッファは<strong>恒久的に解除</strong>され、以降は残高を全額出金できるようになります。',
+    'wallet.protection.body2':'現在の上限：<strong style="color:var(--e-green-d,#0f5240);"><span id="w-protection-max">¥0</span></strong>。これまでに<strong><span id="w-protection-done">0</span></strong>セットを完了しています — しきい値に達するとバッファが解除され、すべて自由に出金できるようになります。',
     'wallet.bank.title':'支払い先',
     'wallet.bank.label':'銀行',
     'wallet.account.label':'口座',
@@ -9115,7 +9122,7 @@ const TM_I18N = {
     'wallet.method.paypay':'PayPay',
     'profile.paypay.header':'PayPay での支払い',
     'profile.paypay.tag':'· PayPay · 即時',
-    'profile.paypay.switchHint':'支払いは <strong>PayPay 残高へ即時に送金</strong>されます。PayPay ID（または PayPay に登録した電話番号）と、PayPay アカウントの名義を入力してください。<strong>名義が PayPay アカウントと一致していることを確認してください</strong> — 一致しない場合、送金が拒否されることがあります。',
+    'profile.paypay.switchHint':'支払いは<strong>PayPay 残高へ即時に送金</strong>されます。PayPay ID（または PayPay に登録した電話番号）と、PayPay アカウントの名義を入力してください。<strong>名義が PayPay アカウントと一致していることを確認してください</strong> — 一致しない場合、送金が拒否されることがあります。',
     'profile.paypay.id':'PayPay ID / 電話番号',
     'profile.paypay.holder':'口座名義',
     'profile.paypay.ph.id':'例：PayPay ID または 090-1234-5678',
@@ -9269,7 +9276,7 @@ const TM_I18N = {
     'pr.method.bank':'銀行振込',
     'pr.addPaypayFirst':'先にプロフィール → 支払い情報で PayPay を登録してください',
     'pr.addBankFirst':'先にプロフィール → 支払い情報で銀行口座を登録してください',
-    'pr.updateBankHint':'プロフィール → 支払い で情報を編集してください',
+    'pr.updateBankHint':'プロフィール → 支払いで情報を編集してください',
     'toast.addPayoutMethodFirst':'プロフィールで PayPay または銀行口座を追加してください',
     'pr.amount':'金額',
     'pr.max':'最大',
@@ -9294,18 +9301,18 @@ const TM_I18N = {
     'day.headerN':'{n}日目',
     'day.addActivity':'この日にアクティビティを追加',
     'day.addActivityN':'{n}日目にアクティビティを追加',
-    'day.metaOne':'アクティビティ 1件',
-    'day.metaN':'アクティビティ {n}件',
+    'day.metaOne':'アクティビティ1件',
+    'day.metaN':'アクティビティ{n}件',
     'guide.arrivalDay':'到着日',
     'guide.departureDay':'出発日',
     'guide.dayTrip':'日帰り旅行',
     'guide.fullDay':'丸一日',
     'guide.recommendedStructure':'おすすめの構成',
     'guide.tipLabel':'ヒント',
-    'guide.item.attractions2':'観光 2件',
-    'guide.item.attractions3':'観光 3件',
-    'guide.item.attractions12':'観光 1〜2件',
-    'guide.item.attractions23':'観光 2〜3件',
+    'guide.item.attractions2':'観光2件',
+    'guide.item.attractions3':'観光3件',
+    'guide.item.attractions12':'観光1〜2件',
+    'guide.item.attractions23':'観光2〜3件',
     'guide.item.hotelIn':'ホテルチェックイン',
     'guide.item.hotelOut':'ホテルチェックアウト',
     'guide.item.lunch':'昼食',
@@ -9369,14 +9376,14 @@ const TM_I18N = {
     'plan.submit.imgWarning':'{n}件のステップに写真がありません — 各ステップに画像を追加するか、もう一度「プランを提出」をクリックしてそのまま提出してください。',
     'plan.submit.transportRequired':'提出前に「交通のヒント」を入力してください',
     'plan.submit.localRequired':'提出前に「地元のヒント · 穴場スポット」を入力してください',
-    'itin.modal.title':'プラン {n} — 旅程',
+    'itin.modal.title':'プラン{n} — 旅程',
     'itin.noteFromTraveler':'旅行者からのメモ',
     'brief.label.travelerType':'旅行者のタイプ',
-    'toast.bondAhead':'プラン {n} はロック中 — 到着時に保証金（{amt}）が必要になります',
-    'toast.bondAheadNoAmt':'プラン {n} はロック中 — 保証金が必要です',
+    'toast.bondAhead':'プラン{n}はロック中 — 到着時に保証金（{amt}）が必要になります',
+    'toast.bondAheadNoAmt':'プラン{n}はロック中 — 保証金が必要です',
     'dash.btn.submitPlanN':'プラン{n}を提出',
     // 依頼内容のモーダル
-    'briefs.titleWithSet':'依頼内容 — セット #{n}',
+    'briefs.titleWithSet':'依頼内容 — セット#{n}',
     'briefs.subCount':'{n}件のプラン · {city}',
     'brief.unnamedTraveler':'匿名の旅行者',
     'brief.anon':'（名前は非表示）',
@@ -9387,11 +9394,11 @@ const TM_I18N = {
     'toast.payoutRequested':'出金リクエストを送信しました',
     'toast.requestCancelled':'リクエストをキャンセルしました',
     'toast.revisionNeeded':'修正を依頼しました',
-    'toast.planLocked':'プラン {n} はまだ割り当てられていません。先に進行中のプランを完了してください。',
+    'toast.planLocked':'プラン{n}はまだ割り当てられていません。先に進行中のプランを完了してください。',
     'toast.planNotFound':'プランが見つかりません。ページを再読み込みしてください。',
     'brief.pendingMsg':'セットが割り当てられると依頼内容が表示されます',
-    'dash.progress.label':'{total}件中 {done}件のプランが完了しました',
-    'dash.sub.inProgress':'セット #{n} 進行中 — 残り{rem}件のプラン。',
+    'dash.progress.label':'{total}件中{done}件のプランが完了しました',
+    'dash.sub.inProgress':'セット#{n}進行中 — 残り{rem}件のプラン。',
     'dash.sub.allSubmitted':'すべてのプランを提出しました！ 管理者の承認待ちです。',
     'dash.btn.awaitingReview':'承認待ち',
     'complete.title':'セット完了',
@@ -9400,17 +9407,17 @@ const TM_I18N = {
     'complete.set':'セット #{n}',
     'complete.eta':'通常1時間以内に承認されます',
     'complete.btn.notify':'承認をリクエスト',
-    'chatPrefill.readyForReview':'セット #{n} のすべてのプランを提出しました。承認をお願いできますか？',
+    'chatPrefill.readyForReview':'セット#{n}のすべてのプランを提出しました。承認をお願いできますか？',
     'toast.adminNotified':'管理者に通知しました',
-    'dash.btn.bondLocked':'保証金が必要 — プラン {n} はロック中',
+    'dash.btn.bondLocked':'保証金が必要 — プラン{n}はロック中',
     'brief.allSubmitted':'すべてのプランを提出しました',
     'brief.niceWork':'お疲れさまです、',
     'brief.reviewing':'管理者がセットを確認しています。承認後、支払いが行われます。',
     'brief.celebrate.submitted':'{total}件のプランを提出',
     'brief.celebrate.awaiting':'承認待ち — 通常1時間以内',
     'brief.celebrate.payout':'承認後に支払いが行われます',
-    'brief.planTitle':'プラン {n} — 旅行者の依頼内容',
-    'brief.planBondTitle':'プラン {n} — 保証金の支払い',
+    'brief.planTitle':'プラン{n} — 旅行者の依頼内容',
+    'brief.planBondTitle':'プラン{n} — 保証金の支払い',
     'brief.pax':'名',
     'brief.arrivingPrefix':'到着',
     'brief.notRequired':'不要',
@@ -9438,7 +9445,7 @@ const TM_I18N = {
     'bond.contactTitle':'ご不明な点はありますか？',
     'bond.contactChat':'サポートチャットを開く',
     'bond.formCta.title':'編集前に保証金が必要です',
-    'bond.formCta.sub':'依頼内容は下に表示されています。プランの編集を始めるには保証金 {amt} を支払ってください。',
+    'bond.formCta.sub':'依頼内容は下に表示されています。プランの編集を始めるには保証金{amt}を支払ってください。',
     'bond.formCta.btn':'保証金を支払う',
     'ps.bondRequired':'開始するには保証金が必要です',
     'travelerType.solo':'一人旅',
@@ -9476,7 +9483,7 @@ const TM_I18N = {
     'tile.revision':'修正',
     'tile.bond':'保証金',
     'tile.bondReq':'保証金が必要',
-    'bond.banner.title':'プラン {n} には保証金 {amt} が必要です',
+    'bond.banner.title':'プラン{n}には保証金{amt}が必要です',
     'bond.banner.sub':'保証金を支払ってこのプランのロックを解除し、セットを続けてください。',
     'bond.banner.chat':'サポートとチャット',
     'bond.banner.pay':'保証金を支払う',
@@ -9484,11 +9491,11 @@ const TM_I18N = {
     'bond.banner.checkTip':'保証金が承認されたか確認します',
     'bond.modal.title':'保証金が必要',
     'bond.modal.sub':'保証金を支払って旅行者のプランのロックを解除してください',
-    'bond.previewTitle':'プラン {n} — 予定される保証金',
+    'bond.previewTitle':'プラン{n} — 予定される保証金',
     'bond.sub.bond':'保証金',
     'bond.sub.higher':'割増報酬',
     'bond.preview.notify':'支払いの準備を — 事前に管理者へ通知してください',
-    'bond.preview.note':'このプランはまだ有効ではありません — 保証金はプラン {n} に到達した時点で必要になります。早めに管理者へ通知すると承認が早まります。',
+    'bond.preview.note':'このプランはまだ有効ではありません — 保証金はプラン{n}に到達した時点で必要になります。早めに管理者へ通知すると承認が早まります。',
     'bond.why.title':'なぜ保証金が必要か',
     'bond.why.p1':'このプランは<strong>プレミアム予約</strong>です。多くは法人の旅行者、大人数のグループ、または高予算の旅行者によるものです。納期は厳格で、遅延や不備があると航空券、ホテル、予約が無効になり、Journey Junction の評判に直接影響します。',
     'bond.why.p2':'保証金は、セットを期日どおりに納品するというあなたの約束を示すものです。依頼の「席の確保」とお考えください。',
@@ -9513,15 +9520,15 @@ const TM_I18N = {
     'rev.fixNow':'今すぐ修正',
     'rev.noNotes':'メモなし — プランを確認して再提出してください。',
     'mysets.empty':'まだセットはありません — ダッシュボードから受諾してください',
-    'mysets.totalZero':'合計 0',
-    'mysets.totalN':'合計 {n}',
+    'mysets.totalZero':'合計0',
+    'mysets.totalN':'合計{n}',
     'mysets.claimed':'受諾済み',
     'mysets.due':'期限',
     'mysets.plans':'プラン',
-    'hist.completedSets':'完了済みセット {n}件',
+    'hist.completedSets':'完了済みセット{n}件',
     'hist.payoutCount':'{n}件の出金',
-    'wallet.fromApproved':'承認済みプラン {n}件分',
-    'wallet.earnedBreakdown':'報酬 {comm} · 保証金の返還 {bond}',
+    'wallet.fromApproved':'承認済みプラン{n}件分',
+    'wallet.earnedBreakdown':'報酬{comm} · 保証金の返還{bond}',
     'plan.btn.readOnly':'✓ 承認済み — 閲覧のみ',
     'plan.btn.resubmit':'更新して再提出',
     'plan.btn.submit':'プランを提出',
@@ -9529,11 +9536,11 @@ const TM_I18N = {
     'plan.submit.needActivities':'提出前にアクティビティを少なくとも1件追加してください',
     'plan.submit.needDay1Three':'1日目には、実在する場所の名前・住所・写真を備えたアクティビティが少なくとも3件必要です。「ホテルチェックイン」「昼食」「夕食」のような汎用ラベルを実際の名前に置き換え、住所と写真を追加してください。',
     'plan.submit.needDay1Template':'1日目には5つの項目が必要です：観光2件、昼食、宿泊、夕食 — それぞれ実際の名前・住所・写真付き。汎用ラベルを実際の名前に置き換えてください。',
-    'plan.submit.needPhotos':'提出前に少なくとも {n}件のステップに写真を追加してください — 現在 {have}件。',
+    'plan.submit.needPhotos':'提出前に少なくとも{n}件のステップに写真を追加してください — 現在{have}件。',
     'sub.needAnySlot':'1日目が空です — 名前・住所・写真付きのアクティビティを少なくとも3件追加してください',
-    'sub.needName':'{d}日目 · {t} — プレースホルダーを実際の場所の名前に置き換えてください（あと {n}件）',
-    'sub.needAddr':'{d}日目 · {t} — 住所を入力してください（あと {n}件）',
-    'sub.needImg':'{d}日目 · {t} — 少なくとも1枚の写真を追加してください（あと {n}件）',
+    'sub.needName':'{d}日目 · {t} — プレースホルダーを実際の場所の名前に置き換えてください（あと{n}件）',
+    'sub.needAddr':'{d}日目 · {t} — 住所を入力してください（あと{n}件）',
+    'sub.needImg':'{d}日目 · {t} — 少なくとも1枚の写真を追加してください（あと{n}件）',
     'plan.submit.slotCtx':'{d}日目のステップ · {t}',
     'plan.submit.slotNameMissing':'{ctx} — プレースホルダーを実際の場所の名前に置き換えてください',
     'plan.submit.slotAddrMissing':'{ctx} — 住所を入力してください',
@@ -9545,7 +9552,7 @@ const TM_I18N = {
     'sub.banner.title':'研修アカウント · トレーニングモード',
     'sub.banner.body':'各プランでは、実際の名前・住所・写真を備えた<strong>3件以上のアクティビティ</strong>を含む<strong>1日目</strong>を提出してください。2日目以降はメンターが仕上げます。',
     'dash.awaitingAssignment':'管理者からの割り当てを待っています',
-    'completed.setN':'セット #{n} 完了',
+    'completed.setN':'セット#{n}完了',
     'completed.allApproved':'すべてのプランが承認されました',
     'completed.payoutPending':'支払い保留中',
     'mysets.assignedOn':'割り当て日',
@@ -9559,18 +9566,18 @@ const TM_I18N = {
     'wallet.bankNotSet2':'ウォレット未設定',
     'wallet.acctNotSet':'ウォレット未設定',
     'wallet.btn.noFunds':'利用可能な資金がありません',
-    'wallet.btn.needMore':'バッファを {amt} 超えると出金可能になります',
+    'wallet.btn.needMore':'バッファを{amt}超えると出金可能になります',
     'wallet.btn.lockedUntilSets':'{n}セットを完了するとバッファが解除されます',
     'wallet.noFundsYet':'出金可能な資金がありません',
-    'wallet.bufferLockedUntilNext':'出金できる残高はありません — 現在の残高 {min} はすべて保護バッファとして保留されています。',
-    'wallet.bufferLockedUntilSets':'{min} は、あなたが {n}セットを完了する（{done}/{n} 完了）まで保護バッファとして保留されます。それまでは {min} を超える分の収入のみ出金できます。',
-    'wallet.needFirstBuffer':'初回出金：ウォレットに少なくとも {min} を残す必要があります。残高：{bal}。',
-    'pr.firstBufferHtml':'🛡️ 保護バッファ：トラブルや調整に備えて <strong>{min}</strong> を保留します。現在の出金上限：<strong>{max}</strong>。{n}セットを完了すると解除されます。',
-    'pr.firstBufferShort':'🛡️ {n}セットを完了する（{done}/{n}）まで {amt} が保留されます。',
+    'wallet.bufferLockedUntilNext':'出金できる残高はありません — 現在の残高{min}はすべて保護バッファとして保留されています。',
+    'wallet.bufferLockedUntilSets':'{min}は、あなたが{n}セットを完了する（{done}/{n}完了）まで保護バッファとして保留されます。それまでは{min}を超える分の収入のみ出金できます。',
+    'wallet.needFirstBuffer':'初回出金：ウォレットに少なくとも{min}を残す必要があります。残高：{bal}。',
+    'pr.firstBufferHtml':'🛡️ 保護バッファ：トラブルや調整に備えて<strong>{min}</strong>を保留します。現在の出金上限：<strong>{max}</strong>。{n}セットを完了すると解除されます。',
+    'pr.firstBufferShort':'🛡️ {n}セットを完了する（{done}/{n}）まで{amt}が保留されます。',
     // プラットフォーム請求
     'pp.banner.title.one':'未払いのプラットフォーム請求があります',
-    'pp.banner.title.many':'未払いのプラットフォーム請求が {n}件あります',
-    'pp.banner.amount':'合計 {amt} — 詳細はウォレットで',
+    'pp.banner.title.many':'未払いのプラットフォーム請求が{n}件あります',
+    'pp.banner.amount':'合計{amt} — 詳細はウォレットで',
     'pp.banner.cta':'ウォレットで確認',
     'pp.card.title':'お支払い予定のプラットフォーム請求',
     'pp.card.sub':'Journey Junction が発行 · 銀行振込でお支払い',
@@ -9589,11 +9596,11 @@ const TM_I18N = {
     'chat.send':'送信',
     'currency.symbol':'¥',
     'chatPrefill.bondHelp':'こんにちは。保証金の支払いについて助けが必要です。',
-    'chatPrefill.bondPlan':'こんにちは。プラン {n} の保証金について助けが必要です。',
-    'chatPrefill.bondPaid':'プラン {n} の保証金を支払いました。\n金額：{amt}\n\nご確認をお願いします。\n振込の参照番号 / スクリーンショット：',
+    'chatPrefill.bondPlan':'こんにちは。プラン{n}の保証金について助けが必要です。',
+    'chatPrefill.bondPaid':'プラン{n}の保証金を支払いました。\n金額：{amt}\n\nご確認をお願いします。\n振込の参照番号 / スクリーンショット：',
     'chatPrefill.requestSet':'新しいセットを受ける準備ができました。割り当てていただけますか？',
     'chatPrefill.requestNewSet':'進行中のセットを完了しました。次のセットを割り当てていただけますか？',
-    'chatPrefill.payoutStatus':'セット #{n} が承認されました。支払いの状況はいかがでしょうか？',
+    'chatPrefill.payoutStatus':'セット#{n}が承認されました。支払いの状況はいかがでしょうか？',
     'chatPrefill.invoicePay':'こんにちは。請求「{reason}」（{amt}）を支払いたいです。振込先と参照番号を送っていただけますか？',
     'assign.pending.short':'チームがあなたの地域と得意分野に合ったセットを割り当てます。',
     'assign.btn.requestSet':'セットをリクエスト',
@@ -9610,7 +9617,7 @@ const TM_I18N = {
     'completed.summary.cities':'対応した都市',
     'completed.summary.bondPlans':'保証金付きプラン',
     'completed.summary.travelers':'対応した旅行者',
-    'ps.title':'プラン {n} — 概要',
+    'ps.title':'プラン{n} — 概要',
     'ps.approved':'承認済み',
     'ps.submitted':'提出済み · レビュー中',
     'ps.editSubmission':'提出内容を編集',
@@ -9618,7 +9625,7 @@ const TM_I18N = {
     'ps.emptyDay':'この日に記録されたアクティビティはありません。',
     'common.close':'閉じる',
     'completed.bondAndCommission':'報酬と保証金がまとめて支払われます。',
-    'completed.youEarned':'このセットで <strong style="color:var(--green-dark);">{amt}</strong> を獲得しました。',
+    'completed.youEarned':'このセットで<strong style="color:var(--green-dark);">{amt}</strong>を獲得しました。',
     'completed.payoutEta':'管理者の処理後、登録済みの支払い方法に応じて送金されます — PayPay は通常1時間以内、銀行振込は1〜2営業日以内。',
     'completed.availableInWallet':'収入がウォレットに入金されました — いつでも出金できます。',
     'completed.availableLabel':'このセットの報酬',
@@ -9635,9 +9642,9 @@ const TM_I18N = {
     'prog.noActiveSet':'進行中のセットはありません',
     'dash.btn.payoutInProgress':'支払い処理中',
     'dash.btn.noActive':'進行中のセットはありません',
-    'dash.sub.batchApproved':'セットが承認されました — ウォレットから {amt} を出金できます。',
+    'dash.sub.batchApproved':'セットが承認されました — ウォレットから{amt}を出金できます。',
     'dash.sub.awaitingAssign':'管理者からの割り当てを待っています',
-    'bond.premiumTitle':'プラン {n} — 保証金付きプレミアム依頼',
+    'bond.premiumTitle':'プラン{n} — 保証金付きプレミアム依頼',
     'spend.line.food':'食事',
     'spend.line.transport':'交通',
     'spend.line.attractions':'観光',
@@ -9646,9 +9653,9 @@ const TM_I18N = {
     'spend.day':'日',
     'toast.validAmount':'有効な金額を入力してください',
     'toast.exceedsBalance':'利用可能な残高（{amt}）を超えています',
-    'toast.firstMinBuffer':'初回出金：ウォレットに少なくとも {min} を残してください — 上限：{max}',
+    'toast.firstMinBuffer':'初回出金：ウォレットに少なくとも{min}を残してください — 上限：{max}',
     'toast.addBankFirst':'まずプロフィールで PayPay または銀行口座を追加してください',
-    'toast.requestSubmitted':'リクエストを送信しました — {amt} が審査待ちです',
+    'toast.requestSubmitted':'リクエストを送信しました — {amt}が審査待ちです',
     'toast.enterAmounts':'まず金額を入力してください',
     'toast.paymentNoted':'支払いを記録しました — サポートとのチャットで確認してください',
     'common.submitting':'送信中…',
@@ -13135,10 +13142,10 @@ async function renderTravelerBrief(plan, t, notes) {
   // Section header: bolder + darker so it reads as a real divider, not a
   // sub-label. Dark green icon (#2C5F2D, matches the top "TRAVELER BRIEF"),
   // 13px label in primary ink, weight 700. Pass iconColor to override.
-  const sectionHeader = (iconClass, title, badge = '', iconColor = '#2C5F2D') => {
+  const sectionHeader = (iconEmoji, title, badge = '', iconColor = '#2C5F2D') => {
     const titleTxt = isPlannerFR() ? (BRIEF_LABEL_FR[title] || title) : title
     return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--color-border-tertiary);">
-       <i class="ti ti-${iconClass}" style="color:${iconColor};font-size:16px;" aria-hidden="true"></i>
+       <span class="brief-sec-ico" aria-hidden="true">${iconEmoji}</span>
        <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:var(--text,#1A2E25);">${escapeHtml(titleTxt).toUpperCase()}${badge}</span>
      </div>`
   }
@@ -13222,7 +13229,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const paceLabel = t.pace ? tPace(t.pace) : (meta.pace ? titleCaseEnum(meta.pace) : '')
 
   const sectionBasics = wrap(`
-    ${sectionHeader('route', 'Trip basics')}
+    ${sectionHeader('🗺️', 'Trip basics')}
     ${grid2(`
       ${cell('Destination', escapeHtml(dt(t.destination || '', jaPlace(t.destination || ''))))}
       ${cell('Duration', escapeHtml(fmtDuration(t.duration) || ''))}
@@ -13239,7 +13246,7 @@ async function renderTravelerBrief(plan, t, notes) {
     : (t.group_size ? `${t.group_size}${dt(' pax','名')}` : '')
   const fromTxt = origin ? `${flag ? flag + ' ' : ''}${escapeHtml(origin)}` : ''
   const sectionTravelers = wrap(`
-    ${sectionHeader('users', 'Travelers')}
+    ${sectionHeader('👥', 'Travelers')}
     ${grid2(`
       ${cell('Group type', escapeHtml(groupTypeTxt))}
       ${cell('Ages', escapeHtml(ages))}
@@ -13265,7 +13272,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // Budgets always renders — empty fields fall back to "—" via the cell helper.
   // Tier pill removed per latest mockup; section header is icon + label only.
   const sectionBudgets = wrap(`
-    ${sectionHeader('wallet', 'Budgets')}
+    ${sectionHeader('💴', 'Budgets')}
     ${grid2(`
       ${cell('Daily / pax', dailyTxt)}
       ${cell('Hotel / night · all rooms', hotelTxt)}
@@ -13287,7 +13294,7 @@ async function renderTravelerBrief(plan, t, notes) {
   const accomMustHaves = _mh ? localizeMustHaves(_mh) : ''
   // Accommodation always renders — keeps the brief structurally consistent.
   const sectionAccom = wrap(`
-    ${sectionHeader('bed', 'Accommodation')}
+    ${sectionHeader('🏨', 'Accommodation')}
     ${grid2(`
       ${cell('Room type', escapeHtml(roomTxt), { span2: true })}
       ${cell('Must-haves', escapeHtml(accomMustHaves), { span2: true })}
@@ -13311,7 +13318,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // Food & dining always renders — even None gets shown as "✓ None" so the
   // planner sees the field has been verified rather than just missing.
   const sectionFood = wrap(`
-    ${sectionHeader('tools-kitchen-2', 'Food & dining')}
+    ${sectionHeader('🍽️', 'Food & dining')}
     ${grid2(`
       ${cell('Dietary', dietHtml, {
         badge: dietCritical ? criticalBadge() : '',
@@ -13348,7 +13355,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // Interests always renders. Pills row stays on top spanning 2 cols even
   // when empty, so the layout doesn't reflow plan-to-plan.
   const sectionInterests = wrap(`
-    ${sectionHeader('heart', 'Interests & priorities')}
+    ${sectionHeader('⭐', 'Interests & priorities')}
     ${grid2(`
       <div style="grid-column:span 2;">
         <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:4px;font-weight:500;letter-spacing:0.04em;">${dt('INTERESTS', "興味・関心")}</div>
@@ -13413,13 +13420,13 @@ async function renderTravelerBrief(plan, t, notes) {
     if (prevUnit) {
       tipParts.push(dt(
         `Traveler arrives from <strong>${escapeHtml(prevUnit.destination)}</strong> on ${fmtBriefDateShort(t.arrival_date)} — keep the arrival day relaxed.`,
-        `旅行者は ${fmtBriefDateShort(t.arrival_date)} に <strong>${escapeHtml(jaPlace(prevUnit.destination))}</strong> から到着します — 到着日はゆったりと過ごせるようにしましょう。`
+        `旅行者は${fmtBriefDateShort(t.arrival_date)}に<strong>${escapeHtml(jaPlace(prevUnit.destination))}</strong>から到着します — 到着日はゆったりと過ごせるようにしましょう。`
       ))
     }
     if (nextUnit && unitEnd) {
       tipParts.push(dt(
         `Traveler departs to <strong>${escapeHtml(nextUnit.destination)}</strong> on ${fmtBriefDateShort(unitEnd)} — leave time on the last day.`,
-        `旅行者は ${fmtBriefDateShort(unitEnd)} に <strong>${escapeHtml(jaPlace(nextUnit.destination))}</strong> へ出発します — 最終日は時間に余裕を持たせましょう。`
+        `旅行者は${fmtBriefDateShort(unitEnd)}に<strong>${escapeHtml(jaPlace(nextUnit.destination))}</strong>へ出発します — 最終日は時間に余裕を持たせましょう。`
       ))
     }
     const tipHtml = tipParts.length
@@ -13427,7 +13434,7 @@ async function renderTravelerBrief(plan, t, notes) {
       : ''
 
     sectionContext = wrap(`
-      ${sectionHeader('map-pin', dt(`Trip context · ${siblings.length} units · ${totalNights} nights total`, `旅行の状況 · ${siblings.length}区間 · 全${totalNights}泊`))}
+      ${sectionHeader('🧭', dt(`Trip context · ${siblings.length} units · ${totalNights} nights total`, `旅行の状況 · ${siblings.length}区間 · 全${totalNights}泊`))}
       ${rows}
       ${tipHtml}
       <div style="margin-top:8px;font-size:11px;color:var(--color-text-secondary,#5a6b62);font-style:italic;display:flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${dt('Other units locked for privacy — you see cities + dates only.', 'プライバシー保護のため他の区間は非表示 — 都市と日付のみ表示されます。')}</div>
@@ -13450,7 +13457,7 @@ async function renderTravelerBrief(plan, t, notes) {
   // ── NOTE FROM TRAVELER (amber #BA7517 label, dashed top, plain body) ──
   const sectionNote = notes ? `
     <div style="padding-top:12px;border-top:0.5px dashed var(--color-border-tertiary);">
-      <div style="font-size:11px;font-weight:500;letter-spacing:0.5px;color:#BA7517;margin-bottom:4px;">${dt('NOTE FROM TRAVELER','旅行者からのメモ')}</div>
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.5px;color:#BA7517;margin-bottom:4px;"><span style="font-size:13px;">📝</span> ${dt('NOTE FROM TRAVELER','旅行者からのメモ')}</div>
       <div style="font-size:14px;color:var(--text,#1A2E25);line-height:1.6;">${escapeHtml(notes)}</div>
     </div>` : ''
 
@@ -13462,7 +13469,7 @@ async function renderTravelerBrief(plan, t, notes) {
   box.style.color = 'var(--text,#1A2E25)'
   box.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;">
-      <i class="ti ti-map-pin" style="font-size:18px;color:#2C5F2D;" aria-hidden="true"></i>
+      <span class="brief-sec-ico" style="font-size:18px;" aria-hidden="true">📋</span>
       <span style="font-size:13px;font-weight:700;letter-spacing:1.2px;color:#2C5F2D;">${dt('TRAVELER BRIEF','旅行者の依頼内容')}</span>
     </div>
     ${sectionBasics}
@@ -14111,17 +14118,17 @@ async function openPlanSummary(plan) {
     if (/metro|subway|transit|tram|地下鉄|路線|funicul|公共交通/.test(t)) return 'transit'
     return ''
   }
-  // Quiet monochrome line-icon for a transit leg — distinct per mode.
+  // Colourful emoji icon for a transit leg — distinct per mode.
   const _legIcon = (mode) => {
     const m = String(mode||'').toLowerCase()
-    const w = (inner) => `<svg class="ps-leg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
-    if (/walk|foot/.test(m))            return w('<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>')
-    if (/taxi|uber|car|cab|drive/.test(m)) return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/>')
-    if (/bus|coach/.test(m))            return w('<rect x="4" y="5" width="16" height="11" rx="2"/><path d="M4 11h16"/><path d="M7 16v2M17 16v2"/>')
-    if (/flight|plane|air/.test(m))     return w('<path d="M17.8 19.2 16 11l3.6-3.6a2 2 0 1 0-2.8-2.8L13.2 8 5 6.2a1 1 0 0 0-.9 1.6l4.9 4-2 2-2.4-.5a1 1 0 0 0-.9 1.5L6.8 19l2 2 1.6-1.7.7-2.4 4 4.9a1 1 0 0 0 1.6-.9z"/>')
-    if (/ferry|boat|ship/.test(m))      return w('<path d="M3 17h18l-2 4H5z"/><path d="M5 17V9l7-3 7 3v8"/><path d="M12 4v2"/>')
-    if (/train|shinkansen|rail|hsr|新幹線|電車/.test(m)) return w('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>')
-    return w('<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12"/><path d="M8.5 21 7 23M15.5 21 17 23"/>')   // metro / public transit
+    if (/walk|foot/.test(m))            return '🚶'
+    if (/taxi|uber|car|cab|drive/.test(m)) return '🚕'
+    if (/bus|coach/.test(m))            return '🚌'
+    if (/flight|plane|air/.test(m))     return '✈️'
+    if (/ferry|boat|ship/.test(m))      return '⛴️'
+    if (/shinkansen|hsr|新幹線/.test(m)) return '🚄'   // check shinkansen BEFORE plain train
+    if (/train|rail|電車/.test(m))      return '🚆'
+    return '🚇'   // metro / subway / transit / tram / 公共交通
   }
   // Small emoji icon for a stop's category — shown BEFORE the name (no text label).
   const _catIcon = (s) => {
@@ -14140,13 +14147,13 @@ async function openPlanSummary(plan) {
   // transit legs speak ONE icon language. The kind drives the badge tint (CSS).
   const _svgIco = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
   const _STOP_ICON = {
-    activity: _svgIco('<rect x="3" y="7" width="18" height="12.5" rx="2.5"/><circle cx="12" cy="13.2" r="3.2"/><path d="M8.3 7l1-2h5.4l1 2"/>'),
-    meal:     _svgIco('<path d="M4 3v7a2 2 0 0 0 4 0V3"/><path d="M6 12v9"/><path d="M18 3a3 3 0 0 0-3 3v6h3Z"/><path d="M18 12v9"/>'),
-    shop:     _svgIco('<path d="M6 2 4 6v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6l-2-4Z"/><path d="M4 6h16"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
-    ent:      _svgIco('<path d="M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4Z"/><path d="M14 6v12"/>'),
-    free:     _svgIco('<path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 1v3M10 1v3M14 1v3"/>'),
-    hotel:    _svgIco('<path d="M3 8v11"/><path d="M3 14h18v5"/><path d="M21 19v-4.5a2 2 0 0 0-2-2H10v2.5"/><circle cx="6.8" cy="11.6" r="1.5"/>'),
-    pin:      _svgIco('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
+    activity: '📸',
+    meal:     '🍽️',
+    shop:     '🛍️',
+    ent:      '🎮',
+    free:     '☕',
+    hotel:    '🏨',
+    pin:      '📍',
   }
   const _stopKind = (s) => {
     const ty = String(s.type||'').toLowerCase()
@@ -14272,9 +14279,9 @@ async function openPlanSummary(plan) {
   // Hotel name for the overnight close-node (day-1 check-in title, else plan field).
   const _psHotelName = ((items||[]).find(it => String(it.type||'').toLowerCase()==='hotel_checkin')?.title)
                      || plan.hotel_name || window._currentHotelName || ''
-  const _MOON_ICO  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`
-  const _PLANE_ICO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/></svg>`
-  const _BED_ICO   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8v11"/><path d="M3 14h18v5"/><path d="M21 19v-4.5a2 2 0 0 0-2-2H10v2.5"/><circle cx="6.8" cy="11.6" r="1.5"/></svg>`
+  const _MOON_ICO  = '🌙'
+  const _PLANE_ICO = '✈️'
+  const _BED_ICO   = '🏨'
 
   // Arrival START node — opens day 1 with WHERE the traveller lands (gateway +
   // method + time) so the first transport leg has a clear origin instead of a
@@ -14293,10 +14300,11 @@ async function openPlanSummary(plan) {
     return ''
   }
   const _arrIco = (m) => {
-    const w = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
-    if (/train|shinkansen|rail|新幹線|電車/.test(m))   return w('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>')
-    if (/car|drive|taxi|車|タクシー/.test(m))   return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/>')
-    return w('<path d="M2 22h20"/><path d="M3.8 16.6 21 11l-1-3-5.5 1.2L8 3 6 3.5l3.2 6.3-4.7 1L3 8 1.5 8.4Z"/>')   // plane landing (default)
+    if (/flight|plane|air|飛行機/.test(m))             return '✈️'
+    if (/shinkansen|hsr|新幹線/.test(m))               return '🚄'
+    if (/bus|coach|バス/.test(m))                      return '🚌'
+    if (/ferry|boat|フェリー|船/.test(m))              return '⛴️'
+    return '🚆'
   }
 
   // Departure node fields (the plan's onward/home leg) — method-aware icon +
@@ -14427,7 +14435,7 @@ async function openPlanSummary(plan) {
         return Math.min(venueEnd + extra, 23 * 60 + 59)
       })()
       const _depArrStr = _depArr != null ? _fmtLower(minsToHHMM(_depArr)) : ''
-      const _depSub2 = [_depSub, _depTimeStr ? dt(`departs ${_depTimeStr}`, `${_depTimeStr} 発`) : ''].filter(Boolean).join(' · ')
+      const _depSub2 = [_depSub, _depTimeStr ? dt(`departs ${_depTimeStr}`, `${_depTimeStr}発`) : ''].filter(Boolean).join(' · ')
       closeHtml = `
         <li class="ps-row ps-row--end">
           <span class="ps-ico ps-ico--depart ps-dot">${_depMethodK ? _legIcon(_depMethodK) : _PLANE_ICO}</span>
@@ -15737,7 +15745,7 @@ function dayTimeWindow(dayNum, totalDays) {
     out.minTime = snap30(arr)
     out.defaultFirst = bump(arr, 30)
     out.dayStartsAt = addMin(arr, 10)
-    out.reason = dt(`Traveler arrives at ${arr} — earliest stop is ${out.defaultFirst}`, `旅行者は ${arr} に到着 — 最初の立ち寄り先は早くて ${out.defaultFirst} です`)
+    out.reason = dt(`Traveler arrives at ${arr} — earliest stop is ${out.defaultFirst}`, `旅行者は${arr}に到着 — 最初の立ち寄り先は早くて${out.defaultFirst}です`)
   }
   if (dayNum === totalDays && totalDays >= 1 && dep) {
     // Cutoff: the last stop must end early enough that the ride to the
@@ -15756,10 +15764,10 @@ function dayTimeWindow(dayNum, totalDays) {
     const hours = (buf / 60).toFixed(buf % 60 === 0 ? 0 : 1)
     const _isAir = window._currentDepartureMethod === 'flight'
     const why = transfer > 0
-      ? dt(`${transfer} min to ${_isAir ? 'airport' : 'station'} + ${hours} h buffer`, `${_isAir ? '空港' : '駅'}まで ${transfer}分 ＋ ${hours}時間の余裕`)
-      : dt(`${hours} h ${_isAir ? 'airport' : 'station'} buffer`, `${_isAir ? '空港' : '駅'}で ${hours}時間の余裕`)
+      ? dt(`${transfer} min to ${_isAir ? 'airport' : 'station'} + ${hours} h buffer`, `${_isAir ? '空港' : '駅'}まで${transfer}分 ＋ ${hours}時間の余裕`)
+      : dt(`${hours} h ${_isAir ? 'airport' : 'station'} buffer`, `${_isAir ? '空港' : '駅'}で${hours}時間の余裕`)
     out.reason = (out.reason ? out.reason + ' · ' : '') +
-                 dt(`Departs ${dep} — last stop must end by ${out.maxTime} (${why})`, `${dep} 出発 — 最後の立ち寄り先は ${out.maxTime} までに終える必要があります（${why}）`)
+                 dt(`Departs ${dep} — last stop must end by ${out.maxTime} (${why})`, `${dep}出発 — 最後の立ち寄り先は${out.maxTime}までに終える必要があります（${why}）`)
   }
   return out
 }
@@ -15804,12 +15812,12 @@ function buildDayTimeBanner(dayNum, totalDays) {
     // auto-seeded arrival-taxi's depart time. Falls back to defaultFirst
     // for older browsers / unexpected states where dayStartsAt wasn't set.
     const _startsAt = w.dayStartsAt || w.defaultFirst
-    lines.push(dt(`Traveler arrives <strong>${arr}</strong>${locBit}${fromBit} — day starts at <strong>${_startsAt}</strong>`, `旅行者は <strong>${arr}</strong>${locBit}${fromBit} に到着 — 1日は <strong>${_startsAt}</strong> に始まります`))
+    lines.push(dt(`Traveler arrives <strong>${arr}</strong>${locBit}${fromBit} — day starts at <strong>${_startsAt}</strong>`, `旅行者は<strong>${arr}</strong>${locBit}${fromBit}に到着 — 1日は<strong>${_startsAt}</strong>に始まります`))
   }
   if (dayNum === totalDays && w.maxTime) {
     const toBit = depTo ? ` → ${escapeHtml(depTo)}${byMethod(depMethod)}` : ''
     const locBit = depLoc ? dt(` from <strong>${escapeHtml(depLoc)}</strong>`, ` <strong>${escapeHtml(depLoc)}</strong>から`) : ''
-    lines.push(dt(`Traveler departs <strong>${dep}</strong>${locBit}${toBit} — last stop must end by <strong>${w.maxTime}</strong>`, `旅行者は <strong>${dep}</strong>${locBit}${toBit} に出発 — 最後の立ち寄り先は <strong>${w.maxTime}</strong> までに終える必要があります`))
+    lines.push(dt(`Traveler departs <strong>${dep}</strong>${locBit}${toBit} — last stop must end by <strong>${w.maxTime}</strong>`, `旅行者は<strong>${dep}</strong>${locBit}${toBit}に出発 — 最後の立ち寄り先は<strong>${w.maxTime}</strong>までに終える必要があります`))
   }
   return `<div class="day-time-banner">
     <i class="ti ti-clock dtb-icon" aria-hidden="true"></i>
@@ -16411,7 +16419,7 @@ function _refreshHotelTimeWarning(slot) {
     const ci = window._currentHotelCheckInTime || '14:00'
     if (t < toMin(ci)) {
       level = 'amber'
-      msg = dt(`Hotel check-in usually starts at ${fmt(ci)}. Earlier arrivals can drop bags but rooms may not be ready.`, `ホテルのチェックインは通常 ${fmt(ci)} からです。早く着いた場合は荷物を預けられますが、部屋がまだ準備できていないことがあります。`)
+      msg = dt(`Hotel check-in usually starts at ${fmt(ci)}. Earlier arrivals can drop bags but rooms may not be ready.`, `ホテルのチェックインは通常${fmt(ci)}からです。早く着いた場合は荷物を預けられますが、部屋がまだ準備できていないことがあります。`)
       suggested = ci
     }
   } else if (key === 'hotel_checkout') {
@@ -16422,7 +16430,7 @@ function _refreshHotelTimeWarning(slot) {
     // past 11:00 is 11:15.
     if (t > toMin(co)) {
       level = 'red'
-      msg = dt(`Past the hotel's ${fmt(co)} check-out — late fees may apply. Confirm with reception before scheduling here.`, `ホテルのチェックアウト ${fmt(co)} を過ぎています — 延長料金がかかる場合があります。ここに予定を入れる前にフロントに確認してください。`)
+      msg = dt(`Past the hotel's ${fmt(co)} check-out — late fees may apply. Confirm with reception before scheduling here.`, `ホテルのチェックアウト${fmt(co)}を過ぎています — 延長料金がかかる場合があります。ここに予定を入れる前にフロントに確認してください。`)
       // Suggest 15 min before deadline, snapped to the 15-min picker grid.
       const mins = Math.max(0, Math.round((toMin(co) - 15) / 15) * 15)
       suggested = `${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`
@@ -16835,7 +16843,7 @@ function renderSlotTips(slot) {
   const usedCats = new Set(state.tips.map(tp => tp.cat))
   const atMax = state.tips.length >= TIP_MAX
   const chips = atMax
-    ? `<span class="slot-tips-max">${dt(`Max ${TIP_MAX} tips — remove one to add another.`, `ヒントは最大 ${TIP_MAX} 件 — 追加するには1つ削除してください。`)}</span>`
+    ? `<span class="slot-tips-max">${dt(`Max ${TIP_MAX} tips — remove one to add another.`, `ヒントは最大${TIP_MAX}件 — 追加するには1つ削除してください。`)}</span>`
     : _tipCatsFor(slot).filter(c => !usedCats.has(c.key))
         .map(c => `<button type="button" class="tip-chip" style="--tipc:${c.color}" onclick="tipChipClick(this,'${c.key}')">${c.icon} ${escapeHtml(tipLabel(c))}</button>`)
         .join('')
@@ -17282,7 +17290,7 @@ function applyPlaceToSlot(slot, place) {
       // Past that, the venue is almost certainly the wrong country/city.
       if (km > 300) {
         const name = place.displayName?.text || place.displayName || dt('this place','この場所')
-        const msg = dt(`"${name}" is ${km.toFixed(0)} km from ${window._currentDestination}. That's outside the trip area — please pick a venue near ${window._currentDestination}.`, `「${name}」は ${window._currentDestination} から ${km.toFixed(0)} km 離れています。旅行エリアの外です — ${window._currentDestination} の近くの場所を選んでください。`)
+        const msg = dt(`"${name}" is ${km.toFixed(0)} km from ${window._currentDestination}. That's outside the trip area — please pick a venue near ${window._currentDestination}.`, `「${name}」は${window._currentDestination}から${km.toFixed(0)} km離れています。旅行エリアの外です — ${window._currentDestination}の近くの場所を選んでください。`)
         if (typeof showToast === 'function') showToast(msg)
         else alert(msg)
         // Clear the dropdown + reset the title so the planner searches again.
@@ -17625,8 +17633,8 @@ function formatPriceRange(pr) {
   const s = start?.units != null ? Number(start.units) : null
   const e = end?.units   != null ? Number(end.units)   : null
   if (s != null && e != null) return `${sym} ${s}–${e}`.trim()
-  if (s != null) return dt(`From ${sym} ${s}`, `${sym}${s} から`).trim()
-  if (e != null) return dt(`Up to ${sym} ${e}`, `${sym}${e} まで`).trim()
+  if (s != null) return dt(`From ${sym} ${s}`, `${sym}${s}から`).trim()
+  if (e != null) return dt(`Up to ${sym} ${e}`, `${sym}${e}まで`).trim()
   return ''
 }
 // Pretty price level. Google returns 'PRICE_LEVEL_INEXPENSIVE' etc.; we
@@ -17774,18 +17782,18 @@ function renderLinkedChip(slot) {
     let head = dt('⚠️ <strong>Time conflict</strong>','⚠️ <strong>時間の競合</strong>')
     let tone = ''   // '' = red (default), ' is-amber' for soft warnings
     if (conflict.kind === 'before_open' && conflict.openHoursLabel) {
-      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is before this place opens (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`, `選択した時刻 <strong>${escapeHtml(slotTimeFriendly)}</strong> は開店前です（<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>）`)
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is before this place opens (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`, `選択した時刻<strong>${escapeHtml(slotTimeFriendly)}</strong>は開店前です（<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>）`)
     } else if (conflict.kind === 'after_close' && conflict.openHoursLabel) {
-      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is after this place closes (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`, `選択した時刻 <strong>${escapeHtml(slotTimeFriendly)}</strong> は閉店後です（<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>）`)
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is after this place closes (<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>)`, `選択した時刻<strong>${escapeHtml(slotTimeFriendly)}</strong>は閉店後です（<strong>${escapeHtml(conflict.openHoursLabel)}${escapeHtml(dayBit)}</strong>）`)
     } else if (conflict.kind === 'between_shifts') {
-      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> falls between shifts on${escapeHtml(dayBit)}`, `選択した時刻 <strong>${escapeHtml(slotTimeFriendly)}</strong> は営業の合間にあたります${escapeHtml(dayBit)}`)
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> falls between shifts on${escapeHtml(dayBit)}`, `選択した時刻<strong>${escapeHtml(slotTimeFriendly)}</strong>は営業の合間にあたります${escapeHtml(dayBit)}`)
     } else if (conflict.kind === 'late_arrival') {
       head = dt('⏰ <strong>Late arrival</strong>','⏰ <strong>遅い到着</strong>')
       tone = ' is-amber'
       const noun = conflict.isMeal ? dt('kitchen','厨房') : dt('venue','店舗')
-      msg = dt(`Arriving at <strong>${escapeHtml(slotTimeFriendly)}</strong> — closes at <strong>${escapeHtml(conflict.closeTime)}</strong>. Most ${noun}s stop ${conflict.bufferMin} min before close (orders / last entry).`, `<strong>${escapeHtml(slotTimeFriendly)}</strong> に到着 — <strong>${escapeHtml(conflict.closeTime)}</strong> に閉店します。多くの${noun}は閉店の ${conflict.bufferMin} 分前に受付を終了します（ラストオーダー / 最終入場）。`)
+      msg = dt(`Arriving at <strong>${escapeHtml(slotTimeFriendly)}</strong> — closes at <strong>${escapeHtml(conflict.closeTime)}</strong>. Most ${noun}s stop ${conflict.bufferMin} min before close (orders / last entry).`, `<strong>${escapeHtml(slotTimeFriendly)}</strong>に到着 — <strong>${escapeHtml(conflict.closeTime)}</strong>に閉店します。多くの${noun}は閉店の${conflict.bufferMin}分前に受付を終了します（ラストオーダー / 最終入場）。`)
     } else {
-      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`, `選択した時刻 <strong>${escapeHtml(slotTimeFriendly)}</strong> は営業時間外です${escapeHtml(dayBit)}`)
+      msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`, `選択した時刻<strong>${escapeHtml(slotTimeFriendly)}</strong>は営業時間外です${escapeHtml(dayBit)}`)
     }
     const fixBtn = conflict.suggestedTime
       ? `<button type="button" class="pl-fix-time" onclick="applyTimeFix('${slot.id}','${conflict.suggestedTime}')">${dt('→ Change time to','→ 時刻を変更：')} ${escapeHtml(formatTimeDisplay(conflict.suggestedTime))}</button>`
@@ -17816,7 +17824,7 @@ function renderLinkedChip(slot) {
         conflictHtml = `
           <div class="pl-time-warning is-amber">
             <div class="pl-time-warning-head">⏰ <strong>${dt(escapeHtml(categoryLabel) + ' timing', escapeHtml({breakfast:'朝食',lunch:'昼食',dinner:'夕食'}[seedIcon] || categoryLabel) + 'の時間帯')}</strong></div>
-            <div class="pl-time-warning-body">${dt(`${escapeHtml(categoryLabel)} typically runs <strong>${escapeHtml(win.label)}</strong> — selected time <strong>${escapeHtml(friendlyTime)}</strong> is outside that window.`, `${escapeHtml(categoryLabel)}は通常 <strong>${escapeHtml(win.label)}</strong> に行われます — 選択した時刻 <strong>${escapeHtml(friendlyTime)}</strong> はこの時間帯の外です。`)}</div>
+            <div class="pl-time-warning-body">${dt(`${escapeHtml(categoryLabel)} typically runs <strong>${escapeHtml(win.label)}</strong> — selected time <strong>${escapeHtml(friendlyTime)}</strong> is outside that window.`, `${escapeHtml(categoryLabel)}は通常<strong>${escapeHtml(win.label)}</strong>に行われます — 選択した時刻<strong>${escapeHtml(friendlyTime)}</strong>はこの時間帯の外です。`)}</div>
           </div>`
       }
     }
@@ -17835,8 +17843,8 @@ function renderLinkedChip(slot) {
       ? dt(`🚨 <strong>Over budget</strong>`, `🚨 <strong>予算超過</strong>`)
       : dt(`⚠️ <strong>Splurge pick</strong>`, `⚠️ <strong>贅沢な選択</strong>`)
     const body = isRed
-      ? dt(`Avg ~${costTxt}/pax — daily budget is ${dailyTxt}/pax. Confirm with the traveler or pick somewhere cheaper.`, `平均 約${costTxt}/人 — 1日の予算は ${dailyTxt}/人 です。旅行者に確認するか、より安い場所を選んでください。`)
-      : dt(`Avg ~${costTxt}/pax vs ${dailyTxt}/pax daily budget. Counts as one of the traveler's planned splurge moments.`, `平均 約${costTxt}/人 に対し、1日の予算は ${dailyTxt}/人 です。旅行者が予定している贅沢の1つとしてカウントされます。`)
+      ? dt(`Avg ~${costTxt}/pax — daily budget is ${dailyTxt}/pax. Confirm with the traveler or pick somewhere cheaper.`, `平均約${costTxt}/人 — 1日の予算は${dailyTxt}/人です。旅行者に確認するか、より安い場所を選んでください。`)
+      : dt(`Avg ~${costTxt}/pax vs ${dailyTxt}/pax daily budget. Counts as one of the traveler's planned splurge moments.`, `平均約${costTxt}/人に対し、1日の予算は${dailyTxt}/人です。旅行者が予定している贅沢の1つとしてカウントされます。`)
     budgetHtml = `
       <div class="pl-budget-warning${isRed ? '' : ' is-amber'}">
         <div class="pl-time-warning-head">${head}</div>
@@ -18161,20 +18169,20 @@ function describeStopDistance(km) {
   if (km < 1) {
     // Walking pace ~12 min/km, floor at 1 min so a 50 m hop doesn't say "0 min".
     const mins = Math.max(1, Math.round(km * 12))
-    return { tier: 'ok', icon: '✓', label: dt(`${km.toFixed(1)} km · ${mins} min walk`, `${km.toFixed(1)} km · 徒歩 ${mins} 分`) }
+    return { tier: 'ok', icon: '✓', label: dt(`${km.toFixed(1)} km · ${mins} min walk`, `${km.toFixed(1)} km · 徒歩${mins}分`) }
   }
   if (km < 3) {
     // Short ride / quick transit. Keep the word "walk" since most planners
     // still treat 1–3 km as walkable for fit travelers; downgrade if needed.
     const mins = Math.max(4, Math.round(km * 3))
-    return { tier: 'ok', icon: '✓', label: dt(`${km.toFixed(1)} km · ${mins} min walk/taxi`, `${km.toFixed(1)} km · 徒歩・タクシー ${mins} 分`) }
+    return { tier: 'ok', icon: '✓', label: dt(`${km.toFixed(1)} km · ${mins} min walk/taxi`, `${km.toFixed(1)} km · 徒歩・タクシー${mins}分`) }
   }
   if (km < 8) {
     const mins = Math.max(8, Math.round(km * 3))
-    return { tier: 'warn', icon: '→', label: dt(`${km.toFixed(1)} km · ${mins} min by taxi`, `${km.toFixed(1)} km · タクシー ${mins} 分`) }
+    return { tier: 'warn', icon: '→', label: dt(`${km.toFixed(1)} km · ${mins} min by taxi`, `${km.toFixed(1)} km · タクシー${mins}分`) }
   }
   const mins = Math.max(20, Math.round(km * 3))
-  return { tier: 'danger', icon: '⚠', label: dt(`${km.toFixed(1)} km · ${mins} min — too far`, `${km.toFixed(1)} km · ${mins} 分 — 遠すぎます`) }
+  return { tier: 'danger', icon: '⚠', label: dt(`${km.toFixed(1)} km · ${mins} min — too far`, `${km.toFixed(1)} km · ${mins}分 — 遠すぎます`) }
 }
 function getSlotLatLng(slot) {
   const d = slot?._placeData
@@ -18294,8 +18302,8 @@ function buildDistHelperHtml(desc, prevSlotId, nextSlotId, modes) {
   // For short hops we just say "X km between stops" — the mode options
   // below carry the time estimate per mode, so a header time is redundant.
   const head = desc.tier === 'ok'
-    ? dt(`${desc.km.toFixed(1)} km between stops`, `立ち寄り先間 ${desc.km.toFixed(1)} km`)
-    : dt(`${desc.km.toFixed(1)} km · ~${desc.travelMin} min between stops`, `立ち寄り先間 ${desc.km.toFixed(1)} km · 約${desc.travelMin} 分`)
+    ? dt(`${desc.km.toFixed(1)} km between stops`, `立ち寄り先間${desc.km.toFixed(1)} km`)
+    : dt(`${desc.km.toFixed(1)} km · ~${desc.travelMin} min between stops`, `立ち寄り先間${desc.km.toFixed(1)} km · 約${desc.travelMin}分`)
   const sub = desc.tier === 'ok'
     ? dt('Short hop — your planner can walk or hail a quick ride:','短い移動 — 徒歩またはすぐに乗れる移動で：')
     : dt('Long jump between stops — add a transport block so the day reads cleanly:','立ち寄り先間が大きく離れています — 1日をすっきり見せるため交通ブロックを追加してください：')
@@ -19490,7 +19498,7 @@ function refreshTransportSlot(slot) {
     .join('')
   const tooFarBanner = tooFar
     ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(184,74,62,0.08);border:1px solid rgba(184,74,62,0.30);border-radius:6px;color:#8a3329;font-size:11.5px;line-height:1.4;">
-         ⚠ ${dt(`${km.toFixed(0)} km between the two venues — that's outside any normal day-trip range. Check that both stops are in the same trip area.`, `2か所の間が ${km.toFixed(0)} km — 通常の日帰り範囲を超えています。両方の立ち寄り先が同じ旅行エリア内にあるか確認してください。`)}
+         ⚠ ${dt(`${km.toFixed(0)} km between the two venues — that's outside any normal day-trip range. Check that both stops are in the same trip area.`, `2か所の間が${km.toFixed(0)} km — 通常の日帰り範囲を超えています。両方の立ち寄り先が同じ旅行エリア内にあるか確認してください。`)}
        </div>`
     : ''
   // Directions — two affordances:
@@ -19949,7 +19957,7 @@ function _renderRouteMapInto(host, slot) {
       const note = document.createElement('div')
       note.className = 'transport-map-note'
       note.style.cssText = 'margin-top:6px;padding:6px 10px;font-size:11px;color:#8a5f1c;line-height:1.4;background:rgba(193,125,42,0.08);border-left:2px solid rgba(193,125,42,0.45);'
-      note.textContent = dt('⚠ Showing fallback Google Maps preview. Enable "Maps JavaScript API" in your Google Cloud Console to use the synced custom map (grid + map will then show the SAME route).','⚠ 代替の Google マップ プレビューを表示しています。同期されたカスタムマップを使うには、Google Cloud Console で「Maps JavaScript API」を有効にしてください（グリッドとマップが同じルートを表示します）。')
+      note.textContent = dt('⚠ Showing fallback Google Maps preview. Enable "Maps JavaScript API" in your Google Cloud Console to use the synced custom map (grid + map will then show the SAME route).','⚠ 代替の Google マッププレビューを表示しています。同期されたカスタムマップを使うには、Google Cloud Console で「Maps JavaScript API」を有効にしてください（グリッドとマップが同じルートを表示します）。')
       host.appendChild(note)
     } else {
       host.innerHTML = `<div style="padding:14px;color:var(--text-3);font-size:12px;">${dt('Map unavailable — link both ends as Google Places to render a route.','マップを表示できません — 両端を Google Places としてリンクするとルートが表示されます。')}</div>`
@@ -20478,17 +20486,19 @@ function _dayEndProfileCompare(dayContainer, dayNum, totalDays) {
 // icons, no more clashing emoji). The .anchor-icon CSS tints by anchor type
 // via currentColor, so the stroke picks up the right colour automatically.
 function _anchorIconFor(type, method) {
-  const w = (inner) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
-  const train     = '<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>'
-  const planeLand = '<path d="M2 22h20"/><path d="M3.8 16.6 21 11l-1-3-5.5 1.2L8 3 6 3.5l3.2 6.3-4.7 1L3 8 1.5 8.4Z"/>'
-  const planeUp   = '<path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/>'
-  const sunrise   = '<path d="M12 2v4M5.6 9.6 7 11M2 18h3M19 18h3M17 11l1.4-1.4M22 22H2"/><path d="M8 18a4 4 0 0 1 8 0"/>'
-  const moon      = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
-  if (type === 'arrival')    return w(method === 'flight' ? planeLand : train)
-  if (type === 'departure')  return w(method === 'flight' ? planeUp : train)
-  if (type === 'morning')    return w(sunrise)
-  if (type === 'end_of_day') return w(moon)
-  return w('<circle cx="12" cy="12" r="9"/>')
+  const m = String(method || '').toLowerCase()
+  const methodIco = () => {
+    if (/flight|plane|air/.test(m))       return '✈️'
+    if (/shinkansen|hsr|新幹線/.test(m))  return '🚄'
+    if (/bus/.test(m))                    return '🚌'
+    if (/ferry|boat/.test(m))             return '⛴️'
+    return '🚆'
+  }
+  if (type === 'arrival')    return methodIco()
+  if (type === 'departure')  return methodIco()
+  if (type === 'morning')    return '🌅'
+  if (type === 'end_of_day') return '🌙'
+  return '📍'
 }
 
 function _buildLockedAnchor({ type, title, subtitle, method, badge, footer }) {
@@ -20547,7 +20557,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
         method,
         title: `${formatTimeDisplay(arrTime)} · ${methodLabel} ${dt('arrives','到着')}${locBit}`,
         subtitle: arrFrom && arrFrom !== 'origin'
-          ? dt(`from ${arrFrom} · Day 1 begins on arrival`, `${arrFrom} から · 1日目は到着とともに始まります`)
+          ? dt(`from ${arrFrom} · Day 1 begins on arrival`, `${arrFrom}から · 1日目は到着とともに始まります`)
           : dt(`Day 1 begins on arrival`, `1日目は到着とともに始まります`),
       })
       // Hang the resolved station coords on the anchor so getSlotLatLng
@@ -20632,17 +20642,17 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
     if (cmp.state === 'on_profile') {
       titleStr = `${cmp.actualStr} · ${dt(`Back at ${hotelDisplayName}`, `${hotelDisplayName}に戻る`)}`
       badge  = { state: 'on_profile', label: dt('✓ on track','✓ 順調') }
-      footer = dt(`${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`, `${firstName}さんのプロフィールでは約 ${cmp.expectedStr} が目安です — 順調です`)
+      footer = dt(`${firstName}'s profile suggests around ${cmp.expectedStr} — you're on track`, `${firstName}さんのプロフィールでは約${cmp.expectedStr}が目安です — 順調です`)
     } else if (cmp.state === 'late') {
       titleStr = `${cmp.actualStr} · ${dt(`Back at ${hotelDisplayName}`, `${hotelDisplayName}に戻る`)}`
       const lateMin = Math.max(0, cmp.gapMin)
       badge  = { state: 'late', label: dt('⚠ too late','⚠ 遅すぎ') }
-      footer = dt(`${firstName}'s profile suggests ${cmp.expectedStr}. Running ${lateMin} min late — confirm ${firstName} wants a later night.`, `${firstName}さんのプロフィールでは ${cmp.expectedStr} が目安です。${lateMin} 分遅れています — ${firstName}さんが遅くまで楽しみたいか確認してください。`)
+      footer = dt(`${firstName}'s profile suggests ${cmp.expectedStr}. Running ${lateMin} min late — confirm ${firstName} wants a later night.`, `${firstName}さんのプロフィールでは${cmp.expectedStr}が目安です。${lateMin}分遅れています — ${firstName}さんが遅くまで楽しみたいか確認してください。`)
     } else if (cmp.state === 'early') {
       titleStr = `${cmp.actualStr} · ${dt(`Back at ${hotelDisplayName}`, `${hotelDisplayName}に戻る`)}`
       const earlyMin = Math.max(0, -cmp.gapMin)
       badge  = { state: 'early', label: dt('⚠ too early','⚠ 早すぎ') }
-      footer = dt(`${firstName}'s profile suggests ${cmp.expectedStr}. Day ends ${earlyMin} min early — add another stop?`, `${firstName}さんのプロフィールでは ${cmp.expectedStr} が目安です。1日が ${earlyMin} 分早く終わります — 立ち寄り先を追加しますか？`)
+      footer = dt(`${firstName}'s profile suggests ${cmp.expectedStr}. Day ends ${earlyMin} min early — add another stop?`, `${firstName}さんのプロフィールでは${cmp.expectedStr}が目安です。1日が${earlyMin}分早く終わります — 立ち寄り先を追加しますか？`)
     }
     bottomAnchor = _buildLockedAnchor({
       type: 'end_of_day',
@@ -21608,17 +21618,17 @@ function computeDaySummary(dayContainer) {
     return 10  // moderate / balanced default
   })()
   if (walkingKm > paceMax) {
-    warnings.push({ level:'amber', text:dt(`${walkingKm.toFixed(1)} km walking — high for ${window._currentPace || 'moderate'} pace.`, `徒歩 ${walkingKm.toFixed(1)} km — ${window._currentPace || 'ほどほど'}のペースには多めです。`) })
+    warnings.push({ level:'amber', text:dt(`${walkingKm.toFixed(1)} km walking — high for ${window._currentPace || 'moderate'} pace.`, `徒歩${walkingKm.toFixed(1)} km — ${window._currentPace || 'ほどほど'}のペースには多めです。`) })
   }
   if (dailyBudget) {
     if (spendEur > dailyBudget * 2) {
-      warnings.push({ level:'red', text:dt(`Day spend ~¥${spendEur} is over 2× the ¥${dailyBudget}/day budget — confirm splurge with traveler or rebalance.`, `この日の支出 約¥${spendEur} は1日あたりの予算 ¥${dailyBudget} の2倍超です — 旅行者に贅沢分を確認するか、配分を調整してください。`) })
+      warnings.push({ level:'red', text:dt(`Day spend ~¥${spendEur} is over 2× the ¥${dailyBudget}/day budget — confirm splurge with traveler or rebalance.`, `この日の支出約¥${spendEur}は1日あたりの予算¥${dailyBudget}の2倍超です — 旅行者に贅沢分を確認するか、配分を調整してください。`) })
     } else if (spendEur > dailyBudget) {
-      warnings.push({ level:'amber', text:dt(`Day over budget by ¥${spendEur - dailyBudget} (budget ¥${dailyBudget}/day · splurge may explain it).`, `この日は予算を ¥${spendEur - dailyBudget} 超過しています（予算 ¥${dailyBudget}/日 · 贅沢分が理由かもしれません）。`) })
+      warnings.push({ level:'amber', text:dt(`Day over budget by ¥${spendEur - dailyBudget} (budget ¥${dailyBudget}/day · splurge may explain it).`, `この日は予算を¥${spendEur - dailyBudget}超過しています（予算¥${dailyBudget}/日 · 贅沢分が理由かもしれません）。`) })
     }
   }
   if (activeMin > 12 * 60) {
-    warnings.push({ level:'amber', text:dt(`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.`, `この日は ${(activeMin/60).toFixed(1)} 時間と長めです — 立ち寄り先を1つ減らすことをご検討ください。`) })
+    warnings.push({ level:'amber', text:dt(`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.`, `この日は${(activeMin/60).toFixed(1)}時間と長めです — 立ち寄り先を1つ減らすことをご検討ください。`) })
   }
   // ── Light-day / empty-day checks ──
   // "Balanced" needs more than "no warnings" — a day with one stop isn't
@@ -21635,14 +21645,14 @@ function computeDaySummary(dayContainer) {
                  : (pace.includes('active') || pace.includes('packed')) ? 4
                  :                                                        3
   if (venues.length === 0) {
-    warnings.push({ level:'amber', text:dt(`No stops yet — add at least ${minStops} for a coherent day.`, `立ち寄り先がありません — まとまりのある1日にするため少なくとも ${minStops} 件追加してください。`) })
+    warnings.push({ level:'amber', text:dt(`No stops yet — add at least ${minStops} for a coherent day.`, `立ち寄り先がありません — まとまりのある1日にするため少なくとも${minStops}件追加してください。`) })
   } else if (venues.length === 1 && !isArrivalDay && !isDepartureDay) {
-    warnings.push({ level:'amber', text:dt(`Only 1 stop — add at least ${minStops - 1} more so the day reads like a real day.`, `立ち寄り先が1件だけです — きちんとした1日にするためあと少なくとも ${minStops - 1} 件追加してください。`) })
+    warnings.push({ level:'amber', text:dt(`Only 1 stop — add at least ${minStops - 1} more so the day reads like a real day.`, `立ち寄り先が1件だけです — きちんとした1日にするためあと少なくとも${minStops - 1}件追加してください。`) })
   } else if (venues.length < minStops && !isArrivalDay && !isDepartureDay) {
-    warnings.push({ level:'info', text:dt(`${venues.length} stop${venues.length === 1 ? '' : 's'} — typical day has ${minStops}+ for ${pace || 'moderate'} pace.`, `立ち寄り先 ${venues.length} 件 — ${pace || 'ほどほど'}のペースでは通常 ${minStops} 件以上です。`) })
+    warnings.push({ level:'info', text:dt(`${venues.length} stop${venues.length === 1 ? '' : 's'} — typical day has ${minStops}+ for ${pace || 'moderate'} pace.`, `立ち寄り先${venues.length}件 — ${pace || 'ほどほど'}のペースでは通常${minStops}件以上です。`) })
   }
   if (activeMin > 0 && activeMin < 60 && !isArrivalDay && !isDepartureDay) {
-    warnings.push({ level:'amber', text:dt(`Active span is only ${activeMin} min — the day will feel rushed past the first stop.`, `活動時間が ${activeMin} 分しかありません — 最初の立ち寄り先以降、慌ただしく感じられます。`) })
+    warnings.push({ level:'amber', text:dt(`Active span is only ${activeMin} min — the day will feel rushed past the first stop.`, `活動時間が${activeMin}分しかありません — 最初の立ち寄り先以降、慌ただしく感じられます。`) })
   }
   // Profile-match end-of-day comparison — same as what the end-of-day
   // anchor displays, surfaced here for the summary card.
@@ -21710,12 +21720,12 @@ function buildReviewPage() {
   const dailyBudget = Number(window._currentDailyBudget) || null
   let budgetTone = 'ok'
   let budgetLabel = dt('✓ in budget','✓ 予算内')
-  let budgetDetail = dailyBudget ? dt(`${fmtMoney(dailyBudget)} limit`, `上限 ${fmtMoney(dailyBudget)}`) : ''
+  let budgetDetail = dailyBudget ? dt(`${fmtMoney(dailyBudget)} limit`, `上限${fmtMoney(dailyBudget)}`) : ''
   if (dailyBudget && avgSpendEur > dailyBudget) {
     const overPct = ((avgSpendEur - dailyBudget) / dailyBudget) * 100
     if (overPct > 15) { budgetTone = 'red';   budgetLabel = dt('✗ over','✗ 超過')   }
     else              { budgetTone = 'amber'; budgetLabel = dt('⚠ over','⚠ 超過')   }
-    budgetDetail = dt(`${fmtMoney(dailyBudget)} limit`, `上限 ${fmtMoney(dailyBudget)}`)
+    budgetDetail = dt(`${fmtMoney(dailyBudget)} limit`, `上限${fmtMoney(dailyBudget)}`)
   } else if (!dailyBudget) {
     budgetTone = 'ok'
     budgetLabel = '—'
@@ -21810,7 +21820,7 @@ function _refreshReviewWordCount() {
              : chars < 40     ? 'is-short'
              : chars > LIMIT  ? 'is-overflow'
              :                  'is-good'
-  counter.textContent = dt(`${chars} / ${LIMIT} characters`, `${chars} / ${LIMIT} 文字`)
+  counter.textContent = dt(`${chars} / ${LIMIT} characters`, `${chars} / ${LIMIT}文字`)
   counter.className = 'review-note-counter ' + tone
 }
 
@@ -21891,12 +21901,12 @@ function buildDaySummaryHtml(dayNum, summary) {
       const depAt = pe.departureTime ? (' ' + formatTimeDisplay(pe.departureTime)) : ''
       lines.push({ level:'red', text: dt(
         `⚠ Last stop ends ${pe.actualStr} — ${lateMin} min past the ${pe.expectedStr} departure cut-off. Move or trim it, or they may miss the${depAt} ${ride}${toBit}.`,
-        `⚠ 最後の立ち寄り先が ${pe.actualStr} に終わります — ${pe.expectedStr} の出発締切を ${lateMin} 分超過しています。移動するか短くしないと、${depAt} の${toBit}${ride}に乗り遅れる恐れがあります。`
+        `⚠ 最後の立ち寄り先が${pe.actualStr}に終わります — ${pe.expectedStr}の出発締切を${lateMin}分超過しています。移動するか短くしないと、${depAt}の${toBit}${ride}に乗り遅れる恐れがあります。`
       )})
     } else {
       lines.push({ level:'amber', text: dt(
         `⚠ Day ${dayNum} runs ${lateMin} min past the suggested end (${pe.expectedStr}) — trim or move the last stop.`,
-        `⚠ ${dayNum}日目は推奨終了時刻（${pe.expectedStr}）を ${lateMin} 分超過しています — 最後の立ち寄り先を短くするか移動してください。`
+        `⚠ ${dayNum}日目は推奨終了時刻（${pe.expectedStr}）を${lateMin}分超過しています — 最後の立ち寄り先を短くするか移動してください。`
       )})
     }
   } else if (pe && pe.state === 'early' && !pe.isDepartureDay) {
@@ -21904,7 +21914,7 @@ function buildDaySummaryHtml(dayNum, summary) {
     // GOOD — extra airport buffer — so it isn't flagged.)
     lines.push({ level:'info', text: dt(
       `· Day ${dayNum} ends ${earlyMin} min early (suggested ${pe.expectedStr}) — room for another stop.`,
-      `· ${dayNum}日目は推奨より ${earlyMin} 分早く終わります（推奨 ${pe.expectedStr}）— もう1か所追加する余裕があります。`
+      `· ${dayNum}日目は推奨より${earlyMin}分早く終わります（推奨${pe.expectedStr}）— もう1か所追加する余裕があります。`
     )})
   }
 

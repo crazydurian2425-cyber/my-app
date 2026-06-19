@@ -8446,7 +8446,11 @@ async function approveApplication(id){
       name:  app.name,
       email: app.email,
       city:  app.city,
-      status:'active'
+      status:'active',
+      // A brand-new planner has no bank details yet. Send an explicit NULL so the
+      // row can't inherit a drifted non-NULL column default ('' etc.) that trips
+      // planners_bank_account_type_check on insert (see fix-bank-account-type-check.sql).
+      bank_account_type: null
     })
     if (insErr) { showToast('Create planner failed: ' + insErr.message); return }
   }
