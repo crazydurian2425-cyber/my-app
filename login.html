@@ -966,14 +966,17 @@ async function login() {
         }
       } catch (e) {}
     }
+    // Always record the login timestamp; attach geo fields only when the
+    // (best-effort, often rate-limited) IP lookup actually resolved. Previously
+    // last_login_at lived INSIDE `if (g?.ip)`, so a failed geo lookup left
+    // "Last login: never" in the admin even for planners who were clearly active.
+    const _loginUpd = { last_login_at: new Date().toISOString() }
     if (g?.ip) {
-      sb.from('planners').update({
-        last_login_ip:      g.ip,
-        last_login_country: g.country_code || g.country || null,
-        last_login_city:    g.city || null,
-        last_login_at:      new Date().toISOString()
-      }).eq('id', planner.id).then(() => {})
+      _loginUpd.last_login_ip      = g.ip
+      _loginUpd.last_login_country = g.country_code || g.country || null
+      _loginUpd.last_login_city    = g.city || null
     }
+    sb.from('planners').update(_loginUpd).eq('id', planner.id).then(() => {})
   })()
 
   // Presence stamp — write last_seen_at on every login, NOT gated on the geo
