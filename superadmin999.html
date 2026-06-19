@@ -504,9 +504,9 @@ body.theme-dark .ws-row.bulk{background:rgba(255,255,255,0.03)!important;}
 .ps-rows--tl::before{content:"";position:absolute;left:27px;top:12px;bottom:12px;width:2px;background:color-mix(in srgb, var(--border) 80%, transparent);}
 .ps-dot{position:absolute;z-index:1;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;box-shadow:0 0 0 3px var(--surface,#fff);}
 .ps-dot svg{display:block;}
-.ps-ico{width:28px;height:28px;}
+.ps-ico{width:28px;height:28px;font-size:17px;line-height:1;}
 .ps-ico svg{width:15px;height:15px;}
-.ps-ico--sm{width:22px;height:22px;}
+.ps-ico--sm{width:22px;height:22px;font-size:12.5px;line-height:1;}
 .ps-ico--sm svg{width:12px;height:12px;}
 .ps-row--stop > .ps-dot, .ps-row--start > .ps-dot, .ps-row--end > .ps-dot{top:9px;left:14px;}
 .ps-row--transit > .ps-dot{top:7px;left:17px;}
@@ -3559,7 +3559,7 @@ async function openReviewModal(planId, planner, plan, traveler, isBond) {
 
   // Load full plan details
   const { data: planData } = await sb.from('plans')
-    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,transport_mode,place_types,rating,item_images(id,url))')
+    .select('*, travelers(*), sets(set_number,city,planners(name,email)), itinerary_items(id,day_number,time,type,title,address,duration_minutes,notes,sort_order,transport_mode,place_types,rating,latitude,longitude,item_images(id,url))')
     .eq('id', planId).single()
   const data = { plan: planData }
   if (data?.plan?.sets) {
@@ -3644,11 +3644,14 @@ function renderPlanSummary(plan){
   }
   const _legIcon = (mode) => {
     const m = String(mode||'').toLowerCase()
-    const w = (inner) => `<svg class="ps-leg-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
-    if (m==='walk') return w('<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>')
-    if (m==='taxi') return w('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/>')
-    if (m==='train'||m==='hsr') return w('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>')
-    return w('<rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12"/><path d="M8.5 21 7 23M15.5 21 17 23"/>')
+    if (/walk/.test(m))            return '🚶'
+    if (/taxi|uber|car/.test(m))   return '🚕'
+    if (/bus/.test(m))             return '🚌'
+    if (/flight|plane|air/.test(m))return '✈️'
+    if (/ferry|boat/.test(m))      return '⛴️'
+    if (/shinkansen|hsr/.test(m))  return '🚄'
+    if (/train/.test(m))           return '🚆'
+    return '🚇'
   }
   const _t = (t) => { if (!t) return ''; const [h,m]=String(t).split(':').map(Number); if(!Number.isFinite(h)) return ''; const ap=h>=12?'pm':'am'; const h12=((h+11)%12)+1; return `${h12}:${String(m||0).padStart(2,'0')} ${ap}` }
   const _tBare = (t) => _t(t).replace(/\s*(am|pm)\s*$/i,'')
@@ -3708,13 +3711,13 @@ function renderPlanSummary(plan){
   // ── Spine/badge/leg/arrival/close helpers (mirrors the planner summary) ──
   const _svgIco = (inner) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`
   const _STOP_ICON = {
-    activity: _svgIco('<path d="M3 22h18"/><path d="M6 18V11M10 18V11M14 18V11M18 18V11"/><path d="m12 3 7 5H5z"/>'),
-    meal:     _svgIco('<path d="M4 3v7a2 2 0 0 0 4 0V3"/><path d="M6 12v9"/><path d="M18 3a3 3 0 0 0-3 3v6h3Z"/><path d="M18 12v9"/>'),
-    shop:     _svgIco('<path d="M6 2 4 6v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6l-2-4Z"/><path d="M4 6h16"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
-    ent:      _svgIco('<path d="M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4Z"/><path d="M14 6v12"/>'),
-    free:     _svgIco('<path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v5a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 1v3M10 1v3M14 1v3"/>'),
-    hotel:    _svgIco('<path d="M2 4v16"/><path d="M2 9h18a2 2 0 0 1 2 2v9"/><path d="M2 16h20"/><path d="M7 9V6h6v3"/>'),
-    pin:      _svgIco('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>'),
+    activity: '📸',
+    meal:     '🍽️',
+    shop:     '🛍️',
+    ent:      '🎮',
+    free:     '☕',
+    hotel:    '🏨',
+    pin:      '📍',
   }
   const _stopKind = (s) => {
     const ty = String(s.type||'').toLowerCase()
@@ -3725,18 +3728,79 @@ function renderPlanSummary(plan){
     return 'activity'
   }
   const _catBadge = (s) => { const k=_stopKind(s); return `<span class="ps-ico ps-ico--${k} ps-dot">${_STOP_ICON[k]||_STOP_ICON.pin}</span>` }
-  const _legMins = (s) => { const d=parseInt(s.duration_minutes,10); return (Number.isFinite(d)&&d>0)?d:null }
-  const _legText = (s) => { const mode=_modeOf(s); const word=mode?_modeWord(mode):'Transport'; const parts=[`<b>${escapeHtml(word)}</b>`]; const mins=_legMins(s); if(mins!=null)parts.push(escapeHtml(_fmtDurMinsAdmin(mins))); return parts.join(' · ') }
+  // ── Transit-leg duration fallback (mirrors the planner) ──
+  // A transport leg stores no coords of its own, but its title is
+  // "Mode · <from> → <to>" and those names match real stop/hotel rows (which DO
+  // carry lat/lng). Resolve endpoints by name → haversine → the SAME minutes
+  // estimate the planner uses, so a leg with a null duration_minutes still shows
+  // a travel time that MATCHES the planner's plan-preview.
+  const _haversineKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371
+    const toRad = d => d * Math.PI / 180
+    const dLat = toRad(lat2 - lat1)
+    const dLon = toRad(lon2 - lon1)
+    const a = Math.sin(dLat / 2) ** 2
+            + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
+    return 2 * R * Math.asin(Math.sqrt(a))
+  }
+  // Minutes-only port of the planner's _transportEstimates (cost omitted — the
+  // leg row shows duration only). Formulas copied verbatim so numbers match.
+  const _estMins = (mode, km) => {
+    const round = (n) => Math.round(n)
+    const kmCar  = km * 1.25
+    const kmWalk = km * 1.10
+    if (mode === 'walk')    return Math.max(6, round(kmWalk * 11))
+    if (mode === 'taxi')    return Math.max(4, round(kmCar * 3))
+    if (mode === 'transit') return Math.max(8, round(km * 2.5) + 4)
+    if (mode === 'train')   return round(km * 1.2) + 20
+    if (mode === 'car')     return round(km * 1.5) + 10
+    if (mode === 'hsr')     return round(km * 0.5) + 20
+    if (mode === 'flight')  return 150
+    return null
+  }
+  const _coordByName = {}
+  for (const it of (items || [])) {
+    if (it.latitude == null || it.longitude == null) continue
+    const k = String(it.title || '').toLowerCase().trim()
+    if (k && !_coordByName[k]) _coordByName[k] = { lat:+it.latitude, lng:+it.longitude }
+  }
+  const _legKm = (leg) => {
+    const title = String(leg.title || '')
+    const seg = title.includes(' · ') ? title.slice(title.indexOf(' · ') + 3) : title
+    const parts = seg.split('→').map(x => x.trim().toLowerCase())
+    if (parts.length < 2) return null
+    const a = _coordByName[parts[0]], b = _coordByName[parts[1]]
+    return (a && b) ? _haversineKm(a.lat, a.lng, b.lat, b.lng) : null
+  }
+  const _legMins = (s) => {
+    const d = parseInt(s.duration_minutes, 10)
+    if (Number.isFinite(d) && d > 0) return d
+    const km = _legKm(s)
+    if (km != null) { const m = _estMins(_modeOf(s) || 'taxi', km); if (Number.isFinite(m)) return m }
+    return null
+  }
+  // Leg durations are real travel times (any value, e.g. 14 / 23 min), not the
+  // round stay-durations _fmtDurMinsAdmin handles — so format them like the
+  // planner's formatDurationLabel so the estimated minutes actually show.
+  const _fmtLegMins = (mins) => {
+    const m = parseInt(mins, 10)
+    if (!Number.isFinite(m) || m <= 0) return ''
+    const h = Math.floor(m / 60), mm = m % 60
+    if (m < 60) return `${m} min`
+    if (mm === 0) return h === 1 ? '1 hour' : `${h} hours`
+    return `${h} h ${mm}`
+  }
+  const _legText = (s) => { const mode=_modeOf(s); const word=mode?_modeWord(mode):'Transport'; const parts=[`<b>${escapeHtml(word)}</b>`]; const mins=_legMins(s); if(mins!=null){const lbl=_fmtLegMins(mins); if(lbl)parts.push(escapeHtml(lbl))} return parts.join(' · ') }
   const _psHotelName = ((items||[]).find(it=>String(it.type||'').toLowerCase()==='hotel_checkin')?.title) || ''
-  const _MOON_ICO  = _svgIco('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>')
-  const _PLANE_ICO = _svgIco('<path d="M2 22h20"/><path d="M6.4 16.5 4 11l2-.6 2.6 2.3 5-1.4-3-7L13 4l5.4 6.2 4.2-1.1a1.6 1.6 0 0 1 .8 3.1Z"/>')
+  const _MOON_ICO  = '🌙'
+  const _PLANE_ICO = '✈️'
   const _arrMeta    = (trav&&typeof trav.meta==='object'&&trav.meta)?trav.meta:{}
   const _arrGateway = String(_arrMeta.unit_arrival_location||_arrMeta.arrival_location||'').trim()
   const _arrMethodK = String(_arrMeta.unit_arrival_method||_arrMeta.arrival_method||'').toLowerCase()
   const _arrFrom    = String(_arrMeta.unit_arrival_from||_arrMeta.origin_city||_arrMeta.origin_country||'').trim()
   const _arrTimeStr = trav.arrival_time ? _t(trav.arrival_time) : ''
   const _arrMethodWord = (m) => { if(/flight|plane|air|vol/.test(m))return'Flight'; if(/train|tgv|rail/.test(m))return'Train'; if(/car|drive|voiture|taxi/.test(m))return'Car'; if(/bus|coach|autocar/.test(m))return'Bus'; if(/ferry|boat|bateau/.test(m))return'Ferry'; return'' }
-  const _arrIco = (m) => { if(/train|tgv|rail/.test(m))return _svgIco('<rect x="6" y="3" width="12" height="14" rx="2"/><path d="M6 11h12"/><path d="M8 21l-1 2M16 21l1 2"/>'); if(/car|drive|voiture|taxi/.test(m))return _svgIco('<path d="M5 17a2 2 0 0 1-2-2v-2.3a2 2 0 0 1 .5-1.3L6 8h12l2.5 3.4a2 2 0 0 1 .5 1.3V15a2 2 0 0 1-2 2"/><path d="M9 8V6h6v2"/><circle cx="7.5" cy="17" r="1.3"/><circle cx="16.5" cy="17" r="1.3"/>'); return _svgIco('<path d="M2 22h20"/><path d="M3.8 16.6 21 11l-1-3-5.5 1.2L8 3 6 3.5l3.2 6.3-4.7 1L3 8 1.5 8.4Z"/>') }
+  const _arrIco = (m) => { if(/flight|plane|air/.test(m))return '✈️'; if(/train|tgv|rail/.test(m))return '🚆'; if(/car|drive|taxi/.test(m))return '🚕'; if(/bus/.test(m))return '🚌'; if(/ferry|boat/.test(m))return '⛴️'; return '🚆' }
 
   let daysHtml = ''
   const _maxDay = Math.max(totalDays, Object.keys(byDay).length)
@@ -3794,11 +3858,52 @@ function renderPlanSummary(plan){
     // Open/close the day on nodes (arrival · overnight · departure).
     const _lastSlot = slots[slots.length - 1]
     const _lastIsTransport = _lastSlot && String(_lastSlot.type||'').toLowerCase() === 'transport'
+    // Last non-transport stop's end (start + stay) — the basis for both close
+    // nodes' arrival times. Mirrors the planner's _psLastEnd.
+    const _psLastEnd = (sl) => {
+      for (let i = sl.length - 1; i >= 0; i--) {
+        const s = sl[i]
+        if (String(s.type || '').toLowerCase() === 'transport') continue
+        const mm = _toMin(s.time); if (mm == null) continue
+        let end = mm
+        const dur = parseInt(s.duration_minutes, 10)
+        if (Number.isFinite(dur) && dur > 0) end += dur
+        return Math.min(end, 23 * 60 + 59)
+      }
+      return null
+    }
+    const _hhmm = (m) => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`
     let closeHtml = ''
     if (slots.length && d !== _maxDay) {
-      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span><div class="ps-time ps-time--t">night</div><div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">Overnight${_psHotelName?' · '+escapeHtml(_psHotelName):''}</div></div></div></li>`
+      // Overnight time = last venue's end + trailing back-to-hotel legs, snapped
+      // to the nearest 15 min (mirrors the planner). Falls back to "night".
+      const _ovEnd = (() => {
+        const venueEnd = _psLastEnd(slots)
+        if (venueEnd == null) return null
+        let extra = 0
+        for (let i = slots.length - 1; i >= 0; i--) {
+          if (String(slots[i].type || '').toLowerCase() !== 'transport') break
+          const mm = _legMins(slots[i]); if (Number.isFinite(mm)) extra += mm
+        }
+        return Math.min(Math.round((venueEnd + extra) / 15) * 15, 23 * 60 + 59)
+      })()
+      const _ovTime = _ovEnd != null ? (_t(_hhmm(_ovEnd)) || 'night') : 'night'
+      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--night ps-dot">${_MOON_ICO}</span><div class="ps-time ps-time--t">${escapeHtml(_ovTime)}</div><div class="ps-cell"><div class="ps-end-card"><div class="ps-end-title">Overnight${_psHotelName?' · '+escapeHtml(_psHotelName):''}</div></div></div></li>`
     } else if (slots.length && d === _maxDay && _lastIsTransport) {
-      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span><div class="ps-time ps-time--t"></div><div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">Departure</div></div></div></li>`
+      // Departure time = last venue's end + trailing legs (NO 15-min snap —
+      // mirrors the planner's chain-arrival time). Empty when not computable.
+      const _depArr = (() => {
+        const venueEnd = _psLastEnd(slots)
+        if (venueEnd == null) return null
+        let extra = 0
+        for (let i = slots.length - 1; i >= 0; i--) {
+          if (String(slots[i].type || '').toLowerCase() !== 'transport') break
+          const mm = _legMins(slots[i]); if (Number.isFinite(mm)) extra += mm
+        }
+        return Math.min(venueEnd + extra, 23 * 60 + 59)
+      })()
+      const _depArrStr = _depArr != null ? (_t(_hhmm(_depArr)) || '') : ''
+      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span><div class="ps-time ps-time--t">${escapeHtml(_depArrStr)}</div><div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">Departure</div></div></div></li>`
     }
     let startHtml = ''
     if (d === 1 && slots.length && (_arrGateway || _arrTimeStr)) {

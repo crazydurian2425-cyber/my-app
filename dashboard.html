@@ -2047,6 +2047,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   margin-bottom:10px;
 }
 .day-summary-head .ti{font-size:13px;color:var(--green-dark,#1a7a5e);}
+.day-summary-ico{font-size:13px;line-height:1;}
 .day-summary-grid{
   display:grid;grid-template-columns:repeat(4,1fr);gap:0;
   margin-bottom:10px;
@@ -2142,6 +2143,7 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   color:var(--green-dark);
   background:rgba(45,158,122,0.12);
   border-radius:6px;
+  font-size:13px;line-height:1;
 }
 .type-dd-icon svg{width:13px;height:13px;}
 .type-dd-label{flex:1;text-align:left;font-weight:500;}
@@ -15993,18 +15995,18 @@ function buildTimeOptions(selected = '09:00', opts = {}) {
 let slotCounter = 0;
 // ── Custom type dropdown ──────────────────────────────────
 const TYPE_ICONS = {
-  activity:        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5c-2.5 0-4.5 2-4.5 4.5 0 3 4.5 8 4.5 8s4.5-5 4.5-8c0-2.5-2-4.5-4.5-4.5z"/><circle cx="8" cy="6" r="1.5"/></svg>',
-  meal:            '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v5a2 2 0 002 2v5M6 2v5M10 2v12M12 2c-1 1.5-1 3.5 0 5v7"/></svg>',
-  transport:       '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="8" rx="1.5"/><path d="M3 8h10M5 11v2m6-2v2"/><circle cx="5.5" cy="9.5" r=".5" fill="currentColor"/><circle cx="10.5" cy="9.5" r=".5" fill="currentColor"/></svg>',
+  activity:        '📸',
+  meal:            '🍽️',
+  transport:       '🚕',
   // Legacy generic-hotel — kept for older rows; rendered identically to a
   // building. Hidden from the picker now in favour of hotel_checkin /
   // hotel_checkout.
-  accommodation:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12V5m12 7V8.5c0-1-0.7-1.5-1.5-1.5H7v5m-5 0h12"/><circle cx="4.5" cy="8.5" r="1"/></svg>',
-  hotel_checkin:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="9.5" r="2.5"/><path d="M7.5 9.5h6.5M11.5 9.5v2.5M14 9.5v3"/></svg>',
-  hotel_checkout:  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h6v12H3z"/><path d="M9 8h5m-2-2 2 2-2 2"/></svg>',
-  shopping:        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h10l-1 9H4L3 5z"/><path d="M6 5V3.5a2 2 0 014 0V5"/></svg>',
-  entertainment:   '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.8 4.2 4.2 0.6-3 3 0.8 4.2L8 11.3l-3.8 2.2L5 9.3l-3-3 4.2-0.6L8 1.5z"/></svg>',
-  freetime:        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h8v3a3 3 0 01-3 3H6a3 3 0 01-3-3V6zM11 7h1.5a1.5 1.5 0 010 3H11M4 3v1M7 3v1M10 3v1"/></svg>',
+  accommodation:   '🏨',
+  hotel_checkin:   '🏨',
+  hotel_checkout:  '🚪',
+  shopping:        '🛍️',
+  entertainment:   '🎮',
+  freetime:        '☕',
 }
 
 // Canonical category list — order matters (planner sees this top-to-bottom).
@@ -21951,7 +21953,7 @@ function buildDaySummaryHtml(dayNum, summary) {
   return `
     <div class="day-summary" data-day-summary="${dayNum}">
       <div class="day-summary-head">
-        <i class="ti ti-chart-bar" aria-hidden="true"></i>
+        <span class="day-summary-ico" aria-hidden="true">📊</span>
         <span>${dt(`Day ${dayNum} summary · auto-computed`, `${dayNum}日目の概要 · 自動計算`)}</span>
       </div>
       <div class="day-summary-grid">
