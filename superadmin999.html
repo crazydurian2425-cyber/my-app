@@ -3808,6 +3808,10 @@ function renderPlanSummary(plan){
   const _depToStr   = String(_arrMeta.unit_departure_to||'').trim()
   const _depTimeStr = _arrMeta.unit_departure_time ? _t(_arrMeta.unit_departure_time) : ''
   const _depSubMeta = [[_arrMethodWord(_depMethodK), _depToStr ? `to ${_depToStr}` : ''].filter(Boolean).join(' '), _depTimeStr ? `departs ${_depTimeStr}` : ''].filter(Boolean).join(' · ')
+  // Day 2+ open at the hotel at the traveler's wake time (early 7:00 / standard
+  // 8:30 / late 9:30) — same mapping the planner's morning anchor uses.
+  const _wakeForTiming = (t) => { const k = String(t||'').toLowerCase(); return k==='early' ? '07:00' : k==='late' ? '09:30' : '08:30' }
+  const _startWakeStr = _arrMeta.daily_timing ? _t(_wakeForTiming(_arrMeta.daily_timing)) : ''
 
   let daysHtml = ''
   const _maxDay = Math.max(totalDays, Object.keys(byDay).length)
@@ -3917,6 +3921,10 @@ function renderPlanSummary(plan){
       const _mw = _arrMethodWord(_arrMethodK)
       const _sub = [_mw, _arrFrom ? `from ${_arrFrom}` : ''].filter(Boolean).join(' · ')
       startHtml = `<li class="ps-row ps-row--start"><span class="ps-ico ps-ico--arrive ps-dot">${_arrIco(_arrMethodK)}</span><div class="ps-time">${escapeHtml(_arrTimeStr||'—')}</div><div class="ps-cell"><div class="ps-start-card"><div class="ps-start-title">Arrive${_arrGateway?' · '+escapeHtml(_arrGateway):''}</div>${_sub?`<div class="ps-start-meta">${escapeHtml(_sub)}</div>`:''}</div></div></li>`
+    } else if (d >= 2 && slots.length) {
+      // Days 2+ open at the hotel they woke in (one plan = one hotel), mirroring
+      // the planner so the first leg has a clear origin instead of a bare GO Taxi.
+      startHtml = `<li class="ps-row ps-row--start"><span class="ps-ico ps-ico--hotel ps-dot">${_STOP_ICON.hotel}</span><div class="ps-time">${escapeHtml(_startWakeStr || 'morning')}</div><div class="ps-cell"><div class="ps-start-card ps-start-card--hotel"><div class="ps-start-title">Start${_psHotelName?' · '+escapeHtml(_psHotelName):''}</div><div class="ps-start-meta">Day begins at the hotel</div></div></div></li>`
     }
     daysHtml += `
       <div class="ps-day ps-day--${dayTone(d)}">
