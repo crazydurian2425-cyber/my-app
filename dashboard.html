@@ -21929,21 +21929,21 @@ function buildDaySummaryHtml(dayNum, summary) {
       const toBit = pe.departureTo ? dt(` to ${pe.departureTo}`, `${pe.departureTo}行きの`) : ''
       const depAt = pe.departureTime ? (' ' + formatTimeDisplay(pe.departureTime)) : ''
       lines.push({ level:'red', text: dt(
-        `⚠ Last stop ends ${pe.actualStr} — ${lateMin} min past the ${pe.expectedStr} departure cut-off. Move or trim it, or they may miss the${depAt} ${ride}${toBit}.`,
-        `⚠ 最後の立ち寄り先が${pe.actualStr}に終わります — ${pe.expectedStr}の出発締切を${lateMin}分超過しています。移動するか短くしないと、${depAt}の${toBit}${ride}に乗り遅れる恐れがあります。`
+        `⚠ Last stop ends ${pe.actualStr} — ${lateMin} min past the ${pe.expectedStr} departure cut-off. Trim or move it, or they may miss the${depAt} ${ride}${toBit}.`,
+        `⚠ 最後の立ち寄り先が${pe.actualStr}に終わり、${pe.expectedStr}の出発締切を${lateMin}分超過しています。短くするか移動しないと、${depAt}の${toBit}${ride}に乗り遅れる恐れがあります。`
       )})
     } else {
       lines.push({ level:'amber', text: dt(
-        `⚠ Day ${dayNum} runs ${lateMin} min past the suggested end (${pe.expectedStr}) — trim or move the last stop.`,
-        `⚠ ${dayNum}日目は推奨終了時刻（${pe.expectedStr}）を${lateMin}分超過しています — 最後の立ち寄り先を短くするか移動してください。`
+        `⚠ Day ${dayNum} runs ${lateMin} min past the suggested end. Trim or move the last stop.`,
+        `⚠ ${dayNum}日目は推奨終了時刻を${lateMin}分超過しています。最後の立ち寄り先を短くするか移動してください。`
       )})
     }
   } else if (pe && pe.state === 'early' && !pe.isDepartureDay) {
     // Early on a normal day = room for one more. (Early on a departure day is
     // GOOD — extra airport buffer — so it isn't flagged.)
     lines.push({ level:'info', text: dt(
-      `· Day ${dayNum} ends ${earlyMin} min early (suggested ${pe.expectedStr}) — room for another stop.`,
-      `· ${dayNum}日目は推奨より${earlyMin}分早く終わります（推奨${pe.expectedStr}）— もう1か所追加する余裕があります。`
+      `· Day ${dayNum} ends ${earlyMin} min early. You can add one more stop.`,
+      `· ${dayNum}日目は推奨より${earlyMin}分早く終了します。もう1か所追加できます。`
     )})
   }
 
