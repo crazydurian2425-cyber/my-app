@@ -22655,6 +22655,20 @@ async function submitPlan() {
         flashFormError({ target: document.getElementById('day-' + d) || undefined, message: _lbl + dt(' needs: ', 'に追加が必要：') + _need.join(dt(', ', '、')) })
         return
       }
+      // (a.5) the day must be CLOSED with its ending ride — the planner presses
+      // "End day · back to hotel" (non-last days) or "End trip · transport to X"
+      // (last day), each of which appends that transport leg. Detect it as: the
+      // day's last real item (locked bookend anchors aren't in `items`) is a
+      // transport leg. If the day ends on a venue, the button wasn't pressed.
+      const _diSorted = _di.slice().sort((x, y) => (x.sort_order || 0) - (y.sort_order || 0))
+      const _lastReal = _diSorted[_diSorted.length - 1]
+      if (!_lastReal || String(_lastReal.type || '').toLowerCase() !== 'transport') {
+        const _cm = _isDep
+          ? dt(`${_lbl}: press "End trip" (transport to the airport / station) to add the final ride before submitting.`, `${_lbl}：「旅行を終える」（空港・駅へ移動）を押して、最後の移動を追加してから提出してください。`)
+          : dt(`${_lbl}: press "End day · back to hotel" to add the ride back before submitting.`, `${_lbl}：「1日を終える · ホテルに戻る」を押して、ホテルへ戻る移動を追加してから提出してください。`)
+        flashFormError({ target: document.getElementById('day-' + d) || undefined, message: _cm })
+        return
+      }
       // (b) end-of-day timing (±15 min) — reuses the day-end badge's compare.
       if (typeof _dayEndProfileCompare === 'function') {
         const _sc = document.getElementById('slots-day-' + d)
