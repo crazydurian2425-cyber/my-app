@@ -3680,7 +3680,7 @@ function renderPlanSummary(plan){
     if (/metro|métro|transit|tram|\brer\b|funicul|transport|commun/.test(t)) return 'transit'
     return ''
   }
-  const _modeWord = (m) => ({ walk:'Walk', taxi:'GO Taxi', transit:'Public transport', train:'Train', hsr:'Shinkansen', bus:'Bus', flight:'Flight', ferry:'Ferry' }[m] || 'Transport')
+  const _modeWord = (m) => ({ walk:'Walk', taxi:'GO Taxi', transit:'Public transport', train:'Public transport', car:'Rental car', hsr:'Shinkansen / high-speed train', flight:'Flight' }[m] || m)   // mirror the planner's _MODE_LABELS exactly
   // Transport titles go stale (the arrival leg keeps "Taxi to hotel" even after
   // it's switched to Public transport; mid-day legs drift when stops reorder).
   // Rebuild EVERY leg from its real mode + actual neighbours; collapse dups.
@@ -3800,7 +3800,7 @@ function renderPlanSummary(plan){
   const _arrFrom    = String(_arrMeta.unit_arrival_from||_arrMeta.origin_city||_arrMeta.origin_country||'').trim()
   const _arrTimeStr = trav.arrival_time ? _t(trav.arrival_time) : ''
   const _arrMethodWord = (m) => { if(/flight|plane|air|vol/.test(m))return'Flight'; if(/train|tgv|rail/.test(m))return'Train'; if(/car|drive|voiture|taxi/.test(m))return'Car'; if(/bus|coach|autocar/.test(m))return'Bus'; if(/ferry|boat|bateau/.test(m))return'Ferry'; return'' }
-  const _arrIco = (m) => { if(/flight|plane|air/.test(m))return '✈️'; if(/train|tgv|rail/.test(m))return '🚆'; if(/car|drive|taxi/.test(m))return '🚕'; if(/bus/.test(m))return '🚌'; if(/ferry|boat/.test(m))return '⛴️'; return '🚆' }
+  const _arrIco = (m) => { if(/flight|plane|air/.test(m))return '✈️'; if(/shinkansen|hsr|新幹線/.test(m))return '🚄'; if(/train|tgv|rail/.test(m))return '🚆'; if(/car|drive|taxi/.test(m))return '🚕'; if(/bus/.test(m))return '🚌'; if(/ferry|boat/.test(m))return '⛴️'; return '🚆' }
   // Departure node details (mirror the planner: location in the title + a
   // "<Method> to <dest> · departs <time>" subtitle). English, for the admin console.
   const _depLoc     = String(_arrMeta.unit_departure_location||'').trim()
@@ -3817,7 +3817,7 @@ function renderPlanSummary(plan){
   const _maxDay = Math.max(totalDays, Object.keys(byDay).length)
   for (let d = 1; d <= _maxDay; d++) {
     const slots = _normalizeTransport((byDay[d] || []).sort((a,b) => (a.sort_order||0) - (b.sort_order||0)))
-    const stops = slots.filter(s => String(s.type||'').toLowerCase() !== 'transport')
+    const stops = slots.filter(s => { const t = String(s.type||'').toLowerCase(); return t !== 'transport' && t !== 'freetime' })   // match planner _isVenueCount (excludes free time)
     let daySpend = 0
     for (const s of slots) { const st = _parseTips(s.notes); if (st.cost) daySpend += Number(st.cost) || 0 }
 
@@ -3834,7 +3834,7 @@ function renderPlanSummary(plan){
       const cat = _placeCat(s)
       const _rateHtml = (s.rating!=null && Number(s.rating)>0) ? `<span class="ps-rate">★ ${Number(s.rating).toFixed(1)}</span>` : ''
       const _addrTxt = _shortAddr(s.address)
-      const _durTxt  = _fmtDurMinsAdmin(s.duration_minutes)
+      const _durTxt  = _fmtLegMins(s.duration_minutes)   // match the planner's formatDurationLabel (was preset-only _fmtDurMinsAdmin, which hid 45/90/etc.)
       const _metaParts = [_addrTxt?escapeHtml(_addrTxt):'', _rateHtml, _durTxt?escapeHtml(_durTxt):''].filter(Boolean)
       const st = _parseTips(s.notes)
       const chips = (st.tips && st.tips.length)
@@ -3914,7 +3914,7 @@ function renderPlanSummary(plan){
         return Math.min(venueEnd + extra, 23 * 60 + 59)
       })()
       const _depArrStr = _depArr != null ? (_t(_hhmm(_depArr)) || '') : ''
-      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--depart ps-dot">${_PLANE_ICO}</span><div class="ps-time">${escapeHtml(_depArrStr)}</div><div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">Departure${_depLoc ? ' · ' + escapeHtml(_depLoc) : ''}</div>${_depSubMeta ? `<div class="ps-start-meta">${escapeHtml(_depSubMeta)}</div>` : ''}</div></div></li>`
+      closeHtml = `<li class="ps-row ps-row--end"><span class="ps-ico ps-ico--depart ps-dot">${_depMethodK ? _legIcon(_depMethodK) : _PLANE_ICO}</span><div class="ps-time">${escapeHtml(_depArrStr)}</div><div class="ps-cell"><div class="ps-end-card ps-end-card--depart"><div class="ps-end-title">Departure${_depLoc ? ' · ' + escapeHtml(_depLoc) : ''}</div>${_depSubMeta ? `<div class="ps-start-meta">${escapeHtml(_depSubMeta)}</div>` : ''}</div></div></li>`
     }
     let startHtml = ''
     if (d === 1 && slots.length && (_arrGateway || _arrTimeStr)) {
