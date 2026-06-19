@@ -13826,6 +13826,9 @@ async function openItineraryForm(planId) {
     const { data: items } = await sb.from('itinerary_items')
       .select('*, item_images(id,url)')
       .eq('plan_id', plan.id).order('sort_order', { ascending: true })
+    // Baseline for the cross-device clobber guard — the item-id set this device
+    // loaded. A later save compares against the DB to detect another device's edit.
+    if (typeof _setDraftBaseline === 'function') _setDraftBaseline(plan.id, (items || []).map(i => i.id))
     if (items?.length) {
       fillItineraryItems(items)
     } else {
@@ -23059,6 +23062,9 @@ async function _persistDraft(planId) {
       return true
     }
   }
+  // Cross-device clobber guard — if another device saved since this one loaded
+  // the plan, DON'T overwrite: warn + offer reload, then bail. Fails safe.
+  if (await _draftHasConflict(planId)) { _warnPlanConflict(); return true }
   // Re-sync itinerary_items with INSERT-FIRST, then delete-stale — so a failed
   // insert can NEVER wipe the draft. The old delete-then-insert left a window
   // where a transient insert error emptied the plan with no rollback. There's
@@ -23068,6 +23074,7 @@ async function _persistDraft(planId) {
     // No slots left — clear all rows for this plan (cascades item_images).
     const { error: delErr } = await sb.from('itinerary_items').delete().eq('plan_id', planId)
     if (delErr) { console.warn('itinerary delete failed', delErr); return false }
+    _setDraftBaseline(planId, [])
     return true
   }
   const { data: inserted, error: insErr } = await sb.from('itinerary_items').insert(
@@ -23084,6 +23091,8 @@ async function _persistDraft(planId) {
       .delete().eq('plan_id', planId).not('id', 'in', `(${_newIds.join(',')})`)
     if (delErr) console.warn('stale itinerary cleanup failed (non-fatal)', delErr)
   }
+  // Update the clobber-guard baseline to the set we just wrote.
+  _setDraftBaseline(planId, _newIds)
   // Re-link images to the freshly-inserted item rows
   const imageRows = []
   for (const row of (inserted || [])) {
@@ -23118,6 +23127,38 @@ async function saveDraft() {
 // the form first opens is harmless (DB write of identical data) — and the
 // flag was prone to getting stuck `true` if anything in openItineraryForm
 // threw before the unsuppress timeout fired, blocking ALL future saves.
+// ── Cross-device clobber guard (Option A) ───────────────────────────────────
+// Each device loads its own copy of the plan, and autosave REPLACES every
+// itinerary_items row. Without a guard, two devices editing the same plan
+// silently overwrite each other (last save wins). We fingerprint the plan's
+// item-id set at load + after each of THIS device's saves; if the DB set
+// differs at save time, another device saved in between → warn + offer reload
+// instead of overwriting. FAILS SAFE: a missing baseline or any read error lets
+// the save proceed — the guard never blocks a legitimate save on its own error.
+let _planConflictPending = false
+function _fpIds(ids) { return (ids || []).map(String).sort().join(',') }
+function _setDraftBaseline(planId, ids) {
+  window._draftBaselineFp = { planId, fp: _fpIds(ids) }
+  _planConflictPending = false   // a fresh baseline means this device is back in sync
+}
+async function _draftHasConflict(planId) {
+  const b = window._draftBaselineFp
+  if (!b || b.planId !== planId || b.fp == null) return false   // no baseline → can't judge → allow
+  try {
+    const { data, error } = await sb.from('itinerary_items').select('id').eq('plan_id', planId)
+    if (error) return false                                     // fail safe
+    return _fpIds((data || []).map(r => r.id)) !== b.fp
+  } catch (e) { return false }                                  // fail safe
+}
+function _warnPlanConflict() {
+  if (_planConflictPending) return               // only prompt once per conflict
+  _planConflictPending = true
+  const msg = dt(
+    'This plan was just edited on another device (e.g. your phone). Reload to load the latest version?\n\nYour unsaved changes on this screen will be discarded.',
+    'このプランは別の端末（スマホなど）で編集されました。最新の状態を読み込みますか？\n\nこの画面の未保存の変更は破棄されます。')
+  try { if (confirm(msg)) location.reload() } catch (e) {}
+}
+
 let _autoSaveTimer = null
 let _autoSaveInFlight = false
 let _autoSaveQueued = false      // an edit arrived while a save was in flight → run once more after
@@ -23150,6 +23191,7 @@ async function silentSaveDraft(scheduledPlanId) {
   const targetPlanId = scheduledPlanId || currentPlanId
   console.log('[autosave] silentSaveDraft called', { targetPlanId, inFlight: _autoSaveInFlight })
   if (!targetPlanId) { console.warn('[autosave] no targetPlanId — bailing'); return }
+  if (_planConflictPending) { console.warn('[autosave] skipped — plan edited on another device, pending reload'); return }
   if (_autoSaveInFlight) {
     // Don't DROP this save — an edit landed while a prior save was mid-flight.
     // Queue a follow-up so the latest DOM state is persisted once the in-flight
