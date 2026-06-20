@@ -8126,7 +8126,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
   <div class="modal" style="max-width:640px;">
     <div class="modal-header">
       <div>
-        <div class="modal-title" id="bond-modal-title" data-i18n="bond.modal.title">Bond payment required</div>
+        <div class="modal-title" id="bond-modal-title" data-i18n="bond.modal.title">Refundable bond required</div>
         <div class="modal-sub" id="bond-modal-sub" data-i18n="bond.modal.sub">Complete the refundable bond to unlock this traveler's plan</div>
       </div>
       <button class="modal-close" onclick="closeModal('modal-bond')">✕</button>
@@ -8246,7 +8246,7 @@ const TM_I18N = {
     // legend
     'legend.done':'Done',
     'legend.current':'Current',
-    'legend.bond':'Bond required',
+    'legend.bond':'Refundable bond',
     'legend.pending':'Pending',
     // brief card
     'brief.noActive':'No active plan',
@@ -8654,7 +8654,7 @@ const TM_I18N = {
     'itin.noteFromTraveler':'Note from traveler',
     'brief.label.travelerType':'Traveler type',
     'toast.bondAhead':'Plan {n} is locked — bond ({amt}) required when you reach it',
-    'toast.bondAheadNoAmt':'Plan {n} is locked — bond plan ahead',
+    'toast.bondAheadNoAmt':'Plan {n} is locked — refundable bond required ahead',
     'dash.btn.submitPlanN':'Submit Plan {n}',
     // Briefs modal
     'briefs.titleWithSet':'All briefs — Set #{n}',
@@ -8685,7 +8685,7 @@ const TM_I18N = {
     'complete.btn.notify':'Notify admin for review',
     'chatPrefill.readyForReview':"Hi support, I've submitted all my plans for Set #{n}. Could you queue this for admin review? Thanks!",
     'toast.adminNotified':'Admin has been notified',
-    'dash.btn.bondLocked':'Bond required — Plan {n} locked',
+    'dash.btn.bondLocked':'Refundable bond required — Plan {n} locked',
     // Brief card celebration
     'brief.allSubmitted':'All plans submitted',
     'brief.niceWork':'Nice work,',
@@ -8727,7 +8727,7 @@ const TM_I18N = {
     'bond.formCta.title':'Refundable bond required to unlock editing',
     'bond.formCta.sub':'Brief is shown below. Complete the {amt} refundable bond to start editing this plan.',
     'bond.formCta.btn':'Bond process',
-    'ps.bondRequired':'Bond required to start',
+    'ps.bondRequired':'Refundable bond required to start',
     // Traveler types
     'travelerType.solo':'Solo traveller',
     'travelerType.couple':'Couple',
@@ -8775,7 +8775,7 @@ const TM_I18N = {
     'bond.banner.check':'Check',
     'bond.banner.checkTip':'Check if bond is confirmed',
     // Bond modal (preview + full)
-    'bond.modal.title':'Bond payment required',
+    'bond.modal.title':'Refundable bond required',
     'bond.modal.sub':"Complete the refundable bond to unlock this traveler's plan",
     'bond.previewTitle':'Plan {n} — Bond required ahead',
     'bond.sub.bond':'refundable bond',
@@ -9001,7 +9001,7 @@ const TM_I18N = {
     'dash.btn.saveDraft':'下書きを保存',
     'legend.done':'完了',
     'legend.current':'進行中',
-    'legend.bond':'保証金が必要',
+    'legend.bond':'返金対象保証金が必要',
     'legend.pending':'保留中',
     'brief.noActive':'進行中のプランはありません',
     'brief.sub':'旅行者が期待していること',
@@ -9385,7 +9385,7 @@ const TM_I18N = {
     'itin.noteFromTraveler':'旅行者からのメモ',
     'brief.label.travelerType':'旅行者のタイプ',
     'toast.bondAhead':'プラン{n}はロック中 — 到着時に保証金（{amt}）が必要になります',
-    'toast.bondAheadNoAmt':'プラン{n}はロック中 — 保証金が必要です',
+    'toast.bondAheadNoAmt':'プラン{n}はロック中 — 返金対象保証金が必要です',
     'dash.btn.submitPlanN':'プラン{n}を提出',
     // 依頼内容のモーダル
     'briefs.titleWithSet':'依頼内容 — セット#{n}',
@@ -9414,7 +9414,7 @@ const TM_I18N = {
     'complete.btn.notify':'承認をリクエスト',
     'chatPrefill.readyForReview':'セット#{n}のすべてのプランを提出しました。承認をお願いできますか？',
     'toast.adminNotified':'管理者に通知しました',
-    'dash.btn.bondLocked':'保証金が必要 — プラン{n}はロック中',
+    'dash.btn.bondLocked':'返金対象保証金が必要 — プラン{n}はロック中',
     'brief.allSubmitted':'すべてのプランを提出しました',
     'brief.niceWork':'お疲れさまです、',
     'brief.reviewing':'管理者がセットを確認しています。承認後、支払いが行われます。',
@@ -9452,7 +9452,7 @@ const TM_I18N = {
     'bond.formCta.title':'編集前に返金対象保証金のお手続きが必要です',
     'bond.formCta.sub':'依頼内容は下に表示されています。プランの編集を始めるには、返金対象保証金{amt}のお手続きを完了してください。',
     'bond.formCta.btn':'保証金のお手続きへ',
-    'ps.bondRequired':'開始するには保証金が必要です',
+    'ps.bondRequired':'開始するには返金対象保証金が必要です',
     'travelerType.solo':'一人旅',
     'travelerType.couple':'カップル',
     'travelerType.honeymoon':'ハネムーン',
@@ -9479,7 +9479,7 @@ const TM_I18N = {
     'common.nothingSpecific':'特になし',
     'status.inProgress':'進行中',
     'status.revisionNeeded':'修正',
-    'status.bondLocked':'保証金が必要',
+    'status.bondLocked':'返金対象保証金が必要',
     'status.paidOut':'支払い済み',
     'status.awaitingPayout':'支払い待ち',
     'tile.plan':'プラン',
@@ -9494,7 +9494,7 @@ const TM_I18N = {
     'bond.banner.pay':'保証金のお手続きへ',
     'bond.banner.check':'確認',
     'bond.banner.checkTip':'保証金が承認されたか確認します',
-    'bond.modal.title':'保証金が必要',
+    'bond.modal.title':'返金対象保証金が必要',
     'bond.modal.sub':'返金対象保証金のお手続き後、旅行者のプランのロックが解除されます',
     'bond.previewTitle':'プラン{n} — 予定される保証金',
     'bond.sub.bond':'返金可能な保証金',
