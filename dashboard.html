@@ -11840,11 +11840,15 @@ function renderActiveSet(set) {
     if (current.status === 'bond_pending') {
       // Hard-lock the submit button — bond must be paid first
       submitBtn.textContent = t('dash.btn.bondLocked','Bond required — Plan {n} locked').replace('{n}', current.plan_number)
-      submitBtn.disabled = true
+      // Clickable lock: tapping the prominent locked bar routes the planner
+      // straight to the bond payment modal. (submitPlan() has the same guard,
+      // but #submit-btn normally opens the editor — so wire it explicitly.)
+      submitBtn.disabled = false
+      submitBtn.onclick = () => openBondPayModal(current.id, current.plan_number)
       submitBtn.style.background = 'linear-gradient(135deg, #c17d2a 0%, #a86820 100%)'
       submitBtn.style.boxShadow = '0 4px 14px -2px rgba(193,125,42,0.45), inset 0 1px 0 rgba(255,255,255,0.22)'
       submitBtn.style.opacity = '1'
-      submitBtn.style.cursor = 'not-allowed'
+      submitBtn.style.cursor = 'pointer'
       // Auto-open the bond modal ONLY the very first time a planner reaches this bond plan.
       // Uses localStorage so reloads / polling won't re-trigger. They can reopen manually.
       const shownKey = `jj_bond_shown_${current.id}`
@@ -11863,6 +11867,7 @@ function renderActiveSet(set) {
     } else {
       submitBtn.textContent = t('dash.btn.submitPlanN','Submit Plan {n}').replace('{n}', current.plan_number)
       submitBtn.disabled = false
+      submitBtn.onclick = () => openItineraryForm()   // restore normal editor-open
       submitBtn.style.background = ''
       submitBtn.style.opacity = ''
       submitBtn.style.cursor = ''
@@ -12030,7 +12035,7 @@ function renderGrid() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             ${t('bond.banner.chat','Chat support')}
           </button>
-          <button class="btn-main" style="padding:8px 14px;font-size:12px;background:var(--amber);" onclick="openBondPayModal('${bondPlan.id}',${bondPlan.plan_number})">${t('bond.banner.pay','Pay bond')}</button>
+          <button class="btn-main" style="flex:none;padding:8px 14px;font-size:12px;background:var(--amber);" onclick="openBondPayModal('${bondPlan.id}',${bondPlan.plan_number})">${t('bond.banner.pay','Pay bond')}</button>
         </div>`
     } else {
       bondBanner.style.display = 'none'
