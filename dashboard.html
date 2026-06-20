@@ -23256,12 +23256,27 @@ async function _persistDraft(planId) {
   // item_images). Non-fatal: a failure here at worst leaves stale rows until the
   // next save — far better than losing the draft.
   if (_newIds.length) {
-    const { error: delErr } = await sb.from('itinerary_items')
-      .delete().eq('plan_id', planId).not('id', 'in', `(${_newIds.join(',')})`)
-    if (delErr) console.warn('stale itinerary cleanup failed (non-fatal)', delErr)
+    // The old rows may carry item_images (RESTRICT FK) — clear those FIRST, or
+    // the itinerary_items delete is rejected and the stale rows linger. That
+    // false-trips the cross-device conflict guard below (DB set = new+leftover ≠
+    // baseline) and shows duplicate stops on reload. Look up the stale ids, drop
+    // their images, then the rows.
+    const { data: staleRows } = await sb.from('itinerary_items')
+      .select('id').eq('plan_id', planId).not('id', 'in', `(${_newIds.join(',')})`)
+    const staleIds = (staleRows || []).map(r => r.id)
+    if (staleIds.length) {
+      try { await sb.from('item_images').delete().in('item_id', staleIds) } catch (e) { console.warn('stale item_images cleanup failed', e) }
+      const { error: delErr } = await sb.from('itinerary_items').delete().in('id', staleIds)
+      if (delErr) console.warn('stale itinerary cleanup failed (non-fatal)', delErr)
+    }
   }
-  // Update the clobber-guard baseline to the set we just wrote.
-  _setDraftBaseline(planId, _newIds)
+  // Set the clobber-guard baseline to the plan's ACTUAL item-id set right now
+  // (not just the rows we inserted) — so any stale row that couldn't be removed
+  // is part of OUR baseline and never false-trips the guard on the next save.
+  try {
+    const { data: nowRows } = await sb.from('itinerary_items').select('id').eq('plan_id', planId)
+    _setDraftBaseline(planId, (nowRows || []).map(r => r.id))
+  } catch (e) { _setDraftBaseline(planId, _newIds) }
   // Re-link images to the freshly-inserted item rows
   const imageRows = []
   for (const row of (inserted || [])) {
