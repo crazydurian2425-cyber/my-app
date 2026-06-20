@@ -20392,25 +20392,6 @@ function _findItineraryHotel() {
       return d
     }
   }
-  // Fallback: the trip hotel saved at the PLAN level (plans.hotel_*), which the
-  // morning + end-of-day anchors already display by name. A planner can set the
-  // trip hotel WITHOUT a linked hotel_checkin STOP on the day — and without this
-  // the back-to-hotel leg had no destination, so its distance/duration/cost
-  // stayed blank and the mode got stuck on "Public transport" (the km-less
-  // default). Return coords when we have them; otherwise the place_id / name is
-  // enough for the async Routes fetch to resolve the leg and fill the grid.
-  const _plat = parseFloat(window._currentHotelLat)
-  const _plng = parseFloat(window._currentHotelLng)
-  const _ppid = window._currentHotelPlaceId || null
-  const _pname = window._currentHotelName || ''
-  if ((Number.isFinite(_plat) && Number.isFinite(_plng)) || _ppid || _pname) {
-    return {
-      google_place_id: _ppid,
-      name: _pname,
-      latitude:  Number.isFinite(_plat) ? _plat : null,
-      longitude: Number.isFinite(_plng) ? _plng : null,
-    }
-  }
   return null
 }
 
