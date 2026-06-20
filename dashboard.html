@@ -20932,9 +20932,10 @@ function endDayBackToHotel(dayContainerId) {
   const departHHMM = minsToHHMM(departMin)
   const departHour = parseInt(departHHMM.split(':')[0], 10)
   const isNight = departHour >= 22 || departHour < 6
-  const mode = (km != null && km < 1) ? 'walk'
-             : (km != null && (km > 5 || isNight)) ? 'taxi'
-             : 'transit'
+  // Walk under 1 km, GO Taxi for everything 1 km+ (planner's rule — the old
+  // 1–5 km daytime band that defaulted to transit now uses taxi too). null km
+  // (hotel coords unresolved) also defaults to taxi.
+  const mode = (km != null && km < 1) ? 'walk' : 'taxi'
   // Insert.
   const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
   addSlot(dayNum, { icon: 'transport', time: departHHMM }, { deferRefresh: true })
@@ -21556,7 +21557,7 @@ function _gapFillTransportsForDay(dayContainer) {
       }
       const departHour = parseInt(departHHMM.split(':')[0], 10)
       const isNight = departHour >= 22 || departHour < 6
-      const mode = (km < 1) ? 'walk' : (km > 5 || isNight) ? 'taxi' : 'transit'
+      const mode = (km < 1) ? 'walk' : 'taxi'   // 1 km+ → GO Taxi (was transit for the 1–5 km daytime band)
       try {
         const transportSnap = new Set([...dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')])
         addSlot(dayNum, { icon: 'transport', time: departHHMM }, { deferRefresh: true })
