@@ -13105,13 +13105,18 @@ async function renderTravelerBrief(plan, t, notes) {
     ? `${fmtBriefDateShort(t.arrival_date)}${unitEnd ? '–' + fmtBriefDateShort(unitEnd) : ''}`
     : ''
 
-  // ── commission: flat rate by duration (3D2N ¥7,300 / 2D1N ¥5,500), override wins ──
-  // No continuity bonus — the rate is flat per duration to match the stored
-  // planner_payout the wallet actually credits.
+  // ── commission: the EXACT payout set in the backend ──
+  // applyPlanOverrides already merged any per-plan planner_payout_override onto
+  // t.planner_payout, so the value here is the effective commission the wallet
+  // credits — a bond/luxury unit is usually set well above the flat duration
+  // rate (e.g. ¥20,000). Show THAT, matching the Review page + wallet. Fall back
+  // to the flat duration rate (3D2N ¥7,300 / 2D1N ¥5,500) only when no payout is
+  // stored on the unit at all.
   const computedFee = baseCommissionForDuration(t.duration)
+  const _storedPayout = Number(t.planner_payout)
   const commission = plan.planner_payout_override != null
-    ? plan.planner_payout_override
-    : computedFee
+    ? Number(plan.planner_payout_override)
+    : (Number.isFinite(_storedPayout) && _storedPayout > 0 ? _storedPayout : computedFee)
 
   // ── adjacent units for "→ to X" arrows + helpful tip ──
   const currentIdx = siblings.findIndex(s => s.id === t.id)
@@ -13406,8 +13411,10 @@ async function renderTravelerBrief(plan, t, notes) {
       const INK_MUTED = 'var(--color-text-secondary,#5a6b62)'
       const INK_TERTIARY = 'var(--color-text-tertiary,#8a958f)'
       if (isCurrent) {
-        // The unit being planned — highlighted, with its commission.
-        const myFee = baseCommissionForDuration(s.duration)
+        // The unit being planned — highlighted, with its commission. Reuse the
+        // effective commission computed above (stored payout / override), not the
+        // flat duration rate, so this matches the COMMISSION box exactly.
+        const myFee = commission
         return `
           <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:8px;background:rgba(63,186,115,0.10);border:1px solid rgba(63,186,115,0.45);margin-bottom:6px;">
             <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#2C5F2D;color:#ffffff;padding:3px 8px;border-radius:4px;flex-shrink:0;">${dt('You are here','現在地')}</span>
@@ -13459,7 +13466,8 @@ async function renderTravelerBrief(plan, t, notes) {
   }
 
   // ── COMMISSION BOX (per spec: #2a2a2a bg, large green amount) ──
-  // Flat rate by duration — show "¥X base" unless an admin override applies.
+  // Show "¥X base" only when the commission IS the flat duration rate; a custom
+  // backend payout (bond/luxury) shows the amount alone, with no "base" tag.
   const breakdownTxt = (commission === computedFee) ? `${fmtEur(computedFee)} ${dt('base','基本')}` : ''
   // ── COMMISSION BOX (subdued per mockup: secondary bg, small ¥, no icon) ──
   const sectionCommission = commission > 0 ? `
