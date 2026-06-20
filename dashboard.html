@@ -15298,6 +15298,28 @@ function _autoSeedDay1HotelIfNeeded() {
         console.log('[day1-seed] repaired: moved arrival taxi back before first venue')
       }
     }
+    // REPAIR: the auto-seeded Day-1 hotel check-in must be the FIRST venue
+    // (luggage drop). A prior save (or the old time-sort, now removed) could
+    // leave it sitting after a planner stop. If it isn't the first venue, move
+    // it back to the front — right after the arrival anchor + arrival taxi. The
+    // firstStop logic below then seeds the station→hotel taxi ahead of it.
+    {
+      const _seededHotel = day1.querySelector(':scope > .activity-slot.slot-type-hotel_checkin[data-auto-seeded-hotel-checkin="true"]')
+        || day1.querySelector(':scope > .activity-slot.slot-type-hotel_checkin')
+      const _firstVenue = [...day1.querySelectorAll(':scope > .activity-slot')].find(s =>
+        !(s.classList.contains('is-locked') && s.dataset.anchorType) &&
+        !s.classList.contains('slot-type-transport'))
+      if (_seededHotel && _firstVenue && _firstVenue !== _seededHotel) {
+        const _arrTaxi = day1.querySelector(':scope > .activity-slot[data-auto-seeded-arrival-taxi="true"]')
+        const _afterEl = _arrTaxi || [...day1.querySelectorAll(':scope > .activity-slot.is-locked')]
+          .find(a => a.dataset.anchorType === 'arrival' || a.dataset.anchorType === 'morning')
+        if (_afterEl && _afterEl.parentNode === day1) day1.insertBefore(_seededHotel, _afterEl.nextSibling)
+        else day1.insertBefore(_seededHotel, day1.firstChild)
+        if (typeof refreshDayDistances === 'function') refreshDayDistances(day1)
+        if (typeof autoSaveDraft === 'function') autoSaveDraft()
+        console.log('[day1-seed] repaired: moved hotel check-in back to first venue')
+      }
+    }
     // Exclude only locked ANCHOR bookends — NOT the locked auto-seeded hotel
     // check-in, which is a real first venue the arrival taxi must precede.
     // (Excluding it made firstStop land on the end-of-day transport, so the
