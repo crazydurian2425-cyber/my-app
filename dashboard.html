@@ -21346,7 +21346,14 @@ function _enforceHotelBookendUnicity(dayContainer) {
         && matches.some(s => s.dataset.isLocked === 'true' || s.dataset.autoSeededHotelCheckin === 'true')) {
       keeper.dataset.isLocked = 'true'
       keeper.dataset.autoSeededHotelCheckin = 'true'
-      keeper.classList.add('is-locked')
+      // NB: do NOT add the `is-locked` CLASS here. That class is for the locked
+      // bookend ANCHORS, and `.activity-slot.is-locked` sets display:none on
+      // .slot-header / .slot-body — on a hotel check-in it collapsed the entire
+      // card to a thin bar ("the activity/hotel bar is missing"). The
+      // data-is-locked ATTRIBUTE set above is the correct lock: it hides the ×
+      // (`[data-is-locked="true"] .slot-remove`) and the type caret WITHOUT
+      // hiding the body. It also keeps the check-in out of the anchor-only
+      // _sortSlotsInPlace / _enforceTimeChain branches.
     }
     matches.forEach(s => {
       if (s === keeper) return
