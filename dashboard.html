@@ -19842,43 +19842,28 @@ function _applySlotTime(slot, hhmm) {
 // but DOESN'T call refreshDayDistances at the end, so refreshDayDistances
 // can use it internally without recursion.
 //
-// Locked bookend anchors are EXCLUDED from the sort because they have no
-// .slot-time-input (so they'd get the '00:00' fallback and end up at the
-// top of the day). renderDayBookends positions them manually. We remove
-// them before the appendChild loop and put them back at top/bottom after
-// so this function is safe to call even when bookends are in the DOM
-// (e.g. when applyRouteDataToSlot → _enforceTimeChain runs async after
-// the initial refresh has already inserted the anchors).
+// THE PLANNER'S TOP-TO-BOTTOM ORDER IS THE ORDER. This used to re-sort every
+// non-locked slot by its clock time on every refresh — which is what made stops
+// SWAP on reload (Google re-fetches a transport's duration, a time shifts, and
+// the whole day re-sorted) and JUMP when a new stop's computed time landed
+// earlier. The planner asked for stops to stay exactly where they put them, so
+// we no longer reorder by time here. _enforceTimeChain still re-times each stop
+// to sit after the one above it (so the clock stays coherent), and an EXPLICIT
+// time pick still reorders via resortSlots (the deliberate escape hatch). All
+// this function does now is keep the locked bookend anchors pinned at the
+// top/bottom WITHOUT disturbing the non-locked slot order between them — safe to
+// call even when bookends are already in the DOM (e.g. applyRouteDataToSlot →
+// _enforceTimeChain running async after the initial refresh inserted them).
 function _sortSlotsInPlace(container) {
   if (!container) return
-  const lockedAnchors = [...container.querySelectorAll(':scope > .activity-slot.is-locked')]
   const isTopAnchor = (a) => a.dataset.anchorType === 'arrival' || a.dataset.anchorType === 'morning'
   const isBottomAnchor = (a) => a.dataset.anchorType === 'end_of_day' || a.dataset.anchorType === 'departure'
-  const topLocked    = lockedAnchors.filter(isTopAnchor)
-  const bottomLocked = lockedAnchors.filter(isBottomAnchor)
-  lockedAnchors.forEach(a => a.remove())
-  const slots = [...container.querySelectorAll(':scope > .activity-slot')]
-  const _isT = (el) => el.classList.contains('slot-type-transport')
-  slots
-    .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00', tr: _isT(el) }))
-    .sort((a, b) => {
-      const c = a.t.localeCompare(b.t)
-      if (c !== 0) return c
-      // Equal time → a transport LEG must sort BEFORE the venue it leads into.
-      // A leg's depart = prev.start + prev.stay (stay ≥ 15 min), so it can only
-      // ever tie with the venue it's heading TO, never its origin — therefore
-      // "leg before same-time venue" is always the correct order. Without this
-      // tie-break the leg could land after its destination, and that wrong order
-      // got persisted as sort_order, leaving the leg "missing" between stops on
-      // reload (e.g. hotel 15:00 + 2h stay = 17:00 leg colliding with a 17:00 meal).
-      if (a.tr && !b.tr) return -1
-      if (!a.tr && b.tr) return 1
-      return 0
-    })
-    .forEach(({ el }) => container.appendChild(el))
-  // Put the locked anchors back at the right ends.
-  topLocked.forEach(a => container.insertBefore(a, container.firstChild))
-  bottomLocked.forEach(a => container.appendChild(a))
+  const lockedAnchors = [...container.querySelectorAll(':scope > .activity-slot.is-locked')]
+  // Bottom anchors → very end (in their existing order). Top anchors → very
+  // front: insert in REVERSE so the first ends up first. Non-locked stops are
+  // never touched, so their order — the planner's arrangement — is preserved.
+  lockedAnchors.filter(isBottomAnchor).forEach(a => container.appendChild(a))
+  lockedAnchors.filter(isTopAnchor).reverse().forEach(a => container.insertBefore(a, container.firstChild))
 }
 
 // ── Maps JavaScript API loader (lazy, once per page) ──
