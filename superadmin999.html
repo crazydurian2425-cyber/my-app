@@ -2845,7 +2845,7 @@ function formatDaysLeft(days) {
 function formatFeedEvent(ev) {
   const act = (ev.action || '').toLowerCase()
   const meta = ev.metadata || {}
-  const who = meta.planner_name || meta.traveler_name || meta.set_number ? `Set #${String(meta.set_number).padStart(3,'0')}` : (ev.target_type || 'item')
+  const who = meta.planner_name || meta.traveler_name || (meta.set_number ? `Set #${String(meta.set_number).padStart(3,'0')}` : (ev.target_type || 'item'))
   let dot = '', text = ''
   if (act.includes('approve') && act.includes('plan'))        { dot='approve'; text = `Approved plan for <strong>${meta.planner_name || who}</strong>` }
   else if (act.includes('revision') || act.includes('reject')){ dot='reject';  text = `Requested revision · <strong>${meta.planner_name || who}</strong>` }
@@ -4263,7 +4263,8 @@ function renderRecentApprovals(){
 async function requestRevision() {
   const notes = document.getElementById('rev-notes').value.trim()
   if (!notes) { showToast('Please add revision notes first'); return }
-  await sb.from('plans').update({status:'revision', admin_notes: notes, submitted_at: null}).eq('id', currentReviewPlanId)
+  const { error } = await sb.from('plans').update({status:'revision', admin_notes: notes, submitted_at: null}).eq('id', currentReviewPlanId)
+  if (error) { showToast('Failed to request revision: ' + error.message); return }
   auditLog('plan.revise', 'plan', currentReviewPlanId, { notes })
   closeModal('modal-review')
   showToast('Revision requested — planner notified')
@@ -4988,9 +4989,15 @@ async function payWeeklySalary(plannerId, cycleNumber, btn){
   if (btn) { btn.disabled = true; btn.textContent = 'Paying…' }
   const notesKey = `weekly_salary_cycle_${cycleNumber}`
   // Idempotency check — refuse if already paid this cycle for this planner
-  const { data: existing } = await sb.from('wallet_adjustments')
-    .select('id').eq('planner_id', plannerId).eq('notes', notesKey).maybeSingle()
-  if (existing) {
+  const { data: existingRows, error: checkErr } = await sb.from('wallet_adjustments')
+    .select('id').eq('planner_id', plannerId).eq('notes', notesKey)
+  if (checkErr) {
+    showToast('Could not verify prior payment — aborting to avoid double-pay: ' + checkErr.message)
+    if (btn) btn.disabled = false
+    loadWeeklySalaries()
+    return
+  }
+  if (existingRows && existingRows.length) {
     showToast('Already paid for this cycle')
     loadWeeklySalaries()
     return
@@ -5025,9 +5032,15 @@ async function payWeeklySalaryEarly(plannerId, cycleNumber, plannerName, btn){
   if (!confirm(`Pay ¥${WEEKLY_SALARY_AMOUNT.toLocaleString('en-GB')} to ${plannerName || 'this planner'} for cycle ${cycleN} NOW, even though the 7-day cycle isn't over?\n\nThey'll move to "Recently paid" for cycle ${cycleN}. Use only when you trust them to keep completing sets — once paid, this cycle is locked and can't be paid again.`)) return
   if (btn) { btn.disabled = true; btn.textContent = 'Paying…' }
   const notesKey = `weekly_salary_cycle_${cycleN}`
-  const { data: existing } = await sb.from('wallet_adjustments')
-    .select('id').eq('planner_id', plannerId).eq('notes', notesKey).maybeSingle()
-  if (existing) {
+  const { data: existingRows, error: checkErr } = await sb.from('wallet_adjustments')
+    .select('id').eq('planner_id', plannerId).eq('notes', notesKey)
+  if (checkErr) {
+    showToast('Could not verify prior payment — aborting to avoid double-pay: ' + checkErr.message)
+    if (btn) btn.disabled = false
+    loadWeeklySalaries()
+    return
+  }
+  if (existingRows && existingRows.length) {
     showToast('Already paid for this cycle')
     loadWeeklySalaries()
     return
@@ -5264,7 +5277,7 @@ async function markBillPaid(id, plannerName, amount){
     } else {
       // Link the credit back to the invoice so we don't double-credit on retro clicks
       if (adjRow?.id) {
-        await sb.from('wallet_pending_payments').update({ credited_at: adjRow.id }).eq('id', id)
+        await sb.from('wallet_pending_payments').update({ credited_at: new Date().toISOString() }).eq('id', id)
       }
       await auditLog('wallet_adjustment', 'planner', bill.planner_id, {
         amount: Number(amount), reason: `Invoice paid: ${bill.reason}`, bypass_retention: true, source: 'invoice_paid', invoice_id: id
@@ -5303,7 +5316,7 @@ async function creditPaidInvoice(id, plannerName, amount){
   if (adjErr) { showToast('Credit failed: ' + adjErr.message); return }
 
   if (adjRow?.id) {
-    await sb.from('wallet_pending_payments').update({ credited_at: adjRow.id }).eq('id', id)
+    await sb.from('wallet_pending_payments').update({ credited_at: new Date().toISOString() }).eq('id', id)
   }
   await auditLog('wallet_adjustment', 'planner', bill.planner_id, {
     amount: Number(amount), reason: `Invoice paid: ${bill.reason}`, bypass_retention: true, source: 'invoice_paid_retro', invoice_id: id
@@ -7623,7 +7636,18 @@ async function doAssign(setId, plannerId) {
   if (otherActive?.length) {
     const otherSetIds = otherActive.map(a => a.set_id)
     console.log(tag('2-demote-others'), 'dropping', otherSetIds.length, 'sets')
-    await sb.from('plans').delete().eq('planner_id', plannerId).in('set_id', otherSetIds)
+    // Clear child rows first — plans/itinerary_items use RESTRICT FKs, so a bare
+    // plans.delete() is rejected (leaving orphan plans). Mirror the planner-delete
+    // teardown: item_images → itinerary_items → plans.
+    const { data: oPlans } = await sb.from('plans').select('id').eq('planner_id', plannerId).in('set_id', otherSetIds)
+    const oPlanIds = (oPlans || []).map(p => p.id)
+    if (oPlanIds.length) {
+      const { data: oItems } = await sb.from('itinerary_items').select('id').in('plan_id', oPlanIds)
+      const oItemIds = (oItems || []).map(i => i.id)
+      if (oItemIds.length) { try { await sb.from('item_images').delete().in('item_id', oItemIds) } catch(e){ console.warn(tag('2-demote-others'), 'item_images delete failed', e) } }
+      try { await sb.from('itinerary_items').delete().in('plan_id', oPlanIds) } catch(e){ console.warn(tag('2-demote-others'), 'itinerary_items delete failed', e) }
+      await sb.from('plans').delete().in('id', oPlanIds)
+    }
     await sb.from('set_assignments').delete().eq('planner_id', plannerId).in('set_id', otherSetIds)
     await sb.from('sets').update({ planner_id: null }).eq('planner_id', plannerId).in('id', otherSetIds)
   }
@@ -8585,7 +8609,10 @@ async function approveApplication(id){
 // Send the approval email via Resend's HTTPS API. Returns true on success,
 // false on failure (so caller can fall back to the manual mailto flow).
 async function sendApprovalEmailAuto(app){
-  if (!RESEND_API_KEY || RESEND_API_KEY.startsWith('PASTE_')) {
+  // RESEND_API_KEY is a server-only secret (lives in the Worker, not this page).
+  // This legacy direct-send path is unused — guard typeof so it fails safe
+  // (returns false → manual flow) instead of throwing ReferenceError if called.
+  if (typeof RESEND_API_KEY === 'undefined' || !RESEND_API_KEY || RESEND_API_KEY.startsWith('PASTE_')) {
     console.warn('Resend API key not set — falling back to manual email')
     return false
   }
