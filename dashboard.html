@@ -22134,7 +22134,9 @@ function addSlot(dayNum, seed = null, opts = {}) {
   // time is still blank. Neither should drag a new "+ Add activity" earlier than
   // your actual last stop — that's what previously dropped a card in the MIDDLE.
   const existing = container
-    ? [...container.querySelectorAll(':scope > .activity-slot:not(.is-locked) .slot-time-input')]
+    ? [...container.querySelectorAll('.slot-time-input')].filter(el => {
+        const s = el.closest('.activity-slot'); return s && !s.classList.contains('is-locked')
+      })
     : []
   const MAX_MIN = 23 * 60 + 45    // 23:45 is the latest picker option (15-min grid)
   const bumpAnd = (base) => {
@@ -22314,7 +22316,28 @@ function addSlot(dayNum, seed = null, opts = {}) {
   // protective flag) and refresh themselves afterward. Running the sweep pipeline
   // here — before the caller has configured the row — let dedupe/self-loop kill
   // the half-built transport (the recurring "airport→hotel taxi vanishes" bug).
-  if (!opts.deferRefresh) refreshDayDistances(container);
+  if (!opts.deferRefresh) {
+    refreshDayDistances(container);
+    // "+ Add activity" (no seed): the chain above can re-sort a slightly-early
+    // new card UP into the middle before its time gets corrected. So once the
+    // day has fully settled, force THIS card strictly AFTER the latest real
+    // stop and re-sort — guaranteeing it lands at the bottom, never the middle.
+    if (!seed) {
+      const _others = [...container.querySelectorAll('.activity-slot')]
+        .filter(s => s !== slot && !s.classList.contains('is-locked'))
+      const _otherTimes = _others
+        .map(s => (s.querySelector('.slot-time-input')?.value || '').trim())
+        .filter(Boolean)
+      if (_otherTimes.length) {
+        const _newLatest = _otherTimes.reduce((a, b) => a > b ? a : b)
+        const _cur = (slot.querySelector('.slot-time-input')?.value || '').trim()
+        if (!_cur || _cur <= _newLatest) {
+          if (typeof _applySlotTime === 'function') _applySlotTime(slot, bumpAnd(_newLatest))
+          if (typeof _sortSlotsInPlace === 'function') _sortSlotsInPlace(container)
+        }
+      }
+    }
+  }
   return slot;
 }
 
