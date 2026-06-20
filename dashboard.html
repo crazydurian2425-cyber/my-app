@@ -7997,7 +7997,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
                     maxlength="500"
                     rows="6"
                     placeholder="日本へようこそ…"
-                    oninput="autoGrow(this); _refreshReviewWordCount(); autoSaveDraft()"></textarea>
+                    oninput="autoGrow(this); _refreshReviewWordCount(); window._currentPersonalMessage = this.value; autoSaveDraft()"></textarea>
           <div class="review-note-counter" id="review-note-counter">0 / 500 characters</div>
         </div>
 
