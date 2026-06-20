@@ -1978,7 +1978,13 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
   cursor:pointer;outline:none;
   transition:border-color .15s ease, box-shadow .15s ease;
 }
-.time-dd-toggle:hover{border-color:var(--text-3);}
+/* Start time is AUTO-COMPUTED & read-only — the planner sets the ORDER (where a
+   stop is added) and the STAY length; the time chain computes every start time
+   (prev finish + travel, rounded up to 5 min). So the time box is no longer an
+   editable dropdown: no caret, static cursor, no hover highlight. */
+.time-dd-toggle{cursor:default;}
+.time-dd-toggle:hover{border-color:var(--border-med);}
+.time-dd-caret{display:none;}
 .time-dd.open .time-dd-toggle{border-color:var(--green-mid);box-shadow:0 0 0 3px rgba(45,158,122,0.12);}
 .time-dd-clock{width:14px;height:14px;color:var(--text-3);flex-shrink:0;}
 .time-dd-label{flex:1;text-align:left;font-weight:500;}
@@ -16497,40 +16503,13 @@ function _hotelTimeQuickFix(slotId, hhmm) {
 }
 function toggleTimeDD(btn, e){
   e?.stopPropagation?.()
-  const dd = btn.closest('.time-dd')
-  const wasOpen = dd.classList.contains('open')
-  document.querySelectorAll('.type-dd.open, .time-dd.open').forEach(el => el.classList.remove('open'))
-  if (!wasOpen){
-    dd.classList.add('open')
-    // Before showing options, disable any time that would break chronological
-    // order — no earlier than previous slot, no later than next slot in same day.
-    const slot = dd.closest('.activity-slot')
-    if (slot) {
-      const container = slot.closest('[id^="slots-day-"]')
-      // Only cap the MAX time on the last day by traveler's departure — planner
-      // is otherwise free to pick any time; slots auto-sort chronologically
-      // via resortSlots() right after the pick.
-      let maxVal = null
-      if (container) {
-        const m = container.id.match(/slots-day-(\d+)/)
-        const thisDay = m ? parseInt(m[1], 10) : null
-        const isLastDay = (thisDay != null && thisDay === dayCount)
-        // Use the same airport cutoff (departure − buffer − cushion) the options
-        // were built with, so re-opening can't disagree with the baked-in disables.
-        if (isLastDay) { const w = dayTimeWindow(thisDay, dayCount); if (w && w.maxTime) maxVal = w.maxTime }
-      }
-      dd.querySelectorAll('.time-dd-option').forEach(opt => {
-        const match = opt.getAttribute('onclick')?.match(/'(\d\d:\d\d)'/)
-        const val   = match ? match[1] : null
-        if (!val) return  // build-time-disabled option (no onclick) — leave its state, don't re-enable
-        const disabled = !!(maxVal && val >= maxVal)
-        opt.classList.toggle('is-disabled', disabled)
-        opt.disabled = disabled
-      })
-    }
-    const sel = dd.querySelector('.time-dd-option.is-selected')
-    if (sel) sel.scrollIntoView({block:'nearest'})
-  }
+  // Start times are AUTO-COMPUTED and READ-ONLY now. The planner controls the
+  // ORDER (where they add a stop) and the STAY length; the time chain sets every
+  // start time (prev finish + travel, rounded up to 5 min via _snapUp30). The
+  // time box no longer opens an editable picker — so a stop can never be given an
+  // earlier time and jump above the hotel check-in (the luggage-drop first stop).
+  // Kept as a no-op so the existing onclick wiring + any callers don't error.
+  return
 }
 function selectTimeDD(btn, val){
   return preserveItinScroll(() => _selectTimeDDImpl(btn, val))
@@ -19834,9 +19813,13 @@ function _enforceTimeChain(dayContainer) {
 // real option in the time dropdown). Used by the auto-push logic. Name
 // stays _snapUp30 for backward call-site compatibility, but the granularity
 // is now 15 minutes per planner request.
+// Round a HH:MM UP to the nearest 5 minutes — the auto-time grid for the whole
+// day chain (arrives 5:46 → starts 5:50, 5:48 → 5:50, never 5:45). Was a 15-min
+// grid; the planner asked for 5. Name kept (_snapUp30) so its call-sites stay
+// untouched.
 function _snapUp30(hhmm) {
   const [h, m] = String(hhmm || '09:00').split(':').map(Number)
-  let total = Math.ceil(((h || 0) * 60 + (m || 0)) / 15) * 15
+  let total = Math.ceil(((h || 0) * 60 + (m || 0)) / 5) * 5
   if (total > 23 * 60 + 45) total = 23 * 60 + 45
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
 }
