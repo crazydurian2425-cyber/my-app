@@ -1790,6 +1790,11 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '✨ New set assigned', text: 'Good news {first_name} — a new set has been assigned to you. Check your dashboard for the briefs. Let us know if any traveler details look off before you start planning.' },
     { label: '📝 Revision noted', text: 'Got it {first_name} — admin has flagged some plans for revision with notes. Open the plan from your dashboard to see the revision request, update it, and resubmit. Ping us if anything is unclear.' },
     { label: '🎉 Plan approved', text: 'Plan approved! Nicely done {first_name}. The commission is logged and will be released to your wallet once the whole set is approved.' },
+    // ── Bond inquiry replies (planner asks about amount / refund terms / transfer) ──
+    { label: '💬 Bond overview', text: 'Hi {first_name}, thanks for reaching out. Here\'s an overview of the refundable bond:\n\n■ Amount: [amount] (as shown in your brief)\n■ Refund terms: submit all plans on time and, once they pass review and approval, the bond is refunded in full together with your reward.\n■ Transfer: just let us know when you\'re ready and we\'ll send the bank details and a reference code. After transferring, post a screenshot of the completed transfer here and we\'ll unlock the plan once it\'s confirmed.\n\nHappy to help with anything else!' },
+    { label: '🏦 Send details when ready', text: 'Hi {first_name}, whenever you\'re ready to transfer the refundable bond, just let us know and we\'ll send the bank details and a reference code right away.' },
+    { label: '↩️ Refund terms', text: 'Here are the refund terms: submit all plans on time and, once they pass review and approval, the refundable bond is returned in full along with your reward. If deadlines are missed or work is left unhandled or undelivered, the bond may become non-refundable.' },
+    { label: '💸 Transfer method', text: 'For the transfer: send it to the bank details we provide, then post a screenshot of the completed transfer here. We\'ll unlock the plan once it\'s confirmed.' },
   ],
   ja: [
     { label: '👋 ご挨拶', text: '{first_name}さん、こんにちは。本日はどのようなご用件でしょうか。' },
@@ -1808,6 +1813,11 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '✨ 新しい案件を割り当て', text: '{first_name}さん、よいお知らせです。新しい案件を割り当ていたしました。ダッシュボードで旅行者の概要をご確認ください。プランニングを始める前に、旅行者情報に誤りがあればお知らせください。' },
     { label: '📝 修正のご依頼', text: '{first_name}さん、承知いたしました。管理者がいくつかのプランについて、コメント付きで修正が必要と判断いたしました。ダッシュボードから該当のプランを開き、修正依頼の内容をご確認のうえ、更新して再提出してください。ご不明な点がございましたらご連絡ください。' },
     { label: '🎉 プラン承認', text: 'プランが承認されました。{first_name}さん、お見事です。報酬は記録され、案件一式がすべて承認された時点でお支払い方法に応じて支払われます。' },
+    // ── 保証金に関する問い合わせ用（金額・返金条件・振込方法） ──
+    { label: '💬 保証金のご案内', text: '{first_name}さん、お問い合わせありがとうございます。返金対象保証金についてご案内いたします。\n\n■ 金額：[金額]（ご依頼内容に記載の金額です）\n■ 返金条件：すべてのプランを期限内に提出し、内容確認・承認が完了した時点で、保証金は報酬とともに全額返金されます。\n■ 振込方法：ご準備が整いましたらお知らせください。振込先（銀行口座）と照合用の参照コードをお送りします。お振込後、振込完了画面のスクリーンショットをこのチャットへお送りいただければ、確認後にロックを解除いたします。\n\nご不明な点がございましたら、お気軽にお知らせください。' },
+    { label: '🏦 準備後に振込先を送付', text: '{first_name}さん、返金対象保証金のお振込のご準備が整いましたら、お知らせください。振込先（銀行口座）と照合用の参照コードをすぐにお送りいたします。' },
+    { label: '↩️ 返金条件', text: '返金条件についてご案内いたします。すべてのプランを期限内に提出し、内容確認・承認が完了した時点で、返金対象保証金は報酬とともに全額返金されます。なお、期限超過・未対応・未納品などが確認された場合は、返金対象外となる場合があります。' },
+    { label: '💸 振込方法', text: '振込方法についてご案内いたします。こちらからお送りする銀行口座へお振込みのうえ、振込完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。' },
   ]
 }
 // Stable keys for the default chips, by position (en & ja arrays are parallel).
@@ -1817,7 +1827,8 @@ const QR_DEFAULT_KEYS = [
   'greeting', 'bond_bank_details', 'verifying_bond', 'bond_received',
   'payout_update', 'payout_processed', 'checking_sets', 'how_many_days',
   'extension_granted', 'need_more_info', 'please_screenshot', 'thank_you',
-  'queued_for_review', 'new_set_assigned', 'revision_noted', 'plan_approved'
+  'queued_for_review', 'new_set_assigned', 'revision_noted', 'plan_approved',
+  'bond_overview', 'bond_ready', 'bond_refund_terms', 'bond_transfer_method'
 ]
 // Current language for quick replies — persisted per agent session
 let CS_QR_LANG = localStorage.getItem('jj_cs_qr_lang') || 'ja'
