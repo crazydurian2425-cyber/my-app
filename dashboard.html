@@ -15351,6 +15351,17 @@ function _autoSeedDay1HotelIfNeeded() {
       if (newHotel) {
         newHotel.dataset.isLocked = 'true'
         newHotel.dataset.autoSeededHotelCheckin = 'true'
+        // Place it as the FIRST venue: right after the arrival anchor + the
+        // auto-seeded "Taxi to hotel" (if present), ahead of the planner's stops.
+        // addSlot appends at the BOTTOM, and the day no longer time-sorts (stops
+        // keep the planner's order now), so without this explicit placement the
+        // re-seeded check-in was stranded at the bottom — which read as "missing".
+        const _arrTaxi = day1.querySelector(':scope > .activity-slot[data-auto-seeded-arrival-taxi="true"]')
+        const _afterEl = _arrTaxi || [...day1.querySelectorAll(':scope > .activity-slot.is-locked')]
+          .find(a => a.dataset.anchorType === 'arrival' || a.dataset.anchorType === 'morning')
+        if (_afterEl && _afterEl.parentNode === day1) day1.insertBefore(newHotel, _afterEl.nextSibling)
+        else day1.insertBefore(newHotel, day1.firstChild)
+        if (typeof refreshDayDistances === 'function') refreshDayDistances(day1)
       }
       if (typeof autoSaveDraft === 'function') autoSaveDraft()
     }
