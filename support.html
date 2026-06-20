@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', supApplyLang)
 // ── AUTH ────────────────────────────────────────────────────
 const token = localStorage.getItem('jj_token')
 const planner = JSON.parse(localStorage.getItem('jj_planner') || 'null')
-if (!token || !planner) { window.location.href = 'login.html' }
+if (!token || !planner) { window.location.href = 'login.html'; throw new Error('jj: not authenticated — redirecting to login'); }
 
 const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
 // Planner-facing page — MUST use the anon key, never service_role.

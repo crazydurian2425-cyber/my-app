@@ -9030,7 +9030,7 @@ const TM_I18N = {
     'assign.sub':'管理者が、あなたの地域と専門分野に基づいてセットを割り当てます',
     'assign.pending':'割り当て待ち',
     'assign.pending.sub':'チームがあなたの地域と得意分野に合ったセットを割り当てます。割り当てられるとここに表示されます。',
-    'assign.supportLink':'ご不明な点は？ サポートにお問い合わせください →',
+    'assign.supportLink':'ご不明な点は？サポートにお問い合わせください →',
     'perf.title':'あなたの実績',
     'perf.ontime':'納期遵守率',
     'perf.approval':'承認率',
@@ -9404,12 +9404,12 @@ const TM_I18N = {
     'brief.pendingMsg':'セットが割り当てられると依頼内容が表示されます',
     'dash.progress.label':'{total}件中{done}件のプランが完了しました',
     'dash.sub.inProgress':'セット#{n}進行中 — 残り{rem}件のプラン。',
-    'dash.sub.allSubmitted':'すべてのプランを提出しました！ 管理者の承認待ちです。',
+    'dash.sub.allSubmitted':'すべてのプランを提出しました！管理者の承認待ちです。',
     'dash.btn.awaitingReview':'承認待ち',
     'complete.title':'セット完了',
     'complete.sub':'{total}件すべてのプランを提出しました。承認を早めるには管理者に通知してください。',
     'complete.badge':'セット完了',
-    'complete.set':'セット #{n}',
+    'complete.set':'セット#{n}',
     'complete.eta':'通常1時間以内に承認されます',
     'complete.btn.notify':'承認をリクエスト',
     'chatPrefill.readyForReview':'セット#{n}のすべてのプランを提出しました。承認をお願いできますか？',
@@ -21894,7 +21894,7 @@ async function _refreshReviewCommission() {
 // close modal so the planner returns to the dashboard tile grid.
 async function submitFromReviewPage() {
   if (!currentPlanId) { showToast(dt('No plan open','開いているプランがありません')); return }
-  const ok = confirm(dt('Submit this itinerary? After submitting, edits require admin re-approval.','この旅程を提出しますか？ 提出後の変更には管理者の再承認が必要です。'))
+  const ok = confirm(dt('Submit this itinerary? After submitting, edits require admin re-approval.','この旅程を提出しますか？提出後の変更には管理者の再承認が必要です。'))
   if (!ok) return
   // Flush pending autosave first so the personal note + any in-flight
   // edits land in the row BEFORE we flip status.
@@ -22928,7 +22928,7 @@ async function submitPlan() {
       // Uploaded files but ended up with zero rows — means the sort_order keys
       // don't line up with insertedItems. Surface so we can see it.
       showToast(`Uploaded ${uploadOk} image(s) but no rows matched. Check console.`)
-      console.warn('image-row mismatch', { uploadedUrlsBySortOrder, existingUrlsBySortOrder, insertedItems })
+      console.warn('image-row mismatch', { uploadedBySortOrder, existingUrlsBySortOrder, insertedItems })
     }
   }
   // Advance next plan — ONLY on a forward submission. If we just resubmitted a revision,
@@ -23015,7 +23015,7 @@ async function _wipePlanToFresh(planId) {
 // isn't accessible (e.g. unexpected error path).
 async function resetCurrentPlanToFresh() {
   if (!currentPlanId) { showToast(dt('No plan is currently open','現在開いているプランがありません')); return }
-  const ok = confirm(dt('Reset this plan to a fresh state? Every itinerary item, hotel pick, transport tip, and spend-breakdown note you added will be cleared. This cannot be undone.','このプランを初期状態にリセットしますか？ 追加した旅程の項目、ホテルの選択、交通のヒント、支出メモがすべて消去されます。この操作は取り消せません。'))
+  const ok = confirm(dt('Reset this plan to a fresh state? Every itinerary item, hotel pick, transport tip, and spend-breakdown note you added will be cleared. This cannot be undone.','このプランを初期状態にリセットしますか？追加した旅程の項目、ホテルの選択、交通のヒント、支出メモがすべて消去されます。この操作は取り消せません。'))
   if (!ok) return
   // Cancel any pending debounced autosave — otherwise it might fire
   // AFTER the wipe and write stale form contents back to the DB.
@@ -23597,6 +23597,11 @@ function openBondPayModal(planId, planNum) {
   const cancelBtn = document.querySelector('#modal-bond .btn-ghost')
   if (closeBtn) closeBtn.style.display = isBlocking ? 'none' : ''
   if (cancelBtn) cancelBtn.style.display = isBlocking ? 'none' : ''
+  // Reset the notify button — a prior bond PREVIEW rebinds its onclick to a
+  // different plan id and relabels it, so restore it to act on THIS plan
+  // (notifyBondPayment reads currentBondPlanId, set above).
+  const notifyBtn = document.getElementById('bond-notify-btn')
+  if (notifyBtn) { notifyBtn.onclick = notifyBondPayment; notifyBtn.textContent = t('bond.btn.sent',"I've sent the payment"); notifyBtn.disabled = false }
   openModal('modal-bond')
   // Prevent backdrop click dismissal when blocking
   const overlay = document.getElementById('modal-bond')
@@ -23675,6 +23680,9 @@ initDashboard()
 // editing a modal (would wipe their unsaved input) or while the tab is hidden.
 function _shouldSkipRefresh() {
   if (document.querySelector('.modal-overlay.open')) return true
+  // Don't full-re-render the dashboard out from under an open support chat
+  // (the panel isn't a .modal-overlay, so it slipped past the guard).
+  if (document.getElementById('cs-chat-panel')?.style.display === 'flex') return true
   if (document.hidden) return true
   return false
 }
@@ -23953,9 +23961,18 @@ function attachCsChannel() {
   if (csChannel) sb.removeChannel(csChannel)
   csChannel = sb.channel(`cs-${csConversation.id}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${csConversation.id}` }, payload => {
-      // Dedupe: skip if already in local state (from optimistic insert)
-      if (csMessages.find(m => m.id === payload.new.id)) return
-      csMessages.push(payload.new)
+      const msg = payload.new
+      // Dedupe: skip if the real row is already in local state.
+      if (csMessages.find(m => m.id === msg.id)) return
+      // If this is the realtime echo of our OWN just-sent message and the
+      // optimistic insert hasn't swapped temp→real yet, replace the pending
+      // temp row instead of pushing a second copy (the race that double-rendered
+      // a planner's own message).
+      if (msg.sender_type === 'planner') {
+        const pi = csMessages.findIndex(m => m._pending && m.sender_type === 'planner' && m.body === msg.body)
+        if (pi >= 0) { csMessages[pi] = msg; renderCsMessages(); return }
+      }
+      csMessages.push(msg)
       renderCsMessages()
       const panelOpen = document.getElementById('cs-chat-panel')?.style.display === 'flex'
       if (payload.new.sender_type === 'cs' && !panelOpen) {
@@ -24003,10 +24020,13 @@ setInterval(async () => {
   if (panelOpen) {
     const { data } = await sb.from('messages').select('*').eq('conversation_id', csConversation.id).order('created_at')
     if (!data) return
-    // Merge: keep pending temp messages; replace if new rows found
+    // Merge: keep still-pending temp messages, but drop a temp once its real
+    // row has landed (match by sender+body) so the optimistic copy doesn't
+    // linger next to the persisted one.
     const pending = csMessages.filter(m => m._pending)
     const ids = new Set(data.map(m => m.id))
-    const merged = [...data, ...pending.filter(p => !ids.has(p.id))]
+    const merged = [...data, ...pending.filter(p => !ids.has(p.id) &&
+      !data.some(d => d.sender_type === p.sender_type && d.body === p.body))]
     if (merged.length !== csMessages.length || merged.some((m,i) => m.id !== csMessages[i]?.id)) {
       csMessages = merged
       renderCsMessages()
