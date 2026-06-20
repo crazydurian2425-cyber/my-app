@@ -17875,9 +17875,12 @@ function renderLinkedChip(slot) {
     } else {
       msg = dt(`Selected time <strong>${escapeHtml(slotTimeFriendly)}</strong> is outside the opening hours${escapeHtml(dayBit)}`, `選択した時刻<strong>${escapeHtml(slotTimeFriendly)}</strong>は営業時間外です${escapeHtml(dayBit)}`)
     }
-    const fixBtn = conflict.suggestedTime
-      ? `<button type="button" class="pl-fix-time" onclick="applyTimeFix('${slot.id}','${conflict.suggestedTime}')">${dt('→ Change time to','→ 時刻を変更：')} ${escapeHtml(formatTimeDisplay(conflict.suggestedTime))}</button>`
-      : ''
+    // No "→ Change time to X" button. Start times are auto-computed & read-only
+    // now (the planner sets ORDER + STAY; the chain sets the clock). That button
+    // forced a manual time and re-sorted the day — which broke the "stops stay
+    // where you add them" rule. The warning still shows so the planner can fix it
+    // the right way (reorder / lengthen an earlier stop, or accept arriving early).
+    const fixBtn = ''
     conflictHtml = `
       <div class="pl-time-warning${tone}">
         <div class="pl-time-warning-head">${head}</div>
