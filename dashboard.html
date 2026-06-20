@@ -23788,8 +23788,14 @@ async function openCsChat(prefillMessage) {
   attachCsChannel()
   if (prefillMessage) {
     const input = document.getElementById('cs-chat-input')
-    if (input && !input.value) {
+    // Apply the prefill when the box is empty, OR when it still holds a prefill
+    // we injected earlier — so clicking a different action (e.g. "I've completed
+    // the bond transfer" after the inquiry prefill was left unsent) swaps in the
+    // new message instead of keeping the stale one. Never clobber text the
+    // planner actually typed themselves.
+    if (input && (!input.value || input.value === window._csLastPrefill)) {
       input.value = prefillMessage
+      window._csLastPrefill = prefillMessage
       // Cap height at the CSS max (120px) so prefilled text scrolls inside
       // the box rather than dominating the chat panel.
       input.style.height = 'auto'
