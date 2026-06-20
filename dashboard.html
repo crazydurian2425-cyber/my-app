@@ -15891,7 +15891,7 @@ function addDayBlock(dayNum, totalDays) {
       <div id="slots-day-${dayNum}">
         <!-- slots added here -->
       </div>
-      <button class="add-slot-btn add-slot-btn-bottom" onclick="addSlot(${dayNum})" type="button">+ ${t('day.addActivityN','Add activity to Day {n}').replace('{n}', dayNum)}</button>
+      <button class="add-slot-btn add-slot-btn-bottom" onclick="addActivityToDay(${dayNum})" type="button">+ ${t('day.addActivityN','Add activity to Day {n}').replace('{n}', dayNum)}</button>
     </div>`;
   // Where to put the .day-section:
   //   • Day 1 lives inside the basics wizard page (#wiz-page-basics) — that
@@ -22099,6 +22099,36 @@ function getPlaceFieldsForSlot(slot) {
     photo_refs:         d.photo_refs         || null,
     place_types:        d.place_types        || null,
     places_synced_at:   new Date().toISOString(),
+  }
+}
+
+// "+ Add activity to Day N" handler. If the day is already CLOSED (a "back to
+// hotel" transport sits just above the locked end_of_day anchor), drop that
+// trailing leg FIRST so the new stop lands after the last REAL stop — not after
+// the ride home (which is what left the day as "…→ back-to-hotel → new stop").
+// The planner re-presses "End day · back to hotel" to re-close once it's filled.
+// Also preserves the modal scroll position (addSlot's re-sort can snap to top).
+// Deliberately minimal: NO auto-reclose, NO pin — those caused the earlier bugs.
+function addActivityToDay(dayNum) {
+  const container = document.getElementById('slots-day-' + dayNum)
+  if (!container) { addSlot(dayNum); return }
+  const modalBody = container.closest('.modal-body')
+  const savedScrollTop = modalBody ? modalBody.scrollTop : null
+  const endAnchor = container.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]')
+  if (endAnchor) {
+    let scan = endAnchor.previousElementSibling
+    const trailing = []
+    while (scan) {
+      if (scan.classList?.contains('slot-type-transport')) { trailing.push(scan); scan = scan.previousElementSibling; continue }
+      if (scan.classList?.contains('is-locked')) { scan = scan.previousElementSibling; continue }
+      break  // reached the last real venue
+    }
+    trailing.forEach(t => t.remove())
+  }
+  addSlot(dayNum)
+  if (modalBody && savedScrollTop != null) {
+    const restore = () => { try { if (Math.abs(modalBody.scrollTop - savedScrollTop) > 1) modalBody.scrollTop = savedScrollTop } catch (e) {} }
+    restore(); requestAnimationFrame(restore); setTimeout(restore, 60); setTimeout(restore, 200); setTimeout(restore, 400)
   }
 }
 
