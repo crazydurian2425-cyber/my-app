@@ -17390,15 +17390,13 @@ function applyPlaceToSlot(slot, place) {
   const typeLocked = slot.dataset.typeLocked === 'true'
   if (!isHotelCategory && !typeLocked) {
     let detectedType = detectSlotTypeFromTypes(placeTypes)
-    if (detectedType === 'accommodation') {
-      const _container = slot.closest('[id^="slots-day-"]')
-      const _m         = _container ? _container.id.match(/slots-day-(\d+)/) : null
-      const _dayNum    = _m ? parseInt(_m[1], 10) : 1
-      const _last      = (typeof dayCount === 'number') ? dayCount : null
-      if (_dayNum === 1)                detectedType = 'hotel_checkin'
-      else if (_last && _dayNum === _last) detectedType = 'hotel_checkout'
-      else                              detectedType = 'activity'
-    }
+    // A lodging/hotel place the planner ADDS as a stop is a VISIT, not the trip's
+    // hotel check-in. Auto-promoting it to hotel_checkin (e.g. picking a resort on
+    // Day 1) created a SECOND check-in — which the dedup then collapsed/dropped and
+    // left a hotel→hotel self-loop behind. There is exactly ONE hotel check-in per
+    // day: the seeded one, which is never auto-detected (the isHotelCategory guard
+    // above protects it). So a detected lodging stays a plain 'activity'.
+    if (detectedType === 'accommodation') detectedType = 'activity'
     if (detectedType && currentType !== detectedType) {
       applySlotTypeChange(slot, detectedType)
     }
@@ -21357,8 +21355,23 @@ function _enforceHotelBookendUnicity(dayContainer) {
     }
     matches.forEach(s => {
       if (s === keeper) return
-      console.log('[bookend-unicity] removing duplicate', typeClass, s.id || '')
-      s.remove(); removed = true
+      removed = true
+      // Don't DELETE a real planner stop that just got mis-tagged as a second
+      // hotel check-in (e.g. a resort that was auto-classified, or a manual
+      // dropdown pick). DEMOTE it to a plain activity so the planner keeps their
+      // stop while exactly one hotel check-in remains. Only truly empty extras
+      // (legacy duplicate rows) are removed.
+      const _hasContent = s.classList.contains('slot-place-linked')
+        || (s.querySelector('.slot-title-input')?.value || '').trim()
+      if (_hasContent && typeof applySlotTypeChange === 'function') {
+        applySlotTypeChange(s, 'activity')
+        s.dataset.typeLocked = 'true'   // keep auto-detect from re-promoting it
+        delete s.dataset.isLocked; delete s.dataset.autoSeededHotelCheckin
+        console.log('[bookend-unicity] demoted extra', typeClass, '→ activity', s.id || '')
+      } else {
+        console.log('[bookend-unicity] removing empty duplicate', typeClass, s.id || '')
+        s.remove()
+      }
     })
   }
   return removed
