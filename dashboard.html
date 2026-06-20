@@ -8889,9 +8889,9 @@ const TM_I18N = {
     // Currency
     'currency.symbol':'¥',
     // Support-chat prefills
-    'chatPrefill.bondHelp':'Hi, I need help paying the bond for a plan.',
+    'chatPrefill.bondHelp':'Hi, I need help with the bond process for a plan.',
     'chatPrefill.bondPlan':'Hi, I need help with the bond payment for Plan {n}.',
-    'chatPrefill.bondPaid':"Hi support, I've paid the bond for Plan {n}.\nAmount: {amt}\n\nPlease confirm my payment so I can continue.\nReference / screenshot: ",
+    'chatPrefill.bondPaid':"Hi support, I've completed the bond transfer for Plan {n}.\nAmount: {amt}\n\nPlease confirm it so I can continue.\nReference / screenshot: ",
     'chatPrefill.requestSet':"Hi support, I'm ready to take on a new set. Can you assign me one? Thanks!",
     'chatPrefill.requestNewSet':"Hi support, I've wrapped up my current set and would love to take on another one. Can you assign me a new set? Thanks!",
     'chatPrefill.payoutStatus':'Hi support, my batch for Set #{n} was approved. Any update on the payout? Thanks!',
@@ -9600,9 +9600,9 @@ const TM_I18N = {
     'chat.placeholder':'メッセージを入力…',
     'chat.send':'送信',
     'currency.symbol':'¥',
-    'chatPrefill.bondHelp':'こんにちは。保証金の支払いについて助けが必要です。',
+    'chatPrefill.bondHelp':'こんにちは。保証金のお手続きについて教えてください。',
     'chatPrefill.bondPlan':'こんにちは。プラン{n}の保証金について助けが必要です。',
-    'chatPrefill.bondPaid':'プラン{n}の保証金を支払いました。\n金額：{amt}\n\nご確認をお願いします。\n振込の参照番号 / スクリーンショット：',
+    'chatPrefill.bondPaid':'プラン{n}の保証金の振込を完了しました。\n金額：{amt}\n\nご確認をお願いします。\n振込の参照番号 / スクリーンショット：',
     'chatPrefill.requestSet':'新しいセットを受ける準備ができました。割り当てていただけますか？',
     'chatPrefill.requestNewSet':'進行中のセットを完了しました。次のセットを割り当てていただけますか？',
     'chatPrefill.payoutStatus':'セット#{n}が承認されました。支払いの状況はいかがでしょうか？',
@@ -23620,7 +23620,7 @@ async function notifyBondPayment() {
   const plan = plans.find(p => p.id === currentBondPlanId)
   const trav = plan?.travelers || {}
   const amt = trav.bond_amount ? fmtMoney(trav.bond_amount) : '?'
-  const prefill = t('chatPrefill.bondPaid',"Hi support, I've paid the bond for Plan {n}.\nAmount: {amt}\n\nPlease confirm my payment so I can continue.\nReference / screenshot: ").replace('{n}', plan?.plan_number || '?').replace('{amt}', amt)
+  const prefill = t('chatPrefill.bondPaid',"Hi support, I've completed the bond transfer for Plan {n}.\nAmount: {amt}\n\nPlease confirm it so I can continue.\nReference / screenshot: ").replace('{n}', plan?.plan_number || '?').replace('{amt}', amt)
 
   closeModal('modal-bond')
   // Open the in-app chat with the preset message
