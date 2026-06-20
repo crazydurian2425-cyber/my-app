@@ -15891,7 +15891,7 @@ function addDayBlock(dayNum, totalDays) {
       <div id="slots-day-${dayNum}">
         <!-- slots added here -->
       </div>
-      <button class="add-slot-btn add-slot-btn-bottom" onclick="addActivityToDay(${dayNum})" type="button">+ ${t('day.addActivityN','Add activity to Day {n}').replace('{n}', dayNum)}</button>
+      <button class="add-slot-btn add-slot-btn-bottom" onclick="addSlot(${dayNum})" type="button">+ ${t('day.addActivityN','Add activity to Day {n}').replace('{n}', dayNum)}</button>
     </div>`;
   // Where to put the .day-section:
   //   • Day 1 lives inside the basics wizard page (#wiz-page-basics) — that
@@ -16538,7 +16538,6 @@ function _selectTimeDDImpl(btn, val){
   // or later than its neighbours, physically reorder the DOM siblings.
   const slot = dd.closest('.activity-slot')
   if (slot) {
-    if (slot.dataset) delete slot.dataset.pinBottom  // explicit time pick → release the bottom-pin
     resortSlots(slot.closest('[id^="slots-day-"]'))
     // No more auto-scroll on time changes. The previous behaviour
     // (scrollIntoView to "follow" the slot after reorder) was firing
@@ -17406,16 +17405,6 @@ function applyPlaceToSlot(slot, place) {
   // can now be computed (or updated if it had a different place before).
   const _dayContainer = slot.closest('[id^="slots-day-"]')
   refreshDayDistances(_dayContainer)
-  // A freshly-added activity carries dataset.pinBottom, and the day-sort keeps it
-  // pinned to the BOTTOM regardless of its auto-time — so it stays where the
-  // planner put it. We deliberately DON'T clear the pin here; it persists until
-  // they pick a time (selectTimeDD) or close the day. If the day was already
-  // closed when the card was added, re-close it now that the card has a real
-  // place — endDayBackToHotel clears the pins and flows the return ride below it.
-  if (slot.dataset && slot.dataset.recloseDay === '1') {
-    delete slot.dataset.recloseDay
-    if (typeof endDayBackToHotel === 'function' && _dayContainer) endDayBackToHotel(_dayContainer.id)
-  }
   // ── Cross-day bookend refresh + plan-level hotel propagation ──
   // When the planner links the hotel on Day 1's hotel_checkin row, we
   // need TWO things to happen:
@@ -19873,11 +19862,6 @@ function _sortSlotsInPlace(container) {
   slots
     .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00', tr: _isT(el) }))
     .sort((a, b) => {
-      // A "pinned" (just-added) activity always sinks to the bottom so the
-      // planner's newly-added stop stays where they put it, whatever its
-      // auto-computed time. Cleared when they pick a time or close the day.
-      const ap = a.el.dataset.pinBottom === '1', bp = b.el.dataset.pinBottom === '1'
-      if (ap !== bp) return ap ? 1 : -1
       const c = a.t.localeCompare(b.t)
       if (c !== 0) return c
       // Equal time → a transport LEG must sort BEFORE the venue it leads into.
@@ -20859,9 +20843,6 @@ function endDayBackToHotel(dayContainerId) {
     ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
   )
   if (!endAnchor) return
-  // Clear bottom-pins: once we add the back-to-hotel leg, slot position is
-  // governed by time again (a pinned stop would otherwise sort below the ride).
-  dayContainer.querySelectorAll('.activity-slot[data-pin-bottom]').forEach(s => { delete s.dataset.pinBottom })
   // Idempotent — clear out ALL transports sitting between the last
   // real venue and the bottom anchor (handles the orphan-transport
   // case where a prior session left stale rows behind).
@@ -22119,100 +22100,6 @@ function getPlaceFieldsForSlot(slot) {
     place_types:        d.place_types        || null,
     places_synced_at:   new Date().toISOString(),
   }
-}
-
-// "+ Add activity to Day N" button handler. Wraps addSlot so that:
-//  (a) the modal scroll position is preserved — addSlot's internal re-sort can
-//      otherwise snap the modal back to the top ("scrolls up sometimes"), and
-//  (b) if the day was already CLOSED with a "back to hotel" leg, the new stop
-//      lands AFTER the last real stop and the return ride re-flows to re-close
-//      the day (reopen → insert → reclose). endDayBackToHotel is idempotent.
-function addActivityToDay(dayNum) {
-  const container = document.getElementById('slots-day-' + dayNum)
-  if (!container) { addSlot(dayNum); return }
-  const modalBody = container.closest('.modal-body')
-  const savedScrollTop = modalBody ? modalBody.scrollTop : null
-
-  // Closed day? A transport leg sits just above the locked end_of_day anchor.
-  // Drop the trailing transport(s) so the new card lands right after the last
-  // real stop; we re-close below so "back to hotel" re-flows from the new stop.
-  let wasClosed = false
-  const endAnchor = container.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]')
-  if (endAnchor) {
-    let scan = endAnchor.previousElementSibling
-    const trailing = []
-    while (scan) {
-      if (scan.classList?.contains('slot-type-transport')) { trailing.push(scan); scan = scan.previousElementSibling; continue }
-      if (scan.classList?.contains('is-locked')) { scan = scan.previousElementSibling; continue }
-      break  // reached the last real venue
-    }
-    if (trailing.length) { wasClosed = true; trailing.forEach(t => t.remove()) }
-  }
-
-  const _newSlot = addSlot(dayNum)
-  // Flag the new card: pinBottom = re-pin under the last stop after its place is
-  // picked (the place pick re-runs the time-chain and could otherwise sort it
-  // up). recloseDay = the day was already closed, so RE-close it AFTER the place
-  // is picked — re-closing NOW, while the card is still empty, builds a broken
-  // back-to-hotel leg (no coords → no distance, garbled time). Both are handled
-  // by _keepActivityAtBottom on the first place pick.
-  if (_newSlot && _newSlot.dataset) {
-    _newSlot.dataset.pinBottom = '1'
-    if (wasClosed) _newSlot.dataset.recloseDay = '1'
-  }
-
-  // Restore scroll — the re-sort / refresh can snap the modal to the top.
-  if (modalBody && savedScrollTop != null) {
-    const restore = () => { try { if (Math.abs(modalBody.scrollTop - savedScrollTop) > 1) modalBody.scrollTop = savedScrollTop } catch (e) {} }
-    restore(); requestAnimationFrame(restore); setTimeout(restore, 60); setTimeout(restore, 200); setTimeout(restore, 400)
-  }
-}
-
-// Force a just-added activity back to the BOTTOM of its day after its place is
-// picked. Picking a Google place re-runs the time-chain, which can sort the new
-// card up above an earlier stop — but the planner's model is "a new stop I add
-// stays under the last stop." So: reopen a closed day (drop the trailing
-// back-to-hotel), set this card strictly after the latest OTHER real venue,
-// re-sort, then re-close so the return ride flows from the new last stop.
-function _keepActivityAtBottom(slot) {
-  const container = slot && slot.closest('[id^="slots-day-"]')
-  if (!container) return
-  let wasClosed = false
-  const endAnchor = container.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]')
-  if (endAnchor) {
-    let scan = endAnchor.previousElementSibling
-    const trailing = []
-    while (scan) {
-      if (scan.classList?.contains('slot-type-transport')) { trailing.push(scan); scan = scan.previousElementSibling; continue }
-      if (scan.classList?.contains('is-locked')) { scan = scan.previousElementSibling; continue }
-      break
-    }
-    if (trailing.length) { wasClosed = true; trailing.forEach(t => t.remove()) }
-  }
-  const venues = [...container.querySelectorAll('.activity-slot')].filter(s =>
-    s !== slot && !s.classList.contains('is-locked') && !s.classList.contains('slot-type-transport'))
-  const vTimes = venues.map(s => (s.querySelector('.slot-time-input')?.value || '').trim()).filter(Boolean)
-  if (vTimes.length) {
-    const latest = vTimes.reduce((a, b) => a > b ? a : b)
-    const cur = (slot.querySelector('.slot-time-input')?.value || '').trim()
-    if (!cur || cur <= latest) {
-      const [h, m] = (latest || '09:00').split(':').map(Number)
-      const MAXT = 23 * 60 + 45
-      let tot = Math.round((h * 60 + m + 60) / 15) * 15
-      if (tot > MAXT) tot = MAXT
-      if (tot <= h * 60 + m) tot = Math.min(h * 60 + m + 15, MAXT)
-      const wanted = `${String(Math.floor(tot / 60)).padStart(2, '0')}:${String(tot % 60).padStart(2, '0')}`
-      if (typeof _applySlotTime === 'function') _applySlotTime(slot, wanted)
-    }
-  }
-  if (typeof _sortSlotsInPlace === 'function') _sortSlotsInPlace(container)
-  if (typeof refreshDayDistances === 'function') refreshDayDistances(container)
-  // Re-close if the day was closed when the card was added (recloseDay flag) or
-  // we just stripped a trailing back-to-hotel here (wasClosed). Now the card has
-  // a real place, so endDayBackToHotel builds a proper leg with distance/time.
-  const _reclose = wasClosed || (slot.dataset && slot.dataset.recloseDay === '1')
-  if (slot.dataset) delete slot.dataset.recloseDay
-  if (_reclose && typeof endDayBackToHotel === 'function') endDayBackToHotel(container.id)
 }
 
 function addSlot(dayNum, seed = null, opts = {}) {
