@@ -22138,12 +22138,16 @@ function addActivityToDay(dayNum) {
   }
 
   const _newSlot = addSlot(dayNum)
-  // Mark the new card so picking its place can re-pin it to the bottom — the
-  // place pick re-runs the time-chain and could otherwise sort it up.
-  if (_newSlot && _newSlot.dataset) _newSlot.dataset.pinBottom = '1'
-
-  // Re-close: re-flow the back-to-hotel leg from the new last stop.
-  if (wasClosed && typeof endDayBackToHotel === 'function') endDayBackToHotel(container.id)
+  // Flag the new card: pinBottom = re-pin under the last stop after its place is
+  // picked (the place pick re-runs the time-chain and could otherwise sort it
+  // up). recloseDay = the day was already closed, so RE-close it AFTER the place
+  // is picked — re-closing NOW, while the card is still empty, builds a broken
+  // back-to-hotel leg (no coords → no distance, garbled time). Both are handled
+  // by _keepActivityAtBottom on the first place pick.
+  if (_newSlot && _newSlot.dataset) {
+    _newSlot.dataset.pinBottom = '1'
+    if (wasClosed) _newSlot.dataset.recloseDay = '1'
+  }
 
   // Restore scroll — the re-sort / refresh can snap the modal to the top.
   if (modalBody && savedScrollTop != null) {
@@ -22191,7 +22195,12 @@ function _keepActivityAtBottom(slot) {
   }
   if (typeof _sortSlotsInPlace === 'function') _sortSlotsInPlace(container)
   if (typeof refreshDayDistances === 'function') refreshDayDistances(container)
-  if (wasClosed && typeof endDayBackToHotel === 'function') endDayBackToHotel(container.id)
+  // Re-close if the day was closed when the card was added (recloseDay flag) or
+  // we just stripped a trailing back-to-hotel here (wasClosed). Now the card has
+  // a real place, so endDayBackToHotel builds a proper leg with distance/time.
+  const _reclose = wasClosed || (slot.dataset && slot.dataset.recloseDay === '1')
+  if (slot.dataset) delete slot.dataset.recloseDay
+  if (_reclose && typeof endDayBackToHotel === 'function') endDayBackToHotel(container.id)
 }
 
 function addSlot(dayNum, seed = null, opts = {}) {
