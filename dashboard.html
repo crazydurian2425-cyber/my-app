@@ -12035,7 +12035,7 @@ function renderGrid() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             ${t('bond.banner.chat','Chat support')}
           </button>
-          <button class="btn-main" style="flex:none;padding:8px 14px;font-size:12px;background:var(--amber);" onclick="openBondPayModal('${bondPlan.id}',${bondPlan.plan_number})">${t('bond.banner.pay','Pay bond')}</button>
+          <button onclick="openBondPayModal('${bondPlan.id}',${bondPlan.plan_number})" style="padding:8px 12px;background:#5E7B6E;color:white;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">${t('bond.banner.pay','Pay bond')}</button>
         </div>`
     } else {
       bondBanner.style.display = 'none'
