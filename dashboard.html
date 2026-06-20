@@ -16538,6 +16538,7 @@ function _selectTimeDDImpl(btn, val){
   // or later than its neighbours, physically reorder the DOM siblings.
   const slot = dd.closest('.activity-slot')
   if (slot) {
+    if (slot.dataset) delete slot.dataset.pinBottom  // explicit time pick → release the bottom-pin
     resortSlots(slot.closest('[id^="slots-day-"]'))
     // No more auto-scroll on time changes. The previous behaviour
     // (scrollIntoView to "follow" the slot after reorder) was firing
@@ -17405,12 +17406,15 @@ function applyPlaceToSlot(slot, place) {
   // can now be computed (or updated if it had a different place before).
   const _dayContainer = slot.closest('[id^="slots-day-"]')
   refreshDayDistances(_dayContainer)
-  // A freshly-added activity must stay at the BOTTOM of the day even after its
-  // place is picked — picking the place re-runs the time-chain, which could
-  // otherwise sort it up above an existing stop. Re-pin it once.
-  if (slot.dataset && slot.dataset.pinBottom === '1') {
-    delete slot.dataset.pinBottom
-    if (typeof _keepActivityAtBottom === 'function') _keepActivityAtBottom(slot)
+  // A freshly-added activity carries dataset.pinBottom, and the day-sort keeps it
+  // pinned to the BOTTOM regardless of its auto-time — so it stays where the
+  // planner put it. We deliberately DON'T clear the pin here; it persists until
+  // they pick a time (selectTimeDD) or close the day. If the day was already
+  // closed when the card was added, re-close it now that the card has a real
+  // place — endDayBackToHotel clears the pins and flows the return ride below it.
+  if (slot.dataset && slot.dataset.recloseDay === '1') {
+    delete slot.dataset.recloseDay
+    if (typeof endDayBackToHotel === 'function' && _dayContainer) endDayBackToHotel(_dayContainer.id)
   }
   // ── Cross-day bookend refresh + plan-level hotel propagation ──
   // When the planner links the hotel on Day 1's hotel_checkin row, we
@@ -19869,6 +19873,11 @@ function _sortSlotsInPlace(container) {
   slots
     .map(el => ({ el, t: el.querySelector('.slot-time-input')?.value || '00:00', tr: _isT(el) }))
     .sort((a, b) => {
+      // A "pinned" (just-added) activity always sinks to the bottom so the
+      // planner's newly-added stop stays where they put it, whatever its
+      // auto-computed time. Cleared when they pick a time or close the day.
+      const ap = a.el.dataset.pinBottom === '1', bp = b.el.dataset.pinBottom === '1'
+      if (ap !== bp) return ap ? 1 : -1
       const c = a.t.localeCompare(b.t)
       if (c !== 0) return c
       // Equal time → a transport LEG must sort BEFORE the venue it leads into.
@@ -20850,6 +20859,9 @@ function endDayBackToHotel(dayContainerId) {
     ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
   )
   if (!endAnchor) return
+  // Clear bottom-pins: once we add the back-to-hotel leg, slot position is
+  // governed by time again (a pinned stop would otherwise sort below the ride).
+  dayContainer.querySelectorAll('.activity-slot[data-pin-bottom]').forEach(s => { delete s.dataset.pinBottom })
   // Idempotent — clear out ALL transports sitting between the last
   // real venue and the bottom anchor (handles the orphan-transport
   // case where a prior session left stale rows behind).
