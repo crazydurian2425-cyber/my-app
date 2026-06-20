@@ -17533,13 +17533,20 @@ function suggestStayDuration({ slotType, seedIcon, placeTypes, startTime }) {
   // regardless of what place is linked (planner can adjust). Checked before
   // place-types so linking a café doesn't shrink the block to 30 min.
   if (slotType === 'freetime') return 90
-  // 2) Place types from Google.
+  // 2) Place types from Google. `placeTypes` is Google's own `types` array, so
+  // placeTypes[0] is the PRIMARY category — we use it to break ties when a place
+  // carries several tags (a restaurant that also serves drinks is tagged both
+  // `restaurant` and `bar`; a landmark with a small museum inside — e.g. Tokyo
+  // Tower's FootTown — is tagged both `tourist_attraction` and `museum`).
   if (Array.isArray(placeTypes) && placeTypes.length) {
     const set = new Set(placeTypes.map(s => String(s).toLowerCase()))
+    const primary = String(placeTypes[0] || '').toLowerCase()
     if (set.has('cafe'))                          return 30
     if (set.has('bakery'))                        return 30
     if (set.has('meal_takeaway') || set.has('ice_cream_shop')) return 30
-    if (set.has('bar') || set.has('night_club'))  return 90
+    // Restaurant BEFORE bar: a sit-down place tagged BOTH restaurant + bar is a
+    // MEAL (~1 h), not a 1.5 h bar session. Only a venue with NO restaurant/food
+    // tag (a pure bar / club) falls through to the 90-min default below.
     if (set.has('restaurant') || set.has('food')) {
       const h = startTime ? parseInt(startTime.split(':')[0], 10) : null
       if (h != null) {
@@ -17549,15 +17556,25 @@ function suggestStayDuration({ slotType, seedIcon, placeTypes, startTime }) {
       }
       return 60
     }
+    if (set.has('bar') || set.has('night_club'))  return 90
     if (set.has('lodging') || set.has('hotel') || set.has('resort_hotel') ||
         set.has('bed_and_breakfast')) return 30
-    if (set.has('museum') || set.has('art_gallery') ||
-        set.has('aquarium') || set.has('zoo'))    return 240
+    // PRIMARY museum/gallery/aquarium/zoo → a real museum visit → half day (4 h),
+    // even when it's also tagged a tourist attraction (most famous museums are).
+    if (primary === 'museum' || primary === 'art_gallery' ||
+        primary === 'aquarium' || primary === 'zoo') return 240
     if (set.has('amusement_park') || set.has('theme_park')) return 480
     if (set.has('park') || set.has('shopping_mall') ||
         set.has('stadium')) return 120
+    // Landmark / tower / observation deck BEFORE the secondary-museum fallback:
+    // a place whose PRIMARY type is a tourist attraction (e.g. Tokyo Tower) gets
+    // 2 h, NOT 4 h, even when it carries a secondary `museum` tag.
     if (set.has('tourist_attraction') || set.has('landmark') ||
         set.has('movie_theater')) return 120
+    // A `museum`-family tag present only as a SECONDARY type, with no landmark
+    // tag at all → still a real museum → 4 h.
+    if (set.has('museum') || set.has('art_gallery') ||
+        set.has('aquarium') || set.has('zoo')) return 240
     if (set.has('place_of_worship') || set.has('temple') ||
         set.has('shrine') || set.has('church') ||
         set.has('mosque') || set.has('synagogue')) return 60
