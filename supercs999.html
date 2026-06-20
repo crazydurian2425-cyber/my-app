@@ -1552,11 +1552,14 @@ async function renderInlineActions() {
   const box = document.getElementById('info-actions')
   if (!box) return
   const ctx = currentPlannerCtx
-  if (!ctx?.active && !ctx?.completed) { box.innerHTML = ''; return }
-
-  const setId = ctx.active?.set_id || ctx.completed?.set_id
   const plannerId = activeConv?.planner_id
+  // Reset the prominent bond chip first so a previous planner's chip can't stick
+  // when we switch conversations (or hit the early-return below).
+  const bondChip0 = document.getElementById('info-bond-chip')
+  if (bondChip0) bondChip0.style.display = 'none'
   if (!plannerId) { box.innerHTML = ''; return }
+  // NOTE: do NOT gate the bond lookups on ctx.active/completed — a bond_pending
+  // plan must be confirmable from CS even when the assignment isn't yet 'active'.
 
   // Look up if the planner has any bond_pending plan needing confirmation
   const { data: bondPending } = await sb.from('plans')
@@ -1579,7 +1582,7 @@ async function renderInlineActions() {
     if (bondPending && bondPending.length) {
       const bp = bondPending[0]
       const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
-      bondChipText.textContent = `保証金未払い · プラン${bp.plan_number} · ¥${escapeHtml(amt)}`
+      bondChipText.textContent = `保証金未払い · プラン${bp.plan_number} · ¥${escapeHtml(amt === '?' ? '?' : Number(amt).toLocaleString())}`
       bondChip.style.display = 'inline-flex'
     } else {
       bondChip.style.display = 'none'
@@ -1595,7 +1598,7 @@ async function renderInlineActions() {
   for (const bp of (bondPending || [])) {
     const amt = bp.bond_amount_override != null ? bp.bond_amount_override : (bp.travelers?.bond_amount || '?')
     const notified = bp.admin_notes === 'BOND_NOTIFIED' ? ' · 送信済み' : ''
-    html += actionBtn(`保証金を確認 · プラン${bp.plan_number} (¥${escapeHtml(amt)})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
+    html += actionBtn(`保証金を確認 · プラン${bp.plan_number} (¥${escapeHtml(amt === '?' ? '?' : Number(amt).toLocaleString())})${notified}`, '✓', 'var(--green-dark,#0f5240)', 'var(--green-light,#e8f5f0)', `csConfirmBond('${jsEsc(bp.id)}')`)
   }
   // Revert button for recently-confirmed bond plans (safe window: no work started)
   for (const rc of (recentlyConfirmed || [])) {
@@ -2442,7 +2445,10 @@ async function sendMessage(e) {
 // ── STATUS TOGGLE (close / reopen) ──────────────────────────
 async function toggleStatus() {
   if (!activeConv) return
-  const next = activeConv.status === 'open' ? 'closed' : 'open'
+  // Anything not explicitly 'closed' is treated as open (matches the button
+  // label logic), so a conversation with a null/missing status still closes on
+  // the first click instead of no-op'ing to 'open'.
+  const next = activeConv.status === 'closed' ? 'open' : 'closed'
   const { error } = await sb.from('conversations').update({ status: next }).eq('id', activeConv.id)
   if (error) { showToast('Failed: ' + error.message); return }
   activeConv.status = next
