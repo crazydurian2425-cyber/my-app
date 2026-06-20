@@ -103,7 +103,21 @@ export default {
       if (!checkAuth(request, normalizedPath + '.html')) return challenge()
     }
 
-    if (env.ASSETS) return env.ASSETS.fetch(request)
+    if (env.ASSETS) {
+      const assetResp = await env.ASSETS.fetch(request)
+      // Always revalidate HTML so a fresh deploy shows up immediately instead of
+      // the browser serving a stale cached page (the recurring "I changed it but
+      // still see the old one"). The browser still caches, but must check with a
+      // conditional request first — unchanged files come back as a cheap 304;
+      // only genuinely new HTML is re-downloaded. Non-HTML assets (images, etc.)
+      // keep their normal long-lived caching.
+      if ((assetResp.headers.get('content-type') || '').includes('text/html')) {
+        const h = new Headers(assetResp.headers)
+        h.set('Cache-Control', 'no-cache')
+        return new Response(assetResp.body, { status: assetResp.status, statusText: assetResp.statusText, headers: h })
+      }
+      return assetResp
+    }
     return new Response('Static assets binding missing.', { status: 500 })
   }
 }
