@@ -15891,7 +15891,7 @@ function addDayBlock(dayNum, totalDays) {
       <div id="slots-day-${dayNum}">
         <!-- slots added here -->
       </div>
-      <button class="add-slot-btn add-slot-btn-bottom" onclick="addSlot(${dayNum})" type="button">+ ${t('day.addActivityN','Add activity to Day {n}').replace('{n}', dayNum)}</button>
+      <button class="add-slot-btn add-slot-btn-bottom" onclick="addActivityToDay(${dayNum})" type="button">+ ${t('day.addActivityN','Add activity to Day {n}').replace('{n}', dayNum)}</button>
     </div>`;
   // Where to put the .day-section:
   //   • Day 1 lives inside the basics wizard page (#wiz-page-basics) — that
@@ -22099,6 +22099,46 @@ function getPlaceFieldsForSlot(slot) {
     photo_refs:         d.photo_refs         || null,
     place_types:        d.place_types        || null,
     places_synced_at:   new Date().toISOString(),
+  }
+}
+
+// "+ Add activity to Day N" button handler. Wraps addSlot so that:
+//  (a) the modal scroll position is preserved — addSlot's internal re-sort can
+//      otherwise snap the modal back to the top ("scrolls up sometimes"), and
+//  (b) if the day was already CLOSED with a "back to hotel" leg, the new stop
+//      lands AFTER the last real stop and the return ride re-flows to re-close
+//      the day (reopen → insert → reclose). endDayBackToHotel is idempotent.
+function addActivityToDay(dayNum) {
+  const container = document.getElementById('slots-day-' + dayNum)
+  if (!container) { addSlot(dayNum); return }
+  const modalBody = container.closest('.modal-body')
+  const savedScrollTop = modalBody ? modalBody.scrollTop : null
+
+  // Closed day? A transport leg sits just above the locked end_of_day anchor.
+  // Drop the trailing transport(s) so the new card lands right after the last
+  // real stop; we re-close below so "back to hotel" re-flows from the new stop.
+  let wasClosed = false
+  const endAnchor = container.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]')
+  if (endAnchor) {
+    let scan = endAnchor.previousElementSibling
+    const trailing = []
+    while (scan) {
+      if (scan.classList?.contains('slot-type-transport')) { trailing.push(scan); scan = scan.previousElementSibling; continue }
+      if (scan.classList?.contains('is-locked')) { scan = scan.previousElementSibling; continue }
+      break  // reached the last real venue
+    }
+    if (trailing.length) { wasClosed = true; trailing.forEach(t => t.remove()) }
+  }
+
+  addSlot(dayNum)
+
+  // Re-close: re-flow the back-to-hotel leg from the new last stop.
+  if (wasClosed && typeof endDayBackToHotel === 'function') endDayBackToHotel(container.id)
+
+  // Restore scroll — the re-sort / refresh can snap the modal to the top.
+  if (modalBody && savedScrollTop != null) {
+    const restore = () => { try { if (Math.abs(modalBody.scrollTop - savedScrollTop) > 1) modalBody.scrollTop = savedScrollTop } catch (e) {} }
+    restore(); requestAnimationFrame(restore); setTimeout(restore, 60); setTimeout(restore, 200); setTimeout(restore, 400)
   }
 }
 
