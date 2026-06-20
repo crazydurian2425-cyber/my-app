@@ -22129,7 +22129,13 @@ function addSlot(dayNum, seed = null, opts = {}) {
   //  - Day 1, first slot, traveler has arrival_time → arrival + 60min buffer
   //  - Day >1, first slot → 09:00 (fresh morning start)
   //  - Any subsequent slot → previous slot + 60min (capped 22:30)
-  const existing = container ? container.querySelectorAll('.slot-time-input') : []
+  // Only consider REAL, NON-locked stops when deciding where a new card lands:
+  // skip the locked arrival / back-to-hotel anchors, and (below) skip cards whose
+  // time is still blank. Neither should drag a new "+ Add activity" earlier than
+  // your actual last stop — that's what previously dropped a card in the MIDDLE.
+  const existing = container
+    ? [...container.querySelectorAll(':scope > .activity-slot:not(.is-locked) .slot-time-input')]
+    : []
   const MAX_MIN = 23 * 60 + 45    // 23:45 is the latest picker option (15-min grid)
   const bumpAnd = (base) => {
     const [h, m] = (base || '09:00').split(':').map(Number)
@@ -22143,7 +22149,7 @@ function addSlot(dayNum, seed = null, opts = {}) {
     const nh = Math.floor(totalMin / 60), nm = totalMin % 60
     return `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}`
   }
-  const existingTimes = [...existing].map(el => el.value || '09:00')
+  const existingTimes = [...existing].map(el => (el.value || '').trim()).filter(Boolean)
   const latestExisting = existingTimes.length
     ? existingTimes.reduce((a,b) => a > b ? a : b)
     : null
