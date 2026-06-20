@@ -17028,6 +17028,17 @@ function formatDurationLabel(mins){
 // Generate every 15-min slot from 15 minutes up to 8 hours as <option>-style
 // buttons for the duration-dd menu. 32 buttons total — the planner can
 // always tap a specific 1 h 45 or 6 h 30 stay duration.
+// Minimum stay the SCHEDULE actually uses for a stop type (mirrors the floors in
+// _venueEffectiveDur). The duration dropdown starts here so it never offers a
+// value the chain would silently clamp up — e.g. 15 min on a Meal is treated as
+// 30, so picking 15 looked like it "did nothing". Meals/accommodation start at
+// 30, hotel check-in at 60; everything else keeps the 15-min grid.
+function _stayFloorForType(type){
+  const t = String(type || '').toLowerCase()
+  if (t === 'hotel_checkin') return 60
+  if (t === 'meal' || t === 'accommodation') return 30
+  return 0
+}
 function buildDurationOptions(minMins){
   // minMins floors the list — e.g. hotel check-in only offers 1 h+ because a
   // shorter stay is ignored by the 60-min scheduling floor anyway, so showing
@@ -17054,7 +17065,7 @@ function toggleDurationDD(btn, e){
     // 15/30/45 list on a check-in whose scheduling floor is 60 min. Regenerating
     // here means the floor is always correct no matter how the type was set.
     const slot  = dd.closest('.activity-slot')
-    const floor = slot?.classList.contains('slot-type-hotel_checkin') ? 60 : 0
+    const floor = _stayFloorForType(slot?.querySelector('.slot-type-select')?.value)
     const menu  = dd.querySelector('.duration-dd-menu')
     if (menu) {
       const cur = dd.querySelector('.slot-duration-input')?.value || ''
@@ -22304,7 +22315,7 @@ function addSlot(dayNum, seed = null, opts = {}) {
             <svg class="duration-dd-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 5 6 8 9 5"/></svg>
           </button>
           <div class="duration-dd-menu">
-            ${buildDurationOptions(seedTypeKey === 'hotel_checkin' ? 60 : 0)}
+            ${buildDurationOptions(_stayFloorForType(seedTypeKey))}
           </div>
         </div>
       </div>
