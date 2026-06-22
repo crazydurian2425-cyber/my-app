@@ -21722,9 +21722,10 @@ function computeDaySummary(dayContainer) {
       warnings.push({ level:'amber', text:dt(`Day over budget by ¥${spendEur - dailyBudget} (budget ¥${dailyBudget}/day · splurge may explain it).`, `この日は予算を¥${spendEur - dailyBudget}超過しています（予算¥${dailyBudget}/日 · 贅沢分が理由かもしれません）。`) })
     }
   }
-  if (activeMin > 12 * 60) {
-    warnings.push({ level:'amber', text:dt(`Day is ${(activeMin/60).toFixed(1)} h long — consider cutting a stop.`, `この日は${(activeMin/60).toFixed(1)}時間と長めです — 立ち寄り先を1つ減らすことをご検討ください。`) })
-  }
+  // Removed the "Day is X h long — consider cutting a stop" warning per planner
+  // request: it's a soft nudge that contradicted the "on track" badge on a normal
+  // full day (a day ending at the profile-suggested time is ~13 h by design). It
+  // never blocked submit; the walking-distance, spend, and end-time guardrails stay.
   // ── Light-day / empty-day checks ──
   // "Balanced" needs more than "no warnings" — a day with one stop isn't
   // balanced, it's empty. Compute against the day's role + the traveler's
