@@ -3252,6 +3252,12 @@ body.theme-dark .submit-error-banner-x{color:#f5c5b6;}
   /* Buttons */
   .btn-row { flex-direction: column; gap: 8px; }
   .btn-main, .btn-ghost { width: 100%; text-align: center; padding: 12px; }
+  /* …but modal footers keep their buttons side-by-side as equal halves. The
+     width:100% above squashed the flex:1 .btn-main (Submit) to a vertical sliver
+     next to a full-width .btn-ghost (Cancel) — see the payout-request modal.
+     Equal flex + width:auto + min-width:0 (shrink to text) fixes the layout. */
+  .modal-footer .btn-main,
+  .modal-footer .btn-ghost { flex:1 1 0; width:auto; min-width:0; white-space:nowrap; }
 
   /* Payout history rows (History page) — grid so amount sits right of name+date */
   .hist-row {
