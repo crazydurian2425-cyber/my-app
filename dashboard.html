@@ -13874,8 +13874,15 @@ async function openItineraryForm(planId) {
     // Baseline for the cross-device clobber guard — the item-id set this device
     // loaded. A later save compares against the DB to detect another device's edit.
     if (typeof _setDraftBaseline === 'function') _setDraftBaseline(plan.id, (items || []).map(i => i.id))
+    // Track whether the form actually loaded real stops on THIS open — the
+    // autosave wipe-guard below uses it. Reset here, and set true ONLY after a
+    // successful render. If the items query returned empty (transient) or
+    // fillItineraryItems throws, this stays false → the guard refuses to let a
+    // later empty autosave wipe stops that still exist in the DB.
+    window._itinHadStops = false
     if (items?.length) {
       fillItineraryItems(items)
+      window._itinHadStops = true
     } else {
       // Empty plan (fresh assignment / just-wiped) — fillItineraryItems
       // bails before reaching its refreshAllDistances tail, so the
@@ -23280,6 +23287,24 @@ async function _persistDraft(planId) {
     if (modalOpen && visibleSlots > 0) {
       console.warn('[autosave] BAIL: items empty but', visibleSlots, 'non-locked slots visible — refusing to wipe DB')
       return true
+    }
+    // Empty form + the form NEVER loaded stops on this open (a failed/empty load,
+    // not a planner deleting them) → if the DB still has stops, refuse to wipe.
+    // A genuine "remove every stop" sets _itinHadStops=true (the form had loaded
+    // them first), so this never blocks a real delete. Fail-safe: any error in
+    // the count check also bails rather than risk wiping.
+    if (visibleSlots === 0 && !window._itinHadStops) {
+      try {
+        const { count, error } = await sb.from('itinerary_items')
+          .select('id', { count: 'exact', head: true }).eq('plan_id', planId)
+        if (error || (count && count > 0)) {
+          console.warn('[autosave] BAIL: empty form never loaded stops; DB has rows or check errored — refusing to wipe', { count, error })
+          return true
+        }
+      } catch (e) {
+        console.warn('[autosave] BAIL: stop-count check threw — refusing to wipe (fail-safe)', e)
+        return true
+      }
     }
   }
   // Cross-device clobber guard — if another device saved since this one loaded
