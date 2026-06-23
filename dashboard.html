@@ -23364,6 +23364,12 @@ function _setDraftBaseline(planId, ids) {
   _planConflictPending = false   // a fresh baseline means this device is back in sync
 }
 async function _draftHasConflict(planId) {
+  // DISABLED per planner request. The cross-device conflict dialog was a false
+  // positive for a single-device planner and, on "OK", DISCARDED unsaved work —
+  // worst case for a guard. Always report "no conflict" so autosave just saves
+  // (last write wins). To re-enable, delete the next line; the baseline /
+  // fingerprint logic below is left intact and unchanged.
+  return false
   const b = window._draftBaselineFp
   if (!b || b.planId !== planId || b.fp == null) return false   // no baseline → can't judge → allow
   try {
