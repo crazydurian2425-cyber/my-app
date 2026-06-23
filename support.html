@@ -753,7 +753,7 @@ let messages = []
 // ── UTILS ───────────────────────────────────────────────────
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
 function escapeHtml(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function fullTime(ts){return new Date(ts).toLocaleString((SUP_LANG === 'ja') ? 'ja-JP' : 'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+function fullTime(ts){return new Date(ts).toLocaleString((SUP_LANG === 'ja') ? 'ja-JP' : 'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'})}
 
 // ── LOAD / CREATE CONVERSATION ──────────────────────────────
 async function ensureConversation() {

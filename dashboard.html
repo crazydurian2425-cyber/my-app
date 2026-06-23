@@ -23974,7 +23974,7 @@ function renderCsMessages() {
   box.innerHTML = csMessages.map(m => {
     const mine = m.sender_type === 'planner'
     const sys  = m.sender_type === 'system'
-    const time = new Date(m.created_at).toLocaleString((TM_LANG === 'ja') ? 'ja-JP' : 'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+    const time = new Date(m.created_at).toLocaleString((TM_LANG === 'ja') ? 'ja-JP' : 'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'})
     if (sys) {
       return `<div style="align-self:center;padding:6px 12px;background:rgba(0,0,0,0.04);border-radius:99px;font-size:10.5px;color:var(--text-3);font-style:italic;">${esc(m.body)}</div>`
     }

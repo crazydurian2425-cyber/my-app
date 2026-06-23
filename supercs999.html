@@ -995,7 +995,9 @@ function timeAgo(ts) {
 function fullTime(ts) {
   if (!ts) return ''
   const d = new Date(ts)
-  return d.toLocaleString('ja-JP', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+  // Japan-market platform: pin chat timestamps to JST so CS and the planner
+  // always see the SAME time, regardless of either device's timezone.
+  return d.toLocaleString('ja-JP', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'Asia/Tokyo' })
 }
 function escapeHtml(s) {
   return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
@@ -1319,7 +1321,7 @@ function renderConvControls() {
     const until = c.snoozed_until ? new Date(c.snoozed_until) : null
     if (until && until > new Date()) {
       snoozeMeta.style.display = 'block'
-      snoozeMeta.textContent = `${until.toLocaleString('ja-JP',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}までスヌーズ中 · もう一度クリックで解除`
+      snoozeMeta.textContent = `${until.toLocaleString('ja-JP',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'})}までスヌーズ中 · もう一度クリックで解除`
       snoozeBtn.classList.add('active')
       snoozeBtn.textContent = '😴 スヌーズ中'
     } else {
@@ -1629,7 +1631,7 @@ function loadCsNotesIntoPanel(p) {
   _csNotesSnapshot = { planner_id: activeConv?.planner_id || null, body }
   if (meta) {
     if (p?.cs_notes_updated_at) {
-      const when = new Date(p.cs_notes_updated_at).toLocaleString('ja-JP',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+      const when = new Date(p.cs_notes_updated_at).toLocaleString('ja-JP',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Tokyo'})
       meta.textContent = `最終編集${when}${p.cs_notes_updated_by ? ' · ' + p.cs_notes_updated_by : ''}`
     } else {
       meta.textContent = '未編集'
