@@ -13729,6 +13729,13 @@ async function openItineraryForm(planId) {
   window._currentHotelStoresBags   = plan.hotel_stores_bags !== false  // default TRUE
   // Personal welcome note from the planner (Review page textarea).
   window._currentPersonalMessage   = plan.personal_message_to_traveler || ''
+  // Hydrate the note textarea IMMEDIATELY on open — not only when the Review tab
+  // is first visited. Before this, the box stayed EMPTY until Review was opened,
+  // so an autosave fired from a Day edit (or re-opening a submitted plan) wrote
+  // the empty/short box over the saved note — degrading a real ≥10 note down to
+  // e.g. "ELE". Setting it here (and resetting per plan) prevents that wipe AND
+  // stops Plan A's note leaking into Plan B. Review render re-applies it too.
+  try { const _pmTa = document.getElementById('review-personal-message'); if (_pmTa) _pmTa.value = window._currentPersonalMessage } catch (e) {}
   // daily_timing now lives on the traveler row as a normalised enum
   // (early / standard / late). Falls back to the legacy free-text meta value
   // for travelers that pre-date the migration.
