@@ -87,8 +87,20 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
     <div class="title">業務委託契約書</div>
     <div class="subtitle">以下の内容をご確認のうえ、ご署名ください。</div>
 
-    <!-- Letter details (snapshot from DB) -->
+    <!-- 委託者（甲）— company / principal. Static for every planner. -->
+    <div style="background:rgba(26,122,94,0.04);border:1px solid rgba(26,122,94,0.20);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--green-d);background:rgba(26,122,94,0.10);border-radius:5px;padding:2px 8px;display:inline-block;margin-bottom:10px;letter-spacing:.04em;">委託者（甲）</div>
+      <div class="field-row"><div class="field-label">会社名</div><div class="field-val">JOURNEY JUNCTION LTD</div></div>
+      <div class="field-row"><div class="field-label">登記番号</div><div class="field-val">15791277 <span style="color:var(--ink-3);font-weight:500;">（英国 Companies House 登録）</span></div></div>
+      <div class="field-row"><div class="field-label">登記住所</div><div class="field-val">Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom</div></div>
+      <div class="field-row"><div class="field-label">代表者</div><div class="field-val">Midhun Peter（Director）</div></div>
+      <div class="field-row"><div class="field-label">設立日</div><div class="field-val">2024年6月20日</div></div>
+      <div class="field-row"><div class="field-label">連絡先</div><div class="field-val">hello@thejourneyjunction.co.uk</div></div>
+    </div>
+
+    <!-- 受託者（乙）— planner details (snapshot from DB) -->
     <div style="background:rgba(26,122,94,0.04);border:1px solid rgba(26,122,94,0.20);border-radius:10px;padding:16px 20px;margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:700;color:var(--green-d);background:rgba(26,122,94,0.10);border-radius:5px;padding:2px 8px;display:inline-block;margin-bottom:10px;letter-spacing:.04em;">受託者（乙）</div>
       <div class="field-row">
         <div class="field-label">プランナー氏名</div>
         <div class="field-val" id="f-name">—</div>
@@ -105,7 +117,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
 
     <!-- Letter body (Japanese) -->
     <div class="letter-block">
-      <p>本書は、上記に記載の契約開始日より、<strong>Journey Junction</strong>の訪日旅行プランナーとして業務委託契約を締結することを確認するものです。</p>
+      <p>本書は、上記に記載の契約開始日より、<strong>委託者（甲）JOURNEY JUNCTION LTD</strong>と<strong>受託者（乙）</strong>との間で、訪日旅行プランナーとして業務委託契約を締結することを確認するものです。</p>
 
       <h3>業務内容および報酬</h3>
       <ul>
@@ -129,16 +141,23 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
         <li>旅行者に関する情報は機密として取り扱い、旅程作成以外の目的に使用しないことに同意していただきます。</li>
       </ul>
 
-      <p style="margin-top:14px;">以下にご署名いただくことにより、上記の内容を確認・理解し、本契約の条件に同意されたものとみなされます。</p>
+      <p style="margin-top:14px;">以下に両当事者が署名することにより、上記の内容を確認・理解し、本契約の条件に同意したものとみなされます。</p>
     </div>
 
     <!-- Signature section — two modes:
          (A) status='pending' → canvas + submit (default)
          (B) status='signed' → embedded signature image + print button -->
     <div class="sig-section">
+      <!-- 甲（委託者）signatory — pre-signed by the director; shown in both modes -->
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fff;margin-bottom:18px;">
+        <div style="font-family:Georgia,serif;font-size:13.5px;color:var(--ink-3);margin-bottom:6px;font-weight:600;">委託者（甲）</div>
+        <div style="font-weight:700;font-size:14px;">JOURNEY JUNCTION LTD</div>
+        <div style="font-size:12px;color:var(--ink-3);">代表者：Midhun Peter（Director）</div>
+        <div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:26px;color:#1a2e6e;border-bottom:1px solid var(--border-med);padding-bottom:2px;margin-top:12px;width:fit-content;min-width:180px;">Midhun&nbsp;Peter</div>
+      </div>
       <!-- Mode A: pending — draw + submit -->
       <div id="mode-pending" class="no-print">
-        <h3 style="margin-top:0;">署名</h3>
+        <h3 style="margin-top:0;">受託者（乙）署名</h3>
         <p style="font-size:13px;color:var(--ink-3);margin-bottom:10px;">下の枠内に、マウスまたは指でご署名ください。</p>
         <div class="sig-canvas-wrap">
           <canvas id="sig"></canvas>
@@ -161,7 +180,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
 
       <!-- Mode B: signed — show captured signature + print -->
       <div id="mode-signed" style="display:none;">
-        <h3 style="margin-top:0;">署名</h3>
+        <h3 style="margin-top:0;">受託者（乙）署名</h3>
         <div class="signed-sig-frame">
           <img id="signed-sig-img" alt="署名">
         </div>
@@ -174,7 +193,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
       </div>
     </div>
 
-    <div class="foot">Journey Junction · hello@thejourneyjunction.co.uk</div>
+    <div class="foot">JOURNEY JUNCTION LTD · 登記番号 15791277 (UK) · hello@thejourneyjunction.co.uk</div>
   </div>
 
   <!-- Already-signed state -->
