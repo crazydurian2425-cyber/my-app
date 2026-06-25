@@ -1796,35 +1796,37 @@ const QUICK_REPLIES_DEFAULTS = {
     { label: '📝 Revision noted', text: 'Got it {first_name} — admin has flagged some plans for revision with notes. Open the plan from your dashboard to see the revision request, update it, and resubmit. Ping us if anything is unclear.' },
     { label: '🎉 Plan approved', text: 'Plan approved! Nicely done {first_name}. The commission is logged and will be released to your wallet once the whole set is approved.' },
     // ── Bond inquiry replies (planner asks about amount / refund terms / how to pay) ──
-    { label: '💬 Bond overview', text: 'Hi {first_name}, thanks for reaching out. Here\'s an overview of the refundable bond:\n\n■ Amount: [amount] (as shown in your brief)\n■ Refund terms: submit all plans on time and, once they pass review and approval, the bond is refunded in full together with your reward.\n■ How to complete it: you can use a bank transfer or a PayPay QR code. Just let us know when you\'re ready and we\'ll send either the bank details or the PayPay QR, plus a reference code. After that, post a screenshot of the completed payment here and we\'ll unlock the plan once it\'s confirmed.\n\nHappy to help with anything else!' },
-    { label: '🏦 Send details when ready', text: 'Hi {first_name}, whenever you\'re ready to handle the refundable bond, just let us know. You can use a bank transfer or a PayPay QR code — we\'ll send the bank details or the PayPay QR, plus a reference code, right away.' },
+    { label: '💬 Bond overview', text: 'Hi {first_name}, thanks for reaching out. Here\'s an overview of the refundable bond:\n\n■ Amount: [amount] (as shown in your brief)\n■ Refund terms: submit all plans on time and, once they pass review and approval, the bond is refunded in full together with your reward.\n■ How to complete it: you can use a bank transfer, or PayPay (QR code, phone number, or PayPay ID). Just let us know when you\'re ready and we\'ll send the bank details, the PayPay QR, or the PayPay phone number / ID, plus a reference code. After that, post a screenshot of the completed payment here and we\'ll unlock the plan once it\'s confirmed.\n\nHappy to help with anything else!' },
+    { label: '🏦 Send details when ready', text: 'Hi {first_name}, whenever you\'re ready to handle the refundable bond, just let us know. You can use a bank transfer, or PayPay (QR code, phone number, or PayPay ID) — we\'ll send the bank details, the PayPay QR, or the PayPay phone number / ID, plus a reference code, right away.' },
     { label: '↩️ Refund terms', text: 'Here are the refund terms: submit all plans on time and, once they pass review and approval, the refundable bond is returned in full along with your reward. If deadlines are missed or work is left unhandled or undelivered, the bond may become non-refundable.' },
-    { label: '💳 How to pay (transfer / PayPay)', text: 'There are two ways to complete the bond:\n\n1) Bank transfer — send it to the bank details we provide.\n2) PayPay — scan the QR code we send you.\n\nEither way, post a screenshot of the completed payment here and we\'ll unlock the plan once it\'s confirmed.' },
+    { label: '💳 How to pay (transfer / PayPay)', text: 'There are three ways to complete the bond:\n\n1) Bank transfer — send it to the bank details we provide.\n2) PayPay (QR code) — scan the QR code we send you.\n3) PayPay (phone number / ID) — send to the PayPay phone number or PayPay ID we give you.\n\nAny of these — post a screenshot of the completed payment here and we\'ll unlock the plan once it\'s confirmed.' },
     { label: '📱 PayPay QR', text: 'Hi {first_name}, sure — to pay by PayPay, scan the QR code here and complete it for [amount].\nReference: BOND-{set_num}-{planner_short}\nAfter that, post a screenshot of the completed payment here and we\'ll unlock the plan once it\'s confirmed.' },
+    { label: '📱 PayPay phone / ID', text: 'Hi {first_name}, to pay by PayPay, send [amount] to our PayPay account:\nPayPay phone: [phone]\n(or PayPay ID: [PayPay ID])\nReference: BOND-{set_num}-{planner_short}\n\nHow to send:\n1. Open the PayPay app\n2. Tap "Send" on the home screen\n3. Choose "Search by PayPay ID / phone / display name"\n4. Enter the phone number or ID above\n5. Select the correct recipient\n6. Tap "Send"\n7. Enter the amount\n8. Confirm and tap "Send" again\n\nPlease double-check the recipient before sending. After that, post a screenshot of the completed payment here and we\'ll unlock the plan once confirmed.' },
   ],
   ja: [
-    { label: '👋 ご挨拶', text: '{first_name}さん、こんにちは。本日はどのようなご用件でしょうか。' },
-    { label: '🏦 保証金の振込先', text: '{first_name}さん、こんにちは。保証金のお振込先は以下のとおりです。\n\n銀行名：[銀行名]\n口座番号：[口座番号]\n口座名義：Journey Junction\n振込依頼人名（ご依頼番号）：BOND-{set_num}-{planner_short}\n\nお振込が完了しましたら、お振込控えのスクリーンショットをこちらにお送りください。確認でき次第、ご連絡いたします。' },
-    { label: '💳 保証金の確認中', text: '{first_name}さん、承知いたしました。ただいまお振込の確認を行っております。営業時間内であれば通常30分以内に確認が完了し、改めてご連絡いたします。' },
-    { label: '✅ 保証金を受領', text: '保証金のお振込を確認いたしました。プランのロックを解除いたしましたので、引き続きよろしくお願いいたします。' },
-    { label: '💰 お支払いについて', text: '{first_name}さん、こんにちは。ただいま¥{pending_amt}のお引き出しを処理しております。ご登録いただいたお支払い方法にて、24時間以内にお振込いたします。' },
-    { label: '💰 お支払い完了', text: 'お引き出しの処理が完了いたしました。PayPay の場合は通常1時間以内、銀行振込の場合は1～2営業日で反映されます。' },
-    { label: '📋 案件を確認中', text: '{first_name}さん、こんにちは。お住まいの地域で対応可能な案件を確認しております。まもなく案件を割り当ていたします。' },
-    { label: '⏰ 何日必要ですか？', text: '{first_name}さん、問題ございません。追加で何日ほど必要でしょうか。記録のため、差し支えなければ理由も簡単にお知らせいただけますと幸いです。' },
-    { label: '⏰ 延長を承認', text: '対応いたしました。締め切りを延長いたしました。新しい期日はダッシュボードに表示されております。' },
-    { label: '🔍 詳細をお願いします', text: 'もう少し詳しくお聞かせいただけますでしょうか。特定のプランに関するご質問でしたら、プラン番号と旅行者のお名前をお知らせいただけますと大変助かります。' },
-    { label: '📸 スクリーンショットをお願いします', text: 'スクリーンショットをお送りいただけますでしょうか。チャット内の📎アイコンをクリックすると画像を添付できます。' },
-    { label: '🙏 お礼', text: 'お問い合わせいただきありがとうございます。他にもご不明な点がございましたら、お気軽にお知らせください。' },
-    { label: '📨 審査待ちに登録', text: '{first_name}さん、承知いたしました。ありがとうございます。案件番号{set_num}を管理者の審査待ちリストに登録いたしました。各プランが承認され次第（通常24～48時間以内）、順次ご連絡いたします。素晴らしいお仕事をありがとうございます。' },
-    { label: '✨ 新しい案件を割り当て', text: '{first_name}さん、よいお知らせです。新しい案件を割り当ていたしました。ダッシュボードで旅行者の概要をご確認ください。プランニングを始める前に、旅行者情報に誤りがあればお知らせください。' },
-    { label: '📝 修正のご依頼', text: '{first_name}さん、承知いたしました。管理者がいくつかのプランについて、コメント付きで修正が必要と判断いたしました。ダッシュボードから該当のプランを開き、修正依頼の内容をご確認のうえ、更新して再提出してください。ご不明な点がございましたらご連絡ください。' },
-    { label: '🎉 プラン承認', text: 'プランが承認されました。{first_name}さん、お見事です。報酬は記録され、案件一式がすべて承認された時点でお支払い方法に応じて支払われます。' },
-    // ── 保証金に関する問い合わせ用（金額・返金条件・お手続き方法） ──
-    { label: '💬 保証金のご案内', text: '{first_name}さん、お問い合わせありがとうございます。返金対象保証金についてご案内いたします。\n\n■ 金額：[金額]（ご依頼内容に記載の金額です）\n■ 返金条件：すべてのプランを期限内に提出し、内容確認・承認が完了した時点で、保証金は報酬とともに全額返金されます。\n■ お手続き方法：銀行振込またはPayPayのQRコードがご利用いただけます。ご準備が整いましたらお知らせください。ご希望の方法に応じて、振込先またはPayPayのQRコードと、照合用の参照コードをお送りします。お手続き後、完了画面のスクリーンショットをこのチャットへお送りいただければ、確認後にロックを解除いたします。\n\nご不明な点がございましたら、お気軽にお知らせください。' },
-    { label: '🏦 準備ができたらご案内', text: '{first_name}さん、返金対象保証金のお手続きのご準備が整いましたら、お知らせください。銀行振込またはPayPayのQRコードがご利用いただけます。ご希望の方法に応じて、振込先またはPayPayのQRコードと、照合用の参照コードをすぐにお送りいたします。' },
-    { label: '↩️ 返金条件', text: '返金条件についてご案内いたします。すべてのプランを期限内に提出し、内容確認・承認が完了した時点で、返金対象保証金は報酬とともに全額返金されます。なお、期限超過・未対応・未納品などが確認された場合は、返金対象外となる場合があります。' },
-    { label: '💳 お手続き方法（振込/PayPay）', text: '保証金のお手続き方法は2通りございます。\n\n①銀行振込：お送りする銀行口座へお振込みください。\n②PayPay：お送りするQRコードを読み取ってお手続きください。\n\nいずれの場合も、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。' },
-    { label: '📱 PayPay QRコード', text: '{first_name}さん、PayPayでのお手続きですね。こちらのQRコードを読み取り、金額[金額]でお手続きください。\n参照コード：BOND-{set_num}-{planner_short}\nお手続き後、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。' },
+    { label: '👋 Greeting', text: '{first_name}さん、こんにちは。本日はどのようなご用件でしょうか。' },
+    { label: '🏦 Bond bank details', text: '{first_name}さん、こんにちは。保証金のお振込先は以下のとおりです。\n\n銀行名：[銀行名]\n口座番号：[口座番号]\n口座名義：Journey Junction\n振込依頼人名（ご依頼番号）：BOND-{set_num}-{planner_short}\n\nお振込が完了しましたら、お振込控えのスクリーンショットをこちらにお送りください。確認でき次第、ご連絡いたします。' },
+    { label: '💳 Verifying bond', text: '{first_name}さん、承知いたしました。ただいまお振込の確認を行っております。営業時間内であれば通常30分以内に確認が完了し、改めてご連絡いたします。' },
+    { label: '✅ Bond received', text: '保証金のお振込を確認いたしました。プランのロックを解除いたしましたので、引き続きよろしくお願いいたします。' },
+    { label: '💰 Payout update', text: '{first_name}さん、こんにちは。ただいま¥{pending_amt}のお引き出しを処理しております。ご登録いただいたお支払い方法にて、24時間以内にお振込いたします。' },
+    { label: '💰 Payout processed', text: 'お引き出しの処理が完了いたしました。PayPay の場合は通常1時間以内、銀行振込の場合は1～2営業日で反映されます。' },
+    { label: '📋 Checking sets', text: '{first_name}さん、こんにちは。お住まいの地域で対応可能な案件を確認しております。まもなく案件を割り当ていたします。' },
+    { label: '⏰ How many days?', text: '{first_name}さん、問題ございません。追加で何日ほど必要でしょうか。記録のため、差し支えなければ理由も簡単にお知らせいただけますと幸いです。' },
+    { label: '⏰ Extension granted', text: '対応いたしました。締め切りを延長いたしました。新しい期日はダッシュボードに表示されております。' },
+    { label: '🔍 Need more info', text: 'もう少し詳しくお聞かせいただけますでしょうか。特定のプランに関するご質問でしたら、プラン番号と旅行者のお名前をお知らせいただけますと大変助かります。' },
+    { label: '📸 Please send screenshot', text: 'スクリーンショットをお送りいただけますでしょうか。チャット内の📎アイコンをクリックすると画像を添付できます。' },
+    { label: '🙏 Thank you', text: 'お問い合わせいただきありがとうございます。他にもご不明な点がございましたら、お気軽にお知らせください。' },
+    { label: '📨 Queued for review', text: '{first_name}さん、承知いたしました。ありがとうございます。案件番号{set_num}を管理者の審査待ちリストに登録いたしました。各プランが承認され次第（通常24～48時間以内）、順次ご連絡いたします。素晴らしいお仕事をありがとうございます。' },
+    { label: '✨ New set assigned', text: '{first_name}さん、よいお知らせです。新しい案件を割り当ていたしました。ダッシュボードで旅行者の概要をご確認ください。プランニングを始める前に、旅行者情報に誤りがあればお知らせください。' },
+    { label: '📝 Revision noted', text: '{first_name}さん、承知いたしました。管理者がいくつかのプランについて、コメント付きで修正が必要と判断いたしました。ダッシュボードから該当のプランを開き、修正依頼の内容をご確認のうえ、更新して再提出してください。ご不明な点がございましたらご連絡ください。' },
+    { label: '🎉 Plan approved', text: 'プランが承認されました。{first_name}さん、お見事です。報酬は記録され、案件一式がすべて承認された時点でお支払い方法に応じて支払われます。' },
+    // ── Bond inquiry replies (English labels, Japanese bodies) ──
+    { label: '💬 Bond overview', text: '{first_name}さん、お問い合わせありがとうございます。返金対象保証金についてご案内いたします。\n\n■ 金額：[金額]（ご依頼内容に記載の金額です）\n■ 返金条件：すべてのプランを期限内に提出し、内容確認・承認が完了した時点で、保証金は報酬とともに全額返金されます。\n■ お手続き方法：銀行振込、またはPayPay（QRコード・電話番号・PayPay ID）がご利用いただけます。ご準備が整いましたらお知らせください。ご希望の方法に応じて、振込先・PayPayのQRコード・PayPayの送金先（電話番号/ID）と、照合用の参照コードをお送りします。お手続き後、完了画面のスクリーンショットをこのチャットへお送りいただければ、確認後にロックを解除いたします。\n\nご不明な点がございましたら、お気軽にお知らせください。' },
+    { label: '🏦 Send details when ready', text: '{first_name}さん、返金対象保証金のお手続きのご準備が整いましたら、お知らせください。銀行振込、またはPayPay（QRコード・電話番号・PayPay ID）がご利用いただけます。ご希望の方法に応じて、振込先・PayPayのQRコード・PayPayの送金先（電話番号/ID）と、照合用の参照コードをすぐにお送りいたします。' },
+    { label: '↩️ Refund terms', text: '返金条件についてご案内いたします。すべてのプランを期限内に提出し、内容確認・承認が完了した時点で、返金対象保証金は報酬とともに全額返金されます。なお、期限超過・未対応・未納品などが確認された場合は、返金対象外となる場合があります。' },
+    { label: '💳 How to pay (transfer / PayPay)', text: '保証金のお手続き方法は次の3通りございます。\n\n①銀行振込：お送りする銀行口座へお振込みください。\n②PayPay（QRコード）：お送りするQRコードを読み取ってお手続きください。\n③PayPay（電話番号・ID）：お知らせするPayPay電話番号またはPayPay IDへご送金ください。\n\nいずれの場合も、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。' },
+    { label: '📱 PayPay QR', text: '{first_name}さん、PayPayでのお手続きですね。こちらのQRコードを読み取り、金額[金額]でお手続きください。\n参照コード：BOND-{set_num}-{planner_short}\nお手続き後、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。' },
+    { label: '📱 PayPay phone / ID', text: '{first_name}さん、PayPayでのお手続きですね。以下のPayPay送金先へ、金額[金額]でお手続きください。\nPayPay電話番号：[電話番号]\n（またはPayPay ID：[PayPay ID]）\n参照コード：BOND-{set_num}-{planner_short}\n\n【送金手順】\n1. PayPayアプリを開きます\n2. ホーム画面の「送る」をタップします\n3. 「PayPay ID・電話番号・表示名で検索」を選択します\n4. 上記の電話番号またはIDを入力して検索します\n5. 表示された相手を選択します\n6. 「送る」をタップします\n7. 送金金額を入力します\n8. 内容を確認して「送る」をもう一度タップして完了です\n\n※送金前に相手が正しいか必ずご確認ください。\nお手続き後、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。' },
   ]
 }
 // Stable keys for the default chips, by position (en & ja arrays are parallel).
@@ -1835,7 +1837,7 @@ const QR_DEFAULT_KEYS = [
   'payout_update', 'payout_processed', 'checking_sets', 'how_many_days',
   'extension_granted', 'need_more_info', 'please_screenshot', 'thank_you',
   'queued_for_review', 'new_set_assigned', 'revision_noted', 'plan_approved',
-  'bond_overview', 'bond_ready', 'bond_refund_terms', 'bond_transfer_method', 'bond_paypay'
+  'bond_overview', 'bond_ready', 'bond_refund_terms', 'bond_transfer_method', 'bond_paypay', 'bond_paypay_phone'
 ]
 // Current language for quick replies — persisted per agent session
 let CS_QR_LANG = localStorage.getItem('jj_cs_qr_lang') || 'ja'
