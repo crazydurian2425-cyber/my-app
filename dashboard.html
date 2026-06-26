@@ -15137,14 +15137,20 @@ async function _lookupStationAndAttach(transportSlot) {
   if (!rawLoc) return
   // Build a sensible query. Bias toward the destination city so a generic
   // string like "Tokyo Station" resolves to a real Tokyo station rather than
-  // a same-named place in another country.
+  // a same-named place in another country. RAIL arrivals (shinkansen/train/JR)
+  // search "<loc> Station" so a bare city name like "Himeji" pins the STATION
+  // (姫路駅), not the city centroid ~km away. Flight/car arrivals unchanged.
   const city = (window._currentDestination || '').trim()
   const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  const _method = (window._currentArrivalMethod || '').toLowerCase()
+  const _isRail = /shinkansen|train|rail|\bjr\b|metro|subway|新幹線|電車|列車|地下鉄/.test(_method)
+  const _withCity = (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
+    ? `${rawLoc}, ${city}` : rawLoc
   const query = isIata
     ? `${rawLoc} Airport`
-    : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
-      ? `${rawLoc}, ${city}`
-      : rawLoc
+    : (_isRail && !/station|駅/i.test(rawLoc))
+      ? `${rawLoc} Station`
+      : _withCity
   // Cache resolved stations per-session to avoid redundant Places billing.
   window._stationLookupCache = window._stationLookupCache || new Map()
   let resolved = window._stationLookupCache.get(query)
@@ -15227,11 +15233,16 @@ async function _initArrivalStationLookup() {
   if (!rawLoc) return
   const city = (window._currentDestination || '').trim()
   const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  // Rail arrival → search the STATION (mirrors _lookupStationAndAttach).
+  const _method = (window._currentArrivalMethod || '').toLowerCase()
+  const _isRail = /shinkansen|train|rail|\bjr\b|metro|subway|新幹線|電車|列車|地下鉄/.test(_method)
+  const _withCity = (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
+    ? `${rawLoc}, ${city}` : rawLoc
   const query = isIata
     ? `${rawLoc} Airport`
-    : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
-      ? `${rawLoc}, ${city}`
-      : rawLoc
+    : (_isRail && !/station|駅/i.test(rawLoc))
+      ? `${rawLoc} Station`
+      : _withCity
   try {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
     const bias = buildDestBias(city)
