@@ -7638,24 +7638,32 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <div class="form-group"><label class="form-label" data-i18n="profile.bank.name">Bank name</label>
                 <input class="form-input" id="profile-bank-name" placeholder="e.g. MUFG Bank" data-i18n-ph="profile.bank.ph.name" autocomplete="off" spellcheck="false">
               </div>
-              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.branch">Branch code</label>
-                <input class="form-input" id="profile-bank-branch" placeholder="e.g. 001" data-i18n-ph="profile.bank.ph.branch" autocomplete="off" spellcheck="false" inputmode="numeric">
+              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.branchName">Branch name</label>
+                <input class="form-input" id="profile-bank-branch-name" placeholder="e.g. Shibuya Branch" data-i18n-ph="profile.bank.ph.branchName" autocomplete="off" spellcheck="false">
               </div>
             </div>
             <div class="form-row" style="margin-top:14px;">
-              <div class="form-group"><label class="form-label" data-i18n="profile.bank.type">Account type</label>
+              <div class="form-group"><label class="form-label" data-i18n="profile.bank.branch">Branch code</label>
+                <input class="form-input" id="profile-bank-branch" placeholder="e.g. 001" data-i18n-ph="profile.bank.ph.branch" autocomplete="off" spellcheck="false" inputmode="numeric">
+              </div>
+              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.type">Account type</label>
                 <select class="form-input" id="profile-bank-type">
                   <option value="普通" data-i18n="profile.bank.type.futsu">Ordinary (普通)</option>
                   <option value="当座" data-i18n="profile.bank.type.touza">Current (当座)</option>
                 </select>
               </div>
-              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.number">Account number</label>
+            </div>
+            <div class="form-row" style="margin-top:14px;">
+              <div class="form-group"><label class="form-label" data-i18n="profile.bank.number">Account number</label>
                 <input class="form-input" id="profile-bank-number" placeholder="e.g. 1234567" data-i18n-ph="profile.bank.ph.number" autocomplete="off" spellcheck="false" inputmode="numeric">
+              </div>
+              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.holder">Account holder (katakana)</label>
+                <input class="form-input" id="profile-bank-holder" placeholder="e.g. ヤマダ タロウ" data-i18n-ph="profile.bank.ph.holder" autocomplete="off">
               </div>
             </div>
             <div class="form-group" style="margin-bottom:0;margin-top:14px;">
-              <label class="form-label" data-i18n="profile.bank.holder">Account holder (katakana)</label>
-              <input class="form-input" id="profile-bank-holder" placeholder="e.g. ヤマダ タロウ" data-i18n-ph="profile.bank.ph.holder" autocomplete="off">
+              <label class="form-label" data-i18n="profile.bank.holderKanji">Account holder (kanji) · optional</label>
+              <input class="form-input" id="profile-bank-holder-kanji" placeholder="e.g. 山田 太郎" data-i18n-ph="profile.bank.ph.holderKanji" autocomplete="off">
             </div>
           </div><!-- /payout-section-bank -->
         </div></div>
@@ -8394,6 +8402,10 @@ const TM_I18N = {
     'profile.bank.ph.branch':'e.g. 001',
     'profile.bank.ph.number':'e.g. 1234567',
     'profile.bank.ph.holder':'e.g. ヤマダ タロウ',
+    'profile.bank.branchName':'Branch name',
+    'profile.bank.holderKanji':'Account holder (kanji) · optional',
+    'profile.bank.ph.branchName':'e.g. Shibuya Branch',
+    'profile.bank.ph.holderKanji':'e.g. 山田 太郎',
     'wallet.method.sepa':'Bank transfer',
     'wallet.method.paypay':'PayPay',
     'profile.paypay.header':'PayPay payout',
@@ -9130,8 +9142,8 @@ const TM_I18N = {
     'profile.bank.header':'銀行振込',
     'profile.bank.tag':'· 日本国内 · ¥',
     'profile.bank.hint':'支払いは<strong>日本円での銀行振込</strong>で行われます。通帳・キャッシュカードに記載のとおり正確に入力してください。口座名義は<strong>カタカナ</strong>でご入力ください。',
-    'profile.bank.name':'銀行名',
-    'profile.bank.branch':'支店コード',
+    'profile.bank.name':'金融機関名',
+    'profile.bank.branch':'支店番号',
     'profile.bank.type':'預金種目',
     'profile.bank.type.futsu':'普通',
     'profile.bank.type.touza':'当座',
@@ -9141,6 +9153,10 @@ const TM_I18N = {
     'profile.bank.ph.branch':'例：001',
     'profile.bank.ph.number':'例：1234567',
     'profile.bank.ph.holder':'例：ヤマダ タロウ',
+    'profile.bank.branchName':'支店名',
+    'profile.bank.holderKanji':'口座名義（漢字）・任意',
+    'profile.bank.ph.branchName':'例：渋谷支店',
+    'profile.bank.ph.holderKanji':'例：山田 太郎',
     'wallet.method.sepa':'銀行振込',
     'wallet.method.paypay':'PayPay',
     'profile.paypay.header':'PayPay での支払い',
@@ -10613,18 +10629,22 @@ function getPlannerPayoutMethod(forceMethod) {
   if (active === 'bank') {
     const bankName = (planner?.bank_name || '').trim()
     const branch   = (planner?.bank_branch_code || '').trim()   // 3-digit branch code
+    const branchName  = (planner?.bank_branch_name || '').trim() // branch name (支店名)
     const acctType = (planner?.bank_account_type === '当座') ? '当座' : '普通'
     const acctNum  = (planner?.bank_account || '').trim()        // account number
     const holder   = (planner?.bank_holder || '').trim()        // katakana holder
+    const holderKanji = (planner?.bank_holder_kanji || '').trim() // kanji holder (optional)
     if (acctNum) {
       // Compact one-liner for the wallet card; the full snapshot carries every
       // furikomi field so the admin can pay from the historical record.
-      const detail = [bankName, branch ? `支店${branch}` : '', acctType, acctNum, holder].filter(Boolean).join(' · ')
+      const _branchTxt = branchName ? `${branchName}${branch ? `(${branch})` : ''}` : (branch ? `支店${branch}` : '')
+      const _holderTxt = [holder, holderKanji ? `（${holderKanji}）` : ''].filter(Boolean).join('')
+      const detail = [bankName, _branchTxt, acctType, acctNum, _holderTxt].filter(Boolean).join(' · ')
       return {
         method: 'bank',
         title:  t('wallet.method.sepa', 'Bank transfer'),
         detail,
-        snapshot: { method: 'bank', bank_name: bankName || null, bank_branch_code: branch || null, bank_account_type: acctType, bank_account: acctNum, bank_holder: holder || null }
+        snapshot: { method: 'bank', bank_name: bankName || null, bank_branch_code: branch || null, bank_branch_name: branchName || null, bank_account_type: acctType, bank_account: acctNum, bank_holder: holder || null, bank_holder_kanji: holderKanji || null }
       }
     }
     return { method: 'none', title: t('wallet.methodNotSet', 'Not set — add in Profile'), detail: '—', snapshot: null }
@@ -12547,6 +12567,8 @@ async function loadProfile() {
   el('profile-bank-branch', p.bank_branch_code || '')
   el('profile-bank-number', p.bank_account || '')
   el('profile-bank-holder', p.bank_holder || '')
+  el('profile-bank-branch-name', p.bank_branch_name || '')
+  el('profile-bank-holder-kanji', p.bank_holder_kanji || '')
   const _btSel = document.getElementById('profile-bank-type')
   if (_btSel) _btSel.value = (p.bank_account_type === '当座') ? '当座' : '普通'
   if (typeof setPayoutMethodTab === 'function') setPayoutMethodTab(_isBank ? 'bank' : 'paypay')
@@ -12653,6 +12675,8 @@ async function saveProfile() {
     const acctRaw   = (document.getElementById('profile-bank-number')?.value || '').trim()
     const acctNum   = acctRaw.replace(/[^0-9]/g, '')
     const holder    = (document.getElementById('profile-bank-holder')?.value || '').trim()
+    const branchName  = (document.getElementById('profile-bank-branch-name')?.value || '').trim()
+    const holderKanji = (document.getElementById('profile-bank-holder-kanji')?.value || '').trim()
     // Branch code + account number are digits-only (JP furikomi). If the planner
     // typed something with NO digits at all, warn instead of silently saving it
     // as blank — that silent drop looked like the data "disappearing" on reload.
@@ -12661,11 +12685,13 @@ async function saveProfile() {
       return
     }
     // bank_name = bank, bank_branch_code = branch code, bank_account = account
-    // number, bank_holder = katakana holder. PayPay fields are LEFT INTACT so
-    // switching methods doesn't wipe the other — payout_method decides which is
-    // actually used for payouts (see getPlannerPayoutMethod).
+    // number, bank_holder = katakana holder, bank_branch_name = branch name,
+    // bank_holder_kanji = kanji holder (optional). PayPay fields are LEFT INTACT
+    // so switching methods doesn't wipe the other — payout_method decides which
+    // is actually used. The two newer fields sit in `optional` so a save still
+    // works gracefully before add-bank-branch-name-and-kanji-holder.sql is run.
     _payoutCore     = { bank_name: bankName || null, bank_branch_code: branch || null, bank_account: acctNum || null, bank_holder: holder || null, payout_method: 'bank' }
-    _payoutOptional = { bank_account_type: acctType }
+    _payoutOptional = { bank_account_type: acctType, bank_branch_name: branchName || null, bank_holder_kanji: holderKanji || null }
   } else {
     // PayPay. Store the PayPay ID (or registered phone) + account holder name.
     // bank_* columns are LEFT INTACT so switching methods doesn't wipe the other

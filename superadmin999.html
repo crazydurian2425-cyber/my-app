@@ -5629,12 +5629,18 @@ async function submitPayout() {
 // planner row): bank name · 支店{branch} · 普通/当座 · 口座{number} · holder.
 // Everything an admin needs to actually execute the transfer.
 function _fmtBankLine(o) {
+  // Branch: prefer the name (支店名) with the code in parens; else just the code.
+  // Holder: katakana, with the kanji name in （）when present.
+  const branchPart = o.bank_branch_name
+    ? `${o.bank_branch_name}${o.bank_branch_code ? `(${o.bank_branch_code})` : ''}`
+    : (o.bank_branch_code ? `支店${o.bank_branch_code}` : '')
+  const holderPart = [o.bank_holder, o.bank_holder_kanji ? `（${o.bank_holder_kanji}）` : ''].filter(Boolean).join('')
   const parts = [
     o.bank_name,
-    o.bank_branch_code ? `支店${o.bank_branch_code}` : '',
+    branchPart,
     o.bank_account_type,
     o.bank_account ? `口座${o.bank_account}` : '',
-    o.bank_holder
+    holderPart
   ].filter(Boolean).map(escapeHtml)
   return parts.length ? `🏦 ${parts.join(' · ')}` : '—'
 }
@@ -5642,7 +5648,7 @@ function _fmtBankLine(o) {
 // ── PAYOUT REQUESTS (planner-initiated wallet withdrawals) ────
 async function loadPayoutRequests() {
   const { data: rows, error } = await sb.from('wallet_requests')
-    .select('id, planner_id, amount, status, note, admin_note, bank_snapshot, requested_at, resolved_at, resolved_by, planners:planner_id(name, email, bank_name, bank_account, bank_account_type, bank_holder, bank_branch_code, paypay_id, paypay_holder)')
+    .select('id, planner_id, amount, status, note, admin_note, bank_snapshot, requested_at, resolved_at, resolved_by, planners:planner_id(name, email, bank_name, bank_account, bank_account_type, bank_holder, bank_branch_code, bank_branch_name, bank_holder_kanji, paypay_id, paypay_holder)')
     .order('requested_at', { ascending: false })
   if (error) { showToast('Load failed: ' + error.message); return }
 
