@@ -22775,9 +22775,17 @@ async function submitPlan() {
   // (Day-1-only training) are skipped. One day shown at a time (jumps + flashes).
   if (!window._isSubaccount) {
     const _ATTRACT = new Set(['activity', 'shopping', 'entertainment', 'freetime'])
-    const _total = (typeof dayCount === 'number' && dayCount >= 2)
-      ? dayCount
-      : Math.max(2, ...items.map(i => i.day_number || 1))
+    // Validate against the TRIP'S full length, not just the form's day count.
+    // maxDayCount is parsed from the traveler's duration at plan-open (4D3N→4,
+    // 7D6N→7), so a multi-day trip can NEVER be submitted with fewer days
+    // filled — every day the trip actually has must pass the checks below.
+    // Take the max of duration, form days, and any item's day_number.
+    const _total = Math.max(
+      2,
+      (typeof maxDayCount === 'number' && maxDayCount >= 1) ? maxDayCount : 0,
+      (typeof dayCount    === 'number' && dayCount    >= 1) ? dayCount    : 0,
+      ...items.map(i => i.day_number || 1)
+    )
     // A day is validly "closed" if it ends with the return ride OR (for non-
     // departure days) it simply ends AT THE HOTEL — a relax-at-hotel day needs
     // no ride back. Mirrors endDayBackToHotel's "already at hotel" test so the
