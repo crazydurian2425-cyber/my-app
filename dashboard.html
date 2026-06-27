@@ -19939,7 +19939,7 @@ function _enforceTimeChain(dayContainer) {
     let stay = parseInt(slot.querySelector('.slot-duration-input')?.value || '0', 10) || 0
     if (type === 'accommodation')  stay = Math.max(stay, 30)
     else if (type === 'meal')          stay = Math.max(stay, 30)
-    else if (type === 'hotel_checkin') stay = Math.max(stay, 60)
+    else if (type === 'hotel_checkin') stay = Math.max(stay, 15)
     else if (type === 'hotel_checkout')stay = Math.max(stay, 15)
     if (stay <= 0) stay = 15
     return stay
@@ -21148,7 +21148,7 @@ function endTripToAirport(dayContainerId) {
   const type = lastVenue.querySelector('.slot-type-select')?.value || 'activity'
   if (type === 'accommodation')       stay = Math.max(stay, 30)
   else if (type === 'meal')           stay = Math.max(stay, 30)
-  else if (type === 'hotel_checkin')  stay = Math.max(stay, 60)
+  else if (type === 'hotel_checkin')  stay = Math.max(stay, 15)
   else if (type === 'hotel_checkout') stay = Math.max(stay, 15)
   if (stay <= 0) stay = 15
   const depMin = (startMin != null)
@@ -21260,7 +21260,7 @@ function refreshDayDistances(dayContainer) {
       let prevStay = parseInt(a.querySelector('.slot-duration-input')?.value || '0', 10) || 0
       if (prevType === 'accommodation')   prevStay = Math.max(prevStay, 30)
       else if (prevType === 'meal')           prevStay = Math.max(prevStay, 30)
-      else if (prevType === 'hotel_checkin')  prevStay = Math.max(prevStay, 60)
+      else if (prevType === 'hotel_checkin')  prevStay = Math.max(prevStay, 15)
       else if (prevType === 'hotel_checkout') prevStay = Math.max(prevStay, 15)
       if (prevStay <= 0) prevStay = 15
       const travelMin = Math.max(5, Math.round(km * 3))
