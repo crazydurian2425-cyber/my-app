@@ -11713,7 +11713,12 @@ function renderActiveSet(set) {
   // dashboard lock (banner + locked submit + can't-open guard). Fail-safe: if
   // the deadline is missing/unparseable, _overdue stays false (nothing locks).
   const _odCutoff = set?.deadline ? new Date(new Date(set.deadline + 'T00:00:00').getTime() + 86400000) : null
-  const _overdue = !!(_odCutoff && !isNaN(_odCutoff.getTime()) && new Date() >= _odCutoff)
+  const _odPast = !!(_odCutoff && !isNaN(_odCutoff.getTime()) && new Date() >= _odCutoff)
+  // Once ALL plans are submitted/approved the deadline no longer applies — the
+  // planner delivered and is just awaiting review, so NEVER lock them then. The
+  // lock only fires when work is still outstanding past the deadline.
+  const _remaining = plans.filter(p => !['submitted','approved'].includes(p.status)).length
+  const _overdue = _odPast && _remaining > 0
   window._activeSetOverdue = _overdue
   const _odBanner = document.getElementById('overdue-banner')
   if (_odBanner) {
@@ -11948,15 +11953,29 @@ function renderPaceBanner(set, plansList) {
   const done = plansList.filter(p => ['submitted','approved'].includes(p.status)).length
   const total = plansList.length || 15
   const rem = total - done
-  if (!set?.deadline || rem === 0) { banner.style.display = 'none'; return }
+  if (!set?.deadline) { banner.style.display = 'none'; return }
 
   const now = new Date()
   const deadline = new Date(set.deadline)
+  const paceLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
+  const deadlineStr = deadline.toLocaleDateString(paceLocale,{day:'numeric',month:'short',year:'numeric'})
+  // All plans submitted → the deadline no longer applies. Show a clear
+  // "awaiting review" state in place of the countdown so the planner knows the
+  // clock has stopped and they're simply waiting on admin review.
+  if (rem === 0) {
+    banner.style.display = 'flex'
+    document.getElementById('pace-deadline-date').textContent = deadlineStr
+    const daysEl = document.getElementById('pace-days-left')
+    daysEl.textContent = (TM_LANG === 'ja') ? '· ✓ レビュー待ち' : '· ✓ Awaiting review'
+    daysEl.style.color = 'var(--green-mid, #2d9e7a)'
+    daysEl.style.fontWeight = '600'
+    const extBtn = document.getElementById('pace-extension-btn')
+    if (extBtn) extBtn.style.display = 'none'
+    return
+  }
   const msLeft   = deadline - now
   const hoursLeft = Math.ceil(msLeft / 3600000)
   const daysLeft  = Math.ceil(msLeft / 86400000)
-  const paceLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
-  const deadlineStr = deadline.toLocaleDateString(paceLocale,{day:'numeric',month:'short',year:'numeric'})
 
   // Compact display: "5D left" → "18HR" → "2HR" → "0HR" → "2D overdue"
   let daysLabel
