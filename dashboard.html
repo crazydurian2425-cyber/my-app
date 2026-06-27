@@ -16419,18 +16419,17 @@ function _applyHotelDefaults(slot, key) {
     const [h, m] = defTime.split(':').map(Number)
     let dl = (h || 0) * 60 + (m || 0) - 15
     if (dl < 0) dl = 0
-    // Default EARLY instead: sit the check-out at the day's START (the morning /
-    // arrival anchor + one step), so a planner can do an early checkout — store
-    // bags, sightsee, depart later — like any other first stop. Never later than
-    // the deadline; falls back to the deadline if the anchor can't be read (old
-    // behaviour). If the planner later moves it AFTER other stops, the time-chain
+    // Default EARLY instead: sit the check-out at the day's START — the morning
+    // wake time the top anchor uses (early 7:00 / standard 8:30 / late 9:30) plus
+    // one step — so a planner can do an early checkout (store bags, sightsee,
+    // depart later) like any other first stop. Capped at the deadline so it's
+    // never after the hotel allows; falls back to the deadline if the wake time
+    // can't be read. If the planner moves it AFTER other stops, the time-chain
     // re-times it to that position as usual.
-    const _day = slot.closest('[id^="slots-day-"]')
-    const _anchor = _day?.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="morning"]')
-                 || _day?.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="arrival"]')
-    const _anchorMin = (_anchor && typeof parseSlotTime === 'function')
-      ? parseSlotTime(_anchor.querySelector('.slot-time-input')?.value || '') : null
-    let total = (_anchorMin != null) ? Math.min(_anchorMin + 15, dl) : dl
+    const _wake = (typeof _wakeTimeForTiming === 'function')
+      ? _wakeTimeForTiming(window._currentDailyTiming) : null
+    const _wakeMin = (typeof parseSlotTime === 'function') ? parseSlotTime(_wake || '') : null
+    let total = (_wakeMin != null) ? Math.min(_wakeMin + 15, dl) : dl
     if (total < 0) total = 0
     total = Math.round(total / 15) * 15
     applyTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
