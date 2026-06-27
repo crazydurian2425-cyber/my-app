@@ -16415,8 +16415,22 @@ function _applyHotelDefaults(slot, key) {
   // planner has buffer.
   let applyTime = defTime
   if (isOut) {
+    // The hotel's official checkout (minus a 15-min buffer) = the LATEST allowed.
     const [h, m] = defTime.split(':').map(Number)
-    let total = (h || 0) * 60 + (m || 0) - 15
+    let dl = (h || 0) * 60 + (m || 0) - 15
+    if (dl < 0) dl = 0
+    // Default EARLY instead: sit the check-out at the day's START (the morning /
+    // arrival anchor + one step), so a planner can do an early checkout — store
+    // bags, sightsee, depart later — like any other first stop. Never later than
+    // the deadline; falls back to the deadline if the anchor can't be read (old
+    // behaviour). If the planner later moves it AFTER other stops, the time-chain
+    // re-times it to that position as usual.
+    const _day = slot.closest('[id^="slots-day-"]')
+    const _anchor = _day?.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="morning"]')
+                 || _day?.querySelector(':scope > .activity-slot.is-locked[data-anchor-type="arrival"]')
+    const _anchorMin = (_anchor && typeof parseSlotTime === 'function')
+      ? parseSlotTime(_anchor.querySelector('.slot-time-input')?.value || '') : null
+    let total = (_anchorMin != null) ? Math.min(_anchorMin + 15, dl) : dl
     if (total < 0) total = 0
     total = Math.round(total / 15) * 15
     applyTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
