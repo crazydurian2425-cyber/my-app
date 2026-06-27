@@ -7513,6 +7513,7 @@ async function openAssignModal(setId, setNum, city) {
   const defaultBody = `
     <div class="form-group">
       <label class="form-label">Select planner</label>
+      <input type="text" id="assign-planner-search" placeholder="Search by name or city…" autocomplete="off" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border-med,#cbbfa6);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:8px;background:var(--surface,#fff);color:var(--ink);">
       <select class="form-select" id="assign-planner-select">
         <option value="">— Select a planner —</option>
       </select>
@@ -7537,11 +7538,22 @@ async function openAssignModal(setId, setNum, city) {
   } else if (!planners?.length) {
     sel.innerHTML += '<option value="" disabled>No active planners available</option>'
   } else {
-    planners.forEach(p => {
-      const opt = document.createElement('option')
-      opt.value = p.id; opt.textContent = `${p.name} · ${p.city}`
-      sel.appendChild(opt)
-    })
+    // Search-filterable list — rebuild the <select> options as the admin types
+    // in the search box, so a long planner list is easy to narrow down.
+    const _renderPlannerOpts = (filter) => {
+      const f = String(filter || '').toLowerCase().trim()
+      const list = f ? planners.filter(p => `${p.name} ${p.city}`.toLowerCase().includes(f)) : planners
+      sel.innerHTML = '<option value="">— Select a planner —</option>'
+      list.forEach(p => {
+        const opt = document.createElement('option')
+        opt.value = p.id; opt.textContent = `${p.name} · ${p.city}`
+        sel.appendChild(opt)
+      })
+      if (!list.length) sel.innerHTML += '<option value="" disabled>No matching planner</option>'
+    }
+    _renderPlannerOpts('')
+    const _search = document.getElementById('assign-planner-search')
+    if (_search) _search.oninput = () => _renderPlannerOpts(_search.value)
     sel.onchange = () => {
       const p = planners?.find(p => p.id === sel.value)
       const preview = document.getElementById('assign-planner-preview')
