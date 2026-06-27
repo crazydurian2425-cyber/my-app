@@ -7323,6 +7323,8 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
             <span class="badge badge-amber" id="active-set-deadline" style="display:none;">—</span>
           </div>
           <div class="card-body">
+            <!-- Overdue banner — populated + shown by renderActiveSet when the set is past its deadline. -->
+            <div id="overdue-banner" style="display:none;align-items:flex-start;gap:10px;padding:13px 15px;margin-bottom:14px;background:var(--red-light,#fdecea);border:1px solid rgba(192,57,43,0.3);border-radius:var(--radius-sm);font-size:13px;line-height:1.55;color:#7a1d18;"></div>
             <div class="progress-row">
               <span id="prog-label">—</span>
               <span style="font-weight:500;color:var(--text)" id="prog-pct">0%</span>
@@ -11706,6 +11708,22 @@ async function renderDemoSet() {
 // ── RENDER ACTIVE SET ────────────────────────────────────────
 function renderActiveSet(set) {
   plans = set.plans || []
+  // OVERDUE state: the set is past its deadline. SAME rule as submit — the
+  // deadline DAY itself is valid; overdue begins the day AFTER. Drives the
+  // dashboard lock (banner + locked submit + can't-open guard). Fail-safe: if
+  // the deadline is missing/unparseable, _overdue stays false (nothing locks).
+  const _odCutoff = set?.deadline ? new Date(new Date(set.deadline + 'T00:00:00').getTime() + 86400000) : null
+  const _overdue = !!(_odCutoff && !isNaN(_odCutoff.getTime()) && new Date() >= _odCutoff)
+  window._activeSetOverdue = _overdue
+  const _odBanner = document.getElementById('overdue-banner')
+  if (_odBanner) {
+    if (_overdue) {
+      _odBanner.innerHTML = `<span style="font-size:18px;flex-shrink:0;">⛔</span><div><strong>${dt('This set is past its deadline.','このセットは期限を過ぎています。')}</strong> ${dt("Plans are shown but can't be opened or submitted — contact support to extend the deadline or request a new set.",'プランは表示されていますが、開くことも提出することもできません。延長または新しいセットのご請求は、サポートへお問い合わせください。')}<div style="margin-top:9px;"><button onclick="requestExtension()" style="padding:6px 12px;background:#fff;border:1px solid rgba(192,57,43,0.3);color:var(--red,#c0392b);border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">${dt('Contact support (extension or new set)','サポートに連絡（延長・新しいセット）')}</button></div></div>`
+      _odBanner.style.display = 'flex'
+    } else {
+      _odBanner.style.display = 'none'
+    }
+  }
 
   // Show the card (it starts hidden)
   const card = document.getElementById('active-set-card')
@@ -11875,7 +11893,17 @@ function renderActiveSet(set) {
     if (!formOpen) currentPlanId = current.id
     const trav = current.travelers
     updateBriefCard(current, trav)
-    if (current.status === 'bond_pending') {
+    if (_overdue) {
+      // OVERDUE takes precedence over bond/normal — submit is locked; tapping
+      // it explains. (The real submit + the form-open are also guarded.)
+      submitBtn.textContent = dt('🔒 Overdue — submit locked','🔒 期限超過 — 提出はロックされています')
+      submitBtn.disabled = false
+      submitBtn.onclick = () => showToast(dt('This set is past its deadline — contact support to continue or request a new set.','このセットは期限を過ぎています。続行、または新しいセットのご請求は、サポートへお問い合わせください。'))
+      submitBtn.style.background = '#9a9384'
+      submitBtn.style.boxShadow = 'none'
+      submitBtn.style.opacity = '0.92'
+      submitBtn.style.cursor = 'not-allowed'
+    } else if (current.status === 'bond_pending') {
       // Hard-lock the submit button — bond must be paid first
       submitBtn.textContent = t('dash.btn.bondLocked','Bond required — Plan {n} locked').replace('{n}', current.plan_number)
       // Clickable lock: tapping the prominent locked bar routes the planner
@@ -13554,6 +13582,14 @@ async function renderTravelerBrief(plan, t, notes) {
 }
 
 async function openItineraryForm(planId) {
+  // Block opening a plan on an OVERDUE set — the planner must contact support to
+  // extend or request a new set. Bypasses on window._forceFormOpen (e.g.
+  // editSubmittedPlan) and when the flag is false/undefined, so it only stops
+  // normal dashboard opens (plan cards + the Submit button) on overdue sets.
+  if (window._activeSetOverdue === true && !window._forceFormOpen) {
+    showToast(dt('This set is past its deadline — contact support to continue or request a new set.','このセットは期限を過ぎています。続行、または新しいセットのご請求は、サポートへお問い合わせください。'))
+    return
+  }
   // Cancel any pending auto-save timer from the *previous* plan. Without this,
   // a queued save from Plan 4 would fire after currentPlanId switched to Plan 5
   // and write Plan 4's form contents into Plan 5.
