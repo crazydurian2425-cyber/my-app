@@ -15016,7 +15016,7 @@ function fillItineraryItems(items) {
       const storedDur = parseInt(it.duration_minutes, 10)
       const typeFloor = (iconKey === 'accommodation')   ? 30
                       : (iconKey === 'meal')             ? 30
-                      : (iconKey === 'hotel_checkin')    ? 60
+                      : (iconKey === 'hotel_checkin')    ? 15
                       : (iconKey === 'hotel_checkout')   ? 15
                       : 0
       if (durHidden && Number.isFinite(storedDur) && storedDur > 0) {
@@ -17153,7 +17153,7 @@ function formatDurationLabel(mins){
 // 30, hotel check-in at 60; everything else keeps the 15-min grid.
 function _stayFloorForType(type){
   const t = String(type || '').toLowerCase()
-  if (t === 'hotel_checkin') return 60
+  if (t === 'hotel_checkin') return 15   // dropdown floor only — the 1h DEFAULT is set elsewhere; lets a quick luggage-drop be 15/30/45
   if (t === 'meal' || t === 'accommodation') return 30
   return 0
 }
@@ -18475,7 +18475,7 @@ function _suggestTransportStart(prevSlot, nextSlot) {
   // realistic standard.
   if (type === 'accommodation')   stayMin = Math.max(stayMin, 30)
   else if (type === 'meal')           stayMin = Math.max(stayMin, 30)
-  else if (type === 'hotel_checkin')  stayMin = Math.max(stayMin, 60)
+  else if (type === 'hotel_checkin')  stayMin = Math.max(stayMin, 15)
   else if (type === 'hotel_checkout') stayMin = Math.max(stayMin, 15)
   // Default for anything else when no duration is set.
   if (stayMin <= 0) stayMin = 15
