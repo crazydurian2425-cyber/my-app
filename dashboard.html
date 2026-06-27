@@ -22927,6 +22927,18 @@ async function submitPlan() {
         flashFormError({ target: document.getElementById('day-' + d) || undefined, message: _cm })
         return
       }
+      // (a.6) If the day ENDS AT THE HOTEL, that hotel stop must START at 6pm
+      // (18:00) or later — a genuine evening (dinner / onsen / rest), not a
+      // crammed afternoon stop stretched out. The planner then extends its stay
+      // to reach the suggested end. Fail-safe: unparseable time → skip (no block).
+      if (_endsAtHotel && _lastReal?.time) {
+        const _hm = String(_lastReal.time).match(/(\d{1,2}):(\d{2})/)
+        const _startMin = _hm ? (+_hm[1] * 60 + +_hm[2]) : null
+        if (_startMin != null && _startMin < 18 * 60) {
+          flashFormError({ target: document.getElementById('day-' + d) || undefined, message: _lbl + dt(': to end the day at the hotel, the final hotel stop must start at 6:00 pm or later.', '：ホテルで1日を締めくくる場合、最後のホテルの立ち寄り先は18:00以降に開始してください。') })
+          return
+        }
+      }
       // (b) end-of-day timing (±15 min) — reuses the day-end badge's compare.
       if (typeof _dayEndProfileCompare === 'function') {
         const _sc = document.getElementById('slots-day-' + d)
