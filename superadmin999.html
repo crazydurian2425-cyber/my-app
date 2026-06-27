@@ -3213,7 +3213,7 @@ function toggleReviewExpand(id){
 async function loadPendingReviews() {
   // Fetch submitted (needs review) + reviewed (checked, awaiting set approval)
   const { data: allData } = await sb.from('plans')
-    .select('id, plan_number, status, submitted_at, set_id, planner_id, sets(set_number, city, planner_id, planners(id,name,email)), travelers(name, traveler_type, requires_bond)')
+    .select('id, plan_number, status, submitted_at, set_id, planner_id, sets(set_number, city, planner_id, planners(id,name,email,onboarding_mentor)), travelers(name, traveler_type, requires_bond)')
     .in('status', ['submitted','approved']).order('submitted_at')
 
   const plans = allData || []
@@ -3225,7 +3225,7 @@ async function loadPendingReviews() {
   const newStyleIds = [...new Set(plans.filter(p => p.planner_id).map(p => p.planner_id))]
   let plannerInfo = {}
   if (newStyleIds.length) {
-    const { data: pls } = await sb.from('planners').select('id,name,email').in('id', newStyleIds)
+    const { data: pls } = await sb.from('planners').select('id,name,email,onboarding_mentor').in('id', newStyleIds)
     pls?.forEach(p => { plannerInfo[p.id] = p })
   }
 
@@ -3247,8 +3247,9 @@ async function loadPendingReviews() {
     const pId = p.planner_id || p.sets?.planner_id || 'unknown'
     const pName = (p.planner_id && plannerInfo[p.planner_id]?.name) || p.sets?.planners?.name || 'Unknown planner'
     const pEmail = (p.planner_id && plannerInfo[p.planner_id]?.email) || p.sets?.planners?.email || ''
+    const pMentor = (p.planner_id && plannerInfo[p.planner_id]?.onboarding_mentor) || p.sets?.planners?.onboarding_mentor || ''
     const key = `${pId}__${p.set_id}`
-    if (!groups[key]) groups[key] = { pId, pName, pEmail, setId: p.set_id, setNum: p.sets?.set_number, setCity: p.sets?.city, plans: [] }
+    if (!groups[key]) groups[key] = { pId, pName, pEmail, pMentor, setId: p.set_id, setNum: p.sets?.set_number, setCity: p.sets?.city, plans: [] }
     groups[key].plans.push(p)
   })
 
@@ -3395,7 +3396,7 @@ function refreshReviewRender() {
              style="display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;background:${isReady ? '#f0faf5' : 'var(--cream)'};user-select:none;">
           <div style="flex:1;">
             <div style="font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px;">${escapeHtml(g.pName)}${age}</div>
-            <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${escapeHtml(g.pEmail)} · Set #${String(g.setNum||'?').padStart(3,'0')} ${escapeHtml(g.setCity||'')}</div>
+            <div style="font-size:12px;color:var(--ink-3);margin-top:2px;">${escapeHtml(g.pEmail)} · Set #${String(g.setNum||'?').padStart(3,'0')} ${escapeHtml(g.setCity||'')}${g.pMentor ? ` · <span style="color:var(--ink-2);font-weight:600;">Mentor: ${escapeHtml(g.pMentor)}</span>` : ''}</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
             ${isReady
