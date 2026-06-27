@@ -8079,11 +8079,22 @@ async function extendDeadline(setId, setNum) {
   if (!days || isNaN(parseInt(days))) return
   const { data: set } = await sb.from('sets').select('deadline').eq('id', setId).single()
   if (!set) { showToast('Set not found'); return }
-  const d = new Date(set.deadline)
+  // Base on whichever is LATER — the current deadline or today — so extending an
+  // already-overdue set actually moves it into the future (and unlocks the planner)
+  // instead of landing on another past date.
+  const _base = new Date(set.deadline)
+  const _now = new Date()
+  const d = (!isNaN(_base.getTime()) && _base > _now) ? _base : _now
   d.setDate(d.getDate() + parseInt(days))
-  const { error } = await sb.from('sets').update({ deadline: d.toISOString().split('T')[0] }).eq('id', setId)
+  const newDl = d.toISOString().split('T')[0]
+  const { error } = await sb.from('sets').update({ deadline: newDl }).eq('id', setId)
   if (error) { showToast('Failed: ' + error.message); return }
-  showToast(`Deadline extended by ${days} days`)
+  // CRITICAL: the planner dashboard locks off the per-planner assignment deadline
+  // (set_assignments.deadline), NOT sets.deadline. Without this update the set
+  // moves but the planner stays locked. Update every assignment for this set.
+  const { error: aErr } = await sb.from('set_assignments').update({ deadline: newDl }).eq('set_id', setId)
+  if (aErr) { showToast('Set extended, but the planner assignment did NOT update: ' + aErr.message); return }
+  showToast(`Deadline extended by ${days} days — planner unblocked`)
   loadActiveSets()
 }
 

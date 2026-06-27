@@ -22712,21 +22712,16 @@ async function submitPlan() {
     return
   }
 
-  // Hard block: an OVERDUE set cannot be submitted — the planner must contact
-  // support (the "Request extension" button) to continue or get a new set. The
-  // deadline DAY itself is still valid; "overdue" begins the day AFTER it.
-  // Fail OPEN: any lookup error must never block a normal, on-time submit.
-  try {
-    const { data: _setRow } = await sb.from('plans').select('sets(deadline)').eq('id', currentPlanId).single()
-    const _dl = _setRow?.sets?.deadline
-    if (_dl) {
-      const _cutoff = new Date(new Date(_dl + 'T00:00:00').getTime() + 86400000) // start of the day after the deadline
-      if (!isNaN(_cutoff.getTime()) && new Date() >= _cutoff) {
-        showToast(dt('This set is past its deadline — please contact support to continue or request a new set.','このセットは期限を過ぎています。続行、または新しいセットのご請求は、サポートへお問い合わせください。'))
-        return
-      }
-    }
-  } catch (e) { /* fail-open: never block an on-time submit on a lookup error */ }
+  // Hard block: an OVERDUE set cannot be submitted — contact support to extend or
+  // get a new set. Reuse the SAME flag the dashboard computes from the planner's
+  // assignment deadline (set_assignments.deadline, via renderActiveSet), so the
+  // submit gate and the dashboard lock ALWAYS agree on one deadline — and an
+  // extension that clears the dashboard clears this too. Fail OPEN: if the flag
+  // isn't set, never block an on-time submit.
+  if (window._activeSetOverdue === true) {
+    showToast(dt('This set is past its deadline — please contact support to continue or request a new set.','このセットは期限を過ぎています。続行、または新しいセットのご請求は、サポートへお問い合わせください。'))
+    return
+  }
 
   // Clear any old error banner from a previous attempt.
   hideModalErrorBanner()
