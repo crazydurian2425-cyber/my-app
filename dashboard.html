@@ -15325,6 +15325,29 @@ async function _initArrivalStationLookup() {
     : (_isRail && !/station|駅/i.test(rawLoc))
       ? `${rawLoc} Station`
       : _withCity
+  // Apply a resolved arrival station (from cache or a fresh fetch): set the
+  // globals + repaint Day 1. On a reload the existing arrival taxi has no
+  // dataset.fromPlaceId (not persisted across save/load); without a full day
+  // refresh, refreshTransportSlot's Routes call skips, the grid sticks at "—",
+  // and depart/arrive times never update. refreshDayDistances re-runs the
+  // transport loop with the resolved station coords on the arrival anchor.
+  const _applyArrival = (name, lat, lng, id) => {
+    window._currentArrivalStationResolvedName = name || rawLoc
+    window._currentArrivalStationLatLng       = { lat, lng }
+    window._currentArrivalStationPlaceId      = id
+    const day1 = document.getElementById('slots-day-1')
+    if (day1 && typeof refreshDayDistances === 'function') {
+      refreshDayDistances(day1)
+    } else if (day1 && typeof renderDayBookends === 'function') {
+      renderDayBookends(day1, 1, (typeof dayCount === 'number') ? dayCount : null)
+    }
+    // Safety net: ensure a taxi block exists between arrival and the first venue.
+    _ensureArrivalTaxiPresent()
+  }
+  // localStorage cache — reuse a prior resolution so reopening the plan or
+  // switching language doesn't re-hit Places searchText every time.
+  const _cached = _stationCacheGet(query)
+  if (_cached) { _applyArrival(_cached.name, _cached.lat, _cached.lng, _cached.id); return }
   try {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
     const bias = buildDestBias(city)
@@ -15342,27 +15365,9 @@ async function _initArrivalStationLookup() {
     const data = await resp.json()
     const p = data?.places?.[0]
     if (!p?.id || !p?.location) return
-    window._currentArrivalStationResolvedName = p.displayName?.text || rawLoc
-    window._currentArrivalStationLatLng       = { lat: p.location.latitude, lng: p.location.longitude }
-    window._currentArrivalStationPlaceId      = p.id
-    // Repaint Day 1's bookends AND every transport on the day. On a
-    // reload, the existing arrival taxi has no dataset.fromPlaceId
-    // (those fields aren't persisted across save/load); without a
-    // full day refresh, refreshTransportSlot's Routes API call skips
-    // (no fromPlaceId), the grid sticks at "—", and the depart/arrive
-    // times never update. refreshDayDistances re-runs the transport
-    // loop with the now-resolved station coords on the arrival
-    // anchor's _placeData, so Routes API fires and the grid populates.
-    const day1 = document.getElementById('slots-day-1')
-    if (day1 && typeof refreshDayDistances === 'function') {
-      refreshDayDistances(day1)
-    } else if (day1 && typeof renderDayBookends === 'function') {
-      renderDayBookends(day1, 1, (typeof dayCount === 'number') ? dayCount : null)
-    }
-    // Safety net: make sure a taxi block exists between arrival and the
-    // first venue. If _autoSeedDay1HotelIfNeeded didn't fire properly,
-    // this catches it.
-    _ensureArrivalTaxiPresent()
+    const _name = p.displayName?.text || rawLoc
+    _stationCacheSet(query, { id: p.id, name: _name, lat: p.location.latitude, lng: p.location.longitude })
+    _applyArrival(_name, p.location.latitude, p.location.longitude, p.id)
   } catch (e) {
     console.warn('[station-lookup] init threw', e)
   }
