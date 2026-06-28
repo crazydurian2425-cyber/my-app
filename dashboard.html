@@ -15098,6 +15098,35 @@ function fillItineraryItems(items) {
   _initDepartureStationLookup()
 }
 
+// Station-lookup cache backed by localStorage (not just an in-memory Map) so a
+// page reload — e.g. switching language, which reloads the page — reuses the
+// resolved station instead of re-hitting Places searchText. 30-day TTL keyed by
+// the normalized query. The in-memory Map stays as a fast same-session layer.
+const STATION_CACHE_PREFIX = 'jj_station_v1_'
+const STATION_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
+function _stationCacheGet(query) {
+  window._stationLookupCache = window._stationLookupCache || new Map()
+  const mem = window._stationLookupCache.get(query)
+  if (mem) return mem
+  try {
+    const raw = localStorage.getItem(STATION_CACHE_PREFIX + query)
+    if (raw) {
+      const o = JSON.parse(raw)
+      if (o && o.t && (Date.now() - o.t) < STATION_CACHE_TTL_MS) {
+        window._stationLookupCache.set(query, o.data)
+        return o.data
+      }
+    }
+  } catch (e) {}
+  return null
+}
+function _stationCacheSet(query, resolved) {
+  if (!resolved) return
+  window._stationLookupCache = window._stationLookupCache || new Map()
+  window._stationLookupCache.set(query, resolved)
+  try { localStorage.setItem(STATION_CACHE_PREFIX + query, JSON.stringify({ t: Date.now(), data: resolved })) } catch (e) {}
+}
+
 // Look up an arrival OR departure station via Google Places textSearch,
 // then stash the resolved place_id + coords + display name on the
 // transport slot's dataset. `side` determines which end:
@@ -15119,8 +15148,7 @@ async function _lookupStationGeneric(rawLoc, sideHint) {
     : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
       ? `${rawLoc}, ${city}`
       : rawLoc
-  window._stationLookupCache = window._stationLookupCache || new Map()
-  let resolved = window._stationLookupCache.get(query)
+  let resolved = _stationCacheGet(query)
   if (resolved) return resolved
   try {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
@@ -15149,7 +15177,7 @@ async function _lookupStationGeneric(rawLoc, sideHint) {
       lat:     p.location.latitude,
       lng:     p.location.longitude,
     }
-    window._stationLookupCache.set(query, resolved)
+    _stationCacheSet(query, resolved)
     return resolved
   } catch (e) {
     console.warn(`[station-lookup:${sideHint}] threw`, e)
@@ -15206,9 +15234,8 @@ async function _lookupStationAndAttach(transportSlot) {
     : (_isRail && !/station|駅/i.test(rawLoc))
       ? `${rawLoc} Station`
       : _withCity
-  // Cache resolved stations per-session to avoid redundant Places billing.
-  window._stationLookupCache = window._stationLookupCache || new Map()
-  let resolved = window._stationLookupCache.get(query)
+  // Cache resolved stations (localStorage-backed) to avoid redundant Places billing.
+  let resolved = _stationCacheGet(query)
   if (!resolved) {
     try {
       const body = {
@@ -15241,7 +15268,7 @@ async function _lookupStationAndAttach(transportSlot) {
         lat:     p.location.latitude,
         lng:     p.location.longitude,
       }
-      window._stationLookupCache.set(query, resolved)
+      _stationCacheSet(query, resolved)
     } catch (e) {
       console.warn('[station-lookup] threw', e)
       return
@@ -18706,14 +18733,15 @@ function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
 // no transit step timeline). 2000/browser/day still stops a true runaway
 // loop while leaving comfortable headroom for real editing.
 const ROUTES_DAILY_CAP = 2000
-const ROUTES_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+const ROUTES_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
 // v2: prefix bumped after switching DRIVE to TRAFFIC_AWARE. The old v1
 // cache held traffic-unaware durations (~15 min for the 3.4 km Arc de
 // Triomphe → ONYX taxi) which kept showing up even after the code
 // change, because the cache key didn't include routing preference.
 // v5 entries also carry routes.polyline.encodedPolyline so our own
 // Maps JS render shows the SAME route as the grid distance/duration.
-const ROUTES_CACHE_PREFIX = 'jj_route_v7_'
+// v8: drive/walk keyed per-DAY (transit keeps per-hour) + 30-day TTL.
+const ROUTES_CACHE_PREFIX = 'jj_route_v8_'
 
 function _routesModeFor(mode) {
   if (mode === 'walk') return 'WALK'
@@ -18817,17 +18845,16 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
   if (!fromId || !toId) return null
   const travelMode = _routesModeFor(mode)
   if (!travelMode) return null
-  // Cache key now scopes per (origin, destination, mode, YYYY-MM-DD-HH).
-  // Same hour shares one cache entry — coarse enough that we don't blow
-  // the cache on every minute-level edit, fine enough to honour transit
-  // schedule changes (metro thins out late evening, lines stop after
-  // midnight). Falls back to a "now" bucket if departISO is missing so
-  // legacy callers still get caching.
-  const _hourKey = (() => {
+  // Cache key scopes per (origin, destination, mode, time-bucket). TRANSIT uses
+  // a per-HOUR bucket (metro thins out late evening, lines stop after midnight,
+  // so schedules genuinely change by hour). DRIVE/WALK use a per-DAY bucket —
+  // they barely change by hour, so this stops a re-fetch every time the planner
+  // nudges a stop's time. Falls back to a "now" bucket if departISO is missing.
+  const _timeKey = (() => {
     const iso = departISO || new Date().toISOString()
-    return iso.slice(0, 13)  // "YYYY-MM-DDTHH"
+    return (travelMode === 'TRANSIT') ? iso.slice(0, 13) : iso.slice(0, 10)
   })()
-  const key = `${ROUTES_CACHE_PREFIX}${fromId}_${toId}_${travelMode}_${_hourKey}`
+  const key = `${ROUTES_CACHE_PREFIX}${fromId}_${toId}_${travelMode}_${_timeKey}`
   try {
     const raw = localStorage.getItem(key)
     if (raw) {
