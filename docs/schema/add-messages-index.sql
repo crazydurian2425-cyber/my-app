@@ -13,14 +13,16 @@
 -- any data or behaviour, only speeds up the existing queries.
 --
 -- HOW TO RUN (Supabase → SQL editor):
---   Run the statement below on its own. CONCURRENTLY builds the index WITHOUT
---   locking the table, so it's safe to run while planners/CS are using the app.
---   NOTE: CONCURRENTLY cannot run inside a transaction. If the editor wraps your
---   query in one and you get "CREATE INDEX CONCURRENTLY cannot run inside a
---   transaction block", just remove the word CONCURRENTLY and run it — on a
---   normal-sized messages table the brief lock is unnoticeable.
+--   Just paste the two statements below and Run. They build with a brief lock
+--   (a second or two on a normal-sized table) — unnoticeable.
+--
+--   NOTE: the Supabase SQL editor wraps your query in a transaction, and
+--   CREATE INDEX CONCURRENTLY is NOT allowed inside a transaction (you'd get
+--   "ERROR: 25001: CREATE INDEX CONCURRENTLY cannot run inside a transaction
+--   block"). So we DON'T use CONCURRENTLY here. If you ever run this from psql
+--   instead, you can add CONCURRENTLY to avoid the lock entirely.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_conv_created
+CREATE INDEX IF NOT EXISTS idx_messages_conv_created
   ON public.messages (conversation_id, created_at);
 
 
@@ -28,6 +30,6 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_conv_created
 -- which filters by sender_type = 'planner' and created_at > <since>. Only
 -- matters when realtime is down and the poller is the fallback.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_messages_planner_created
+CREATE INDEX IF NOT EXISTS idx_messages_planner_created
   ON public.messages (created_at)
   WHERE sender_type = 'planner';
