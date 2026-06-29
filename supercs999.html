@@ -617,6 +617,10 @@ const csSessionId = 'cs_' + Math.random().toString(36).slice(2, 10) + '_' + Date
 let allConvs = []
 let activeConv = null
 let activeMessages = []
+// Per-conversation message cache for instant chat-switching. loadMessages stays
+// authoritative (it refreshes + overwrites this); the cache only provides an
+// instant first paint so the previous chat doesn't linger during the fetch.
+const msgCache = new Map()
 let currentFilter = 'open'
 let msgChannel = null
 let typingChannel = null
@@ -1262,6 +1266,16 @@ async function openConversation(id) {
   badge.className = 'info-badge ' + (p.status === 'active' ? 'ok' : 'amber')
   document.getElementById('close-btn').textContent = conv.status === 'closed' ? 'Reopen' : 'Close'
 
+  // Instant paint: show cached messages now, or a lightweight loading state, so
+  // the previous planner's chat doesn't linger on screen while the fresh fetch
+  // runs below. loadMessages refreshes (and re-caches) this a moment later.
+  if (msgCache.has(id)) {
+    activeMessages = msgCache.get(id)
+    renderMessages()
+  } else {
+    activeMessages = []
+    renderMessagesLoading()
+  }
   // Fetch messages
   await loadMessages(id)
   // Mark read
@@ -2130,7 +2144,12 @@ function applyQuickReply(index) {
 async function loadMessages(convId) {
   const { data, error } = await sb.from('messages').select('*').eq('conversation_id', convId).order('created_at')
   if (error) { console.error(error); return }
-  activeMessages = data || []
+  const msgs = data || []
+  msgCache.set(convId, msgs)   // keep the instant-paint cache fresh
+  // If the user clicked to another conversation while this fetch was in flight,
+  // don't overwrite the now-active view with these (stale) messages.
+  if (activeConv && activeConv.id !== convId) return
+  activeMessages = msgs
   renderMessages()
   // Re-run suggestion detection now that the latest planner message is loaded
   renderQuickReplies()
@@ -2178,6 +2197,14 @@ async function csTranslateMessage(msgId){
   renderMessages()
 }
 
+// Lightweight placeholder shown the instant an (uncached) chat is opened, so the
+// previous conversation clears immediately instead of lingering during the fetch.
+function renderMessagesLoading() {
+  const box = document.getElementById('chat-scroll')
+  if (!box) return
+  const bar = (w, me) => `<div style="width:${w};height:34px;border-radius:12px;background:rgba(255,255,255,.06);margin:6px 0;align-self:${me ? 'flex-end' : 'flex-start'};"></div>`
+  box.innerHTML = bar('55%', false) + bar('70%', true) + bar('45%', false)
+}
 function renderMessages() {
   const box = document.getElementById('chat-scroll')
   if (!activeMessages.length) {
