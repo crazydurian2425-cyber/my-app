@@ -2824,6 +2824,21 @@ function timeAgo(d) {
   const h = Math.floor((Date.now()-new Date(d))/3600000)
   return h < 1 ? 'just now' : h < 24 ? h+'h ago' : Math.floor(h/24)+'d ago'
 }
+// Exact submission timestamp in Japan time (JST) — e.g. "2026-06-30 14:32".
+// Used in the pending-review list so each plan shows precisely when it was sent.
+function fmtSubmitJST(ts) {
+  if (!ts) return '—'
+  const d = new Date(ts)
+  if (isNaN(d)) return '—'
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(d)
+    const g = t => parts.find(x => x.type === t)?.value || ''
+    return `${g('year')}-${g('month')}-${g('day')} ${g('hour')}:${g('minute')}`
+  } catch (e) { return '—' }
+}
 
 // Safe days-left computation with null guard — fixes old "-20565d left" bug when deadline is missing
 function daysFromDeadline(deadline) {
@@ -3437,6 +3452,7 @@ function refreshReviewRender() {
                   <td style="padding:10px 16px;font-size:13px;color:var(--ink);">${escapeHtml(t?.name || '—')}</td>
                   <td style="padding:10px 16px;font-size:12px;">${bond ? '<span class="bond-chip">bond</span>' : `<span class="badge b-gray">${escapeHtml(t?.traveler_type||'')}</span>`}</td>
                   <td style="padding:10px 16px;font-size:12px;"><span class="badge ${isReviewed ? 'b-green' : 'b-amber'}">${isReviewed ? 'reviewed' : 'needs review'}</span></td>
+                  <td style="padding:10px 16px;font-size:12px;color:var(--ink-3);white-space:nowrap;" title="Submitted (Japan time)">${fmtSubmitJST(p.submitted_at)}<span style="font-size:10px;opacity:.6;"> JST</span></td>
                   <td style="padding:10px 16px;text-align:right;">
                     <button class="btn btn-ghost btn-sm" onclick="openReviewFromQueue('${expandId}', ${idx})">${isReviewed ? 'Re-check' : 'Review'}</button>
                   </td>
