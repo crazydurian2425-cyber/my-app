@@ -2452,14 +2452,15 @@ async function sendMessage(e) {
   })
   renderMessages()
 
-  btn.disabled = true
+  // Don't disable the send button while the insert is in flight — the bubble
+  // already shows optimistically and the input is cleared, so the agent can fire
+  // the next message immediately instead of waiting for the DB round-trip.
   const { data: inserted, error } = await sb.from('messages').insert({
     conversation_id: activeConv.id,
     sender_type: 'cs',
     sender_name: csAgentName,
     body
   }).select().single()
-  btn.disabled = false
   if (error) {
     activeMessages = activeMessages.filter(m => m.id !== tempId)
     renderMessages()
