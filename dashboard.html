@@ -7640,7 +7640,7 @@ body.sidebar-collapsed .brand-tag{ display:none!important; }
               <div class="form-group"><label class="form-label" data-i18n="profile.bank.name">Bank name</label>
                 <input class="form-input" id="profile-bank-name" placeholder="e.g. MUFG Bank" data-i18n-ph="profile.bank.ph.name" autocomplete="off" spellcheck="false">
               </div>
-              <div class="form-group" style="margin-bottom:0"><label class="form-label" data-i18n="profile.bank.branchName">Branch name</label>
+              <div class="form-group" style="margin-bottom:0"><label class="form-label"><span data-i18n="profile.bank.branchName">Branch name</span> <span style="color:#c0392b;font-weight:700;">*</span></label>
                 <input class="form-input" id="profile-bank-branch-name" placeholder="e.g. Shibuya Branch" data-i18n-ph="profile.bank.ph.branchName" autocomplete="off" spellcheck="false">
               </div>
             </div>
@@ -12729,6 +12729,14 @@ async function saveProfile() {
     // as blank — that silent drop looked like the data "disappearing" on reload.
     if ((branchRaw && !branch) || (acctRaw && !acctNum)) {
       showToast(dt('Branch code and account number must be digits.','支店コードと口座番号は数字で入力してください。'))
+      return
+    }
+    // 支店名 (branch name) is required whenever bank details are entered, so the
+    // admin payout line + furikomi forms always have the branch NAME, not just the
+    // code. Only enforced when a bank record is actually being saved (some bank
+    // field present) — PayPay-only / blank-bank saves are unaffected.
+    if ((bankName || branch || acctNum || holder) && !branchName) {
+      showToast(dt('Please enter the branch name (支店名).','支店名を入力してください。'))
       return
     }
     // bank_name = bank, bank_branch_code = branch code, bank_account = account
