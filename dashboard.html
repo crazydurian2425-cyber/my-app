@@ -16454,27 +16454,40 @@ function _applyHotelDefaults(slot, key) {
   // For check-out we land ~15 min before the official deadline so the
   // planner has buffer.
   let applyTime = defTime
+  let _skipTimeApply = false
   if (isOut) {
-    // The hotel's official checkout (minus a 15-min buffer) = the LATEST allowed.
-    const [h, m] = defTime.split(':').map(Number)
-    let dl = (h || 0) * 60 + (m || 0) - 15
-    if (dl < 0) dl = 0
-    // Default EARLY instead: sit the check-out at the day's START — the morning
-    // wake time the top anchor uses (early 7:00 / standard 8:30 / late 9:30) plus
-    // one step — so a planner can do an early checkout (store bags, sightsee,
-    // depart later) like any other first stop. Capped at the deadline so it's
-    // never after the hotel allows; falls back to the deadline if the wake time
-    // can't be read. If the planner moves it AFTER other stops, the time-chain
-    // re-times it to that position as usual.
-    const _wake = (typeof _wakeTimeForTiming === 'function')
-      ? _wakeTimeForTiming(window._currentDailyTiming) : null
-    const _wakeMin = (typeof parseSlotTime === 'function') ? parseSlotTime(_wake || '') : null
-    let total = (_wakeMin != null) ? Math.min(_wakeMin + 15, dl) : dl
-    if (total < 0) total = 0
-    total = Math.round(total / 15) * 15
-    applyTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+    // The early-checkout default (wake + 15) ONLY applies when the check-out is
+    // the FIRST real stop of the day. If a real stop already precedes it (e.g. a
+    // morning activity), DON'T override the time — leave the position-based time
+    // addSlot set so the normal time-chain places it AFTER that stop (prev start
+    // + stay), exactly like a non-hotel stop. (Previously the early 8:45 default
+    // was forced even as a 2nd stop, so it overlapped the stop before it.)
+    let _hasPrevReal = false
+    for (let _scan = slot.previousElementSibling; _scan; _scan = _scan.previousElementSibling) {
+      if (_scan.classList && _scan.classList.contains('activity-slot')
+          && !_scan.classList.contains('is-locked')
+          && !_scan.classList.contains('slot-type-transport')) { _hasPrevReal = true; break }
+    }
+    if (_hasPrevReal) {
+      // Not the first stop — keep the position-based time; the time-chain re-times it.
+      _skipTimeApply = true
+    } else {
+      // First stop → early checkout: the morning wake time the top anchor uses
+      // (early 7:00 / standard 8:30 / late 9:30) + 15 min, capped at the hotel's
+      // deadline; falls back to the deadline if the wake time can't be read.
+      const [h, m] = defTime.split(':').map(Number)
+      let dl = (h || 0) * 60 + (m || 0) - 15
+      if (dl < 0) dl = 0
+      const _wake = (typeof _wakeTimeForTiming === 'function')
+        ? _wakeTimeForTiming(window._currentDailyTiming) : null
+      const _wakeMin = (typeof parseSlotTime === 'function') ? parseSlotTime(_wake || '') : null
+      let total = (_wakeMin != null) ? Math.min(_wakeMin + 15, dl) : dl
+      if (total < 0) total = 0
+      total = Math.round(total / 15) * 15
+      applyTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+    }
   }
-  if (typeof _applySlotTime === 'function') _applySlotTime(slot, applyTime)
+  if (!_skipTimeApply && typeof _applySlotTime === 'function') _applySlotTime(slot, applyTime)
   // Default duration — check-in 60 min, check-out 15 min. Reasoning:
   // after check-in the traveler usually wants room hand-off + drop bags +
   // rest / freshen up before heading out. Check-out is just a bag-drop +
