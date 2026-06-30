@@ -19341,7 +19341,13 @@ function _transportEstimates(mode, km) {
     // Taxi heuristic shown before the Routes API resolves. Same GO fare model
     // as _costFromRealKm, on the road-adjusted distance (kmCar = haversine
     // ×1.25): ¥500 flag-fall (first 1 km) + ¥392/km + ¥400 GO overhead.
-    const mins = Math.max(4, round(kmCar * 3))
+    // Time is distance-tiered: ~20 km/h city crawl for the first 5 km, then
+    // ~60 km/h arterial/expressway beyond. The OLD flat 3 min/km (20 km/h for
+    // EVERY distance) turned an ~80 km airport run into an absurd 300 min;
+    // this gives ~3 km ≈ 11 min and ~80 km ≈ ~110 min instead.
+    const cityKm = Math.min(kmCar, 5)
+    const farKm  = Math.max(0, kmCar - 5)
+    const mins = Math.max(4, round(cityKm * 3 + farKm * 1.0))
     const cost = _goTaxiFare(kmCar)
     return { mins, costEur: cost }
   }
