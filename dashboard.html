@@ -16481,9 +16481,9 @@ function _applyHotelDefaults(slot, key) {
       const _wake = (typeof _wakeTimeForTiming === 'function')
         ? _wakeTimeForTiming(window._currentDailyTiming) : null
       const _wakeMin = (typeof parseSlotTime === 'function') ? parseSlotTime(_wake || '') : null
-      let total = (_wakeMin != null) ? Math.min(_wakeMin + 15, dl) : dl
+      let total = (_wakeMin != null) ? Math.min(_wakeMin + 5, dl) : dl
       if (total < 0) total = 0
-      total = Math.round(total / 15) * 15
+      total = Math.ceil(total / 5) * 5
       applyTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
     }
   }
@@ -22423,6 +22423,16 @@ function addSlot(dayNum, seed = null, opts = {}) {
       ? dayTimeWindow(dayNum, dayCount || 1)
       : null
     defTime = (_w && _w.defaultFirst) ? _w.defaultFirst : bumpAnd(window._currentArrivalTime)
+  } else if (dayNum > 1) {
+    // Day 2+ first stop → just after the morning wake time (wake + 5, on the
+    // 5-min auto grid), matching the morning anchor + the hotel check-out
+    // default, instead of a flat 09:00. e.g. standard wake 8:30 → 8:35.
+    const _wk = (typeof _wakeTimeForTiming === 'function') ? _wakeTimeForTiming(window._currentDailyTiming) : null
+    const _wm = String(_wk || '').match(/^(\d{1,2}):(\d{2})$/)
+    if (_wm) {
+      const total = Math.ceil(((+_wm[1] * 60 + +_wm[2]) + 5) / 5) * 5
+      defTime = `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
+    }
   }
   // ── Time-window constraints (Day 1 floor, Last day cap) ──
   // Compute once per slot so both the dropdown and the default time honor it.
