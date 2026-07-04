@@ -16570,6 +16570,17 @@ function _applyHotelDefaults(slot, key) {
 // see chip".
 async function _enrichHotelSlotFromPlaceId(slot, placeId) {
   if (!slot || !placeId || typeof GOOGLE_PLACES_API_KEY !== 'string' || !GOOGLE_PLACES_API_KEY) return
+  // Skip when a previous attempt (this device, ≤30 days) proved Google has
+  // no photos/rating for this hotel — that sparse case used to re-bill a
+  // GetPlace on EVERY plan open because the "needs enrichment" test never
+  // turned false. Network failures stay unmarked and retry next open.
+  if (slot.dataset.enrichTried === '1') return
+  const _enrichMk = 'jj_enrich_v1_' + placeId
+  try {
+    const r = localStorage.getItem(_enrichMk)
+    if (r && (Date.now() - (JSON.parse(r).t || 0)) < 30 * 24 * 60 * 60 * 1000) return
+  } catch (e) {}
+  slot.dataset.enrichTried = '1'
   const fields = [
     'id','displayName','formattedAddress','location',
     'rating','userRatingCount','priceLevel','priceRange',
@@ -16577,11 +16588,32 @@ async function _enrichHotelSlotFromPlaceId(slot, placeId) {
     'websiteUri','googleMapsUri','types','photos'
   ].join(',')
   try {
-    const resp = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
-      headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields }
-    })
-    if (!resp.ok) { console.warn('[hotel-enrich] GetPlace failed', resp.status); return }
-    const place = await resp.json()
+    // ONE GetPlace shared across slots: check-IN and check-OUT reference the
+    // same hotel and fire together on plan open — both merge from the same
+    // response instead of billing two identical requests.
+    window._enrichFetches = window._enrichFetches || new Map()
+    let _fetchP = window._enrichFetches.get(placeId)
+    if (!_fetchP) {
+      _fetchP = (async () => {
+        const resp = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+          headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields }
+        })
+        if (!resp.ok) { console.warn('[hotel-enrich] GetPlace failed', resp.status); return null }
+        const place = await resp.json()
+        if (!place?.id) return null
+        // Sparse hotel (Google has NO photos and NO rating for it): remember
+        // that for 30 days — otherwise the "needs enrichment" test stays true
+        // forever and re-bills this GetPlace on every plan open. Hotels WITH
+        // data never get a marker; their merged + autosaved fields stop the
+        // trigger naturally, so the marker can never block real enrichment.
+        const _sparse = (!Array.isArray(place.photos) || place.photos.length === 0)
+                     && (typeof place.rating !== 'number')
+        if (_sparse) _lsSafeSet(_enrichMk, JSON.stringify({ t: Date.now() }))
+        return place
+      })()
+      window._enrichFetches.set(placeId, _fetchP)
+    }
+    const place = await _fetchP
     if (!place?.id) return
     const photoRefs = Array.isArray(place.photos)
       ? place.photos.map(p => p?.name).filter(Boolean).slice(0, 6)
@@ -17348,7 +17380,10 @@ function attachPlacesSearch(slot) {
     if (query.length < 3) { hidePlacesDropdown(slot); return }
     if (!slot.dataset.placesSessionToken) slot.dataset.placesSessionToken = uuidV4()
     clearTimeout(debounceTimer)
-    debounceTimer = setTimeout(() => fetchPlacesPredictions(slot, query), 280)
+    // 450 ms: only fire once the planner actually pauses. At 280 ms a normal
+    // typing rhythm leaked a request every couple of characters — ~40% of all
+    // autocomplete traffic for zero UX benefit (results still feel instant).
+    debounceTimer = setTimeout(() => fetchPlacesPredictions(slot, query), 450)
   })
   titleInput.addEventListener('focus', () => {
     const type = slot.querySelector('.slot-type-select')?.value || 'activity'
@@ -18852,7 +18887,8 @@ function _bumpRoutesDaily() {
 const _JJ_CACHE_TTLS = [
   { prefix: 'jj_route_v8_',   ttl: 30 * 24 * 60 * 60 * 1000 },
   { prefix: 'jj_station_v1_', ttl: 30 * 24 * 60 * 60 * 1000 },
-  { prefix: 'jj_nearby_v3_',  ttl: 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_nearby_v3_',  ttl: 7 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_enrich_v1_',  ttl: 30 * 24 * 60 * 60 * 1000 },
 ]
 function _purgeJJCaches(aggressive) {
   let removed = 0
@@ -20498,7 +20534,10 @@ function setTransportMode(slotId, mode) {
 // and the original chip's photo + body fade to 55% so the planner sees
 // at a glance that the current pick is broken.
 const PLACES_NEARBY_DAILY_CAP = 50
-const PLACES_NEARBY_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+// 7 days, not 24 h — the cache key already pins (place, exact date), and a
+// venue's opening hours for one fixed calendar date don't drift day to day.
+// Nearby is the priciest SKU per call; re-asking daily was pure waste.
+const PLACES_NEARBY_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const PLACES_NEARBY_CACHE_PREFIX = 'jj_nearby_v3_'
 
 function _todayKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
