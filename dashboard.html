@@ -12731,12 +12731,15 @@ async function saveProfile() {
       showToast(dt('Branch code and account number must be digits.','支店コードと口座番号は数字で入力してください。'))
       return
     }
-    // 支店名 (branch name) is required whenever bank details are entered, so the
-    // admin payout line + furikomi forms always have the branch NAME, not just the
-    // code. Only enforced when a bank record is actually being saved (some bank
-    // field present) — PayPay-only / blank-bank saves are unaffected.
-    if ((bankName || branch || acctNum || holder) && !branchName) {
-      showToast(dt('Please enter the branch name (支店名).','支店名を入力してください。'))
+    // All core bank fields are required whenever bank details are entered, so the
+    // admin payout line + furikomi forms are always complete (bank name, branch
+    // name, branch code, account number, holder). Only enforced when a bank record
+    // is actually being saved (some bank field present) — PayPay-only / blank-bank
+    // saves are unaffected. Account type always defaults to 普通 so it's never blank;
+    // the kanji holder stays optional.
+    const _bankEntered = (bankName || branchName || branch || acctNum || holder)
+    if (_bankEntered && (!bankName || !branchName || !branch || !acctNum || !holder)) {
+      showToast(dt('Please fill in all bank fields: bank name, branch name, branch code, account type, account number, and account holder (katakana).','銀行口座の項目をすべて入力してください（銀行名・支店名・支店コード・口座種別・口座番号・口座名義（カタカナ））。'))
       return
     }
     // bank_name = bank, bank_branch_code = branch code, bank_account = account
@@ -14953,6 +14956,13 @@ function fillItineraryItems(items) {
         // — Routes API maps both to TRANSIT anyway, no behaviour change.
         slot.dataset.transportMode = (it.transport_mode === 'train') ? 'transit' : it.transport_mode
       }
+      // Rehydrate the persisted Routes snapshot — refreshTransportSlot
+      // compares its key against the leg's current endpoints/mode/time-band
+      // and, on a match, fills the grid + step timeline WITHOUT re-billing
+      // the Routes API on this plan open.
+      if (iconKey === 'transport' && it.route_snapshot && it.route_snapshot.k && it.route_snapshot.d) {
+        try { slot.dataset.routeSnap = JSON.stringify(it.route_snapshot) } catch (e) {}
+      }
       // Restore the locked flag — applies to auto-seeded Day-1 Hotel
       // check-in (and any other row marked is_locked=true in the DB).
       // CSS hides the × button when this attribute is present.
@@ -15132,7 +15142,7 @@ function _stationCacheSet(query, resolved) {
   if (!resolved) return
   window._stationLookupCache = window._stationLookupCache || new Map()
   window._stationLookupCache.set(query, resolved)
-  try { localStorage.setItem(STATION_CACHE_PREFIX + query, JSON.stringify({ t: Date.now(), data: resolved })) } catch (e) {}
+  _lsSafeSet(STATION_CACHE_PREFIX + query, JSON.stringify({ t: Date.now(), data: resolved }))
 }
 
 // Look up an arrival OR departure station via Google Places textSearch,
@@ -17842,11 +17852,41 @@ function applyDurationSuggestion(slot, mins) {
   }
 }
 
-// Build a Google Photos URL on demand. Browser caches the image so a
-// re-render of the chip doesn't refetch.
+// Build a Google Photos URL on demand.
 function googlePhotoUrl(photoName, maxWidthPx = 120) {
   if (!photoName) return ''
   return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidthPx}&key=${GOOGLE_PLACES_API_KEY}`
+}
+
+// Google bills EVERY hit on the /media endpoint as a Places API request,
+// and browsers don't reliably cache the 302 redirect it answers with — so
+// each chip render (plan open, language-switch reload, day refresh) was
+// re-billing every visible photo. Fetch the image bytes ONCE, keep them in
+// CacheStorage (survives reloads), and hand out object URLs; the in-memory
+// memo makes same-session re-renders free. Any failure (no CacheStorage,
+// CORS, private mode) falls back to the plain URL — exactly the old path.
+const _photoObjUrlMemo = new Map()
+function _hydrateChipPhoto(imgEl, photoName, maxWidthPx) {
+  const directUrl = googlePhotoUrl(photoName, maxWidthPx)
+  if (!directUrl || !imgEl) return
+  if (typeof caches === 'undefined' || !window.isSecureContext) { imgEl.src = directUrl; return }
+  const memoKey = `${photoName}|${maxWidthPx}`
+  let p = _photoObjUrlMemo.get(memoKey)
+  if (!p) {
+    p = (async () => {
+      const store = await caches.open('jj_photos_v1')
+      let resp = await store.match(directUrl)
+      if (!resp) {
+        resp = await fetch(directUrl)
+        if (!resp.ok) throw new Error('photo ' + resp.status)
+        try { await store.put(directUrl, resp.clone()) } catch (e) {}
+      }
+      return URL.createObjectURL(await resp.blob())
+    })()
+    _photoObjUrlMemo.set(memoKey, p)
+  }
+  p.then(url => { imgEl.src = url })
+   .catch(() => { _photoObjUrlMemo.delete(memoKey); imgEl.src = directUrl })
 }
 
 // Country → currency symbol map. Matched against the last segment of the
@@ -17987,9 +18027,11 @@ function renderLinkedChip(slot) {
   const savedScrollTop = modalBody ? modalBody.scrollTop : null
   const d = slot._placeData
   const photoName = Array.isArray(d.photo_refs) ? d.photo_refs[0] : null
-  const photoUrl  = photoName ? googlePhotoUrl(photoName, 120) : ''
-  const thumb = photoUrl
-    ? `<img class="pl-thumb" src="${escapeHtml(photoUrl)}" alt="" loading="lazy" onerror="this.style.display='none'">`
+  // The real src is filled in AFTER innerHTML lands, via _hydrateChipPhoto
+  // (CacheStorage-backed) — a transparent 1×1 GIF placeholder avoids both a
+  // broken-image flash and an eager billed request.
+  const thumb = photoName
+    ? `<img class="pl-thumb" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" loading="lazy" onerror="this.style.display='none'">`
     : `<div class="pl-thumb pl-thumb-empty" aria-hidden="true">📍</div>`
   const ratingTxt = (d.rating != null)
     ? `★ ${Number(d.rating).toFixed(1)}${d.user_rating_count ? ' (' + d.user_rating_count + ')' : ''}`
@@ -18134,6 +18176,9 @@ function renderLinkedChip(slot) {
       ${d.google_maps_url ? `<a class="pl-link" href="${escapeHtml(d.google_maps_url)}" target="_blank" rel="noopener">${dt('View on Google Maps ↗','Google マップで見る ↗')}</a>` : ''}
     </div>
   `
+  // Fill the thumb from the CacheStorage-backed photo cache (one billed
+  // request per photo per device, ever — not one per render).
+  if (photoName) _hydrateChipPhoto(chip.querySelector('img.pl-thumb'), photoName, 120)
   // Closed on the planned day? Fade the chip's photo + body via CSS class
   // and kick off the nearby-alternatives lookup (renders below the slot).
   const wasClosed = slot.classList.contains('slot-closed-day')
@@ -18752,14 +18797,19 @@ function buildGmapsEmbedUrl(fromSlot, toSlot, mode) {
 //
 // Requires "Routes API" enabled on the Google Cloud project AND added to
 // the API key's allowed-APIs list (same key as Places).
-// 200 was far too low for active multi-day editing — a single cache-prefix
-// bump (which wipes every cached leg) plus a planner clicking through a
-// 5-day trip re-fetches dozens of legs, and once the cap is hit EVERY
-// remaining leg silently falls back to the heuristic (no Google duration,
-// no transit step timeline). 2000/browser/day still stops a true runaway
-// loop while leaving comfortable headroom for real editing.
-const ROUTES_DAILY_CAP = 2000
+// 300/browser/day. The old 2000 cap was sized for a broken cache layer —
+// with route snapshots persisted on the plan, 3-hour transit bands, negative
+// caching and quota-safe writes, a full multi-day build costs well under 150
+// calls, so 300 leaves real headroom while capping a runaway browser at
+// ~¥450/day instead of ~¥3,000/day. When the cap hits, legs keep their
+// heuristic estimate — nothing breaks visually.
+const ROUTES_DAILY_CAP = 300
 const ROUTES_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
+// Failed lookups (4xx, or Google returning zero routes) are remembered for
+// 6 h so a leg that CAN'T resolve stops re-billing on every re-render —
+// refreshTransportSlot runs on every edit, and one broken leg used to fire
+// hundreds of identical doomed requests per session.
+const ROUTES_NEG_TTL_MS = 6 * 60 * 60 * 1000
 // v2: prefix bumped after switching DRIVE to TRAFFIC_AWARE. The old v1
 // cache held traffic-unaware durations (~15 min for the 3.4 km Arc de
 // Triomphe → ONYX taxi) which kept showing up even after the code
@@ -18789,6 +18839,111 @@ function _bumpRoutesDaily() {
     localStorage.setItem('jj_routes_daily_count', JSON.stringify({ date: _todayKey(), count: c }))
     return c
   } catch (e) { return 0 }
+}
+
+// ── Cache hygiene ─────────────────────────────────────────────────────────
+// Every Google-API cache lives in localStorage under a jj_* prefix. Route
+// entries carry polylines + step lists, so heavy use eventually fills the
+// ~5 MB quota — and the old silent `catch {}` around setItem meant a full
+// store simply STOPPED caching: every plan open re-billed every leg and
+// lookup, forever, with zero console evidence. _lsSafeSet purges dead weight
+// and retries instead, and one sweep per page load clears expired entries
+// plus obsolete-version prefixes (jj_route_v1…v7 debris from old deploys).
+const _JJ_CACHE_TTLS = [
+  { prefix: 'jj_route_v8_',   ttl: 30 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_station_v1_', ttl: 30 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_nearby_v3_',  ttl: 24 * 60 * 60 * 1000 },
+]
+function _purgeJJCaches(aggressive) {
+  let removed = 0
+  try {
+    const del = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k) continue
+      // Obsolete versioned prefixes from old deploys — pure dead weight.
+      // (The daily counters are jj_routeS_/jj_nearby_D…, so they never match.)
+      if ((/^jj_route_v/.test(k)  && !k.startsWith('jj_route_v8_')) ||
+          (/^jj_nearby_v/.test(k) && !k.startsWith('jj_nearby_v3_'))) { del.push(k); continue }
+      const spec = _JJ_CACHE_TTLS.find(s => k.startsWith(s.prefix))
+      if (!spec) continue
+      try {
+        const o = JSON.parse(localStorage.getItem(k))
+        if (!o || !o.t || (Date.now() - o.t) > spec.ttl) del.push(k)
+      } catch (e) { del.push(k) }   // unparseable entry — drop it
+    }
+    del.forEach(k => { try { localStorage.removeItem(k); removed++ } catch (e) {} })
+    // Still cramped (a setItem just failed)? Evict the oldest quarter of the
+    // route entries — the bulkiest items, and they rebuild from Google or the
+    // per-slot snapshot on demand.
+    if (aggressive) {
+      const routes = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (!k || !k.startsWith('jj_route_v8_')) continue
+        let t = 0
+        try { t = JSON.parse(localStorage.getItem(k))?.t || 0 } catch (e) {}
+        routes.push({ k, t })
+      }
+      routes.sort((a, b) => a.t - b.t)
+      routes.slice(0, Math.max(40, Math.ceil(routes.length / 4))).forEach(({ k }) => {
+        try { localStorage.removeItem(k); removed++ } catch (e) {}
+      })
+    }
+  } catch (e) {}
+  return removed
+}
+// Quota-safe localStorage write: on failure, purge + retry once. Returns
+// false when the value still can't be stored (e.g. Safari private mode) —
+// callers just carry on uncached.
+function _lsSafeSet(key, val) {
+  try { localStorage.setItem(key, val); return true } catch (e) {}
+  _purgeJJCaches(true)
+  try { localStorage.setItem(key, val); return true } catch (e) { return false }
+}
+// One sweep per page load, deferred so it never competes with first paint.
+setTimeout(() => { try { _purgeJJCaches(false) } catch (e) {} }, 2500)
+
+// Time bucket for the route cache key. DRIVE/WALK: per trip-DAY. TRANSIT:
+// per 3-hour band of the depart time (b0/b3/…/b21) — schedules genuinely
+// differ morning vs evening, but the old per-HOUR bucket re-billed a leg on
+// every time nudge that crossed an hour boundary (and a Japan transit leg
+// bills TWICE: the TRANSIT probe + the DRIVE anchor). Bands keep the
+// schedule fidelity a planner can perceive at a third of the refetch rate.
+function _routeTimeBucket(travelMode, departISO) {
+  const iso = departISO || new Date().toISOString()
+  if (travelMode === 'TRANSIT') {
+    const h = parseInt(iso.slice(11, 13), 10) || 0
+    return `${iso.slice(0, 10)}b${Math.floor(h / 3) * 3}`
+  }
+  return iso.slice(0, 10)
+}
+
+// ── Per-slot route snapshot (persisted with the plan) ────────────────────
+// localStorage is per-browser AND evictable (iOS Safari drops it after ~7
+// days of not visiting; quota pressure used to kill it silently), so route
+// data that was already paid for kept getting re-billed on every fresh
+// device or evicted cache. The last successful Routes result for each
+// transport leg therefore rides along in itinerary_items.route_snapshot as
+// {k: <from_to_mode_timeBucket>, d: <route data>}. On reopen we rebuild the
+// same key — matching key ⇒ apply the saved data with ZERO Google calls;
+// stale key (endpoint / mode / time-band changed) ⇒ normal fetch replaces it.
+function _routeSnapKeyFor(fromId, toId, mode, departISO) {
+  const travelMode = _routesModeFor(mode)
+  if (!travelMode || !fromId || !toId) return null
+  return `${fromId}_${toId}_${travelMode}_${_routeTimeBucket(travelMode, departISO)}`
+}
+function _readSlotRouteSnap(slot) {
+  try {
+    const raw = slot?.dataset?.routeSnap
+    if (!raw) return null
+    const o = JSON.parse(raw)
+    return (o && o.k && o.d) ? o : null
+  } catch (e) { return null }
+}
+function _writeSlotRouteSnap(slot, key, data) {
+  if (!slot || !key || !data) return
+  try { slot.dataset.routeSnap = JSON.stringify({ k: key, d: data }) } catch (e) {}
 }
 
 // Build an RFC3339 timestamp for "the slot time on this trip-date as it
@@ -18846,7 +19001,20 @@ function _localDepartISO(dateStr, dayOffset, hhmm, tz) {
 // DRIVE works — so for a transit leg we fetch the driving route to get the REAL
 // road distance + drive time, then estimate transit from those (far better than
 // a straight-line guess). Returns { distanceKm, driveMin, polyline } or null.
-async function _fetchDriveAnchor(fromId, toId) {
+async function _fetchDriveAnchor(fromId, toId, dayBucket) {
+  // Own cache (per-DAY key). Each 3-hour transit band used to re-fire this
+  // anchor call even though the underlying road distance/drive time doesn't
+  // change within a day — with 4 bands that quadrupled the anchor billing.
+  // Failures are negative-cached so a hopeless leg can't hammer either.
+  const _ck = `${ROUTES_CACHE_PREFIX}${fromId}_${toId}_DRIVEANCHOR_${dayBucket || new Date().toISOString().slice(0, 10)}`
+  try {
+    const raw = localStorage.getItem(_ck)
+    if (raw) {
+      const o = JSON.parse(raw)
+      if (o.neg) { if (Date.now() - o.t < ROUTES_NEG_TTL_MS) return null }
+      else if (o.t && Date.now() - o.t < ROUTES_CACHE_TTL_MS) return o.data
+    }
+  } catch (e) {}
   try {
     const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
@@ -18857,12 +19025,21 @@ async function _fetchDriveAnchor(fromId, toId) {
       },
       body: JSON.stringify({ origin: { placeId: fromId }, destination: { placeId: toId }, travelMode: 'DRIVE', units: 'METRIC' }),
     })
-    if (!resp.ok) return null
+    if (!resp.ok) {
+      if (resp.status >= 400 && resp.status < 500) _lsSafeSet(_ck, JSON.stringify({ t: Date.now(), neg: 1 }))
+      return null
+    }
+    _bumpRoutesDaily()   // billed call — count it like every other Routes hit
     const d = await resp.json()
     const r = (d.routes || [])[0]
-    if (!r) return null
+    if (!r) {
+      _lsSafeSet(_ck, JSON.stringify({ t: Date.now(), neg: 1 }))
+      return null
+    }
     const driveSec = parseInt(String(r.duration || '0s').replace('s', ''), 10) || 0
-    return { distanceKm: (r.distanceMeters || 0) / 1000, driveMin: Math.round(driveSec / 60), polyline: r.polyline?.encodedPolyline || null }
+    const out = { distanceKm: (r.distanceMeters || 0) / 1000, driveMin: Math.round(driveSec / 60), polyline: r.polyline?.encodedPolyline || null }
+    _lsSafeSet(_ck, JSON.stringify({ t: Date.now(), data: out }))
+    return out
   } catch (e) { return null }
 }
 async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
@@ -18871,21 +19048,19 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
   if (!fromId || !toId) return null
   const travelMode = _routesModeFor(mode)
   if (!travelMode) return null
-  // Cache key scopes per (origin, destination, mode, time-bucket). TRANSIT uses
-  // a per-HOUR bucket (metro thins out late evening, lines stop after midnight,
-  // so schedules genuinely change by hour). DRIVE/WALK use a per-DAY bucket —
-  // they barely change by hour, so this stops a re-fetch every time the planner
-  // nudges a stop's time. Falls back to a "now" bucket if departISO is missing.
-  const _timeKey = (() => {
-    const iso = departISO || new Date().toISOString()
-    return (travelMode === 'TRANSIT') ? iso.slice(0, 13) : iso.slice(0, 10)
-  })()
+  // Cache key scopes per (origin, destination, mode, time-bucket) — see
+  // _routeTimeBucket: per trip-day for DRIVE/WALK, per 3-hour band for
+  // TRANSIT. Falls back to a "now" bucket if departISO is missing.
+  const _timeKey = _routeTimeBucket(travelMode, departISO)
   const key = `${ROUTES_CACHE_PREFIX}${fromId}_${toId}_${travelMode}_${_timeKey}`
   try {
     const raw = localStorage.getItem(key)
     if (raw) {
       const o = JSON.parse(raw)
-      if (o.t && Date.now() - o.t < ROUTES_CACHE_TTL_MS) return o.data
+      // Negative entry — this leg recently failed to resolve; don't re-bill
+      // a doomed request on every re-render for the next few hours.
+      if (o.neg) { if (Date.now() - o.t < ROUTES_NEG_TTL_MS) return null }
+      else if (o.t && Date.now() - o.t < ROUTES_CACHE_TTL_MS) return o.data
     }
   } catch (e) {}
   // Daily cap
@@ -18951,6 +19126,12 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
     if (!resp.ok) {
       const errTxt = await resp.text().catch(() => '')
       console.warn('[routes] failed', resp.status, errTxt)
+      // 4xx = this request will keep failing exactly the same way (bad place
+      // id, unsupported leg) — negative-cache it. 5xx/429 stay uncached so a
+      // transient Google wobble doesn't blank a leg for 6 hours.
+      if (resp.status >= 400 && resp.status < 500) {
+        _lsSafeSet(key, JSON.stringify({ t: Date.now(), neg: 1 }))
+      }
       return null
     }
     const data = await resp.json()
@@ -18966,17 +19147,20 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
       // line. Flagged estimated so the card keeps the "~" and the planner can
       // still override with the exact Google-Maps figure.
       if (travelMode === 'TRANSIT') {
-        const dr = await _fetchDriveAnchor(fromId, toId)
+        // Day-bucketed + internally cached/counted — the road geometry doesn't
+        // change per 3-hour band, so all bands share one anchor call per day.
+        const dr = await _fetchDriveAnchor(fromId, toId, (departISO || new Date().toISOString()).slice(0, 10))
         if (dr && Number.isFinite(dr.distanceKm) && dr.distanceKm > 0) {
           const km = dr.distanceKm
           // Transit ≈ real drive time + a small wait/transfer/walk buffer; floor 8 min.
-          const mins = Math.max(8, Math.round((dr.driveMin || (km * 2.5)) * 1.05) + 4)
-          const est = { durationMin: mins, distanceKm: km, costEur: _transitFareEstimate(km), polyline: dr.polyline || null, steps: [], estimated: true }
-          try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: est })) } catch (e) {}
-          _bumpRoutesDaily()
+          const est = { durationMin: Math.max(8, Math.round((dr.driveMin || (km * 2.5)) * 1.05) + 4), distanceKm: km, costEur: _transitFareEstimate(km), polyline: dr.polyline || null, steps: [], estimated: true }
+          _lsSafeSet(key, JSON.stringify({ t: Date.now(), data: est }))
           return est
         }
       }
+      // No routes AND no usable fallback — remember the failure so re-renders
+      // don't re-bill the same doomed probe every few seconds.
+      _lsSafeSet(key, JSON.stringify({ t: Date.now(), neg: 1 }))
       return null
     }
     const _durSec = (r) => parseInt(String(r?.duration || '0s').replace('s',''), 10) || Infinity
@@ -19034,7 +19218,7 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
         }
       })
     })
-    try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), data: result })) } catch (e) {}
+    _lsSafeSet(key, JSON.stringify({ t: Date.now(), data: result }))
     _bumpRoutesDaily()
     console.log(`[routes] ${travelMode} ${fromId.slice(0,12)}…→${toId.slice(0,12)}… → ${result.durationMin} min · ${result.distanceKm.toFixed(1)} km`)
     return result
@@ -19529,7 +19713,7 @@ async function _resolvePlaceIdByName(name, biasCity) {
     const p = data?.places?.[0]
     if (!p?.id) return null
     const out = { id: p.id, lat: p.location?.latitude ?? null, lng: p.location?.longitude ?? null }
-    try { localStorage.setItem(ck, JSON.stringify(out)) } catch (e) {}
+    _lsSafeSet(ck, JSON.stringify(out))
     _bumpRoutesDaily()
     return out
   } catch (e) { return null }
@@ -19948,10 +20132,24 @@ function refreshTransportSlot(slot) {
         const _dayNum = _m ? parseInt(_m[1], 10) : 1
         _departISO = _localDepartISO(window._currentTripStartDate, _dayNum, departHHMM, 'Asia/Tokyo')
       }
+      // Route snapshot saved WITH the plan: when it still matches this leg
+      // (same endpoints + mode + time band), reopening the plan costs ZERO
+      // Routes calls — on any device, even after the browser cache was
+      // evicted. Editing the leg changes the key and falls through to a
+      // normal fetch, which then refreshes the snapshot below.
+      const _snapKey = _routeSnapKeyFor(fromPlaceId, toPlaceId, mode, _departISO)
+      const _snap = _readSlotRouteSnap(slot)
+      if (_snapKey && _snap && _snap.k === _snapKey) {
+        const live = document.getElementById(slot.id)
+        if (live) applyRouteDataToSlot(live, _snap.d)
+        return
+      }
       const result = await fetchRouteData(originSlot, destSlot, mode, _departISO)
       if (!result) return
       const live = document.getElementById(slot.id)
-      if (live) applyRouteDataToSlot(live, result)
+      if (!live) return
+      if (_snapKey) _writeSlotRouteSnap(live, _snapKey, result)
+      applyRouteDataToSlot(live, result)
     })()
   }
 }
@@ -20309,7 +20507,7 @@ function _bumpNearbyDailyCount(){try{const c=_readNearbyDailyCount()+1;localStor
 function _canCallNearby(){return _readNearbyDailyCount()<PLACES_NEARBY_DAILY_CAP}
 function _cacheKeyForNearby(placeId,plannedDate){return `${PLACES_NEARBY_CACHE_PREFIX}${placeId}_${plannedDate||'noday'}`}
 function _readNearbyCache(placeId,plannedDate){try{const r=localStorage.getItem(_cacheKeyForNearby(placeId,plannedDate));if(!r)return null;const o=JSON.parse(r);if(!o.t||Date.now()-o.t>PLACES_NEARBY_CACHE_TTL_MS)return null;return o.results||null}catch(e){return null}}
-function _writeNearbyCache(placeId,plannedDate,results){try{localStorage.setItem(_cacheKeyForNearby(placeId,plannedDate),JSON.stringify({t:Date.now(),results}))}catch(e){}}
+function _writeNearbyCache(placeId,plannedDate,results){_lsSafeSet(_cacheKeyForNearby(placeId,plannedDate),JSON.stringify({t:Date.now(),results}))}
 
 function _nearbyTypeFor(placeTypes) {
   if (!Array.isArray(placeTypes) || !placeTypes.length) return 'tourist_attraction'
@@ -22899,6 +23097,7 @@ async function submitPlan() {
         notes,
         transport_mode: transportMode,
         is_locked: isLockedRow,
+        route_snapshot: (type === 'transport') ? _readSlotRouteSnap(slot) : null,
         sort_order: sortOrder,
         ...getPlaceFieldsForSlot(slot),
         _seedUnchanged, _hasImage,
@@ -23213,7 +23412,14 @@ async function submitPlan() {
   await sb.from('itinerary_items').delete().eq('plan_id', currentPlanId)
   if (body.items?.length) {
     const rows = body.items.map((item, idx) => ({ plan_id: currentPlanId, ...item, sort_order: idx }))
-    const { data: insertedItems, error: itemErr } = await sb.from('itinerary_items').insert(rows).select('id, sort_order')
+    let { data: insertedItems, error: itemErr } = await sb.from('itinerary_items').insert(rows).select('id, sort_order')
+    // Same degrade as autosave: schema without route_snapshot yet → strip + retry.
+    if (itemErr && /route_snapshot/i.test(itemErr.message || '')) {
+      console.warn('[submit] route_snapshot column missing — run docs/schema/add-route-snapshot.sql in Supabase. Retrying without it.')
+      rows.forEach(r => { delete r.route_snapshot })
+      const _r2 = await sb.from('itinerary_items').insert(rows).select('id, sort_order')
+      insertedItems = _r2.data; itemErr = _r2.error
+    }
     if (itemErr) {
       console.error('itinerary_items insert failed:', itemErr, rows)
       // Roll the plan back off 'submitted' so it isn't stuck empty — the
@@ -23458,6 +23664,7 @@ async function _persistDraft(planId) {
         notes,
         transport_mode: transportMode,
         is_locked:  isLockedRow,
+        route_snapshot: (slotType === 'transport') ? _readSlotRouteSnap(slot) : null,
         sort_order: sortOrder,
         ...getPlaceFieldsForSlot(slot)
       })
@@ -23552,9 +23759,19 @@ async function _persistDraft(planId) {
     _setDraftBaseline(planId, [])
     return true
   }
-  const { data: inserted, error: insErr } = await sb.from('itinerary_items').insert(
+  let { data: inserted, error: insErr } = await sb.from('itinerary_items').insert(
     items.map((item,idx) => ({ plan_id: planId, ...item, sort_order: idx }))
   ).select('id, sort_order')
+  // Graceful degrade: route_snapshot column not added yet (run docs/schema/
+  // add-route-snapshot.sql) — strip it and retry so autosave keeps working;
+  // the plan just doesn't get the zero-API-call reopen until the SQL runs.
+  if (insErr && /route_snapshot/i.test(insErr.message || '')) {
+    console.warn('[autosave] route_snapshot column missing — run docs/schema/add-route-snapshot.sql in Supabase. Retrying without it.')
+    const retry = await sb.from('itinerary_items').insert(
+      items.map((item,idx) => { const { route_snapshot, ...rest } = item; return { plan_id: planId, ...rest, sort_order: idx } })
+    ).select('id, sort_order')
+    inserted = retry.data; insErr = retry.error
+  }
   // Insert failed → leave the existing rows untouched (no data loss); next save retries.
   if (insErr) { console.warn('itinerary insert failed — kept existing rows (no wipe)', insErr); return false }
   const _newIds = (inserted || []).map(r => r.id)
