@@ -16611,10 +16611,19 @@ async function _enrichHotelSlotFromPlaceId(slot, placeId) {
         if (_sparse) _lsSafeSet(_enrichMk, JSON.stringify({ t: Date.now() }))
         return place
       })()
+      // A failed attempt must NOT stick for the whole session — the old code
+      // retried on the next plan open, so drop the shared entry on rejection
+      // and let the reopen try again.
+      _fetchP.catch(() => { try { window._enrichFetches.delete(placeId) } catch (e) {} })
       window._enrichFetches.set(placeId, _fetchP)
     }
     const place = await _fetchP
-    if (!place?.id) return
+    if (!place?.id) {
+      // null = Google answered with an error (no marker written) — clear the
+      // session entry so the next plan open retries, exactly like before.
+      try { window._enrichFetches.delete(placeId) } catch (e) {}
+      return
+    }
     const photoRefs = Array.isArray(place.photos)
       ? place.photos.map(p => p?.name).filter(Boolean).slice(0, 6)
       : []
