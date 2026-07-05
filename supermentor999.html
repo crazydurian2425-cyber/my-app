@@ -277,10 +277,12 @@ function isMissingTable(err){ return !!err && /does not exist|42P01|relation|sch
 // ── data load ────────────────────────────────────────────────────────────
 async function loadAll(showSpinner){
   if (showSpinner) document.getElementById('rows').innerHTML = '<tr><td colspan="8" class="loading">Loading planners…</td></tr>'
-  const [pRes, lRes, sRes, wRes, remRes, probRes, stepRes] = await Promise.all([
+  const [pRes, lRes, sRes, aRes, plRes, wRes, remRes, probRes, stepRes] = await Promise.all([
     safe(sb.from('planners').select('*').order('created_at', { ascending:false })),
     safe(sb.from('employment_letters').select('planner_id, status, signed_at, created_at').order('created_at', { ascending:true })),
-    safe(sb.from('sets').select('id, planner_id, set_number, city, deadline, status, plans(id, plan_number, status)')),
+    safe(sb.from('sets').select('id, planner_id, set_number, city, deadline, status')),
+    safe(sb.from('set_assignments').select('*')),
+    safe(sb.from('plans').select('id, set_id, planner_id, plan_number, status')),
     safe(sb.from('wallet_requests').select('planner_id, amount, status').eq('status','pending')),
     safe(sb.from('planner_remarks').select('*').order('created_at', { ascending:false })),
     safe(sb.from('planner_problems').select('*').order('created_at', { ascending:false })),
@@ -295,6 +297,8 @@ async function loadAll(showSpinner){
 
   const letters = lRes.data || []
   const sets    = sRes.data || []
+  const assigns = aRes.data || []
+  const allPlans = plRes.data || []
   const wallet  = wRes.data || []
   const remarks = remRes.data || []
   const probs   = probRes.data || []
@@ -315,18 +319,29 @@ async function loadAll(showSpinner){
                  : sent   ? { state:'sent',   sent: sent.created_at,   signedAt: null }
                  :          { state:'none',   sent: null,              signedAt: null }
 
-    // Sets: current = a non-finished set owned by this planner; count completed
-    const mySets = sets.filter(s => s.planner_id === p.id)
-    const doneSets = mySets.filter(s => ['completed','paid','delivered'].includes(s.status)).length
-    const openSets = mySets.filter(s => !['completed','paid','delivered','cancelled'].includes(s.status))
-    const cur = openSets[openSets.length - 1] || null
-    const plans = cur ? (cur.plans || []).slice().sort((a,b)=>(a.plan_number||0)-(b.plan_number||0)) : []
-    const revisions = mySets.reduce((n,s)=>n+(s.plans||[]).filter(pl=>pl.status==='revision').length, 0)
-    const approved  = mySets.reduce((n,s)=>n+(s.plans||[]).filter(pl=>['approved','completed'].includes(pl.status)).length, 0)
+    // Assignment lives in set_assignments (status 'active' / legacy
+    // 'in_progress'); each assigned planner has their OWN plan copies keyed
+    // by (set_id, planner_id) — never render another planner's plans.
+    const myAssigns = assigns.filter(a => a.planner_id === p.id)
+    const doneSets = myAssigns.filter(a => ['completed','paid'].includes(a.status)).length
+    const openAssigns = myAssigns
+      .filter(a => !['completed','paid','cancelled'].includes(a.status))
+      .sort((a,b)=>new Date(a.claimed_at||a.created_at||0) - new Date(b.claimed_at||b.created_at||0))
+    const curAssign = openAssigns[openAssigns.length - 1] || null
+    const cur = curAssign ? (sets.find(s => s.id === curAssign.set_id) || null) : null
+    const plans = curAssign
+      ? allPlans.filter(pl => pl.set_id === curAssign.set_id && pl.planner_id === p.id)
+          .sort((a,b)=>(a.plan_number||0)-(b.plan_number||0))
+      : []
+    const myPlans = allPlans.filter(pl => pl.planner_id === p.id)
+    const revisions = myPlans.filter(pl => pl.status === 'revision').length
+    const approved  = myPlans.filter(pl => ['approved','completed'].includes(pl.status)).length
     let deadline = null
-    if (cur && cur.deadline) {
-      const days = Math.ceil((new Date(cur.deadline+'T23:59:59') - Date.now()) / 86400000)
-      deadline = { label: fmtD(cur.deadline+'T00:00:00'), days }
+    const dl = (curAssign && curAssign.deadline) || (cur && cur.deadline) || null
+    if (dl) {
+      const dstr = String(dl).slice(0,10)
+      const days = Math.ceil((new Date(dstr+'T23:59:59') - Date.now()) / 86400000)
+      deadline = { label: fmtD(dstr+'T00:00:00'), days }
     }
 
     const payoutDue = wallet.filter(w => w.planner_id === p.id).reduce((n,w)=>n+Number(w.amount||0), 0)
