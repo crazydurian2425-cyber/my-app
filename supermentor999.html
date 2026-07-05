@@ -273,6 +273,19 @@ function timeAgo(iso){
 }
 async function safe(q){ try { const { data, error } = await q; if (error) return { data:null, error }; return { data, error:null } } catch (e) { return { data:null, error:e } } }
 function isMissingTable(err){ return !!err && /does not exist|42P01|relation|schema cache/i.test(err.message||'') }
+// Supabase caps every request at 1000 rows (plans is already past that) —
+// page through with .range() until a short page. makeQuery must apply a
+// stable .order() so pages don't skip/duplicate rows.
+async function fetchAll(makeQuery){
+  const out = [], PAGE = 1000
+  for (let from = 0;; from += PAGE) {
+    const res = await safe(makeQuery().range(from, from + PAGE - 1))
+    if (res.error) return { data: from ? out : null, error: res.error }
+    out.push(...(res.data || []))
+    if (!res.data || res.data.length < PAGE) break
+  }
+  return { data: out, error: null }
+}
 
 // ── data load ────────────────────────────────────────────────────────────
 async function loadAll(showSpinner){
@@ -281,12 +294,12 @@ async function loadAll(showSpinner){
     safe(sb.from('planners').select('*').order('created_at', { ascending:false })),
     safe(sb.from('employment_letters').select('planner_id, status, signed_at, created_at').order('created_at', { ascending:true })),
     safe(sb.from('sets').select('id, planner_id, set_number, city, deadline, status')),
-    safe(sb.from('set_assignments').select('*')),
-    safe(sb.from('plans').select('id, set_id, planner_id, plan_number, status')),
+    fetchAll(() => sb.from('set_assignments').select('*').order('id')),
+    fetchAll(() => sb.from('plans').select('id, set_id, planner_id, plan_number, status').order('id')),
     safe(sb.from('wallet_requests').select('planner_id, amount, status').eq('status','pending')),
-    safe(sb.from('planner_remarks').select('*').order('created_at', { ascending:false })),
-    safe(sb.from('planner_problems').select('*').order('created_at', { ascending:false })),
-    safe(sb.from('planner_problem_steps').select('*').order('created_at', { ascending:true })),
+    fetchAll(() => sb.from('planner_remarks').select('*').order('created_at', { ascending:false }).order('id')),
+    fetchAll(() => sb.from('planner_problems').select('*').order('created_at', { ascending:false }).order('id')),
+    fetchAll(() => sb.from('planner_problem_steps').select('*').order('created_at', { ascending:true }).order('id')),
   ])
   if (pRes.error) {
     document.getElementById('rows').innerHTML = `<tr><td colspan="8" class="loading">Failed to load planners: ${escapeHtml(pRes.error.message||'unknown')}</td></tr>`
@@ -463,10 +476,20 @@ function render(){
     if (fSt && p.status !== fSt) return
     if (fPb && !p.problems.some(x=>x.status!=='resolved')) return
     shown++
-    const curIdx = p.plans.findIndex(s=>s.status!=='completed')
-    const planNow = p.plans.length
-      ? (curIdx===-1 ? `All ${p.plans.length} done` : `Plan ${p.plans[curIdx].plan_number} · ${String(p.plans[curIdx].status).replace('_',' ')}`)
-      : 'No set yet'
+    // "Current plan" = the one the planner is actually working on (or stuck
+    // on), not just the first non-completed — otherwise a planner on Plan 12
+    // with Plan 1 approved would forever show "Plan 1 · approved".
+    const working = p.plans.find(s=>['in_progress','revision','bond_pending'].includes(s.status))
+                 || p.plans.find(s=>s.status==='pending')
+    let planNow
+    if (!p.plans.length) planNow = 'No set yet'
+    else if (working) planNow = `Plan ${working.plan_number} · ${String(working.status).replace('_',' ')}`
+    else if (p.plans.every(s=>s.status==='completed')) planNow = `All ${p.plans.length} done`
+    else {
+      const subm = p.plans.filter(s=>s.status==='submitted').length
+      const appr = p.plans.filter(s=>['approved','completed'].includes(s.status)).length
+      planNow = subm ? `${subm} awaiting review${appr?` · ${appr} approved`:''}` : `All ${p.plans.length} approved`
+    }
     const setLabel = p.set ? `Set #${String(p.set.set_number??'').padStart(3,'0')}${p.set.city?' · '+escapeHtml(p.set.city):''}` : 'Set #—'
     const dots = p.plans.length
       ? `<div class="dots">${p.plans.map(s=>`<span class="dot ${DOTCLS[s.status]||''}" title="Plan ${s.plan_number}: ${escapeHtml(s.status)}"></span>`).join('')}</div><div class="setsub">${escapeHtml(planNow)}</div>${deadlineHtml(p)}`
