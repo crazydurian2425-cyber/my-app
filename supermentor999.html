@@ -292,7 +292,9 @@ async function loadAll(showSpinner){
   if (showSpinner) document.getElementById('rows').innerHTML = '<tr><td colspan="8" class="loading">Loading planners…</td></tr>'
   const [pRes, lRes, sRes, aRes, plRes, wRes, remRes, probRes, stepRes] = await Promise.all([
     safe(sb.from('planners').select('*').order('created_at', { ascending:false })),
-    safe(sb.from('employment_letters').select('planner_id, status, signed_at, created_at').order('created_at', { ascending:true })),
+    // NB: the live employment_letters table has sent_at, NOT created_at
+    // (drifted from initial.sql) — selecting created_at 42703s the query.
+    safe(sb.from('employment_letters').select('planner_id, status, signed_at, sent_at').order('sent_at', { ascending:true })),
     safe(sb.from('sets').select('id, planner_id, set_number, city, deadline, status')),
     fetchAll(() => sb.from('set_assignments').select('*').order('id')),
     fetchAll(() => sb.from('plans').select('id, set_id, planner_id, plan_number, status').order('id')),
@@ -307,6 +309,12 @@ async function loadAll(showSpinner){
   }
   needsMigration = isMissingTable(remRes.error) || isMissingTable(probRes.error)
   document.getElementById('migBanner').style.display = needsMigration ? 'block' : 'none'
+
+  // A failed side query must be loud — silently rendering "Not sent" /
+  // "not assigned" for everyone looks like real data and misleads mentors.
+  const auxErrors = [['letters',lRes],['sets',sRes],['assignments',aRes],['plans',plRes],['wallet',wRes]]
+    .filter(([,r]) => r.error && !isMissingTable(r.error))
+  if (auxErrors.length) toast('⚠ Failed to load: ' + auxErrors.map(([n,r])=>`${n} — ${r.error.message||'error'}`).join(' · '))
 
   const letters = lRes.data || []
   const sets    = sRes.data || []
@@ -328,9 +336,9 @@ async function loadAll(showSpinner){
     const myLetters = letters.filter(l => l.planner_id === p.id)
     const signed = myLetters.filter(l => l.status === 'signed').pop()
     const sent   = myLetters.filter(l => l.status !== 'cancelled').pop()
-    const letter = signed ? { state:'signed', sent: signed.created_at, signedAt: signed.signed_at }
-                 : sent   ? { state:'sent',   sent: sent.created_at,   signedAt: null }
-                 :          { state:'none',   sent: null,              signedAt: null }
+    const letter = signed ? { state:'signed', sent: signed.sent_at, signedAt: signed.signed_at }
+                 : sent   ? { state:'sent',   sent: sent.sent_at,   signedAt: null }
+                 :          { state:'none',   sent: null,           signedAt: null }
 
     // Assignment lives in set_assignments (status 'active' / legacy
     // 'in_progress'); each assigned planner has their OWN plan copies keyed
