@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mentor Console — Journey Junction</title>
+<link rel="icon" href="jjlogo.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3;
+    --card:#fffdf8; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+    --amber:#b87333; --amberbg:#fdf3e3; --red:#b3261e; --redbg:#fdecea;
+    --blue:#2b5f7a; --bluebg:#e8f1f6; --purple:#6b4d9e; --purplebg:#f0eafa;
+    --gold:#C9A227;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.5 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:1360px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .lead b{color:var(--ink)}
+
+  .banner{background:var(--amberbg);border:1px solid #e8c99a;color:var(--amber);border-radius:10px;padding:11px 14px;font-size:12.5px;margin-bottom:14px;display:none}
+  .banner code{background:#fff;border-radius:4px;padding:1px 6px}
+
+  .kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .kpi .n{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .l{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+  .kpi.risk .n{color:var(--red)} .kpi.act .n{color:var(--green)}
+  .kpi.letter .n{color:var(--blue)} .kpi.prob .n{color:var(--amber)} .kpi.money .n{color:var(--purple)}
+
+  .mtabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+  .mtab{font:inherit;font-size:13px;font-weight:700;padding:8px 16px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .mtab .c{font-weight:800;font-variant-numeric:tabular-nums;margin-left:6px;font-size:12px;color:var(--ink3)}
+  .mtab.on{background:var(--green);border-color:var(--green);color:#fff}
+  .mtab.on .c{color:#cfe6cf}
+  .refresh{margin-left:auto;font:inherit;font-size:12px;font-weight:700;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .refresh:hover{border-color:var(--greenbd);color:var(--green)}
+
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .bar input,.bar select{font:inherit;font-size:13px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  .bar input{flex:1;min-width:180px}
+  .hint{font-size:11.5px;color:var(--ink3);margin-left:auto}
+
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);text-align:left;padding:10px 11px;border-bottom:1px solid var(--line);background:#f7f3ea}
+  tbody td{padding:10px 11px;border-bottom:1px solid #f1ecdf;vertical-align:middle}
+  tbody tr.main{cursor:pointer}
+  tbody tr.main:hover td{background:#faf7f0}
+  tbody tr.main.open td{background:var(--greenbg);border-bottom-color:transparent}
+  .pname{font-weight:700}
+  .pmail{font-size:11px;color:var(--ink3)}
+  .caret{display:inline-block;transition:transform .15s;color:var(--ink3);font-size:11px;margin-right:6px}
+  tr.main.open .caret{transform:rotate(90deg)}
+  .suspended{font-size:10px;font-weight:800;color:var(--red);background:var(--redbg);border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+  .ch-line{background:#e6f9e8;color:#1a7a3c;border-color:#a8dcb2}
+  .ch-discord{background:#eceefe;color:#4a54c7;border-color:#c3c9f5}
+  .ch-none{background:#f0ead8;color:#9a8d63}
+  .ch-acct{font-size:11px;color:var(--ink2);margin-top:3px}
+
+  select.inline{font:inherit;font-size:11.5px;font-weight:800;border-radius:99px;padding:3px 22px 3px 10px;border:1px solid transparent;cursor:pointer;appearance:none;background:#f0ead8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%239aa39d'/%3E%3C/svg%3E") no-repeat right 7px center;color:#6b5d2e;max-width:100%}
+  select.inline:hover{border-color:#c9bd97}
+  select.inline.st-onboarding{background-color:var(--bluebg);color:var(--blue)}
+  select.inline.st-training{background-color:var(--amberbg);color:var(--amber)}
+  select.inline.st-active{background-color:var(--greenbg);color:var(--green)}
+  select.inline.st-slow{background-color:#f5f1e4;color:#8a7a34}
+  select.inline.st-at_risk{background-color:var(--redbg);color:var(--red)}
+  select.inline.st-ghosted{background-color:#efeae0;color:#7c736a}
+  select.inline.st-done{background-color:#e4efe9;color:#2f5d4c}
+
+  .lt{font-size:11.5px;font-weight:700;border-radius:99px;padding:3px 10px;display:inline-block;white-space:nowrap}
+  .lt-none{background:#efeae0;color:#7c736a}
+  .lt-sent{background:var(--bluebg);color:var(--blue)}
+  .lt-signed{background:var(--greenbg);color:var(--green)}
+  .ltsub{font-size:10.5px;color:var(--ink3);margin-top:3px}
+
+  .setcell b{font-variant-numeric:tabular-nums}
+  .dots{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+  .dot{width:15px;height:8px;border-radius:4px;background:#ddd6c6}
+  .dot.ip{background:var(--amber)} .dot.sub{background:var(--blue)} .dot.rev{background:var(--red)}
+  .dot.ap{background:var(--green)} .dot.bp{background:var(--purple)} .dot.done{background:#1f4d38}
+  .setsub{font-size:11px;color:var(--ink3);margin-top:4px}
+  .ddl{font-size:10.5px;font-weight:700;margin-top:3px}
+  .ddl.ok{color:var(--green)} .ddl.soon{color:var(--amber)} .ddl.over{color:var(--red)}
+
+  .money{font-size:12px;font-variant-numeric:tabular-nums}
+  .money .due{color:var(--purple);font-weight:800}
+  .money .bp{color:var(--purple);font-weight:700}
+  .money .sub{font-size:10.5px;color:var(--ink3);margin-top:2px}
+
+  .pb{font-size:11px;font-weight:800;border-radius:99px;padding:3px 9px;display:inline-block;white-space:nowrap}
+  .pb-open{background:var(--redbg);color:var(--red)}
+  .pb-watch{background:var(--amberbg);color:var(--amber)}
+  .pb-clear{background:#eef3ee;color:#6d7d70}
+  .lastr{font-size:11px;color:var(--ink2);margin-top:4px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qbtn{background:#fff;border:1px solid var(--greenbd);color:var(--green);border-radius:8px;padding:4px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .qbtn:hover{background:var(--greenbg)}
+
+  tr.detail td{background:#fbf9f2;border-bottom:2px solid var(--greenbd);padding:0}
+  .panel{display:grid;grid-template-columns:300px 1fr 1fr;gap:0}
+  @media (max-width:980px){ .panel{grid-template-columns:1fr} }
+  .pcol{padding:14px 16px;border-right:1px dashed #e3dcc9;min-width:0}
+  .pcol:last-child{border-right:none}
+  .sl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:8px}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .fact{background:#f4efe2;border-radius:9px;padding:8px 10px;min-width:0}
+  .fact .fl{font-size:10px;color:var(--ink3)}
+  .fact .fv{font-weight:700;font-size:12.5px;margin-top:2px;word-break:break-word}
+  .fact .fv.green{color:var(--green)} .fact .fv.red{color:var(--red)} .fact .fv.purple{color:var(--purple)} .fact .fv.blue{color:var(--blue)}
+
+  .stchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .stchip{font:inherit;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .stchip:hover{border-color:var(--greenbd)}
+  .stchip.on{background:var(--green);border-color:var(--green);color:#fff}
+
+  .panel select,.panel input,.panel textarea{font:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;width:100%;color:var(--ink)}
+  .panel textarea{resize:vertical;min-height:52px}
+  .chrow{display:flex;gap:7px}
+  .chrow select{width:100px;flex:0 0 auto}
+
+  .prob{border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:9px;overflow:hidden}
+  .prob .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 11px;background:#faf7f0}
+  .prob .pt{font-weight:700;font-size:12.5px}
+  .prob .ph select{width:auto;font-size:11px;font-weight:700;padding:3px 7px}
+  .prob .steps{padding:7px 11px;max-height:150px;overflow-y:auto}
+  .step{display:flex;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px dashed #f0ebdd}
+  .step:last-child{border-bottom:none}
+  .step .sw{color:var(--ink3);font-size:10px;white-space:nowrap;min-width:86px;padding-top:1px}
+  .prob .addstep{display:flex;gap:6px;padding:7px 11px;border-top:1px solid #f1ecdf}
+  .prob .addstep input{flex:1}
+  .prob .addstep button{flex:0 0 auto;background:#fff;border:1px solid var(--greenbd);color:var(--green);border-radius:8px;padding:0 11px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+
+  .remark{border:1px solid var(--line);border-radius:10px;padding:8px 11px;margin-bottom:7px;background:#fff}
+  .remark .rmeta{font-size:10px;color:var(--ink3);margin-bottom:3px;display:flex;justify-content:space-between;gap:8px}
+  .remark .rbody{font-size:12.5px;white-space:pre-wrap;word-break:break-word}
+  .rtag{font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 7px;text-transform:uppercase;letter-spacing:.04em}
+  .rtag.chase{background:var(--amberbg);color:var(--amber)}
+  .rtag.payment{background:var(--purplebg);color:var(--purple)}
+  .rtag.quality{background:var(--bluebg);color:var(--blue)}
+  .rtag.praise{background:var(--greenbg);color:var(--green)}
+  .rtag.general{background:#f0ead8;color:#6b5d2e}
+  .rtag.status{background:#e9e4f5;color:#5b4b85}
+  .rlist{max-height:230px;overflow-y:auto;margin-bottom:8px}
+
+  .addbtn{background:var(--green);color:#fff;border:none;border-radius:9px;padding:8px 14px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  .addbtn:hover{filter:brightness(1.08)}
+  .addbtn:disabled{opacity:.55;cursor:default}
+  .addbtn.ghost{background:#fff;color:var(--green);border:1px solid var(--greenbd)}
+
+  .qpop{position:absolute;background:#fff;border:1px solid var(--greenbd);border-radius:12px;box-shadow:0 10px 28px rgba(26,46,37,.18);padding:10px;width:290px;z-index:60}
+  .qpop textarea{width:100%;font:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;min-height:54px;resize:vertical}
+  .qpop .row{display:flex;gap:6px;margin-top:7px;align-items:center}
+  .qpop select{font:inherit;font-size:11.5px;padding:5px 8px;border:1px solid var(--line);border-radius:8px}
+
+  .loading{padding:60px 0;text-align:center;color:var(--ink3);font-size:13px}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;transition:transform .25s;z-index:99;max-width:80vw}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mentor console <span style="font-size:12px;color:var(--gold);font-weight:700">/supermentor999</span></h1>
+  <p class="lead">One row per planner: <b>mentor</b>, <b>LINE / Discord account</b>, <b>letter sent → signed</b>, <b>set &amp; plan progress</b>, <b>problems</b> and <b>remarks</b>. Change status or mentor straight in the row; click a row for the full panel. Signed-in as <b id="whoami"></b>.</p>
+
+  <div class="banner" id="migBanner">⚠ The mentor-tracker tables are missing — remarks, problems, channel and status edits won't save yet. Run <code>docs/schema/supermentor-tracker.sql</code> in Supabase once, then refresh.</div>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="mtabs" id="mtabs"></div>
+
+  <div class="bar">
+    <input id="q" placeholder="Search name, email, phone, LINE/Discord handle…" oninput="render()">
+    <select id="fCh" onchange="render()"><option value="">All channel accounts</option></select>
+    <select id="fLt" onchange="render()">
+      <option value="">Letter: all</option>
+      <option value="none">Not sent yet</option>
+      <option value="sent">Sent — waiting signature</option>
+      <option value="signed">Signed ✓</option>
+    </select>
+    <select id="fSt" onchange="render()">
+      <option value="">All statuses</option>
+      <option value="onboarding">Onboarding</option>
+      <option value="training">Training (Day-1)</option>
+      <option value="active">Active</option>
+      <option value="slow">Slow</option>
+      <option value="at_risk">At risk</option>
+      <option value="ghosted">Ghosted</option>
+      <option value="done">Completed / paid out</option>
+    </select>
+    <label style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="fPb" onchange="render()" style="width:auto">Open problems only</label>
+    <span class="hint" id="count"></span>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:16%">Planner</th>
+      <th style="width:8%">Mentor</th>
+      <th style="width:11%">Channel</th>
+      <th style="width:10%">Letter</th>
+      <th style="width:10%">Status</th>
+      <th style="width:16%">Set · plans · deadline</th>
+      <th style="width:11%">Money</th>
+      <th style="width:18%">Problems · last remark</th>
+    </tr></thead>
+    <tbody id="rows"><tr><td colspan="8" class="loading">Loading planners…</td></tr></tbody>
+  </table>
+</div>
+
+<div id="qpop" class="qpop" style="display:none">
+  <div style="font-size:11px;font-weight:800;color:var(--ink2);margin-bottom:6px" id="qpTitle"></div>
+  <textarea id="qpText" placeholder="Quick remark…"></textarea>
+  <div class="row">
+    <select id="qpTag">
+      <option value="general">General</option>
+      <option value="chase">Chase</option>
+      <option value="payment">Payment</option>
+      <option value="quality">Quality</option>
+      <option value="praise">Praise</option>
+    </select>
+    <button class="addbtn" style="flex:1" onclick="saveQuickRemark()">Add remark</button>
+    <button class="addbtn ghost" onclick="closeQpop()">✕</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── AUTH (same pattern as supercs999: worker Basic Auth gates the page; this
+// prompt only unlocks the proxy token + records who is writing remarks) ─────
+const SUPABASE_ANON = 'sb_publishable_EQBMG6WS1qd1F9jMNrog1g_gU1n9grr'
+const PROXY_BASE = window.location.origin + '/api/sb'
+const MENTOR_PASS = '168168'
+const _cached = localStorage.getItem('jj_mentor')
+const pass = (_cached === MENTOR_PASS) ? _cached : (()=>{const p=prompt('Mentor password:');if(p===MENTOR_PASS){localStorage.setItem('jj_mentor',p);return p}localStorage.removeItem('jj_mentor');alert('Wrong password');location.reload();return null})()
+const mentorName = localStorage.getItem('jj_mentor_name') || (()=>{const n=prompt('Your name (shown on remarks):','Mentor')||'Mentor';localStorage.setItem('jj_mentor_name',n);return n})()
+document.getElementById('whoami').textContent = mentorName
+
+const sb = supabase.createClient(PROXY_BASE, SUPABASE_ANON, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  global: { headers: { 'x-jj-proxy': MENTOR_PASS } }
+})
+
+// ── constants ────────────────────────────────────────────────────────────
+const MENTORS = ['FCKING','TT','KIT']   // keep in sync with ONBOARDING_MENTORS in superadmin999
+const STATUS_LABEL = { onboarding:'Onboarding', training:'Training', active:'Active', slow:'Slow', at_risk:'At risk', ghosted:'Ghosted', done:'Done / paid' }
+const DOTCLS = { pending:'', in_progress:'ip', submitted:'sub', revision:'rev', approved:'ap', bond_pending:'bp', completed:'done' }
+const PSTATE_LABEL = { open:'Open', progress:'In progress', resolved:'Resolved' }
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+// ── state ────────────────────────────────────────────────────────────────
+let planners = []          // enriched rows the UI renders
+let needsMigration = false
+let openId = null
+let mentorTab = ''
+let qpopId = null
+let chFilterFilled = false
+
+// ── helpers ──────────────────────────────────────────────────────────────
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'), 2600) }
+function fmtDT(iso){ if(!iso) return '—'; const d=new Date(iso); return `${MONTHS[d.getMonth()]} ${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
+function fmtD(iso){ if(!iso) return '—'; const d=new Date(iso); return `${MONTHS[d.getMonth()]} ${d.getDate()}` }
+function timeAgo(iso){
+  if (!iso) return '—'
+  const s = Math.floor((Date.now() - new Date(iso).getTime())/1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return Math.floor(s/60)+'m ago'
+  if (s < 86400) return Math.floor(s/3600)+'h ago'
+  return Math.floor(s/86400)+'d ago'
+}
+async function safe(q){ try { const { data, error } = await q; if (error) return { data:null, error }; return { data, error:null } } catch (e) { return { data:null, error:e } } }
+function isMissingTable(err){ return !!err && /does not exist|42P01|relation|schema cache/i.test(err.message||'') }
+
+// ── data load ────────────────────────────────────────────────────────────
+async function loadAll(showSpinner){
+  if (showSpinner) document.getElementById('rows').innerHTML = '<tr><td colspan="8" class="loading">Loading planners…</td></tr>'
+  const [pRes, lRes, sRes, wRes, remRes, probRes, stepRes] = await Promise.all([
+    safe(sb.from('planners').select('*').order('created_at', { ascending:false })),
+    safe(sb.from('employment_letters').select('planner_id, status, signed_at, created_at').order('created_at', { ascending:true })),
+    safe(sb.from('sets').select('id, planner_id, set_number, city, deadline, status, plans(id, plan_number, status)')),
+    safe(sb.from('wallet_requests').select('planner_id, amount, status').eq('status','pending')),
+    safe(sb.from('planner_remarks').select('*').order('created_at', { ascending:false })),
+    safe(sb.from('planner_problems').select('*').order('created_at', { ascending:false })),
+    safe(sb.from('planner_problem_steps').select('*').order('created_at', { ascending:true })),
+  ])
+  if (pRes.error) {
+    document.getElementById('rows').innerHTML = `<tr><td colspan="8" class="loading">Failed to load planners: ${escapeHtml(pRes.error.message||'unknown')}</td></tr>`
+    return
+  }
+  needsMigration = isMissingTable(remRes.error) || isMissingTable(probRes.error)
+  document.getElementById('migBanner').style.display = needsMigration ? 'block' : 'none'
+
+  const letters = lRes.data || []
+  const sets    = sRes.data || []
+  const wallet  = wRes.data || []
+  const remarks = remRes.data || []
+  const probs   = probRes.data || []
+  const steps   = stepRes.data || []
+
+  const stepsByProblem = new Map()
+  for (const s of steps) {
+    if (!stepsByProblem.has(s.problem_id)) stepsByProblem.set(s.problem_id, [])
+    stepsByProblem.get(s.problem_id).push(s)
+  }
+
+  planners = (pRes.data || []).map(p => {
+    // Letter: signed wins; else latest non-cancelled pending = "sent"; else none
+    const myLetters = letters.filter(l => l.planner_id === p.id)
+    const signed = myLetters.filter(l => l.status === 'signed').pop()
+    const sent   = myLetters.filter(l => l.status !== 'cancelled').pop()
+    const letter = signed ? { state:'signed', sent: signed.created_at, signedAt: signed.signed_at }
+                 : sent   ? { state:'sent',   sent: sent.created_at,   signedAt: null }
+                 :          { state:'none',   sent: null,              signedAt: null }
+
+    // Sets: current = a non-finished set owned by this planner; count completed
+    const mySets = sets.filter(s => s.planner_id === p.id)
+    const doneSets = mySets.filter(s => ['completed','paid','delivered'].includes(s.status)).length
+    const openSets = mySets.filter(s => !['completed','paid','delivered','cancelled'].includes(s.status))
+    const cur = openSets[openSets.length - 1] || null
+    const plans = cur ? (cur.plans || []).slice().sort((a,b)=>(a.plan_number||0)-(b.plan_number||0)) : []
+    const revisions = mySets.reduce((n,s)=>n+(s.plans||[]).filter(pl=>pl.status==='revision').length, 0)
+    const approved  = mySets.reduce((n,s)=>n+(s.plans||[]).filter(pl=>['approved','completed'].includes(pl.status)).length, 0)
+    let deadline = null
+    if (cur && cur.deadline) {
+      const days = Math.ceil((new Date(cur.deadline+'T23:59:59') - Date.now()) / 86400000)
+      deadline = { label: fmtD(cur.deadline+'T00:00:00'), days }
+    }
+
+    const payoutDue = wallet.filter(w => w.planner_id === p.id).reduce((n,w)=>n+Number(w.amount||0), 0)
+    const myProbs = probs.filter(x => x.planner_id === p.id).map(x => ({ ...x, steps: stepsByProblem.get(x.id) || [] }))
+    const myRemarks = remarks.filter(x => x.planner_id === p.id)
+
+    return {
+      raw: p,
+      id: p.id, name: p.name || '—', email: p.email || '', phone: p.phone || '—',
+      joined: p.created_at, login: p.last_seen_at || p.last_login_at,
+      mentor: p.onboarding_mentor || null,
+      ch: p.contact_channel || null, acct: p.contact_account || '',
+      status: p.mentor_status || 'onboarding',
+      accountStatus: p.status,
+      bank: !!(p.bank_account_no || p.bank_name),
+      letter, set: cur, plans, doneSets, revisions, approved, deadline, payoutDue,
+      bondWaiting: plans.some(pl => pl.status === 'bond_pending'),
+      problems: myProbs, remarks: myRemarks,
+    }
+  })
+  render()
+}
+
+// ── KPIs / tabs / filters ────────────────────────────────────────────────
+function renderKpis(){
+  const active  = planners.filter(p=>p.status==='active').length
+  const risk    = planners.filter(p=>['at_risk','ghosted'].includes(p.status)).length
+  const signed  = planners.filter(p=>p.letter.state==='signed').length
+  const probs   = planners.reduce((n,p)=>n+p.problems.filter(x=>x.status!=='resolved').length,0)
+  const payout  = planners.reduce((n,p)=>n+p.payoutDue,0)
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="n">${planners.length}</div><div class="l">Planners</div></div>
+    <div class="kpi act"><div class="n">${active}</div><div class="l">Active</div></div>
+    <div class="kpi letter"><div class="n">${signed}</div><div class="l">Letter signed</div></div>
+    <div class="kpi"><div class="n">${planners.length - signed}</div><div class="l">Not signed</div></div>
+    <div class="kpi prob"><div class="n">${probs}</div><div class="l">Open problems</div></div>
+    <div class="kpi risk"><div class="n">${risk}</div><div class="l">At risk / ghosted</div></div>
+    <div class="kpi money"><div class="n">¥${Math.round(payout).toLocaleString('en-GB')}</div><div class="l">Payout requested</div></div>`
+}
+function renderMentorTabs(){
+  const counts = m => planners.filter(p=>p.mentor===m).length
+  const un = planners.filter(p=>!p.mentor).length
+  document.getElementById('mtabs').innerHTML =
+    `<button class="mtab ${mentorTab===''?'on':''}" onclick="setMentorTab('')">All mentors<span class="c">${planners.length}</span></button>`
+    + MENTORS.map(m=>`<button class="mtab ${mentorTab===m?'on':''}" onclick="setMentorTab('${m}')">${escapeHtml(m)}<span class="c">${counts(m)}</span></button>`).join('')
+    + `<button class="mtab ${mentorTab==='__none__'?'on':''}" onclick="setMentorTab('__none__')">No mentor<span class="c">${un}</span></button>`
+    + `<button class="refresh" onclick="loadAll(true)">↻ Refresh</button>`
+}
+function setMentorTab(m){ mentorTab = m; render() }
+function fillChannelFilter(){
+  if (chFilterFilled) return
+  const accts = [...new Set(planners.filter(p=>p.ch&&p.acct).map(p=>`${p.ch} · ${p.acct}`))].sort()
+  if (!accts.length) return
+  const sel = document.getElementById('fCh')
+  accts.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o) })
+  chFilterFilled = true
+}
+
+// ── cells ────────────────────────────────────────────────────────────────
+function letterHtml(p){
+  const l = p.letter
+  if (l.state==='signed') return `<span class="lt lt-signed">✓ Signed</span><div class="ltsub">${fmtD(l.sent)} → ${fmtD(l.signedAt)}</div>`
+  if (l.state==='sent')   return `<span class="lt lt-sent">✉ Waiting</span><div class="ltsub">sent ${fmtD(l.sent)}</div>`
+  return `<span class="lt lt-none">Not sent</span>`
+}
+function deadlineHtml(p){
+  if (!p.deadline) return ''
+  const d = p.deadline
+  const cls = d.days<0?'over':d.days<=1?'soon':'ok'
+  const txt = d.days<0?`overdue ${-d.days}d`:d.days===0?'due today':`due ${d.label} (${d.days}d)`
+  return `<div class="ddl ${cls}">⏰ ${txt}</div>`
+}
+function moneyHtml(p){
+  const bits = []
+  if (p.payoutDue) bits.push(`<div class="due">payout ¥${Math.round(p.payoutDue).toLocaleString('en-GB')}</div>`)
+  if (p.bondWaiting) bits.push(`<div class="bp">● bond waiting</div>`)
+  bits.push(`<div class="sub">bank ${p.bank?'✓ registered':'✗ missing'}</div>`)
+  return `<div class="money">${bits.join('')}</div>`
+}
+function probBadge(p){
+  const open = p.problems.filter(x=>x.status==='open').length
+  const prog = p.problems.filter(x=>x.status==='progress').length
+  if (open) return `<span class="pb pb-open">⚠ ${open} open</span>`
+  if (prog) return `<span class="pb pb-watch">◐ ${prog} in progress</span>`
+  return `<span class="pb pb-clear">No problems</span>`
+}
+function statusSelect(p){
+  return `<select class="inline st-${p.status}" onclick="event.stopPropagation()" onchange="setStatus('${p.id}', this.value)">
+    ${Object.keys(STATUS_LABEL).map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+  </select>`
+}
+function mentorSelect(p){
+  return `<select class="inline" onclick="event.stopPropagation()" onchange="setMentor('${p.id}', this.value)">
+    <option value="" ${!p.mentor?'selected':''}>— none</option>
+    ${MENTORS.map(m=>`<option value="${escapeHtml(m)}" ${p.mentor===m?'selected':''}>${escapeHtml(m)}</option>`).join('')}
+  </select>`
+}
+function channelHtml(p){
+  if (!p.ch) return `<span class="chip ch-none">not set</span>`
+  return `<span class="chip ${p.ch==='LINE'?'ch-line':'ch-discord'}">${p.ch==='LINE'?'💬 LINE':'🎮 Discord'}</span><div class="ch-acct">${escapeHtml(p.acct)}</div>`
+}
+
+// ── table ────────────────────────────────────────────────────────────────
+function render(){
+  renderKpis(); renderMentorTabs(); fillChannelFilter(); closeQpop()
+  const q  = (document.getElementById('q').value||'').toLowerCase()
+  const fCh = document.getElementById('fCh').value
+  const fLt = document.getElementById('fLt').value
+  const fSt = document.getElementById('fSt').value
+  const fPb = document.getElementById('fPb').checked
+  const tbody = document.getElementById('rows')
+  tbody.innerHTML = ''
+  let shown = 0
+  planners.forEach(p=>{
+    if (mentorTab==='__none__' ? p.mentor : (mentorTab && p.mentor!==mentorTab)) return
+    if (q && !`${p.name} ${p.email} ${p.phone} ${p.acct}`.toLowerCase().includes(q)) return
+    if (fCh && `${p.ch} · ${p.acct}` !== fCh) return
+    if (fLt && p.letter.state !== fLt) return
+    if (fSt && p.status !== fSt) return
+    if (fPb && !p.problems.some(x=>x.status!=='resolved')) return
+    shown++
+    const curIdx = p.plans.findIndex(s=>s.status!=='completed')
+    const planNow = p.plans.length
+      ? (curIdx===-1 ? `All ${p.plans.length} done` : `Plan ${p.plans[curIdx].plan_number} · ${String(p.plans[curIdx].status).replace('_',' ')}`)
+      : 'No set yet'
+    const setLabel = p.set ? `Set #${String(p.set.set_number??'').padStart(3,'0')}${p.set.city?' · '+escapeHtml(p.set.city):''}` : 'Set #—'
+    const dots = p.plans.length
+      ? `<div class="dots">${p.plans.map(s=>`<span class="dot ${DOTCLS[s.status]||''}" title="Plan ${s.plan_number}: ${escapeHtml(s.status)}"></span>`).join('')}</div><div class="setsub">${escapeHtml(planNow)}</div>${deadlineHtml(p)}`
+      : `<div class="setsub">— not assigned</div>`
+    const lastR = p.remarks[0] ? `<div class="lastr" title="${escapeHtml(p.remarks[0].body)}">${fmtDT(p.remarks[0].created_at)} · ${escapeHtml(p.remarks[0].body)}</div>` : ''
+    const tr = document.createElement('tr')
+    tr.className = 'main' + (p.id===openId?' open':'')
+    tr.innerHTML = `
+      <td><span class="caret">▶</span><span class="pname">${escapeHtml(p.name)}</span>${p.accountStatus==='suspended'?'<span class="suspended">suspended</span>':''}<div class="pmail" style="margin-left:17px">${escapeHtml(p.email)}<br>joined ${fmtD(p.joined)} · seen ${timeAgo(p.login)}</div></td>
+      <td>${mentorSelect(p)}</td>
+      <td>${channelHtml(p)}</td>
+      <td>${letterHtml(p)}</td>
+      <td>${statusSelect(p)}</td>
+      <td class="setcell"><b>${setLabel}</b>${dots}</td>
+      <td>${moneyHtml(p)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:7px">${probBadge(p)}
+        <button class="qbtn" onclick="event.stopPropagation();openQpop(event, '${p.id}')">📝 Remark</button></div>
+        ${lastR}
+      </td>`
+    tr.onclick = ()=>toggleRow(p.id)
+    tbody.appendChild(tr)
+    if (p.id===openId) tbody.appendChild(detailRow(p))
+  })
+  if (!shown) { const tr=document.createElement('tr'); tr.innerHTML='<td colspan="8" class="loading">No planners match the filters.</td>'; tbody.appendChild(tr) }
+  document.getElementById('count').textContent = `${shown} / ${planners.length} planners`
+}
+
+// ── expanded detail ──────────────────────────────────────────────────────
+function detailRow(p){
+  const tr = document.createElement('tr')
+  tr.className='detail'
+  const td = document.createElement('td')
+  td.colSpan = 8
+  td.innerHTML = `
+    <div class="panel">
+      <div class="pcol" onclick="event.stopPropagation()">
+        <div class="sl">Profile — auto from DB</div>
+        <div class="facts">
+          <div class="fact"><div class="fl">Phone</div><div class="fv">${escapeHtml(p.phone)}</div></div>
+          <div class="fact"><div class="fl">Joined</div><div class="fv">${fmtD(p.joined)}</div></div>
+          <div class="fact"><div class="fl">Account</div><div class="fv ${p.accountStatus==='suspended'?'red':'green'}">${escapeHtml(p.accountStatus||'—')}</div></div>
+          <div class="fact"><div class="fl">Bank details</div><div class="fv ${p.bank?'green':'red'}">${p.bank?'✓ Registered':'✗ Missing'}</div></div>
+          <div class="fact"><div class="fl">Sets completed</div><div class="fv">${p.doneSets}</div></div>
+          <div class="fact"><div class="fl">Plans approved</div><div class="fv green">${p.approved}</div></div>
+          <div class="fact"><div class="fl">In revision now</div><div class="fv ${p.revisions?'red':''}">${p.revisions}</div></div>
+          <div class="fact"><div class="fl">Payout requested</div><div class="fv ${p.payoutDue?'purple':''}">${p.payoutDue?'¥'+Math.round(p.payoutDue).toLocaleString('en-GB'):'—'}</div></div>
+          <div class="fact"><div class="fl">Letter sent</div><div class="fv blue">${fmtD(p.letter.sent)}</div></div>
+          <div class="fact"><div class="fl">Letter signed</div><div class="fv ${p.letter.signedAt?'green':''}">${p.letter.signedAt?fmtD(p.letter.signedAt):'not yet'}</div></div>
+        </div>
+        <div class="sl" style="margin-top:12px">Channel account</div>
+        <div class="chrow">
+          <select id="dChType"><option ${p.ch==='LINE'?'selected':''}>LINE</option><option ${p.ch==='Discord'?'selected':''}>Discord</option></select>
+          <input id="dChAcct" value="${escapeHtml(p.acct)}" placeholder="@account / handle">
+        </div>
+        <div style="margin-top:8px"><button class="addbtn" ${needsMigration?'disabled':''} onclick="saveChannel('${p.id}')">Save channel</button></div>
+      </div>
+
+      <div class="pcol" onclick="event.stopPropagation()">
+        <div class="sl">Status — one click</div>
+        <div class="stchips">
+          ${Object.keys(STATUS_LABEL).map(s=>`<button class="stchip ${p.status===s?'on':''}" onclick="setStatus('${p.id}','${s}')">${STATUS_LABEL[s]}</button>`).join('')}
+        </div>
+        <div class="sl" style="margin-top:6px">Problems &amp; progression</div>
+        <div id="dProbs">${problemsHtml(p)}</div>
+        <div class="chrow" style="margin-top:8px">
+          <input id="dNewProb" placeholder="New problem…" style="flex:1">
+          <button class="addbtn ghost" style="flex:0 0 auto" ${needsMigration?'disabled':''} onclick="addProblem('${p.id}')">+ Problem</button>
+        </div>
+      </div>
+
+      <div class="pcol" onclick="event.stopPropagation()">
+        <div class="sl">Remarks — full log (${p.remarks.length})</div>
+        <div class="rlist" id="dRemarks">${remarksHtml(p)}</div>
+        <textarea id="dRemark" placeholder="Write a remark…"></textarea>
+        <div class="chrow" style="margin-top:7px">
+          <select id="dRTag" style="width:110px;flex:0 0 auto">
+            <option value="general">General</option><option value="chase">Chase</option>
+            <option value="payment">Payment</option><option value="quality">Quality</option><option value="praise">Praise</option>
+          </select>
+          <button class="addbtn" style="flex:1" ${needsMigration?'disabled':''} onclick="addRemark('${p.id}')">Add remark</button>
+        </div>
+      </div>
+    </div>`
+  return tr
+}
+
+function problemsHtml(p){
+  if (!p.problems.length) return '<div class="pmail">No problems recorded. 🎉</div>'
+  return p.problems.map((pr,i)=>`
+    <div class="prob">
+      <div class="ph">
+        <span class="pt">${escapeHtml(pr.title)}</span>
+        <select onchange="setProbState('${p.id}','${pr.id}',this.value)">
+          ${Object.keys(PSTATE_LABEL).map(s=>`<option value="${s}" ${pr.status===s?'selected':''}>${PSTATE_LABEL[s]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="steps">${pr.steps.map(s=>`<div class="step"><span class="sw">${fmtDT(s.created_at)}</span><span>${escapeHtml(s.body)}${s.created_by?` <span style="color:var(--ink3)">— ${escapeHtml(s.created_by)}</span>`:''}</span></div>`).join('') || '<div class="pmail">No progress steps yet.</div>'}</div>
+      <div class="addstep">
+        <input id="stepInput${i}" placeholder="Add progress step…">
+        <button onclick="addStep('${p.id}','${pr.id}',${i})">Add</button>
+      </div>
+    </div>`).join('')
+}
+function remarksHtml(p){
+  if (!p.remarks.length) return '<div class="pmail" style="margin-bottom:6px">No remarks yet.</div>'
+  return p.remarks.map(x=>`<div class="remark"><div class="rmeta"><span><span class="rtag ${escapeHtml(x.tag||'general')}">${escapeHtml(x.tag||'general')}</span> ${escapeHtml(x.created_by||'Mentor')}</span><span>${fmtDT(x.created_at)}</span></div><div class="rbody">${escapeHtml(x.body)}</div></div>`).join('')
+}
+
+// ── actions (write to DB, update local state, re-render) ─────────────────
+function toggleRow(id){ openId = (openId===id?null:id); render() }
+function byId(id){ return planners.find(x=>x.id===id) }
+
+async function insertRemark(plannerId, body, tag){
+  const { data, error } = await sb.from('planner_remarks')
+    .insert({ planner_id: plannerId, body, tag: tag||'general', created_by: mentorName })
+    .select().single()
+  if (error) throw error
+  return data
+}
+
+async function setStatus(id, v){
+  const p = byId(id); if (!p || p.status===v) return
+  const old = p.status
+  const { error } = await sb.from('planners').update({ mentor_status: v }).eq('id', id)
+  if (error) { toast('Save failed: '+error.message); render(); return }
+  p.status = v
+  try { const rem = await insertRemark(id, `Status changed: ${STATUS_LABEL[old]} → ${STATUS_LABEL[v]}`, 'status'); p.remarks.unshift(rem) } catch(_){}
+  toast(`${p.name}: status → ${STATUS_LABEL[v]}`)
+  render()
+}
+async function setMentor(id, v){
+  const p = byId(id); if (!p) return
+  const nv = v || null
+  if (p.mentor===nv) return
+  const old = p.mentor
+  const { error } = await sb.from('planners').update({ onboarding_mentor: nv }).eq('id', id)
+  if (error) { toast('Save failed: '+error.message); render(); return }
+  p.mentor = nv
+  try { const rem = await insertRemark(id, `Mentor changed: ${old||'none'} → ${nv||'none'}`, 'status'); p.remarks.unshift(rem) } catch(_){}
+  toast(`${p.name}: mentor → ${nv||'none'}`)
+  render()
+}
+async function saveChannel(id){
+  const p = byId(id); if (!p) return
+  const ch = document.getElementById('dChType').value
+  const acct = document.getElementById('dChAcct').value.trim()
+  const { error } = await sb.from('planners').update({ contact_channel: ch, contact_account: acct }).eq('id', id)
+  if (error) { toast('Save failed: '+error.message); return }
+  p.ch = ch; p.acct = acct
+  toast('Channel saved')
+  render()
+}
+async function setProbState(plannerId, probId, v){
+  const p = byId(plannerId); if (!p) return
+  const pr = p.problems.find(x=>x.id===probId); if (!pr || pr.status===v) return
+  const { error } = await sb.from('planner_problems').update({ status: v, updated_at: new Date().toISOString() }).eq('id', probId)
+  if (error) { toast('Save failed: '+error.message); render(); return }
+  pr.status = v
+  const { data: st } = await sb.from('planner_problem_steps')
+    .insert({ problem_id: probId, body: `Status → ${PSTATE_LABEL[v]}`, created_by: mentorName }).select().single()
+  if (st) pr.steps.push(st)
+  render()
+}
+async function addStep(plannerId, probId, idx){
+  const p = byId(plannerId); if (!p) return
+  const pr = p.problems.find(x=>x.id===probId); if (!pr) return
+  const inp = document.getElementById('stepInput'+idx)
+  const t = inp.value.trim(); if (!t) return
+  const { data, error } = await sb.from('planner_problem_steps')
+    .insert({ problem_id: probId, body: t, created_by: mentorName }).select().single()
+  if (error) { toast('Save failed: '+error.message); return }
+  pr.steps.push(data)
+  if (pr.status==='open') {
+    const { error: e2 } = await sb.from('planner_problems').update({ status:'progress', updated_at: new Date().toISOString() }).eq('id', probId)
+    if (!e2) pr.status = 'progress'
+  }
+  render()
+}
+async function addProblem(id){
+  const p = byId(id); if (!p) return
+  const inp = document.getElementById('dNewProb')
+  const t = inp.value.trim(); if (!t) return
+  const { data, error } = await sb.from('planner_problems')
+    .insert({ planner_id: id, title: t, status: 'open', created_by: mentorName }).select().single()
+  if (error) { toast('Save failed: '+error.message); return }
+  data.steps = []
+  const { data: st } = await sb.from('planner_problem_steps')
+    .insert({ problem_id: data.id, body: 'Problem opened.', created_by: mentorName }).select().single()
+  if (st) data.steps.push(st)
+  p.problems.unshift(data)
+  render()
+}
+async function addRemark(id){
+  const p = byId(id); if (!p) return
+  const t = document.getElementById('dRemark').value.trim(); if (!t) return
+  try {
+    const rem = await insertRemark(id, t, document.getElementById('dRTag').value)
+    p.remarks.unshift(rem)
+    render()
+  } catch (e) { toast('Save failed: '+(e.message||'unknown')) }
+}
+
+// ── quick remark popover ─────────────────────────────────────────────────
+function openQpop(ev, id){
+  qpopId = id
+  const p = byId(id)
+  const pop = document.getElementById('qpop')
+  document.getElementById('qpTitle').textContent = `Quick remark — ${p.name}`
+  document.getElementById('qpText').value = ''
+  pop.style.display = 'block'
+  const x = Math.min(ev.clientX, window.innerWidth - 310)
+  pop.style.left = (x + window.scrollX - 140) + 'px'
+  pop.style.top = (ev.clientY + window.scrollY + 14) + 'px'
+  document.getElementById('qpText').focus()
+}
+function closeQpop(){ qpopId=null; const el=document.getElementById('qpop'); if (el) el.style.display='none' }
+async function saveQuickRemark(){
+  const p = byId(qpopId); if (!p) return closeQpop()
+  const t = document.getElementById('qpText').value.trim(); if (!t) return
+  try {
+    const rem = await insertRemark(p.id, t, document.getElementById('qpTag').value)
+    p.remarks.unshift(rem)
+    closeQpop(); render()
+    toast('Remark added')
+  } catch (e) { toast('Save failed: '+(e.message||'unknown')) }
+}
+document.addEventListener('click', e=>{
+  const pop = document.getElementById('qpop')
+  if (pop.style.display==='block' && !pop.contains(e.target) && !e.target.classList.contains('qbtn')) closeQpop()
+})
+
+// ── boot + gentle auto-refresh (paused while a row/popover is open) ──────
+loadAll(true)
+setInterval(()=>{ if (openId===null && qpopId===null && document.visibilityState==='visible') loadAll(false) }, 60000)
+</script>
+</body>
+</html>

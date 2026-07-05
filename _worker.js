@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
 // Basic Auth gate + email proxy.
-//   • /superadmin999.html, /supercs999.html → Basic Auth required
+//   • /superadmin999.html, /supercs999.html, /supermentor999.html → Basic Auth required
 //   • /api/send-approval                     → Basic Auth (admin only) + forwards to Resend
 //   • everything else                        → static asset serving
 //
@@ -9,10 +9,10 @@
 // so only share this password with people you'd trust at admin level.
 // ─────────────────────────────────────────────────────────────
 
-const PROTECTED_PATHS = ['/superadmin999.html', '/supercs999.html']
+const PROTECTED_PATHS = ['/superadmin999.html', '/supercs999.html', '/supermentor999.html']
 
 const CREDENTIALS = [
-  { user: 'admin', pass: '168168', allow: ['/superadmin999.html', '/supercs999.html'] },
+  { user: 'admin', pass: '168168', allow: ['/superadmin999.html', '/supercs999.html', '/supermentor999.html'] },
 ]
 
 // Resend API key — loaded from the Worker secret `env.RESEND_API_KEY`
@@ -319,6 +319,8 @@ const PROXY_ALLOWED_TABLES = new Set([
   'itinerary_items','item_images','legal_docs','messages','payouts','planner_applications','planners',
   'plans','platform_settings','set_assignments','sets','support_tickets',
   'travelers','wallet_adjustments','wallet_pending_payments','wallet_requests',
+  // Mentor tracker (/supermentor999.html — see docs/schema/supermentor-tracker.sql)
+  'planner_problems','planner_problem_steps','planner_remarks',
   // Best-effort cleanup targets (may not exist; wrapped in try/catch client-side)
   'wallet_ledger','chat_messages','typing_drafts',
 ])
