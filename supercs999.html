@@ -153,6 +153,8 @@ body.theme-dark .msg-translation{background:rgba(79,184,145,0.10);color:var(--in
 .msg-meta{font-size:10.5px;color:var(--ink-3);padding:0 6px;display:flex;align-items:center;gap:6px;}
 .msg.cs .msg-meta{text-align:right;justify-content:flex-end;}
 .msg-edited{font-size:10px;color:var(--ink-4);font-style:italic;}
+.msg-seen{font-size:10px;color:var(--ink-4);font-weight:600;letter-spacing:.2px;cursor:default;}
+.msg-seen.read{color:var(--green);}
 /* Hover actions (edit / delete) — only on CS's own bubbles */
 .msg-actions{opacity:0;transition:opacity 0.15s ease;display:inline-flex;gap:4px;margin-left:4px;}
 .msg.cs:hover .msg-actions{opacity:1;}
@@ -2239,6 +2241,13 @@ function renderMessages() {
     const bubblePad = m.media_url && !m.body ? 'padding:6px;' : ''
     const pending = m._pending ? '<div style="font-size:10.5px;opacity:0.75;margin-top:4px;">sending…</div>' : ''
     const edited = m.edited_at ? '<span class="msg-edited" title="Edited">· edited</span>' : ''
+    // Read receipt — CS-console-only. read_at is stamped by support.html while
+    // the planner actually has the chat open and the tab visible.
+    const seen = (isCs && isPersisted)
+      ? (m.read_at
+          ? `<span class="msg-seen read" title="Seen by planner · ${fullTime(m.read_at)}">✓✓ Seen</span>`
+          : `<span class="msg-seen" title="Not seen by the planner yet">✓ Sent</span>`)
+      : ''
 
     // Build the edit + delete affordances independently so image-only
     // messages (no body) still get a delete button.
@@ -2273,7 +2282,7 @@ function renderMessages() {
       <div class="msg ${m.sender_type}" data-msg-id="${escapeHtml(m.id)}">
         <div class="msg-bubble" style="${bubblePad}">${img}${text}${pending}</div>
         ${translateBlock}
-        <div class="msg-meta">${m.sender_type === 'system' ? '' : (escapeHtml(m.sender_name || m.sender_type) + ' · ')}${fullTime(m.created_at)}${edited}${actions}</div>
+        <div class="msg-meta">${m.sender_type === 'system' ? '' : (escapeHtml(m.sender_name || m.sender_type) + ' · ')}${fullTime(m.created_at)}${edited}${seen}${actions}</div>
       </div>`
   }).join('')
   box.scrollTop = box.scrollHeight
@@ -2800,6 +2809,7 @@ setInterval(async () => {
     const prev = activeMessages[i]
     if (!prev || m.id !== prev.id) return true
     if ((m.edited_at || '') !== (prev.edited_at || '')) return true
+    if ((m.read_at  || '') !== (prev.read_at  || '')) return true
     if ((m.body || '').length !== (prev.body || '').length) return true
     return false
   })

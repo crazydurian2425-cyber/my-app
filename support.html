@@ -774,7 +774,35 @@ async function loadMessages() {
   const ids = new Set((data||[]).map(m => m.id))
   messages = [...(data||[]), ...pending.filter(p => !ids.has(p.id))]
   renderMessages()
+  markCsMessagesRead()
 }
+
+// ── READ RECEIPTS ───────────────────────────────────────────
+// Stamp read_at on CS/system messages the planner has on screen so the CS
+// console can show "Seen". Fire-and-forget; nothing is shown to the planner.
+// Only counts as seen while the tab is actually visible.
+let _markReadInflight = false
+async function markCsMessagesRead() {
+  if (!conversation || document.visibilityState !== 'visible') return
+  if (_markReadInflight) return
+  if (!messages.some(m => !m._pending && m.sender_type !== 'planner' && !m.read_at)) return
+  _markReadInflight = true
+  try {
+    const { error } = await sb.rpc('jj_mark_cs_messages_read', { p_conversation_id: conversation.id })
+    if (error) {
+      // RPC not deployed yet — fall back to a direct update under the
+      // "messages via own conv" RLS policy.
+      await sb.from('messages').update({ read_at: new Date().toISOString() })
+        .eq('conversation_id', conversation.id).neq('sender_type', 'planner').is('read_at', null)
+    }
+    const now = new Date().toISOString()
+    messages.forEach(m => { if (m.sender_type !== 'planner' && !m.read_at) m.read_at = now })
+  } catch (e) { /* best-effort — the next 3s poll retries */ }
+  _markReadInflight = false
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') markCsMessagesRead()
+})
 
 // Signature of the currently-rendered message set. If nothing has changed
 // since the last poll, we skip the innerHTML rewrite entirely — which kills
