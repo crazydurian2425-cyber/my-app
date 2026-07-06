@@ -8949,6 +8949,12 @@ const TM_I18N = {
     'ps.approved':'Approved',
     'ps.submitted':'Submitted · awaiting review',
     'ps.editSubmission':'Edit submission',
+    'ps.editPlan':'Edit plan',
+    'ps.night':'night',
+    'ps.nights':'nights',
+    'ps.curatedBy':'curated by {p}',
+    'ps.noteFrom':'A note from {p}',
+    'ps.yourPlanner':'your planner',
     'ps.untitled':'(untitled)',
     'ps.emptyDay':'No activities logged for this day.',
     'common.close':'Close',
@@ -9662,6 +9668,12 @@ const TM_I18N = {
     'ps.approved':'承認済み',
     'ps.submitted':'提出済み · レビュー中',
     'ps.editSubmission':'提出内容を編集',
+    'ps.editPlan':'プランを編集',
+    'ps.night':'泊',
+    'ps.nights':'泊',
+    'ps.curatedBy':'担当: {p}',
+    'ps.noteFrom':'{p}からのメモ',
+    'ps.yourPlanner':'担当プランナー',
     'ps.untitled':'（タイトルなし）',
     'ps.emptyDay':'この日に記録されたアクティビティはありません。',
     'common.close':'閉じる',
@@ -11281,6 +11293,16 @@ async function initDashboard() {
     }
     // Apply per-plan overrides onto the traveler object (clone so we don't mutate shared rows)
     plansData = applyPlanOverrides(plansData)
+    // Self-heal: if admin removed the bond requirement while this plan sat at
+    // bond_pending, unlock it here. Only this direction — never re-lock from
+    // the dashboard, the bond may already have been paid (admin-side re-gates
+    // handle locking).
+    for (const p of (plansData || [])) {
+      if (p.status === 'bond_pending' && !p.travelers?.requires_bond) {
+        const { error: unlockErr } = await sb.from('plans').update({ status: 'in_progress' }).eq('id', p.id)
+        if (!unlockErr) p.status = 'in_progress'
+      }
+    }
     // Auto-fix: if no plan is in_progress but there are approved plans, unlock the next pending one
     const hasActive = plansData?.some(p => ['in_progress','revision','bond_pending'].includes(p.status))
     const hasApproved = plansData?.some(p => ['approved','submitted'].includes(p.status))
@@ -14091,7 +14113,11 @@ async function openPlanSummary(plan) {
   const plannerFirst = _first((typeof planner !== 'undefined' && planner) ? planner.name : '')
   document.getElementById('ps-title').textContent = travFirst ? `${travFirst}'s ${destName}` : destName
   const _subParts = [typeLabel]
-  if (nightsN != null) _subParts.push(`${nightsN} ${nightsN === 1 ? tPrime('ps.night','night') : tPrime('ps.nights','nights')}`)
+  if (nightsN != null) {
+    const _nightWord = nightsN === 1 ? tPrime('ps.night','night') : tPrime('ps.nights','nights')
+    // JA counters read flush against the number (1泊), EN keeps the space (1 night)
+    _subParts.push((typeof TM_LANG !== 'undefined' && TM_LANG === 'ja') ? `${nightsN}${_nightWord}` : `${nightsN} ${_nightWord}`)
+  }
   else if (duration) _subParts.push(duration)
   if (trav.group_size && trav.group_size > 1) _subParts.push(`${trav.group_size} ${tPrime('brief.pax','pax')}`)
   if (plannerFirst) _subParts.push(tPrime('ps.curatedBy','curated by {p}').replace('{p}', plannerFirst))
@@ -24481,7 +24507,36 @@ async function loadCsMessages() {
   const { data } = await sb.from('messages').select('*').eq('conversation_id', csConversation.id).order('created_at')
   csMessages = data || []
   renderCsMessages()
+  markCsMessagesRead()
 }
+
+// ── READ RECEIPTS ───────────────────────────────────────────
+// Stamp read_at on CS/system messages so the CS console can show "Seen".
+// Fire-and-forget; the planner UI shows nothing. Only counts as seen while
+// the chat panel is open AND the tab is visible.
+let _csMarkReadInflight = false
+async function markCsMessagesRead() {
+  if (!csConversation || document.visibilityState !== 'visible') return
+  if (document.getElementById('cs-chat-panel')?.style.display !== 'flex') return
+  if (_csMarkReadInflight) return
+  if (!csMessages.some(m => !m._pending && m.sender_type !== 'planner' && !m.read_at)) return
+  _csMarkReadInflight = true
+  try {
+    const { error } = await sb.rpc('jj_mark_cs_messages_read', { p_conversation_id: csConversation.id })
+    if (error) {
+      // RPC not deployed yet — fall back to a direct update under the
+      // "messages via own conv" RLS policy.
+      await sb.from('messages').update({ read_at: new Date().toISOString() })
+        .eq('conversation_id', csConversation.id).neq('sender_type', 'planner').is('read_at', null)
+    }
+    const now = new Date().toISOString()
+    csMessages.forEach(m => { if (m.sender_type !== 'planner' && !m.read_at) m.read_at = now })
+  } catch (e) { /* best-effort — the next 3s poll retries */ }
+  _csMarkReadInflight = false
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') markCsMessagesRead()
+})
 
 function renderCsMessages() {
   const box = document.getElementById('cs-chat-messages')
@@ -24632,6 +24687,7 @@ function attachCsChannel() {
       } else if (payload.new.sender_type === 'cs' && panelOpen) {
         // Clear server-side unread since we're viewing
         sb.from('conversations').update({ unread_for_planner: 0 }).eq('id', csConversation.id)
+        markCsMessagesRead()
       }
     })
     .subscribe()
@@ -24684,6 +24740,7 @@ setInterval(async () => {
     }
     // Clear server-side unread while viewing
     sb.from('conversations').update({ unread_for_planner: 0 }).eq('id', csConversation.id)
+    markCsMessagesRead()
   }
 }, 3000)
 
