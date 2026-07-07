@@ -18920,10 +18920,11 @@ function _bumpRoutesDaily() {
 // and retries instead, and one sweep per page load clears expired entries
 // plus obsolete-version prefixes (jj_route_v1…v7 debris from old deploys).
 const _JJ_CACHE_TTLS = [
-  { prefix: 'jj_route_v8_',   ttl: 30 * 24 * 60 * 60 * 1000 },
-  { prefix: 'jj_station_v1_', ttl: 30 * 24 * 60 * 60 * 1000 },
-  { prefix: 'jj_nearby_v3_',  ttl: 7 * 24 * 60 * 60 * 1000 },
-  { prefix: 'jj_enrich_v1_',  ttl: 30 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_route_v8_',     ttl: 30 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_station_v1_',   ttl: 30 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_nearby_v3_',    ttl: 7 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_enrich_v1_',    ttl: 30 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_notransit_v1_', ttl: 30 * 24 * 60 * 60 * 1000 },
 ]
 function _purgeJJCaches(aggressive) {
   let removed = 0
@@ -19113,6 +19114,41 @@ async function _fetchDriveAnchor(fromId, toId, dayBucket) {
     return out
   } catch (e) { return null }
 }
+
+// ── "No transit here" pair memory ─────────────────────────────────────────
+// Google's Routes API returns ZERO transit routes for Japan local transit,
+// yet every new time-band re-paid that doomed probe before falling back to
+// the drive anchor. Once a pair comes back empty, remember it for 30 days
+// and go straight to the anchor estimate — halving what a JP transit leg
+// costs. If Google ever adds coverage, the marker expires and we re-probe.
+const NOTRANSIT_PREFIX = 'jj_notransit_v1_'
+const NOTRANSIT_TTL_MS = 30 * 24 * 60 * 60 * 1000
+function _noTransitPairFresh(fromId, toId) {
+  try {
+    const raw = localStorage.getItem(NOTRANSIT_PREFIX + fromId + '_' + toId)
+    if (!raw) return false
+    const o = JSON.parse(raw)
+    return !!(o && o.t && (Date.now() - o.t) < NOTRANSIT_TTL_MS)
+  } catch (e) { return false }
+}
+function _markNoTransitPair(fromId, toId) {
+  _lsSafeSet(NOTRANSIT_PREFIX + fromId + '_' + toId, JSON.stringify({ t: Date.now() }))
+}
+// Build the transit estimate from the (day-cached) drive anchor and cache it
+// under the leg's own key. Shared by the known-pair short-circuit and the
+// probe-returned-empty fallback so the two paths can't drift apart.
+async function _transitEstViaDriveAnchor(fromId, toId, departISO, cacheKey) {
+  const dr = await _fetchDriveAnchor(fromId, toId, (departISO || new Date().toISOString()).slice(0, 10))
+  if (dr && Number.isFinite(dr.distanceKm) && dr.distanceKm > 0) {
+    const km = dr.distanceKm
+    // Transit ≈ real drive time + a small wait/transfer/walk buffer; floor 8 min.
+    const est = { durationMin: Math.max(8, Math.round((dr.driveMin || (km * 2.5)) * 1.05) + 4), distanceKm: km, costEur: _transitFareEstimate(km), polyline: dr.polyline || null, steps: [], estimated: true }
+    _lsSafeSet(cacheKey, JSON.stringify({ t: Date.now(), data: est }))
+    return est
+  }
+  _lsSafeSet(cacheKey, JSON.stringify({ t: Date.now(), neg: 1 }))
+  return null
+}
 async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
   const fromId = fromSlot?._placeData?.google_place_id
   const toId   = toSlot?._placeData?.google_place_id
@@ -19139,21 +19175,13 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
     console.warn('[routes] hit daily cap')
     return null
   }
+  // Known no-transit pair (Japan local transit): skip the probe that always
+  // comes back empty and build the drive-anchored estimate directly — the
+  // anchor is day-cached, so this usually costs zero calls.
+  if (travelMode === 'TRANSIT' && _noTransitPairFresh(fromId, toId)) {
+    return await _transitEstViaDriveAnchor(fromId, toId, departISO, key)
+  }
   try {
-    // Routes API requires departureTime in the FUTURE — if the planner is
-    // viewing a past trip (already happened) or the slot time + trip date
-    // resolves to a past moment, clamp to "now + 1 min" so the call doesn't
-    // 400. Transit routing without a departureTime defaults to "now"
-    // anyway, so the clamped value gives the same behaviour.
-    let routesDepart = departISO
-    if (routesDepart) {
-      const t = Date.parse(routesDepart)
-      if (!Number.isFinite(t) || t < Date.now()) {
-        routesDepart = new Date(Date.now() + 60_000).toISOString()
-      }
-    } else {
-      routesDepart = new Date(Date.now() + 60_000).toISOString()
-    }
     const body = {
       origin:      { placeId: fromId },
       destination: { placeId: toId },
@@ -19164,18 +19192,36 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
       // Embed iframe (and most planners' intuition for ride-hail) prefers
       // FASTEST. We pick by min duration below to match the embed.
       computeAlternativeRoutes: true,
-      // Pass the real depart time so transit schedules + driving traffic
-      // patterns are computed for THAT moment, not whenever the planner
-      // happens to refresh.
-      departureTime: routesDepart,
+    }
+    if (travelMode === 'TRANSIT') {
+      // departureTime is sent ONLY for transit — schedules genuinely depend
+      // on the moment. It must be in the FUTURE (past trips clamp to
+      // now+1min or the API 400s; transit without departureTime defaults to
+      // "now" anyway, so the clamp is behaviour-neutral).
+      let routesDepart = departISO
+      if (routesDepart) {
+        const t = Date.parse(routesDepart)
+        if (!Number.isFinite(t) || t < Date.now()) {
+          routesDepart = new Date(Date.now() + 60_000).toISOString()
+        }
+      } else {
+        routesDepart = new Date(Date.now() + 60_000).toISOString()
+      }
+      body.departureTime = routesDepart
     }
     if (travelMode === 'DRIVE') {
-      body.routingPreference = 'TRAFFIC_AWARE_OPTIMAL'
+      // TRAFFIC_UNAWARE on purpose: Google bills traffic-aware routing at
+      // DOUBLE the per-call rate (Advanced SKU vs Basic), and for trips
+      // weeks in the future its "traffic" is historical patterns anyway —
+      // the typical-time answer is the same class of estimate at half the
+      // price. Itinerary buffers + the planner's exact-value override
+      // absorb the few-minute difference.
+      body.routingPreference = 'TRAFFIC_UNAWARE'
     }
-    // Pull step-by-step transit details too — line names, station names,
-    // walking segments, headsign, stop count. Costs the same as the
-    // simpler call; the only price is bigger response payload.
-    const fieldMask = [
+    // Step-by-step + fare fields only for TRANSIT — that's the only mode
+    // that renders the line/stops timeline and a real fare. DRIVE/WALK ask
+    // for the minimal set (duration + distance + polyline for our map).
+    const fieldMask = (travelMode === 'TRANSIT') ? [
       'routes.duration',
       'routes.distanceMeters',
       'routes.polyline.encodedPolyline',
@@ -19184,6 +19230,10 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
       'routes.legs.steps.staticDuration',
       'routes.legs.steps.distanceMeters',
       'routes.legs.steps.transitDetails',
+    ].join(',') : [
+      'routes.duration',
+      'routes.distanceMeters',
+      'routes.polyline.encodedPolyline',
     ].join(',')
     const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
@@ -19218,16 +19268,10 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
       // line. Flagged estimated so the card keeps the "~" and the planner can
       // still override with the exact Google-Maps figure.
       if (travelMode === 'TRANSIT') {
-        // Day-bucketed + internally cached/counted — the road geometry doesn't
-        // change per 3-hour band, so all bands share one anchor call per day.
-        const dr = await _fetchDriveAnchor(fromId, toId, (departISO || new Date().toISOString()).slice(0, 10))
-        if (dr && Number.isFinite(dr.distanceKm) && dr.distanceKm > 0) {
-          const km = dr.distanceKm
-          // Transit ≈ real drive time + a small wait/transfer/walk buffer; floor 8 min.
-          const est = { durationMin: Math.max(8, Math.round((dr.driveMin || (km * 2.5)) * 1.05) + 4), distanceKm: km, costEur: _transitFareEstimate(km), polyline: dr.polyline || null, steps: [], estimated: true }
-          _lsSafeSet(key, JSON.stringify({ t: Date.now(), data: est }))
-          return est
-        }
+        // Remember at PAIR level that Google has no transit here — future
+        // calls (any time-band, any plan) skip the doomed probe entirely.
+        _markNoTransitPair(fromId, toId)
+        return await _transitEstViaDriveAnchor(fromId, toId, departISO, key)
       }
       // No routes AND no usable fallback — remember the failure so re-renders
       // don't re-bill the same doomed probe every few seconds.
