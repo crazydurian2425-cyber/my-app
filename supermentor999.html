@@ -173,6 +173,7 @@
 
   <div class="bar">
     <input id="q" placeholder="Search name, email, phone, LINE/Discord handle…" oninput="render()">
+    <select id="fSet" onchange="render()"><option value="">All sets</option></select>
     <select id="fCh" onchange="render()"><option value="">All channel accounts</option></select>
     <select id="fLt" onchange="render()">
       <option value="">Letter: all</option>
@@ -420,6 +421,24 @@ function fillChannelFilter(){
   accts.forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o) })
   chFilterFilled = true
 }
+// Set filter — rebuilt from the current data on every render (sets and
+// assignments change), preserving the mentor's selection across refreshes.
+function fillSetFilter(){
+  const sel = document.getElementById('fSet')
+  const prev = sel.value
+  const bySet = new Map()
+  let unassigned = 0
+  planners.forEach(p=>{
+    if (!p.set) { unassigned++; return }
+    const cur = bySet.get(p.set.id) || { set: p.set, n: 0 }
+    cur.n++; bySet.set(p.set.id, cur)
+  })
+  const opts = [...bySet.values()].sort((a,b)=>(a.set.set_number||0)-(b.set.set_number||0) || String(a.set.city||'').localeCompare(String(b.set.city||'')))
+  sel.innerHTML = '<option value="">All sets</option>'
+    + opts.map(o=>`<option value="${o.set.id}">Set #${String(o.set.set_number??'').padStart(3,'0')}${o.set.city?' · '+escapeHtml(o.set.city):''} (${o.n})</option>`).join('')
+    + `<option value="__none__">No set (${unassigned})</option>`
+  if ([...sel.options].some(o=>o.value===prev)) sel.value = prev
+}
 
 // ── cells ────────────────────────────────────────────────────────────────
 function letterHtml(p){
@@ -467,8 +486,9 @@ function channelHtml(p){
 
 // ── table ────────────────────────────────────────────────────────────────
 function render(){
-  renderKpis(); renderMentorTabs(); fillChannelFilter(); closeQpop()
+  renderKpis(); renderMentorTabs(); fillChannelFilter(); fillSetFilter(); closeQpop()
   const q  = (document.getElementById('q').value||'').toLowerCase()
+  const fSet = document.getElementById('fSet').value
   const fCh = document.getElementById('fCh').value
   const fLt = document.getElementById('fLt').value
   const fSt = document.getElementById('fSt').value
@@ -478,6 +498,7 @@ function render(){
   let shown = 0
   planners.forEach(p=>{
     if (mentorTab==='__none__' ? p.mentor : (mentorTab && p.mentor!==mentorTab)) return
+    if (fSet==='__none__' ? p.set : (fSet && (!p.set || p.set.id !== fSet))) return
     if (q && !`${p.name} ${p.email} ${p.phone} ${p.acct}`.toLowerCase().includes(q)) return
     if (fCh && `${p.ch} · ${p.acct}` !== fCh) return
     if (fLt && p.letter.state !== fLt) return
