@@ -15146,8 +15146,20 @@ function fillItineraryItems(items) {
 // page reload — e.g. switching language, which reloads the page — reuses the
 // resolved station instead of re-hitting Places searchText. 30-day TTL keyed by
 // the normalized query. The in-memory Map stays as a fast same-session layer.
-const STATION_CACHE_PREFIX = 'jj_station_v1_'
+// v2: v1 entries could hold city-biased AIRPORT mis-resolutions (e.g. the
+// KIX limousine-bus stop at Kyoto Station cached as "Kansai International
+// Airport") — poisoning every route computed from that plan for 30 days.
+// Bumping the version flushes them; re-resolving costs 1-2 small lookups.
+const STATION_CACHE_PREFIX = 'jj_station_v2_'
 const STATION_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
+// Airport-ish arrival/departure strings ("KIX", "Kansai International
+// Airport (KIX)", "羽田空港") must be searched VERBATIM and UNBIASED — the
+// city suffix + city-circle bias that helps stations actively hurts
+// airports, which sit far outside the city they serve.
+function _airportish(rawLoc) {
+  const s = String(rawLoc || '').trim()
+  return /^[A-Z]{3}$/.test(s) || /airport|空港/i.test(s)
+}
 function _stationCacheGet(query) {
   window._stationLookupCache = window._stationLookupCache || new Map()
   const mem = window._stationLookupCache.get(query)
@@ -15187,23 +15199,29 @@ async function _lookupStationGeneric(rawLoc, sideHint) {
   if (!rawLoc) return null
   const city = (window._currentDestination || '').trim()
   const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  const _airporty = _airportish(rawLoc)
+  // Airports: verbatim query, NO city suffix — "Kansai International Airport
+  // (KIX), Kyoto" + Kyoto bias once matched the KIX limousine-bus stop AT
+  // Kyoto Station, and every route from it showed 4.4 km instead of 100 km.
   const query = isIata
     ? `${rawLoc} Airport`
-    : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
-      ? `${rawLoc}, ${city}`
-      : rawLoc
+    : _airporty
+      ? rawLoc
+      : (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
+        ? `${rawLoc}, ${city}`
+        : rawLoc
   let resolved = _stationCacheGet(query)
   if (resolved) return resolved
   try {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
-    const bias = buildDestBias(city)
+    const bias = _airporty ? null : buildDestBias(city)
     if (bias) body.locationBias = bias
     const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.types',
       },
       body: JSON.stringify(body),
     })
@@ -15221,7 +15239,15 @@ async function _lookupStationGeneric(rawLoc, sideHint) {
       lat:     p.location.latitude,
       lng:     p.location.longitude,
     }
-    _stationCacheSet(query, resolved)
+    // An airport query that resolved to a NON-airport (bus stop, ticket
+    // office) is a mis-match — usable as best-effort this session, but never
+    // CACHED, so it can't poison the next 30 days.
+    const _isAirportPlace = Array.isArray(p.types) && p.types.some(t => t === 'airport' || t === 'international_airport')
+    if (_airporty && !_isAirportPlace) {
+      console.warn(`[station-lookup:${sideHint}] airport query resolved to non-airport — not caching`, p.displayName?.text, p.types)
+    } else {
+      _stationCacheSet(query, resolved)
+    }
     return resolved
   } catch (e) {
     console.warn(`[station-lookup:${sideHint}] threw`, e)
@@ -15269,15 +15295,21 @@ async function _lookupStationAndAttach(transportSlot) {
   // (姫路駅), not the city centroid ~km away. Flight/car arrivals unchanged.
   const city = (window._currentDestination || '').trim()
   const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  const _airporty = _airportish(rawLoc)
   const _method = (window._currentArrivalMethod || '').toLowerCase()
   const _isRail = /shinkansen|train|rail|\bjr\b|metro|subway|新幹線|電車|列車|地下鉄/.test(_method)
   const _withCity = (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
     ? `${rawLoc}, ${city}` : rawLoc
+  // Airports search VERBATIM + UNBIASED (see _airportish) — the city suffix
+  // and city-circle bias that pin stations correctly can pull an airport
+  // query onto a same-named bus stop inside the city.
   const query = isIata
     ? `${rawLoc} Airport`
-    : (_isRail && !/station|駅/i.test(rawLoc))
-      ? `${rawLoc} Station`
-      : _withCity
+    : _airporty
+      ? rawLoc
+      : (_isRail && !/station|駅/i.test(rawLoc))
+        ? `${rawLoc} Station`
+        : _withCity
   // Cache resolved stations (localStorage-backed) to avoid redundant Places billing.
   let resolved = _stationCacheGet(query)
   if (!resolved) {
@@ -15287,14 +15319,14 @@ async function _lookupStationAndAttach(transportSlot) {
         maxResultCount: 1,
         languageCode: 'en',
       }
-      const bias = buildDestBias(city)
+      const bias = _airporty ? null : buildDestBias(city)
       if (bias) body.locationBias = bias
       const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.types',
         },
         body: JSON.stringify(body),
       })
@@ -15312,7 +15344,12 @@ async function _lookupStationAndAttach(transportSlot) {
         lat:     p.location.latitude,
         lng:     p.location.longitude,
       }
-      _stationCacheSet(query, resolved)
+      const _isAirportPlace = Array.isArray(p.types) && p.types.some(t => t === 'airport' || t === 'international_airport')
+      if (_airporty && !_isAirportPlace) {
+        console.warn('[station-lookup] airport query resolved to non-airport — not caching', p.displayName?.text, p.types)
+      } else {
+        _stationCacheSet(query, resolved)
+      }
     } catch (e) {
       console.warn('[station-lookup] threw', e)
       return
@@ -15359,16 +15396,20 @@ async function _initArrivalStationLookup() {
   if (!rawLoc) return
   const city = (window._currentDestination || '').trim()
   const isIata = /^[A-Z]{3}$/.test(rawLoc)
+  const _airporty = _airportish(rawLoc)
   // Rail arrival → search the STATION (mirrors _lookupStationAndAttach).
+  // Airports → VERBATIM + UNBIASED query (see _airportish).
   const _method = (window._currentArrivalMethod || '').toLowerCase()
   const _isRail = /shinkansen|train|rail|\bjr\b|metro|subway|新幹線|電車|列車|地下鉄/.test(_method)
   const _withCity = (city && !rawLoc.toLowerCase().includes(city.toLowerCase()))
     ? `${rawLoc}, ${city}` : rawLoc
   const query = isIata
     ? `${rawLoc} Airport`
-    : (_isRail && !/station|駅/i.test(rawLoc))
-      ? `${rawLoc} Station`
-      : _withCity
+    : _airporty
+      ? rawLoc
+      : (_isRail && !/station|駅/i.test(rawLoc))
+        ? `${rawLoc} Station`
+        : _withCity
   // Apply a resolved arrival station (from cache or a fresh fetch): set the
   // globals + repaint Day 1. On a reload the existing arrival taxi has no
   // dataset.fromPlaceId (not persisted across save/load); without a full day
@@ -15394,14 +15435,14 @@ async function _initArrivalStationLookup() {
   if (_cached) { _applyArrival(_cached.name, _cached.lat, _cached.lng, _cached.id); return }
   try {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
-    const bias = buildDestBias(city)
+    const bias = _airporty ? null : buildDestBias(city)
     if (bias) body.locationBias = bias
     const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.types',
       },
       body: JSON.stringify(body),
     })
@@ -15410,7 +15451,12 @@ async function _initArrivalStationLookup() {
     const p = data?.places?.[0]
     if (!p?.id || !p?.location) return
     const _name = p.displayName?.text || rawLoc
-    _stationCacheSet(query, { id: p.id, name: _name, lat: p.location.latitude, lng: p.location.longitude })
+    const _isAirportPlace = Array.isArray(p.types) && p.types.some(t => t === 'airport' || t === 'international_airport')
+    if (_airporty && !_isAirportPlace) {
+      console.warn('[station-lookup] airport query resolved to non-airport — not caching', _name, p.types)
+    } else {
+      _stationCacheSet(query, { id: p.id, name: _name, lat: p.location.latitude, lng: p.location.longitude })
+    }
     _applyArrival(_name, p.location.latitude, p.location.longitude, p.id)
   } catch (e) {
     console.warn('[station-lookup] init threw', e)
@@ -18921,7 +18967,7 @@ function _bumpRoutesDaily() {
 // plus obsolete-version prefixes (jj_route_v1…v7 debris from old deploys).
 const _JJ_CACHE_TTLS = [
   { prefix: 'jj_route_v8_',     ttl: 30 * 24 * 60 * 60 * 1000 },
-  { prefix: 'jj_station_v1_',   ttl: 30 * 24 * 60 * 60 * 1000 },
+  { prefix: 'jj_station_v2_',   ttl: 30 * 24 * 60 * 60 * 1000 },
   { prefix: 'jj_nearby_v3_',    ttl: 7 * 24 * 60 * 60 * 1000 },
   { prefix: 'jj_enrich_v1_',    ttl: 30 * 24 * 60 * 60 * 1000 },
   { prefix: 'jj_notransit_v1_', ttl: 30 * 24 * 60 * 60 * 1000 },
@@ -18935,8 +18981,9 @@ function _purgeJJCaches(aggressive) {
       if (!k) continue
       // Obsolete versioned prefixes from old deploys — pure dead weight.
       // (The daily counters are jj_routeS_/jj_nearby_D…, so they never match.)
-      if ((/^jj_route_v/.test(k)  && !k.startsWith('jj_route_v8_')) ||
-          (/^jj_nearby_v/.test(k) && !k.startsWith('jj_nearby_v3_'))) { del.push(k); continue }
+      if ((/^jj_route_v/.test(k)   && !k.startsWith('jj_route_v8_')) ||
+          (/^jj_nearby_v/.test(k)  && !k.startsWith('jj_nearby_v3_')) ||
+          (/^jj_station_v/.test(k) && !k.startsWith('jj_station_v2_'))) { del.push(k); continue }
       const spec = _JJ_CACHE_TTLS.find(s => k.startsWith(s.prefix))
       if (!spec) continue
       try {
@@ -19762,7 +19809,10 @@ function _sensibleModes(km) {
   if (km < 10)       return ['taxi','transit']
   if (km < 30)       return ['taxi','transit']
   if (km < 80)       return ['transit','taxi']
-  if (km < 500)      return ['transit','hsr']
+  // Long legs (airport transfers like KIX→Kyoto, Narita→hakone) keep GO Taxi
+  // as a deliberate option — luxury travelers really do book 100 km private
+  // transfers. The honest ~¥40,000 fare shows; the planner decides.
+  if (km < 500)      return ['transit','hsr','taxi']
   if (km < 1500)     return ['hsr','flight']
   return ['flight']
 }
