@@ -11978,14 +11978,9 @@ function renderPaceBanner(set, plansList) {
   if (!set?.deadline) { banner.style.display = 'none'; return }
 
   const now = new Date()
-  // The deadline DAY itself is fully valid — the set locks when the NEXT day
-  // begins (same +86400000 rule as the overdue gate in renderActiveSet). Count
-  // down to that lock moment. The old `new Date('YYYY-MM-DD')` parsed as UTC
-  // midnight (09:00 JST), so the banner showed ~15h less than the planner had.
-  const deadlineDay = new Date(set.deadline + 'T00:00:00')
-  const deadline = new Date(deadlineDay.getTime() + 86400000)
+  const deadline = new Date(set.deadline)
   const paceLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
-  const deadlineStr = deadlineDay.toLocaleDateString(paceLocale,{day:'numeric',month:'short',year:'numeric'})
+  const deadlineStr = deadline.toLocaleDateString(paceLocale,{day:'numeric',month:'short',year:'numeric'})
   // All plans submitted → the deadline no longer applies. Show a clear
   // "awaiting review" state in place of the countdown so the planner knows the
   // clock has stopped and they're simply waiting on admin review.
