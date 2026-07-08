@@ -14808,6 +14808,16 @@ function clampNonNegative(el){
 // the rest of the inline handler (so autoSaveDraft never ran for these fields).
 function autoGrow(el){
   if (!el) return
+  // Fast path: while typing FORWARD and the content still fits (we always
+  // leave a 24px buffer below), do nothing. The old collapse-to-auto +
+  // re-measure on EVERY keystroke forced two synchronous reflows per key —
+  // on iOS the box visibly pulsed and the caret/tap geometry went stale
+  // mid-edit (the "cursor lands somewhere else" complaint on the Review
+  // note). Deletions still take the slow path so the box can shrink back.
+  const _len = (el.value || '').length
+  const _shrank = (el._agLen != null) && (_len < el._agLen)
+  el._agLen = _len
+  if (!_shrank && el.scrollHeight <= el.clientHeight) return
   // Reset to auto so the textarea can measure its true content height.
   el.style.height = 'auto'
   // Read scrollHeight (forces synchronous reflow), then add a generous
@@ -14817,6 +14827,46 @@ function autoGrow(el){
   // our content-box CSS, (d) borders the box model accounting may miss.
   // 24px ≈ one extra line-height — visually unnoticeable, completely safe.
   el.style.height = (el.scrollHeight + 24) + 'px'
+}
+
+// ── iOS keyboard ↔ fixed-modal caret fix ────────────────────────────────
+// On phones every modal is a position:fixed bottom sheet and the body is
+// scroll-locked. When the on-screen keyboard opens, iOS Safari pans the
+// VISUAL viewport while fixed elements stay pinned to the LAYOUT viewport —
+// but the text caret is painted (and long-press / tap hit-tested) in the
+// panned coordinate space. Result: the cursor floats beside the text and
+// taps land on the wrong spot (reported on the Review personal-note
+// textarea). Remedy: while the keyboard is up, cap the sheet to the visible
+// height and pull the focused field into view INSIDE .modal-body, so Safari
+// never needs to pan the visual viewport in the first place.
+if (window.visualViewport) {
+  const _vv = window.visualViewport
+  let _vvKbOpen = false
+  let _vvRaf = null
+  const _syncModalToKeyboard = () => {
+    if (_vvRaf) return
+    _vvRaf = requestAnimationFrame(() => {
+      _vvRaf = null
+      const modals = document.querySelectorAll('.modal-overlay.open .modal')
+      if (!modals.length) { _vvKbOpen = false; return }
+      const layoutH = document.documentElement.clientHeight
+      const kbH = Math.max(0, layoutH - _vv.height - _vv.offsetTop)
+      const kbOpen = kbH > 80
+      modals.forEach(modal => { modal.style.maxHeight = kbOpen ? Math.round(_vv.height - 12) + 'px' : '' })
+      // Only on the open TRANSITION (not every pan event, which would
+      // fight the user's own scrolling): bring the focused field into
+      // view inside the shrunken sheet.
+      if (kbOpen && !_vvKbOpen) {
+        const ae = document.activeElement
+        if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT') && [...modals].some(m => m.contains(ae))) {
+          setTimeout(() => { try { ae.scrollIntoView({ block: 'center', behavior: 'auto' }) } catch (e) {} }, 60)
+        }
+      }
+      _vvKbOpen = kbOpen
+    })
+  }
+  _vv.addEventListener('resize', _syncModalToKeyboard)
+  _vv.addEventListener('scroll', _syncModalToKeyboard)
 }
 
 // Live character counter beneath a textarea. The counter element lives next
