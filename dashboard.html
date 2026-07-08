@@ -10216,11 +10216,16 @@ function preserveItinScroll(fn) {
   let result
   try { result = fn ? fn() : undefined }
   finally {
-    body.scrollTop = saved
+    // All writes go through _restoreModalScroll: it stands down while a
+    // human is scrolling (the unconditional writes here were the 6th site
+    // fighting the planner's finger), and it flags its own sets so the
+    // human-scroll listener doesn't mistake them for finger input — which
+    // would wrongly suppress the other restore sites for 800ms.
+    _restoreModalScroll(body, saved)
     requestAnimationFrame(() => {
-      if (Math.abs(body.scrollTop - saved) > 1) body.scrollTop = saved
+      _restoreModalScroll(body, saved)
       requestAnimationFrame(() => {
-        if (Math.abs(body.scrollTop - saved) > 1) body.scrollTop = saved
+        _restoreModalScroll(body, saved)
       })
     })
   }
@@ -11192,7 +11197,7 @@ async function initDashboard() {
   maybeShowRulesPopup()
 
   // Load active set via set_assignments (new multi-planner system)
-  console.log('Loading dashboard for planner:', planner.id)
+  jjlog('Loading dashboard for planner:', planner.id)
 
   // Try new-style via set_assignments first — only 'active' (or legacy
   // 'in_progress' from the initial.sql column default) counts as the
@@ -11238,7 +11243,7 @@ async function initDashboard() {
   if (myAssignment) {
     const { data: fetchedSet, error: setErr } = await sb.from('sets').select('*')
       .eq('id', myAssignment.set_id).in('status', ['claimed','open']).maybeSingle()
-    console.log('Set data:', fetchedSet, 'Error:', setErr)
+    jjlog('Set data:', fetchedSet, 'Error:', setErr)
     if (fetchedSet) setData = { ...fetchedSet, claimed_at: myAssignment.claimed_at, deadline: myAssignment.deadline }
   }
 
@@ -11315,7 +11320,7 @@ async function initDashboard() {
         nextPending.status = newStatus
       }
     }
-    console.log('Plans data for planner:', plansData?.length)
+    jjlog('Plans data for planner:', plansData?.length)
     activeSetData = { ...setData, plans: plansData || [] }
   }
 
@@ -11404,11 +11409,11 @@ async function initDashboard() {
   loadWallet().catch(e => console.warn('wallet load failed', e))
   loadPendingPayments().catch(e => console.warn('pending payments load failed', e))
 
-  console.log('activeSet:', activeSet?.id, 'plans:', activeSet?.plans?.length)
+  jjlog('activeSet:', activeSet?.id, 'plans:', activeSet?.plans?.length)
   if (activeSet) {
     try {
       renderActiveSet(activeSet)
-      console.log('renderActiveSet completed')
+      jjlog('renderActiveSet completed')
     } catch(e) {
       console.error('renderActiveSet error:', e.message, e.stack)
     }
@@ -12152,7 +12157,7 @@ function renderGrid() {
 }
 
 function tileClick(planId, planNum, status) {
-  console.log('[tileClick]', { planId, planNum, status })
+  jjlog('[tileClick]', { planId, planNum, status })
   // 1) Done/submitted plans: always allow view/edit, even if a bond is pending elsewhere
   if (['approved','submitted'].includes(status)) {
     openItineraryForm(planId)
@@ -13695,7 +13700,7 @@ async function openItineraryForm(planId) {
       // deleted + recreated the plans for this set. The planner's
       // in-memory `plans` array has stale IDs. Force a dashboard
       // refresh so the tile list re-renders with the new plan IDs.
-      console.log('[plan-open] plan id no longer exists in DB — refreshing dashboard')
+      jjlog('[plan-open] plan id no longer exists in DB — refreshing dashboard')
       showToast(dt('Plan was reassigned — refreshing your dashboard','プランが再割り当てされました — ダッシュボードを更新します'))
       closeModal('modal-submit')
       if (typeof initDashboard === 'function') setTimeout(() => initDashboard(), 200)
@@ -13739,7 +13744,7 @@ async function openItineraryForm(planId) {
       const _shouldWipe = _claimedMs > 0 && _updatedMs > 0
                        && _claimedMs + 30_000 >= _updatedMs
       if (_shouldWipe) {
-        console.log('[plan-open] fresh assignment detected — wiping plan data', {
+        jjlog('[plan-open] fresh assignment detected — wiping plan data', {
           planId: plan.id,
           claimed_at: _assign.claimed_at,
           plan_updated_at: plan.updated_at,
@@ -13901,7 +13906,7 @@ async function openItineraryForm(planId) {
   // black-hole the whole plan-open flow (modal still opens, planner can
   // see the form even if the brief panel is broken). The error gets
   // logged + a small inline note in the brief tells them to check console.
-  console.log('[plan-open]', planId, 'status=', status)
+  jjlog('[plan-open]', planId, 'status=', status)
   try {
     await renderTravelerBrief(plan, t, notes)
   } catch (e) {
@@ -15515,10 +15520,10 @@ function _autoSeedDay1HotelIfNeeded() {
   try {
     const arr = window._currentArrivalTime || ''
     const arrHour = parseInt(String(arr).split(':')[0], 10)
-    console.log('[day1-seed]', { arr, arrHour, planId: currentPlanId, location: window._currentArrivalLocation })
-    if (!Number.isFinite(arrHour) || arrHour < 13) { console.log('[day1-seed] skip: no afternoon arrival'); return }
+    jjlog('[day1-seed]', { arr, arrHour, planId: currentPlanId, location: window._currentArrivalLocation })
+    if (!Number.isFinite(arrHour) || arrHour < 13) { jjlog('[day1-seed] skip: no afternoon arrival'); return }
     const day1 = document.getElementById('slots-day-1')
-    if (!day1) { console.log('[day1-seed] skip: no day-1 container'); return }
+    if (!day1) { jjlog('[day1-seed] skip: no day-1 container'); return }
     // REPAIR existing plans: an arrival taxi seeded by the old order sits AFTER
     // the hotel check-in, so the station→hotel ride looked missing and a stray
     // transport showed up next to "back to hotel". If the locked arrival taxi is
@@ -15535,7 +15540,7 @@ function _autoSeedDay1HotelIfNeeded() {
         _applySlotTime(_seededTaxi, window._currentArrivalTime || '14:00')
         if (typeof refreshDayDistances === 'function') refreshDayDistances(day1)
         if (typeof autoSaveDraft === 'function') autoSaveDraft()
-        console.log('[day1-seed] repaired: moved arrival taxi back before first venue')
+        jjlog('[day1-seed] repaired: moved arrival taxi back before first venue')
       }
     }
     // REPAIR: the auto-seeded Day-1 hotel check-in must be the FIRST venue
@@ -15557,7 +15562,7 @@ function _autoSeedDay1HotelIfNeeded() {
         else day1.insertBefore(_seededHotel, day1.firstChild)
         if (typeof refreshDayDistances === 'function') refreshDayDistances(day1)
         if (typeof autoSaveDraft === 'function') autoSaveDraft()
-        console.log('[day1-seed] repaired: moved hotel check-in back to first venue')
+        jjlog('[day1-seed] repaired: moved hotel check-in back to first venue')
       }
     }
     // Exclude only locked ANCHOR bookends — NOT the locked auto-seeded hotel
@@ -15567,9 +15572,9 @@ function _autoSeedDay1HotelIfNeeded() {
     const userStops = [...day1.querySelectorAll(':scope > .activity-slot')]
       .filter(s => !(s.classList.contains('is-locked') && s.dataset.anchorType))
     const firstStop = userStops[0] || null
-    console.log('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
+    jjlog('[day1-seed] userStops', userStops.length, 'firstIsTransport', firstStop?.classList.contains('slot-type-transport'))
     if (userStops.length === 0) {
-      console.log('[day1-seed] empty day → adding hotel + taxi')
+      jjlog('[day1-seed] empty day → adding hotel + taxi')
       // Add the Hotel check-in FIRST, then slot the arrival taxi in BEFORE it,
       // so the order is locked in as: arrival anchor → taxi → hotel_checkin.
       // Seeding the taxi first with no anchor (beforeEl=null) left it
@@ -15593,10 +15598,10 @@ function _autoSeedDay1HotelIfNeeded() {
       return
     }
     if (!firstStop.classList.contains('slot-type-transport')) {
-      console.log('[day1-seed] saved day, first stop is non-transport → injecting taxi before it')
+      jjlog('[day1-seed] saved day, first stop is non-transport → injecting taxi before it')
       _insertArrivalTaxi(firstStop)
     } else {
-      console.log('[day1-seed] first stop already a transport — leaving as-is')
+      jjlog('[day1-seed] first stop already a transport — leaving as-is')
     }
     // Universal-logic rule: Day 1 ALWAYS has a Hotel check-in row. If
     // the planner previously deleted it (e.g. before the locked-slot
@@ -15605,7 +15610,7 @@ function _autoSeedDay1HotelIfNeeded() {
     //   arrival anchor → taxi → hotel_checkin → planner's stops
     const hasHotelCheckin = day1.querySelector(':scope > .activity-slot.slot-type-hotel_checkin')
     if (!hasHotelCheckin) {
-      console.log('[day1-seed] no hotel_checkin found — auto-seeding one')
+      jjlog('[day1-seed] no hotel_checkin found — auto-seeding one')
       const _beforeAdd = new Set([...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')])
       addSlot(1, { icon: 'hotel' })
       const newHotel = [...day1.querySelectorAll(':scope > .activity-slot.slot-type-hotel_checkin')]
@@ -15664,7 +15669,7 @@ function _insertArrivalTaxi(beforeEl) {
     // addSlot — means dedupe/self-loop see a fully-built airport→hotel ride and
     // leave it alone, instead of culling a half-built row.
     if (typeof refreshDayDistances === 'function') refreshDayDistances(day1)
-    console.log('[arrival-taxi] inserted', { id: t.id, time: arr, before: beforeEl?.id, cls: t.className })
+    jjlog('[arrival-taxi] inserted', { id: t.id, time: arr, before: beforeEl?.id, cls: t.className })
     // Trigger autosave so the inserted transport actually persists. Without
     // this, opening + closing the plan loses the auto-seed because nothing
     // fires an `input` event after our direct DOM writes.
@@ -15692,7 +15697,7 @@ function _ensureArrivalTaxiPresent() {
     // dataset.autoSeededArrivalTaxi marker, we've already injected the
     // taxi once this session. Bail unconditionally.
     if (day1.querySelector(':scope > .activity-slot[data-auto-seeded-arrival-taxi="true"]')) {
-      console.log('[arrival-taxi-safety] dataset marker already present, no-op')
+      jjlog('[arrival-taxi-safety] dataset marker already present, no-op')
       return
     }
     // Also check by mode/title (covers slots saved-then-loaded).
@@ -15700,20 +15705,20 @@ function _ensureArrivalTaxiPresent() {
       .find(t => t.dataset.transportMode === 'taxi'
               && /^(taxi to hotel|ホテルへのタクシー)/i.test(t.querySelector('.slot-title-input')?.value || ''))
     if (existingTaxi) {
-      console.log('[arrival-taxi-safety] existing "Taxi to hotel" transport found, no-op', existingTaxi.id)
+      jjlog('[arrival-taxi-safety] existing "Taxi to hotel" transport found, no-op', existingTaxi.id)
       return
     }
     // Walk from arrival anchor forward, skipping locked rows + non-activity-slot
     // siblings (helper cards etc) until we hit something with a class.
     const anchor = day1.querySelector(':scope > .activity-slot.is-locked.anchor-arrival')
-    if (!anchor) { console.log('[arrival-taxi-safety] no arrival anchor in DOM'); return }
+    if (!anchor) { jjlog('[arrival-taxi-safety] no arrival anchor in DOM'); return }
     // Dump the children so we can see what the safety net actually sees.
     const childDump = [...day1.children].map(el => ({
       tag: el.tagName,
       id: el.id || '(no id)',
       cls: el.className,
     }))
-    console.log('[arrival-taxi-safety] day1 children', childDump)
+    jjlog('[arrival-taxi-safety] day1 children', childDump)
     let next = anchor.nextElementSibling
     while (next) {
       if (next.classList?.contains('activity-slot')) {
@@ -15727,8 +15732,8 @@ function _ensureArrivalTaxiPresent() {
       }
       next = next.nextElementSibling
     }
-    if (!next) { console.log('[arrival-taxi-safety] no next sibling after anchor'); return }
-    console.log('[arrival-taxi-safety] next is', { id: next.id, cls: next.className })
+    if (!next) { jjlog('[arrival-taxi-safety] no next sibling after anchor'); return }
+    jjlog('[arrival-taxi-safety] next is', { id: next.id, cls: next.className })
     if (next.classList.contains('slot-type-transport')) {
       // Transport already sits between arrival anchor + first venue. Save+
       // load wipes the slot's dataset attrs (DB doesn't persist them), so
@@ -15740,14 +15745,14 @@ function _ensureArrivalTaxiPresent() {
         next.dataset.fromName    = window._currentArrivalStationResolvedName || ''
         next.dataset.fromLat     = String(window._currentArrivalStationLatLng.lat)
         next.dataset.fromLng     = String(window._currentArrivalStationLatLng.lng)
-        console.log('[arrival-taxi-safety] transport already present — re-attached station coords + refreshing')
+        jjlog('[arrival-taxi-safety] transport already present — re-attached station coords + refreshing')
         refreshTransportSlot(next)
       } else {
-        console.log('[arrival-taxi-safety] transport already present, no-op')
+        jjlog('[arrival-taxi-safety] transport already present, no-op')
       }
       return
     }
-    console.log('[arrival-taxi-safety] no transport found → inserting')
+    jjlog('[arrival-taxi-safety] no transport found → inserting')
     _insertArrivalTaxi(next)
   } catch (e) {
     console.warn('[arrival-taxi-safety] threw', e)
@@ -16735,7 +16740,7 @@ async function _enrichHotelSlotFromPlaceId(slot, placeId) {
     if (_dc && typeof _gapFillTransportsForDay === 'function') {
       _gapFillTransportsForDay(_dc)
     }
-    console.log('[hotel-enrich] enriched', placeId.slice(0, 12) + '…', '· photos:', photoRefs.length, '· rating:', slot._placeData.rating)
+    jjlog('[hotel-enrich] enriched', placeId.slice(0, 12) + '…', '· photos:', photoRefs.length, '· rating:', slot._placeData.rating)
   } catch (e) { console.warn('[hotel-enrich] threw', e) }
 }
 
@@ -16770,14 +16775,14 @@ function _refreshHotelTimeWarning(slot) {
   slot.querySelectorAll('.hotel-time-warn').forEach(el => el.remove())
   const key = slot.querySelector('.slot-type-select')?.value
   if (key !== 'hotel_checkin' && key !== 'hotel_checkout') {
-    console.log('[hotel-warn]', slot.id, 'skip: type=', key)
+    jjlog('[hotel-warn]', slot.id, 'skip: type=', key)
     return
   }
   const time = slot.querySelector('.slot-time-input')?.value || ''
-  console.log('[hotel-warn]', slot.id, '· type=', key, '· time=', time,
+  jjlog('[hotel-warn]', slot.id, '· type=', key, '· time=', time,
               '· ci=', window._currentHotelCheckInTime, '· co=', window._currentHotelCheckOutTime)
   if (!/^\d{2}:\d{2}$/.test(time)) {
-    console.log('[hotel-warn]', slot.id, 'skip: time not HH:MM')
+    jjlog('[hotel-warn]', slot.id, 'skip: time not HH:MM')
     return
   }
   const toMin = (hhmm) => {
@@ -16810,7 +16815,7 @@ function _refreshHotelTimeWarning(slot) {
       suggested = `${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`
     }
   }
-  console.log('[hotel-warn]', slot.id, '· level=', level)
+  jjlog('[hotel-warn]', slot.id, '· level=', level)
   if (!level) return
   const wrap = document.createElement('div')
   wrap.className = `hotel-time-warn hotel-time-warn-${level}`
@@ -16827,7 +16832,7 @@ function _refreshHotelTimeWarning(slot) {
   // fields — closest to the planner's last interaction.
   const body = slot.querySelector('.slot-body') || slot
   body.appendChild(wrap)
-  console.log('[hotel-warn]', slot.id, '· appended to', body.className || body.tagName)
+  jjlog('[hotel-warn]', slot.id, '· appended to', body.className || body.tagName)
 }
 
 function _hotelTimeQuickFix(slotId, hhmm) {
@@ -16898,7 +16903,7 @@ function resortSlots(container) {
   // Reordering moves slot DOM nodes to the end — any distance indicators
   // that were between them now sit in the wrong positions. Wipe + rebuild.
   refreshDayDistances(container)
-  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
+  _restoreModalScroll(modalBody, savedScrollTop)
 }
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.type-dd') && !e.target.closest('.time-dd')) {
@@ -17786,14 +17791,14 @@ function applyPlaceToSlot(slot, place) {
       sb.from('plans').update(_hotelBody).eq('id', currentPlanId)
         .then(({ error }) => {
           if (error) console.warn('[hotel-propagate] plans.update failed', error)
-          else console.log('[hotel-propagate] plans.hotel_* updated:', _hotelBody.hotel_name)
+          else jjlog('[hotel-propagate] plans.hotel_* updated:', _hotelBody.hotel_name)
         })
     }
   }
   // Universal gap-fill: after the slot is linked, walk neighbours and
   // auto-insert transports for any pair with km ≥ 0.5. Runs AFTER
   // refreshDayDistances so addSlot's tail-call refresh doesn't recurse.
-  console.log('[applyPlace] linked', slot.id, '→ calling gap-fill for', _dayContainer?.id)
+  jjlog('[applyPlace] linked', slot.id, '→ calling gap-fill for', _dayContainer?.id)
   if (typeof _gapFillTransportsForDay === 'function') {
     _gapFillTransportsForDay(_dayContainer)
   } else {
@@ -17803,10 +17808,13 @@ function applyPlaceToSlot(slot, place) {
   // Restore modal scroll position — re-applied across several ticks because the
   // mobile keyboard-dismiss re-flow lands a few frames AFTER this function
   // returns, so a single synchronous set gets overwritten and snapped the
-  // planner to the top. Re-applying over ~400ms outlasts that re-flow. The
-  // >1px guard means we only correct an actual jump, not a deliberate scroll.
+  // planner to the top. Re-applying over ~400ms outlasts that re-flow.
+  // Every application goes through _restoreModalScroll, which stands down
+  // the moment a human scrolls — the old >1px "guard" treated a deliberate
+  // scroll as a jump to correct and yanked the planner back to the saved
+  // position, which is exactly the "can't scroll down" bug.
   if (modalBody && savedScrollTop != null) {
-    const _restoreScroll = () => { try { if (Math.abs(modalBody.scrollTop - savedScrollTop) > 1) modalBody.scrollTop = savedScrollTop } catch (e) {} }
+    const _restoreScroll = () => _restoreModalScroll(modalBody, savedScrollTop)
     _restoreScroll()
     requestAnimationFrame(_restoreScroll)
     setTimeout(_restoreScroll, 60)
@@ -18307,7 +18315,7 @@ function renderLinkedChip(slot) {
     if (panel) panel.remove()
   }
   // Restore modal scroll — the chip innerHTML swap above can drop the anchor.
-  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
+  _restoreModalScroll(modalBody, savedScrollTop)
 }
 
 // Toggle the per-day schedule list inside a place chip.
@@ -18773,7 +18781,7 @@ function buildDistHelperHtml(desc, prevSlotId, nextSlotId, modes) {
 // nextSlot. We force the time on the new slot AFTER addSlot returns, then
 // resort to drop it into the right position.
 function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon, modeMeta) {
-  console.log('[addTransport]', { prevSlotId, nextSlotId, modeKey })
+  jjlog('[addTransport]', { prevSlotId, nextSlotId, modeKey })
   const prevSlot = document.getElementById(prevSlotId)
   const nextSlot = document.getElementById(nextSlotId)
   if (!prevSlot || !nextSlot) {
@@ -18804,7 +18812,7 @@ function addTransportBetween(prevSlotId, nextSlotId, modeKey, modeName, modeIcon
     console.warn('[addTransport] new slot not found post-addSlot')
     return
   }
-  console.log('[addTransport] new slot created', newSlot.id, 'time=', startTime)
+  jjlog('[addTransport] new slot created', newSlot.id, 'time=', startTime)
   // Force the time to our desired start, overriding addSlot's bump logic.
   const timeInput = newSlot.querySelector('.slot-time-input')
   const timeLabel = newSlot.querySelector('.time-dd-label')
@@ -18955,6 +18963,50 @@ function _bumpRoutesDaily() {
     localStorage.setItem('jj_routes_daily_count', JSON.stringify({ date: _todayKey(), count: c }))
     return c
   } catch (e) { return 0 }
+}
+
+// ── Human-scroll guard + gated diagnostics ────────────────────────────────
+// (1) Scroll: the modal pipeline "restores" scrollTop after every re-render
+// pass (protection against layout jump-to-top). But when re-renders land
+// while a human is actively scrolling, that restore FIGHTS the finger/wheel
+// — the modal keeps snapping back and feels unscrollable (worst on iOS,
+// where a programmatic scrollTop set also cancels the momentum gesture).
+// Track real scroll activity (any scroll event we didn't cause ourselves)
+// and have every restore site stand down while a human is driving. Layout
+// jumps happen WITHOUT human input, so the original protection still fires
+// exactly when it should.
+let _jjUserScrollAt = 0
+let _jjProgScrollUntil = 0
+try {
+  document.addEventListener('scroll', () => {
+    if (Date.now() > _jjProgScrollUntil) _jjUserScrollAt = Date.now()
+  }, { passive: true, capture: true })
+} catch (e) {}
+function _userIsScrolling(windowMs = 800) {
+  return (Date.now() - _jjUserScrollAt) < windowMs
+}
+// Single choke-point for "put the modal scroll back": skips while a human
+// scrolls, and flags its own set so the listener above doesn't mistake it
+// for human input.
+function _restoreModalScroll(el, top) {
+  if (!el || top == null) return
+  if (_userIsScrolling()) return
+  try {
+    // Already in place → no write, and DON'T arm the blind window (a no-op
+    // set fires no scroll event, so arming would only swallow the first
+    // events of a genuine human scroll).
+    if (el.scrollTop === top) return
+    _jjProgScrollUntil = Date.now() + 80
+    el.scrollTop = top
+  } catch (e) {}
+}
+// (2) Diagnostics: ~70 play-by-play console logs (time-chain, transport
+// refresh, autosave traces) ran on EVERY re-render on every planner device —
+// pure cost in production. They now sit behind this switch. To investigate
+// on a machine: open the console and run `JJ_DEBUG = true` — full detail
+// returns instantly (that tab only). console.warn/error stay always-on.
+function jjlog() {
+  if (window.JJ_DEBUG) { try { console.log.apply(console, arguments) } catch (e) {} }
 }
 
 // ── Cache hygiene ─────────────────────────────────────────────────────────
@@ -19382,7 +19434,7 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
     })
     _lsSafeSet(key, JSON.stringify({ t: Date.now(), data: result }))
     _bumpRoutesDaily()
-    console.log(`[routes] ${travelMode} ${fromId.slice(0,12)}…→${toId.slice(0,12)}… → ${result.durationMin} min · ${result.distanceKm.toFixed(1)} km`)
+    jjlog(`[routes] ${travelMode} ${fromId.slice(0,12)}…→${toId.slice(0,12)}… → ${result.durationMin} min · ${result.distanceKm.toFixed(1)} km`)
     return result
   } catch (e) {
     console.warn('[routes] threw', e)
@@ -20052,7 +20104,7 @@ function refreshTransportSlot(slot) {
   const _prevTime = prev?.querySelector?.('.slot-time-input')?.value || 'n/a'
   const _prevDur  = prev?.querySelector?.('.slot-duration-input')?.value || 'n/a'
   const _prevType = prev?.querySelector?.('.slot-type-select')?.value || 'n/a'
-  console.log('[refreshTransport]', slot.id,
+  jjlog('[refreshTransport]', slot.id,
     '· current depart=', departHHMM,
     '· prev=', prev?.id || prev?.className || 'null',
     '· prev.time=', _prevTime,
@@ -20062,7 +20114,7 @@ function refreshTransportSlot(slot) {
     let corrected = null
     if (!prev.classList.contains('is-locked')) {
       corrected = _suggestTransportStart(prev, next)
-      console.log('[refreshTransport]', slot.id, '· _suggestTransportStart →', corrected)
+      jjlog('[refreshTransport]', slot.id, '· _suggestTransportStart →', corrected)
     } else if (prev.dataset.anchorType === 'arrival') {
       const arrTime = prev.dataset.arrivalTime || window._currentArrivalTime || '14:00'
       const m = String(arrTime).match(/^(\d{1,2}):(\d{2})$/)
@@ -20074,7 +20126,7 @@ function refreshTransportSlot(slot) {
       const wakeMin = m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : 8 * 60 + 30
       corrected = minsToHHMM(Math.min(wakeMin, 23 * 60 + 45))
     }
-    console.log('[refreshTransport]', slot.id, '· corrected=', corrected, '· willUpdate=', !!(corrected && corrected !== departHHMM))
+    jjlog('[refreshTransport]', slot.id, '· corrected=', corrected, '· willUpdate=', !!(corrected && corrected !== departHHMM))
     if (corrected && corrected !== departHHMM) {
       departHHMM = corrected
       _applySlotTime(slot, corrected)
@@ -20890,12 +20942,12 @@ async function ensureClosedAlternatives(slot, plannedDateInput) {
   slot.dataset.altsState = 'loading'
   try {
     const includedType = _nearbyTypeFor(d.place_types)
-    console.log(`[alts] fetching ${d.name} type=${includedType} for ${plannedDate}`)
+    jjlog(`[alts] fetching ${d.name} type=${includedType} for ${plannedDate}`)
     const candidates = await _fetchNearbyAlternatives(d.latitude, d.longitude, includedType)
     _bumpNearbyDailyCount()
     _writeNearbyCache(d.google_place_id, plannedDate, candidates)
     const filtered = _filterAlternatives(candidates, plannedDate, d.google_place_id)
-    console.log(`[alts] ${candidates.length} candidates → ${filtered.length} after filter`)
+    jjlog(`[alts] ${candidates.length} candidates → ${filtered.length} after filter`)
     replacePanel(buildClosedAltsHtml(filtered, plannedDate, slot.id, d.latitude, d.longitude))
     slot.dataset.altsState = 'loaded'
   } catch (e) {
@@ -21390,7 +21442,7 @@ function renderDayBookends(dayContainer, dayNum, totalDays) {
 // existing transport sitting immediately above the end_of_day anchor
 // and inserts a fresh one with current data.
 function renderEndDayButton(dayContainer, dayNum, totalDays) {
-  if (!dayContainer) { console.log('[end-day-btn] no container'); return }
+  if (!dayContainer) { jjlog('[end-day-btn] no container'); return }
   // Remove any existing row — we re-create on every refresh.
   dayContainer.querySelectorAll(':scope > .end-day-row').forEach(el => el.remove())
   // Find the bottom anchor (end_of_day specifically — departure days
@@ -21398,13 +21450,13 @@ function renderEndDayButton(dayContainer, dayNum, totalDays) {
   const endAnchor = dayContainer.querySelector(
     ':scope > .activity-slot.is-locked[data-anchor-type="end_of_day"]'
   )
-  console.log('[end-day-btn]', dayContainer.id, '· endAnchor=', !!endAnchor)
+  jjlog('[end-day-btn]', dayContainer.id, '· endAnchor=', !!endAnchor)
   if (!endAnchor) return
   // Find the last real venue (non-transport, non-locked).
   const venues = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
     .filter(s => !s.classList.contains('slot-type-transport')
               && !s.classList.contains('is-locked'))
-  console.log('[end-day-btn]', dayContainer.id, '· venues=', venues.length)
+  jjlog('[end-day-btn]', dayContainer.id, '· venues=', venues.length)
   if (!venues.length) return
   // Detect whether a transport already sits right above the anchor.
   // Used purely to tweak the button label so the action is obvious.
@@ -21797,7 +21849,7 @@ function refreshDayDistances(dayContainer) {
   // spend + warnings) on every refresh so it stays in sync with edits.
   refreshDaySummary(dayContainer)
   // Restore the modal's scroll position — see top of function for why.
-  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
+  _restoreModalScroll(modalBody, savedScrollTop)
 }
 // Helper to refresh every day's distances at once — used after bulk loads.
 function refreshAllDistances() {
@@ -21876,7 +21928,7 @@ function _sweepSelfLoopTransports(dayContainer) {
     // missing again when arrival station == hotel station.
     if (prev && prev.classList.contains('is-locked') && prev.dataset.anchorType === 'arrival') continue
     if (!isSelf && t.dataset.autoSeededArrivalTaxi === 'true') continue   // protect the REAL arrival taxi only
-    if (isSelf) { console.log('[self-loop-sweep] removing same-place transport', t.id); t.remove(); removed = true }
+    if (isSelf) { jjlog('[self-loop-sweep] removing same-place transport', t.id); t.remove(); removed = true }
   }
   if (removed && typeof autoSaveDraft === 'function') autoSaveDraft()
   return removed
@@ -21938,9 +21990,9 @@ function _enforceHotelBookendUnicity(dayContainer) {
         applySlotTypeChange(s, 'activity')
         s.dataset.typeLocked = 'true'   // keep auto-detect from re-promoting it
         delete s.dataset.isLocked; delete s.dataset.autoSeededHotelCheckin
-        console.log('[bookend-unicity] demoted extra', typeClass, '→ activity', s.id || '')
+        jjlog('[bookend-unicity] demoted extra', typeClass, '→ activity', s.id || '')
       } else {
-        console.log('[bookend-unicity] removing empty duplicate', typeClass, s.id || '')
+        jjlog('[bookend-unicity] removing empty duplicate', typeClass, s.id || '')
         s.remove()
       }
     })
@@ -21968,7 +22020,7 @@ function _dedupeConsecutiveTransports(dayContainer) {
     else if (isProtected(s))                { dropEl = prevT; keepEl = s }
     else if (isAuto(prevT) && !isAuto(s))   { dropEl = prevT; keepEl = s }
     else                                    { dropEl = s;     keepEl = prevT }
-    console.log('[dedupe-transport] removing consecutive duplicate', dropEl.id)
+    jjlog('[dedupe-transport] removing consecutive duplicate', dropEl.id)
     dropEl.remove(); removed = true
     prevT = keepEl
   }
@@ -22003,7 +22055,7 @@ function _sweepOrphanTransports(dayContainer) {
     // Orphan when NEITHER side has a real venue. A transport flanked by
     // an arrival/morning anchor + a real venue (or vice versa) stays.
     if (!venueAfter && !venueBefore) {
-      console.log('[orphan-sweep] removing', t.id, '— no real venue on either side')
+      jjlog('[orphan-sweep] removing', t.id, '— no real venue on either side')
       t.remove()
       removed = true
     }
@@ -22012,7 +22064,7 @@ function _sweepOrphanTransports(dayContainer) {
 }
 
 function _gapFillTransportsForDay(dayContainer) {
-  console.log('[gap-fill] ENTERED for', dayContainer?.id, '· children:', dayContainer?.children?.length)
+  jjlog('[gap-fill] ENTERED for', dayContainer?.id, '· children:', dayContainer?.children?.length)
   if (!dayContainer) return
   // Clear any pre-existing duplicate / same-place legs FIRST, so the scan below
   // sees a clean single transport between each pair and won't add yet another.
@@ -22050,7 +22102,7 @@ function _gapFillTransportsForDay(dayContainer) {
   }
   while (inserts < MAX) {
     const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
-    console.log('[gap-fill] iteration', inserts, '· slots:', slots.length)
+    jjlog('[gap-fill] iteration', inserts, '· slots:', slots.length)
     // Pre-pass: attach _placeData to every locked anchor BEFORE the pair
     // check so getSlotLatLng can see hotel/station coords on the anchors.
     slots.forEach(s => {
@@ -22060,21 +22112,21 @@ function _gapFillTransportsForDay(dayContainer) {
     for (let i = 0; i < slots.length - 1; i++) {
       const aSlot = slots[i]
       const bSlot = slots[i + 1]
-      if (aSlot.classList.contains('slot-type-transport')) { console.log('  pair', i, 'skip: a=transport'); continue }
-      if (bSlot.classList.contains('slot-type-transport')) { console.log('  pair', i, 'skip: b=transport'); continue }
+      if (aSlot.classList.contains('slot-type-transport')) { jjlog('  pair', i, 'skip: a=transport'); continue }
+      if (bSlot.classList.contains('slot-type-transport')) { jjlog('  pair', i, 'skip: b=transport'); continue }
       // Skip the back-to-hotel pair (last venue → end_of_day anchor).
       // This transport is now added explicitly via the "End day" button —
       // see endDayBackToHotel() and the renderEndDayButton() row below
       // the last venue. Keep auto-insert for arrival → first-venue and
       // venue-to-venue pairs.
       if (bSlot.classList.contains('is-locked') && bSlot.dataset.anchorType === 'end_of_day') {
-        console.log('  pair', i, 'skip: back-to-hotel (use End day button)')
+        jjlog('  pair', i, 'skip: back-to-hotel (use End day button)')
         continue
       }
       const a = getSlotLatLng(aSlot)
       const b = getSlotLatLng(bSlot)
-      if (!a) { console.log('  pair', i, 'skip: a no lat/lng', { aId: aSlot.id, aClass: aSlot.className, aHasPlaceData: !!aSlot._placeData }); continue }
-      if (!b) { console.log('  pair', i, 'skip: b no lat/lng', { bId: bSlot.id, bClass: bSlot.className, bHasPlaceData: !!bSlot._placeData }); continue }
+      if (!a) { jjlog('  pair', i, 'skip: a no lat/lng', { aId: aSlot.id, aClass: aSlot.className, aHasPlaceData: !!aSlot._placeData }); continue }
+      if (!b) { jjlog('  pair', i, 'skip: b no lat/lng', { bId: bSlot.id, bClass: bSlot.className, bHasPlaceData: !!bSlot._placeData }); continue }
       const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
       // Insert a transport for any measurable gap (≥ 50 m) so planners
       // always see HOW to get between consecutive stops — a 2-min "Walk"
@@ -22082,8 +22134,8 @@ function _gapFillTransportsForDay(dayContainer) {
       // exactly the info they want. Only truly same-spot pairs (< 50 m,
       // e.g. hotel check-in → check-out in the same building) are skipped
       // and get a thin distance marker instead.
-      if (!Number.isFinite(km) || km < 0.05) { console.log('  pair', i, 'skip: km =', km); continue }
-      console.log('  pair', i, '✓ will insert · km=', km.toFixed(2), '· a=', aSlot.id || aSlot.className, '→ b=', bSlot.id || bSlot.className)
+      if (!Number.isFinite(km) || km < 0.05) { jjlog('  pair', i, 'skip: km =', km); continue }
+      jjlog('  pair', i, '✓ will insert · km=', km.toFixed(2), '· a=', aSlot.id || aSlot.className, '→ b=', bSlot.id || bSlot.className)
       // Compute depart time + mode.
       let departHHMM
       if (aSlot.classList.contains('is-locked') && aSlot.dataset.anchorType === 'arrival') {
@@ -22094,13 +22146,13 @@ function _gapFillTransportsForDay(dayContainer) {
       } else {
         const _rawTime = aSlot.querySelector('.slot-time-input')?.value || ''
         const startMin = parseSlotTime(_rawTime)
-        console.log('  pair', i, '· a.time raw =', JSON.stringify(_rawTime), '· startMin =', startMin)
+        jjlog('  pair', i, '· a.time raw =', JSON.stringify(_rawTime), '· startMin =', startMin)
         if (startMin == null) {
           // Fallback: derive a sensible depart time so we don't lose the
           // insert just because the raw time string doesn't parse. Use
           // (i + 1) * 60 min after 09:00 as a safe default for venue slots
           // that somehow have a non-HH:MM time stored.
-          console.log('  pair', i, 'WARN: startMin null, using fallback 12:00')
+          jjlog('  pair', i, 'WARN: startMin null, using fallback 12:00')
           departHHMM = '12:00'
         } else {
           const type = aSlot.querySelector('.slot-type-select')?.value || 'activity'
@@ -22138,7 +22190,7 @@ function _gapFillTransportsForDay(dayContainer) {
         dayContainer.insertBefore(newT, bSlot)
         refreshTransportSlot(newT)
         if (typeof autoSaveDraft === 'function') autoSaveDraft()
-        console.log('[gap-fill] inserted', { id: newT.id, mode, departHHMM, between: [aSlot.id || '(anchor)', bSlot.id] })
+        jjlog('[gap-fill] inserted', { id: newT.id, mode, departHHMM, between: [aSlot.id || '(anchor)', bSlot.id] })
         inserts++
         didInsert = true
         break    // restart from scratch — DOM shifted
@@ -22694,7 +22746,7 @@ function clearLinkedPlace(slot, { keepTitle = false, clearInputs = false } = {})
   autoSaveDraft()
   // Restore modal scroll position last — every step above could have
   // collapsed layout and let the browser snap to top.
-  if (modalBody && savedScrollTop != null) modalBody.scrollTop = savedScrollTop
+  _restoreModalScroll(modalBody, savedScrollTop)
 }
 
 // Read place fields off a slot for save/autosave. Returns an object with the
@@ -23702,7 +23754,7 @@ async function submitPlan() {
 //   2. the manual "Reset to fresh" link in the modal header.
 async function _wipePlanToFresh(planId) {
   if (!planId) return false
-  console.log('[wipe-plan] start', planId)
+  jjlog('[wipe-plan] start', planId)
   // 1. Drop every itinerary_items row for the plan. Cascade clears the
   //    associated item_images via FK ON DELETE CASCADE.
   const { error: delErr } = await sb.from('itinerary_items').delete().eq('plan_id', planId)
@@ -23725,7 +23777,7 @@ async function _wipePlanToFresh(planId) {
     hotel_stores_bags:    null,
   }).eq('id', planId)
   if (updErr) { console.warn('[wipe-plan] plan update failed', updErr); return false }
-  console.log('[wipe-plan] done', planId)
+  jjlog('[wipe-plan] done', planId)
   return true
 }
 
@@ -23773,7 +23825,7 @@ function _computeFormStats() {
 
 async function _persistDraft(planId) {
   planId = planId || currentPlanId
-  console.log('[autosave] _persistDraft start', { planId, title: document.getElementById('itin-title')?.value })
+  jjlog('[autosave] _persistDraft start', { planId, title: document.getElementById('itin-title')?.value })
   if (!planId) { console.warn('[autosave] no planId'); return false }
   // Collect items + per-slot image URLs in one pass. Image wraps with
   // dataset.url (uploaded by the picker, or kept from a previous load) carry
@@ -23878,7 +23930,7 @@ async function _persistDraft(planId) {
     const retry = await sb.from('plans').update(_attemptBody).eq('id', planId).select('id, itin_title')
     planErr = retry.error
   }
-  console.log('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
+  jjlog('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
   if (planErr) { console.warn('plan update failed', planErr); return false }
   // ── Data-loss guard ──
   // If we built an empty items array but the form modal is OPEN and shows
@@ -24070,7 +24122,7 @@ async function silentSaveDraft(scheduledPlanId) {
   // we read currentPlanId here, that race writes the typed content into
   // the wrong plan. Pass-through preserves the original target.
   const targetPlanId = scheduledPlanId || currentPlanId
-  console.log('[autosave] silentSaveDraft called', { targetPlanId, inFlight: _autoSaveInFlight })
+  jjlog('[autosave] silentSaveDraft called', { targetPlanId, inFlight: _autoSaveInFlight })
   if (!targetPlanId) { console.warn('[autosave] no targetPlanId — bailing'); return }
   if (_planConflictPending) { console.warn('[autosave] skipped — plan edited on another device, pending reload'); return }
   if (_autoSaveInFlight) {
@@ -24091,7 +24143,7 @@ async function silentSaveDraft(scheduledPlanId) {
   try {
     setAutoSaveStatus('saving')
     ok = await _persistDraft(targetPlanId)
-    console.log('[autosave] _persistDraft returned', ok)
+    jjlog('[autosave] _persistDraft returned', ok)
     // CRITICAL: sync the in-memory plans cache so closing + reopening the
     // modal reflects what was just saved. Without this, the form re-populates
     // from the stale cache and the planner sees their just-typed text vanish
@@ -24133,7 +24185,7 @@ function autoSaveDraft() {
   // race with our 1500ms debounce and switch currentPlanId out — we want
   // the save to target whichever plan the user was actually typing into.
   const planIdAtSchedule = currentPlanId
-  console.log('[autosave] autoSaveDraft scheduled', { currentPlanId: planIdAtSchedule })
+  jjlog('[autosave] autoSaveDraft scheduled', { currentPlanId: planIdAtSchedule })
   if (_autoSaveTimer) clearTimeout(_autoSaveTimer)
   _autoSaveTimer = setTimeout(() => silentSaveDraft(planIdAtSchedule), 1500)
   _autoSavePendingPlanId = planIdAtSchedule
@@ -24150,7 +24202,7 @@ function _flushAutoSave() {
   _autoSaveTimer = null
   const pid = _autoSavePendingPlanId || currentPlanId
   _autoSavePendingPlanId = null
-  console.log('[autosave] flushing pending save on modal close', { pid })
+  jjlog('[autosave] flushing pending save on modal close', { pid })
   // Fire-and-forget — the async fetch keeps running in the background
   // even after the modal class change, so the row update completes.
   silentSaveDraft(pid)
