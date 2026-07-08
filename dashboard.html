@@ -14829,40 +14829,55 @@ function autoGrow(el){
   el.style.height = (el.scrollHeight + 24) + 'px'
 }
 
-// ── iOS keyboard ↔ fixed-modal caret fix ────────────────────────────────
+// ── iOS keyboard ↔ fixed-modal "stay put" fix ───────────────────────────
 // On phones every modal is a position:fixed bottom sheet and the body is
 // scroll-locked. When the on-screen keyboard opens, iOS Safari pans the
 // VISUAL viewport while fixed elements stay pinned to the LAYOUT viewport —
-// but the text caret is painted (and long-press / tap hit-tested) in the
-// panned coordinate space. Result: the cursor floats beside the text and
-// taps land on the wrong spot (reported on the Review personal-note
-// textarea). Remedy: while the keyboard is up, cap the sheet to the visible
-// height and pull the focused field into view INSIDE .modal-body, so Safari
-// never needs to pan the visual viewport in the first place.
+// the whole screen visibly jumps, the caret paints beside the text, and taps
+// hit-test at offset coordinates. Remedy: pin the sheet ABOVE the keyboard
+// (overlay bottom padding = keyboard height) while keeping the sheet's TOP
+// edge exactly where it was — the sheet only loses height from the bottom,
+// so nothing the planner is looking at moves and Safari has no hidden input
+// to pan to. A focused field is nudged into view ('nearest', minimal) ONLY
+// if it would sit under the keyboard — never force-centred.
 if (window.visualViewport) {
   const _vv = window.visualViewport
-  let _vvKbOpen = false
   let _vvRaf = null
   const _syncModalToKeyboard = () => {
     if (_vvRaf) return
     _vvRaf = requestAnimationFrame(() => {
       _vvRaf = null
-      const modals = document.querySelectorAll('.modal-overlay.open .modal')
-      if (!modals.length) { _vvKbOpen = false; return }
+      const modals = [...document.querySelectorAll('.modal-overlay.open .modal')]
+      if (!modals.length) return
       const layoutH = document.documentElement.clientHeight
       const kbH = Math.max(0, layoutH - _vv.height - _vv.offsetTop)
       const kbOpen = kbH > 80
-      modals.forEach(modal => { modal.style.maxHeight = kbOpen ? Math.round(_vv.height - 12) + 'px' : '' })
-      // Only on the open TRANSITION (not every pan event, which would
-      // fight the user's own scrolling): bring the focused field into
-      // view inside the shrunken sheet.
-      if (kbOpen && !_vvKbOpen) {
+      const kbTop = layoutH - kbH   // keyboard's top edge in layout coords
+      modals.forEach(modal => {
+        const overlay = modal.closest('.modal-overlay')
+        if (kbOpen) {
+          // Capture the sheet's top edge BEFORE we resize anything so we can
+          // keep it pinned there for the whole keyboard session. (Mobile CSS
+          // sets the overlay's padding with !important, so the inline
+          // override needs !important too.)
+          if (modal._kbOrigTop == null) modal._kbOrigTop = Math.max(6, modal.getBoundingClientRect().top)
+          if (overlay) overlay.style.setProperty('padding-bottom', kbH + 'px', 'important')
+          modal.style.maxHeight = Math.max(180, kbTop - modal._kbOrigTop - 6) + 'px'
+        } else {
+          modal._kbOrigTop = null
+          if (overlay) overlay.style.removeProperty('padding-bottom')
+          modal.style.maxHeight = ''
+        }
+      })
+      if (kbOpen) {
         const ae = document.activeElement
-        if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT') && [...modals].some(m => m.contains(ae))) {
-          setTimeout(() => { try { ae.scrollIntoView({ block: 'center', behavior: 'auto' }) } catch (e) {} }, 60)
+        if (ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT') && modals.some(m => m.contains(ae))) {
+          const r = ae.getBoundingClientRect()
+          if (r.bottom > kbTop - 8 || r.top < 0) {
+            try { ae.scrollIntoView({ block: 'nearest', behavior: 'auto' }) } catch (e) {}
+          }
         }
       }
-      _vvKbOpen = kbOpen
     })
   }
   _vv.addEventListener('resize', _syncModalToKeyboard)
