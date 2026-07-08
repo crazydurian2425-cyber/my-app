@@ -9913,32 +9913,58 @@ function localizeLanguages(arr){
   }).join(' · ')
 }
 
-function applyLang(lang){
+// Skip a DOM swap when the rendered output hasn't changed — extends the
+// _lastHtml memo that renderDemoSet already uses to every dashboard
+// renderer. Repeated initDashboard cycles (60s poll / realtime) used to
+// reassign huge innerHTML blocks with IDENTICAL content — flicker, dropped
+// clicks and main-thread churn on every cycle for nothing. Skipping is
+// provably safe: it only happens when the new string equals what's already
+// on screen, so the visible result can never differ. Returns true when the
+// DOM actually changed (callers use this to scope follow-up work).
+function _setHtmlIfChanged(el, html) {
+  if (!el) return false
+  if (el._lastHtml === html) return false
+  el._lastHtml = html
+  el.innerHTML = html
+  return true
+}
+
+function applyLang(lang, root){
   if (lang !== 'en' && lang !== 'ja') lang = 'en'
-  TM_LANG = lang
-  try { localStorage.setItem('jj_planner_lang', lang) } catch(e){}
-  document.documentElement.lang = (lang === 'ja') ? 'ja' : 'en'
+  // Scoped mode: pass a `root` element to translate ONLY that subtree (a
+  // freshly injected card). The audit measured the document-wide pass —
+  // re-run after EVERY dashboard cycle — as the heaviest synchronous step
+  // of each refresh. Document-level side effects (language state, <html
+  // lang>, pills, greeting) only run in full-page mode.
+  const _scoped = !!(root && root !== document)
+  root = root || document
+  if (!_scoped) {
+    TM_LANG = lang
+    try { localStorage.setItem('jj_planner_lang', lang) } catch(e){}
+    document.documentElement.lang = (lang === 'ja') ? 'ja' : 'en'
+  }
 
   // text nodes
-  document.querySelectorAll('[data-i18n]').forEach(el => {
+  root.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n')
     el.textContent = t(key, el.textContent)
   })
   // placeholders
-  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+  root.querySelectorAll('[data-i18n-ph]').forEach(el => {
     const key = el.getAttribute('data-i18n-ph')
     el.setAttribute('placeholder', t(key, el.getAttribute('placeholder') || ''))
   })
   // inner HTML (keeps <strong>, <span id="..."> etc.)
-  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+  root.querySelectorAll('[data-i18n-html]').forEach(el => {
     const key = el.getAttribute('data-i18n-html')
     el.innerHTML = t(key, el.innerHTML)
   })
   // title attr
-  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+  root.querySelectorAll('[data-i18n-title]').forEach(el => {
     const key = el.getAttribute('data-i18n-title')
     el.setAttribute('title', t(key, el.getAttribute('title') || ''))
   })
+  if (_scoped) return
 
   // update active pill — covers old `.lang-btn` (if any lingering) + new top-bar `.tb-lang-btn`
   document.querySelectorAll('.lang-btn, .tb-lang-btn, .sb-lang-btn, .settings-lang-btn').forEach(b => {
@@ -10926,10 +10952,10 @@ async function loadWallet() {
   if (hist) {
     const recent = (requests || []).slice(0, 5)
     if (!recent.length) {
-      hist.innerHTML = `<div style="font-size:13px;color:var(--text-3);padding:10px 0;font-family:'Lora',serif;font-style:italic;">${t('wallet.empty','No payout requests yet')}</div>`
+      _setHtmlIfChanged(hist, `<div style="font-size:13px;color:var(--text-3);padding:10px 0;font-family:'Lora',serif;font-style:italic;">${t('wallet.empty','No payout requests yet')}</div>`)
     } else {
       const wLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
-      hist.innerHTML = recent.map(r => {
+      _setHtmlIfChanged(hist, recent.map(r => {
         const d = new Date(r.requested_at).toLocaleDateString(wLocale, { day:'numeric', month:'short', year:'numeric' })
         const badgeColor = { pending:'#c17d2a', paid:'#0f5240', rejected:'#c0392b', cancelled:'#9a9a94' }[r.status] || '#666'
         const badgeBg    = { pending:'rgba(193,125,42,0.14)', paid:'rgba(26,122,94,0.14)', rejected:'rgba(192,57,43,0.14)', cancelled:'rgba(0,0,0,0.06)' }[r.status] || 'rgba(0,0,0,0.06)'
@@ -10945,7 +10971,7 @@ async function loadWallet() {
           <span style="font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${badgeColor};background:${badgeBg};padding:3px 9px;border-radius:99px;">${statusLabel}</span>
           ${cancelBtn}
         </div>`
-      }).join('')
+      }).join(''))
     }
   }
   loadWalletAdjustments()   // render the Credits & adjustments card below payout requests
@@ -11180,14 +11206,28 @@ async function cancelPayoutRequest(id) {
 // the freshest data — so no update is ever missed, only the pile-up stops.
 let _initDashInFlight = false
 let _initDashTrailing = false
+let _initDashStartedAt = 0
 async function initDashboard() {
+  // Watchdog: a fetch left forever-pending (laptop sleep/resume, dead
+  // connection) must not wedge the guard shut and kill live updates until
+  // F5 — treat a run older than 45s as abandoned and start fresh.
+  if (_initDashInFlight && (Date.now() - _initDashStartedAt) > 45000) _initDashInFlight = false
   if (_initDashInFlight) { _initDashTrailing = true; return }
   _initDashInFlight = true
+  _initDashStartedAt = Date.now()
   try {
     await _initDashboardImpl()
   } finally {
     _initDashInFlight = false
-    if (_initDashTrailing) { _initDashTrailing = false; initDashboard() }
+    if (_initDashTrailing) {
+      _initDashTrailing = false
+      // Respect the same quiet states the poller respects: if a modal or the
+      // chat panel opened mid-run, drop the queued follow-up — the next poll
+      // tick covers it once the planner closes the modal.
+      if (!_shouldSkipRefresh()) {
+        Promise.resolve(initDashboard()).catch(e => console.warn('trailing dashboard refresh failed', e))
+      }
+    }
   }
 }
 async function _initDashboardImpl() {
@@ -11508,7 +11548,7 @@ async function renderDemoSet() {
   // Replace the Assignment status right-side card when batch is complete
   const statusBody = document.getElementById('assignment-status-body')
   if (statusBody) {
-    statusBody.innerHTML = hasCompleted ? `
+    _setHtmlIfChanged(statusBody, hasCompleted ? `
       <div style="display:grid;gap:10px;padding:4px 0;">
         <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--green-light,#f0faf5);border-radius:var(--radius-sm);border:1px solid rgba(45,158,122,0.2);">
           <div style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--green-mid,#2d9e7a);color:white;flex-shrink:0;box-shadow:inset 0 1px 0 rgba(255,255,255,0.22);">
@@ -11533,7 +11573,7 @@ async function renderDemoSet() {
         <div style="font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:4px;">${t('assign.pending','Pending assignment')}</div>
         <div style="font-size:11.5px;line-height:1.5;margin-bottom:14px;">${t('assign.pending.short','Our team will assign you a set based on your city and expertise.')}</div>
         <button onclick="openSupportChat(t('chatPrefill.requestSet'))" style="padding:8px 16px;background:var(--green-mid,#2d9e7a);color:white;border:none;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">${t('assign.btn.requestSet','Request a set')}</button>
-      </div>`
+      </div>`)
   }
 
   // Clear plan grid with appropriate state
@@ -11752,7 +11792,7 @@ async function renderDemoSet() {
   const briefMeta = document.getElementById('brief-traveler-meta')
   if (briefMeta) briefMeta.textContent = t('brief.pendingMsg','Claim a set to see traveler briefs')
   const briefDetails = document.getElementById('brief-details')
-  if (briefDetails) briefDetails.innerHTML = ''
+  if (briefDetails) _setHtmlIfChanged(briefDetails, '')
 }
 
 // ── RENDER ACTIVE SET ────────────────────────────────────────
@@ -11773,7 +11813,7 @@ function renderActiveSet(set) {
   const _odBanner = document.getElementById('overdue-banner')
   if (_odBanner) {
     if (_overdue) {
-      _odBanner.innerHTML = `<span style="font-size:18px;flex-shrink:0;">⛔</span><div><strong>${dt('This set is past its deadline.','このセットは期限を過ぎています。')}</strong> ${dt("Plans are shown but can't be opened or submitted — contact support to extend the deadline or request a new set.",'プランは表示されていますが、開くことも提出することもできません。延長または新しいセットのご請求は、サポートへお問い合わせください。')}<div style="margin-top:9px;"><button onclick="requestExtension()" style="padding:6px 12px;background:#fff;border:1px solid rgba(192,57,43,0.3);color:var(--red,#c0392b);border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">${dt('Contact support (extension or new set)','サポートに連絡（延長・新しいセット）')}</button></div></div>`
+      _setHtmlIfChanged(_odBanner, `<span style="font-size:18px;flex-shrink:0;">⛔</span><div><strong>${dt('This set is past its deadline.','このセットは期限を過ぎています。')}</strong> ${dt("Plans are shown but can't be opened or submitted — contact support to extend the deadline or request a new set.",'プランは表示されていますが、開くことも提出することもできません。延長または新しいセットのご請求は、サポートへお問い合わせください。')}<div style="margin-top:9px;"><button onclick="requestExtension()" style="padding:6px 12px;background:#fff;border:1px solid rgba(192,57,43,0.3);color:var(--red,#c0392b);border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">${dt('Contact support (extension or new set)','サポートに連絡（延長・新しいセット）')}</button></div></div>`)
       _odBanner.style.display = 'flex'
     } else {
       _odBanner.style.display = 'none'
@@ -11799,7 +11839,7 @@ function renderActiveSet(set) {
     const asLocale = (TM_LANG === 'ja') ? 'en-GB' : 'en-GB'
     const deadline = set.deadline ? new Date(set.deadline).toLocaleDateString(asLocale,{day:'numeric',month:'short',year:'numeric'}) : '—'
     const assignedDate = set.claimed_at ? new Date(set.claimed_at).toLocaleDateString(asLocale,{day:'numeric',month:'short',year:'numeric'}) : '—'
-    statusBody.innerHTML = `
+    _setHtmlIfChanged(statusBody, `
       <div style="display:grid;gap:12px;padding:4px 0;">
         <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--green-light,#f0faf5);border-radius:var(--radius-sm);border:1px solid rgba(45,158,122,0.2);">
           <div style="width:8px;height:8px;border-radius:50%;background:var(--green-mid);flex-shrink:0;"></div>
@@ -11818,7 +11858,7 @@ function renderActiveSet(set) {
             <div style="font-size:13px;font-weight:600;color:var(--text);">${deadline}</div>
           </div>
         </div>
-      </div>`
+      </div>`)
   }
 
   const done    = plans.filter(p => ['submitted','approved'].includes(p.status)).length
@@ -11872,7 +11912,7 @@ function renderActiveSet(set) {
     const actionsWrap = document.getElementById('active-set-actions')
     if (actionsWrap) {
       const setNumStr = set.set_number ? String(set.set_number).padStart(3,'0') : ''
-      actionsWrap.innerHTML = `
+      _setHtmlIfChanged(actionsWrap, `
         <div class="complete-card">
           <div class="complete-head">
             <div class="complete-icon" aria-hidden="true">
@@ -11901,7 +11941,7 @@ function renderActiveSet(set) {
             </button>
             <button class="btn-ghost" onclick="openBriefs()">${t('dash.btn.viewAllBriefs','View all briefs')}</button>
           </div>
-        </div>`
+        </div>`)
     }
     // Keep a no-op hidden submit button for any legacy code that targets it
     if (submitBtn) { submitBtn.disabled = true }
@@ -11914,7 +11954,7 @@ function renderActiveSet(set) {
     if (briefMeta) briefMeta.textContent = t('brief.reviewing','Admin is reviewing your batch. Once approved, your payout will be released.')
     const briefDetails = document.getElementById('brief-details')
     if (briefDetails) {
-      briefDetails.innerHTML = `
+      _setHtmlIfChanged(briefDetails, `
         <div style="display:grid;gap:8px;margin-top:12px;">
           <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--green-light,#f0faf5);border:1px solid rgba(45,158,122,0.25);border-radius:var(--radius-sm);">
             <div style="width:20px;height:20px;border-radius:50%;background:var(--green-mid);color:white;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✓</div>
@@ -11932,7 +11972,7 @@ function renderActiveSet(set) {
             </div>
             <div style="font-size:12.5px;color:var(--text-3);">${t('brief.celebrate.payout','Payout released after approval')}</div>
           </div>
-        </div>`
+        </div>`)
     }
     return
   }
@@ -12100,7 +12140,7 @@ function renderRevisionInbox(plansList) {
   if (!revisions.length) { box.style.display = 'none'; return }
   box.style.display = 'block'
   countEl.textContent = t('rev.toFix','{n} to fix').replace('{n}', revisions.length)
-  listEl.innerHTML = revisions.map(p => {
+  _setHtmlIfChanged(listEl, revisions.map(p => {
     const trav = p.travelers || {}
     // SECURITY: admin_notes is admin-supplied text — escape before injecting
     // into innerHTML. Without escaping, a malicious admin (or compromised
@@ -12120,7 +12160,7 @@ function renderRevisionInbox(plansList) {
         </div>
         <button onclick="openRevisionPlan('${jsEsc(p.id)}')" style="flex-shrink:0;padding:7px 14px;background:linear-gradient(135deg,#c17d2a,#a86820);color:#fff;border:none;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;letter-spacing:0.01em;box-shadow:0 2px 8px -2px rgba(193,125,42,0.40);">${t('rev.fixNow','Fix now')}</button>
       </div>`
-  }).join('')
+  }).join(''))
 }
 
 function openRevisionPlan(planId) {
@@ -12132,7 +12172,7 @@ function openRevisionPlan(planId) {
 
 // ── RENDER PLAN GRID ─────────────────────────────────────────
 function renderGrid() {
-  document.getElementById('plans-grid').innerHTML = plans.map(p => {
+  const _tilesHtml = plans.map(p => {
     const statusClass =
       ['approved','submitted'].includes(p.status)            ? 'done' :
       p.status === 'in_progress' || p.status === 'revision'  ? 'current' :
@@ -12158,6 +12198,7 @@ function renderGrid() {
         ${label ? `<div class="tile-status">${label}</div>` : ''}
       </div>`
   }).join('')
+  _setHtmlIfChanged(document.getElementById('plans-grid'), _tilesHtml)
 
   // Bond alert banner — show when a bond plan is awaiting payment
   const bondPlan = plans.find(p => p.status === 'bond_pending')
@@ -12166,7 +12207,7 @@ function renderGrid() {
     if (bondPlan) {
       const amt = bondPlan.travelers?.bond_amount
       bondBanner.style.display = 'flex'
-      bondBanner.innerHTML = `
+      _setHtmlIfChanged(bondBanner, `
         <div style="flex:1;">
           <div style="font-size:13px;font-weight:600;color:#854f0b;">${t('bond.banner.title','Plan {n} requires a bond payment of {amt}').replace('{n}', bondPlan.plan_number).replace('{amt}', amt ? fmtMoney(amt) : '?')}</div>
           <div style="font-size:12px;color:#854f0b;margin-top:3px;opacity:0.8;">${t('bond.banner.sub','Pay the bond to unlock this plan and continue your set.')}</div>
@@ -12178,7 +12219,7 @@ function renderGrid() {
             ${t('bond.banner.chat','Chat support')}
           </button>
           <button onclick="openBondPayModal('${bondPlan.id}',${bondPlan.plan_number})" style="padding:8px 12px;background:#5E7B6E;color:white;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">${t('bond.banner.pay','Pay bond')}</button>
-        </div>`
+        </div>`)
     } else {
       bondBanner.style.display = 'none'
     }
@@ -12291,7 +12332,7 @@ function updateBriefCard(plan, trav) {
     ? ` <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;">${t('brief.perNightTotal','/night · all rooms')}</span>`
     : ''
 
-  document.getElementById('brief-details').innerHTML = `
+  _setHtmlIfChanged(document.getElementById('brief-details'), `
     ${(() => {
       let depDate = null
       if (trav.arrival_date && trav.duration) {
@@ -12314,7 +12355,7 @@ function updateBriefCard(plan, trav) {
     <div class="brief-item" style="grid-column:1/-1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:rgba(94,123,110,0.10);border:1px solid rgba(94,123,110,0.28);border-radius:10px;margin-top:2px;"><div class="brief-label" style="color:#4A6759;letter-spacing:0.14em;font-weight:700;margin:0;">${t('brief.label.commission','Your commission')}</div><div class="brief-val" style="font-family:'Fraunces','DM Serif Display',serif;font-size:22px;line-height:1;color:#1F3A2E;font-weight:600;letter-spacing:-0.01em;margin:0;">${escapeHtml(payoutLine)}</div></div>
     <div class="brief-item" style="grid-column:1/-1;"><div class="brief-label">${t('brief.label.interests','Interests')}</div><div class="brief-val">${escapeHtml(localizeFree(travLocale(trav,'interests')) || '—')}</div></div>
     <div class="brief-item" style="grid-column:1/-1;"><div class="brief-label">${t('brief.label.avoid','Must avoid')}</div><div class="brief-val">${escapeHtml(localizeFree(travLocale(trav,'must_avoid')) || '—')}</div></div>
-    ${travLocale(trav,'special_notes') ? `<div class="brief-item" style="grid-column:1/-1;background:rgba(201,135,58,0.06);border-left:3px solid var(--e-amber,#c17d2a);padding-left:14px;"><div class="brief-label" style="color:var(--e-amber,#c17d2a);">${t('brief.label.specialNote','Special note')}</div><div class="brief-val" style="font-family:'Lora',serif;font-style:italic;">${escapeHtml(travLocale(trav,'special_notes'))}</div></div>` : ''}`
+    ${travLocale(trav,'special_notes') ? `<div class="brief-item" style="grid-column:1/-1;background:rgba(201,135,58,0.06);border-left:3px solid var(--e-amber,#c17d2a);padding-left:14px;"><div class="brief-label" style="color:var(--e-amber,#c17d2a);">${t('brief.label.specialNote','Special note')}</div><div class="brief-val" style="font-family:'Lora',serif;font-style:italic;">${escapeHtml(travLocale(trav,'special_notes'))}</div></div>` : ''}`)
 
   // Reset checklist — keep data-i18n tags so applyLang can retranslate
   // Bond explainer + contact — only for bond plans (locked or unlocked).
@@ -12327,7 +12368,7 @@ function updateBriefCard(plan, trav) {
       const lockedNote = isBondLocked
         ? `<div style="font-size:12.5px;color:#c17d2a;font-weight:600;margin-top:8px;">${t('bond.lockedNote','This plan is bond-locked — pay the bond above to unlock editing.')}</div>`
         : `<div style="font-size:12.5px;color:#5b6b62;margin-top:8px;">${t('bond.unlockedNote','Bond already paid — you can submit this plan normally.')}</div>`
-      bondBlock.innerHTML = `
+      _setHtmlIfChanged(bondBlock, `
         <div style="border:1px solid rgba(193,125,42,0.25);background:linear-gradient(180deg, rgba(245,231,196,0.18), rgba(245,231,196,0.05));border-radius:12px;padding:18px 20px;">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c17d2a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -12352,22 +12393,36 @@ function updateBriefCard(plan, trav) {
               <a href="mailto:hello@thejourneyjunction.co.uk" style="color:var(--text-2);text-decoration:none;">hello@thejourneyjunction.co.uk</a>
             </div>
           </div>
-        </div>`
+        </div>`)
       bondBlock.style.display = 'block'
     } else {
-      bondBlock.innerHTML = ''
+      _setHtmlIfChanged(bondBlock, '')
       bondBlock.style.display = 'none'
     }
   }
 
-  document.getElementById('checklist').innerHTML = `
+  const _checklistEl = document.getElementById('checklist')
+  // Per-plan reset: the template below is constant, so the memo alone would
+  // inject it once per page load and carry the planner's tick-marks across
+  // plan switches. Keying on plan.id forces a fresh (unticked) checklist
+  // when the plan changes, while still preserving ticks across the 60s
+  // refresh cycles of the SAME plan (the old code wiped them every cycle).
+  if (_checklistEl && _checklistEl._planKey !== plan.id) {
+    _checklistEl._planKey = plan.id
+    _checklistEl._lastHtml = null
+  }
+  const _checklistChanged = _setHtmlIfChanged(_checklistEl, `
     <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.schedule">Day-by-day schedule with timings</span></div>
     <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.restaurants">Restaurant picks (dietary needs confirmed)</span></div>
     <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.transport">Getting around — transport tips</span></div>
     <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.spend">Estimated spend breakdown</span></div>
-    <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.tips">Local tips and hidden gems</span></div>`
-  // Re-apply language to the freshly injected nodes
-  if (typeof applyLang === 'function') applyLang(TM_LANG)
+    <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"></div><span class="check-text" data-i18n="brief.check.tips">Local tips and hidden gems</span></div>`)
+  // Re-translate ONLY the freshly injected checklist subtree (its data-i18n
+  // spans carry English defaults). The old code re-ran applyLang over the
+  // ENTIRE document on every dashboard cycle — the audit measured that as
+  // the heaviest synchronous step of each refresh. Full-page passes still
+  // happen where they belong: boot and language switch.
+  if (_checklistChanged && typeof applyLang === 'function') applyLang(TM_LANG, _checklistEl)
 
   // Show revision notes if admin requested changes — but only ONCE per
   // (plan, notes) pair per page load. updateBriefCard runs on every plan-list
