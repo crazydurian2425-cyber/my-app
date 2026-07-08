@@ -11983,9 +11983,17 @@ function renderPaceBanner(set, plansList) {
   if (!set?.deadline) { banner.style.display = 'none'; return }
 
   const now = new Date()
-  const deadline = new Date(set.deadline)
+  // The deadline DAY itself is valid until 23:59 LOCAL — the SAME rule the
+  // submit lock + overdue banner already use (renderActiveSet's _odCutoff).
+  // The old `new Date("YYYY-MM-DD")` parse landed on midnight UTC = 09:00
+  // JST, so this chip flipped to red "1日遅延" mid-morning OF the deadline
+  // day while the actual lock (correctly) wouldn't fire until midnight —
+  // planner panic + CS contradiction. Slice to the date part defensively in
+  // case the column ever carries a full timestamp.
+  const _dlDay  = new Date(String(set.deadline).slice(0, 10) + 'T00:00:00')
+  const _cutoff = _dlDay.getTime() + 86400000   // first ms of the day AFTER the deadline
   const paceLocale = (TM_LANG === 'ja') ? 'ja-JP' : 'en-GB'
-  const deadlineStr = deadline.toLocaleDateString(paceLocale,{day:'numeric',month:'short',year:'numeric'})
+  const deadlineStr = _dlDay.toLocaleDateString(paceLocale,{day:'numeric',month:'short',year:'numeric'})
   // All plans submitted → the deadline no longer applies. Show a clear
   // "awaiting review" state in place of the countdown so the planner knows the
   // clock has stopped and they're simply waiting on admin review.
@@ -12000,17 +12008,16 @@ function renderPaceBanner(set, plansList) {
     if (extBtn) extBtn.style.display = 'none'
     return
   }
-  const msLeft   = deadline - now
+  const msLeft   = _cutoff - now.getTime()
   const hoursLeft = Math.ceil(msLeft / 3600000)
   const daysLeft  = Math.ceil(msLeft / 86400000)
 
-  // Compact display: "5D left" → "18HR" → "2HR" → "0HR" → "2D overdue"
+  // Compact display: "5D left" → hour countdown on the deadline day (runs
+  // to 23:59) → "1D overdue" starting the day AFTER the deadline.
   let daysLabel
-  if (msLeft < 0) {
-    const overdueDays = Math.ceil(Math.abs(msLeft) / 86400000)
+  if (msLeft <= 0) {
+    const overdueDays = Math.floor(-msLeft / 86400000) + 1
     daysLabel = (TM_LANG === 'ja') ? `· ${overdueDays}日遅延` : `· ${overdueDays}D overdue`
-  } else if (hoursLeft <= 0) {
-    daysLabel = (TM_LANG === 'ja') ? '· 期限' : '· due now'
   } else if (hoursLeft <= 24) {
     daysLabel = (TM_LANG === 'ja') ? `· 残り${hoursLeft}時間` : `· ${hoursLeft}HR left`
   } else {
