@@ -1803,7 +1803,12 @@ body.theme-editorial .form-textarea.autogrow{resize:none!important;overflow-y:au
 .day-section.collapsed .day-section-chevron{transform:rotate(-90deg);}
 .day-section-meta{font-family:'Inter',sans-serif;font-size:11px;color:var(--text-3,#7a6b4a);font-weight:500;letter-spacing:0.04em;margin-right:8px;opacity:0;transition:opacity .18s ease;}
 .day-section.collapsed .day-section-meta{opacity:1;}
-.day-section-body{overflow:hidden;transition:max-height .3s cubic-bezier(.2,.7,.2,1), opacity .22s ease;max-height:9999px;opacity:1;}
+/* max-height is the expand/collapse animation ceiling — it must exceed any
+   real day's height. 9999px was passed by a heavy day (7 stops + transports
+   + chips + summary on Plan 5 Day 3): everything below the ceiling was
+   CLIPPED by overflow:hidden — summary card cut mid-way, add-activity
+   button unreachable, "can't scroll down" reports on every device. */
+.day-section-body{overflow:hidden;transition:max-height .3s cubic-bezier(.2,.7,.2,1), opacity .22s ease;max-height:99999px;opacity:1;}
 .day-section.collapsed .day-section-body{max-height:0;opacity:0;pointer-events:none;}
 .add-slot-btn{font-size:12px;color:var(--green);border:1px dashed rgba(45,158,122,0.4);background:transparent;border-radius:var(--radius-sm);padding:5px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background 0.15s;}
 .add-slot-btn:hover{background:var(--green-light);}
