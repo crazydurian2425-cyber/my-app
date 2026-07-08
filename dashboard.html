@@ -11170,7 +11170,27 @@ async function cancelPayoutRequest(id) {
   loadWallet()
 }
 
+// In-flight guard + trailing coalescer (same pattern autosave already uses
+// via _autoSaveInFlight). initDashboard is triggered from four independent
+// sources — startup, the 60s/10s poller, realtime refreshSoon, post-submit
+// timeouts, the bond "Check" button — and a full run takes 1-3s of serial
+// round-trips, so triggers routinely landed mid-run and STACKED: doubled
+// queries, doubled repaints, interleaved renders. Now: one run at a time;
+// any trigger during a run coalesces into ONE follow-up run, which fetches
+// the freshest data — so no update is ever missed, only the pile-up stops.
+let _initDashInFlight = false
+let _initDashTrailing = false
 async function initDashboard() {
+  if (_initDashInFlight) { _initDashTrailing = true; return }
+  _initDashInFlight = true
+  try {
+    await _initDashboardImpl()
+  } finally {
+    _initDashInFlight = false
+    if (_initDashTrailing) { _initDashTrailing = false; initDashboard() }
+  }
+}
+async function _initDashboardImpl() {
   // Pull the admin-editable retention buffer before anything wallet-related runs.
   // This is fire-and-forget — if it fails (table missing), we keep the 200 default.
   await loadRetentionSetting()
@@ -11351,10 +11371,8 @@ async function initDashboard() {
   // meant a planner with ¥240 batch-approved still saw "0 sets completed"
   // until withdrawal — confusing and unfair to the planner's track record.
   setsCompleted = paidSetIds.length + completedSetIds.length
-  if (paidSetIds.length) {
-    const { data: pp } = await sb.from('plans').select('planner_payout_override, travelers(planner_payout)')
-      .in('set_id', paidSetIds).eq('status', 'approved').eq('planner_id', planner.id)
-  }
+  // (A plans query for paidSetIds used to run here on every dashboard cycle;
+  // its result was assigned and never read — deleted as pure query cost.)
   if (completedSetIds.length) {
     const { data: cp } = await sb.from('plans').select('planner_payout_override, travelers(planner_payout)')
       .in('set_id', completedSetIds).eq('status', 'approved').eq('planner_id', planner.id)
@@ -24605,9 +24623,19 @@ function _shouldSkipRefresh() {
   }
   // Wallet refresh: re-runs loadWallet (cheap) when this planner's payout
   // queue changes. Used by both the realtime handler and the polling fallback.
+  // Coalesce wallet event bursts: one admin action often emits several
+  // wallet_requests / wallet_adjustments events back-to-back, and each used
+  // to fire its own full ~7-query loadWallet. One trailing reload 400ms
+  // later reads the FINAL state — same displayed numbers, a fraction of the
+  // queries and rebuilds.
+  let _walletT = null
   const refreshWallet = () => {
-    if (_shouldSkipRefresh()) return
-    try { if (typeof loadWallet === 'function') loadWallet() } catch (e) {}
+    if (_walletT) return
+    _walletT = setTimeout(() => {
+      _walletT = null
+      if (_shouldSkipRefresh()) return
+      try { if (typeof loadWallet === 'function') loadWallet() } catch (e) {}
+    }, 400)
   }
   try {
     sb.channel(`planner-${planner.id}`)
@@ -24945,7 +24973,16 @@ setTimeout(() => initCsUnread(), 2500)
 // Polling fallback — re-fetch messages every 3s while chat panel is open.
 // Also refreshes unread badge every 10s when panel is closed.
 setInterval(async () => {
-  if (!csConversation) { await initCsUnread(); return }
+  if (!csConversation) {
+    // No conversation row yet — don't re-run initCsUnread every 3 seconds
+    // forever for planners who have never opened the chat. Re-check every
+    // 30s; the first real message still lands via the unread-count poll.
+    if (Date.now() - (window._csInitLastTry || 0) > 30000) {
+      window._csInitLastTry = Date.now()
+      await initCsUnread()
+    }
+    return
+  }
   const panelOpen = document.getElementById('cs-chat-panel')?.style.display === 'flex'
   if (panelOpen) {
     const { data } = await sb.from('messages').select('*').eq('conversation_id', csConversation.id).order('created_at')
