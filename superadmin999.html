@@ -2928,7 +2928,7 @@ async function loadOverview(btn) {
   ] = await Promise.all([
     safe(sb.from('travelers').select('*',{count:'exact',head:true})),
     safe(sb.from('travelers').select('*',{count:'exact',head:true}).gte('created_at', iso30)),
-    safe(sb.from('plans').select('id,plan_number,submitted_at,requires_bond_override,planner_id,planners(name),sets(set_number,city,planners(name)),travelers(name,requires_bond)').eq('status','submitted').order('submitted_at')),
+    safe(sbFetchAll(() => sb.from('plans').select('id,plan_number,submitted_at,requires_bond_override,planner_id,planners(name),sets(set_number,city,planners(name)),travelers(name,requires_bond)').eq('status','submitted').order('submitted_at')).then(rows => ({ data: rows }))),
     safe(sb.from('sets').select('id,set_number,city,deadline,status,planners(name),plans(id,status)').in('status',['open','claimed']).order('deadline')),
     safe(sb.from('sets').select('id,set_number,city,planners(name,bank_name,bank_account),plans(planner_payout_override,travelers(planner_payout))').eq('status','completed')),
     safe(sb.from('plans').select('*',{count:'exact',head:true}).eq('status','bond_pending')),
