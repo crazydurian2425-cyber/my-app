@@ -1488,6 +1488,9 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         </select>
         <button class="btn-main" style="padding:9px 18px;font-size:13px;" onclick="openAdjustFromPicker()">Adjust</button>
       </div>
+      <div style="padding:10px 18px;border-bottom:1px solid var(--border);background:var(--surface);">
+        <input id="wallet-search" type="text" placeholder="Search planner by name or city…" oninput="filterWalletRows(this.value)" autocomplete="off" style="width:100%;padding:9px 12px;border:1px solid var(--border-med);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--ink);">
+      </div>
       <div id="pay-ready-list"><div style="padding:20px;text-align:center;font-size:13px;color:var(--ink-3)">Loading…</div></div>
     </div>
     </div><!-- /.fin-sec Wallets -->
@@ -4841,7 +4844,7 @@ async function loadPayments() {
         ? `<span style="font-size:10.5px;color:var(--amber,#b87333);margin-left:8px;">· ¥${Math.round(p.pendingAmt).toLocaleString()} pending</span>` : ''
       const retentionChip = p.retainHeld > 0
         ? `<span style="font-size:10.5px;color:var(--ink-3);margin-left:8px;">· ¥${Math.round(p.retainHeld).toLocaleString()} retention</span>` : ''
-      return `<div class="pay-row">
+      return `<div class="pay-row" data-search="${escapeHtml(((pr.name||'')+' '+(pr.city||'')+' '+payLabel).toLowerCase())}">
         <div class="pay-av">${escapeHtml(ini)}</div>
         <div class="pay-info">
           <div class="pay-name">${escapeHtml(pr.name || '—')}</div>
@@ -4854,6 +4857,33 @@ async function loadPayments() {
         <button class="btn-ghost" style="margin-left:12px;padding:7px 14px;font-size:12px;" onclick="openAdjustWalletModal('${jsEsc(p.id)}', '${jsEsc(pr.name || '—')}')">Adjust</button>
       </div>`
     }).join('')
+  // Re-apply any active search term after a live refresh replaced the rows.
+  const _ws = document.getElementById('wallet-search')
+  if (_ws && _ws.value.trim()) filterWalletRows(_ws.value)
+}
+
+// Filter the wallet-balance rows by planner name / city (client-side, no refetch).
+function filterWalletRows(q) {
+  const term = (q || '').trim().toLowerCase()
+  const list = document.getElementById('pay-ready-list')
+  if (!list) return
+  const rows = list.querySelectorAll('.pay-row')
+  let shown = 0
+  rows.forEach(r => {
+    const hay = r.getAttribute('data-search') || r.textContent.toLowerCase()
+    const match = !term || hay.includes(term)
+    r.style.display = match ? '' : 'none'
+    if (match) shown++
+  })
+  let none = document.getElementById('wallet-search-none')
+  if (!none) {
+    none = document.createElement('div')
+    none.id = 'wallet-search-none'
+    none.style.cssText = 'padding:20px;text-align:center;font-size:13px;color:var(--ink-3);'
+    none.textContent = 'No planners match your search.'
+    list.appendChild(none)
+  }
+  none.style.display = (term && shown === 0) ? 'block' : 'none'
 }
 
 // ── Weekly planner salaries (¥150,000 per rolling 7-day cycle) ───────
