@@ -3251,13 +3251,32 @@ function toggleReviewExpand(id){
   else          _expandedReviewIds.delete(id)
 }
 
-async function loadPendingReviews() {
-  // Fetch submitted (needs review) + reviewed (checked, awaiting set approval)
-  const { data: allData } = await sb.from('plans')
-    .select('id, plan_number, status, submitted_at, set_id, planner_id, sets(set_number, city, planner_id, planners(id,name,email,onboarding_mentor)), travelers(name, traveler_type, requires_bond)')
-    .in('status', ['submitted','approved']).order('submitted_at')
+// Fetch EVERY row for a query that can exceed PostgREST's 1000-row default cap.
+// builder() must return a FRESH query each call (PostgREST builders are single-use).
+// Without this, loadPendingReviews silently dropped the newest-submitted plans once
+// submitted+approved crossed 1000 rows: every planner's latest plan vanished from
+// the review list and could never be approved — stranding it out of payout. Paginating
+// (not raising the server cap) keeps it correct AND avoids dragging the whole table
+// into the browser on every load.
+async function sbFetchAll(builder, pageSize = 1000) {
+  const out = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await builder().range(from, from + pageSize - 1)
+    if (error) { console.warn('[sbFetchAll]', error.message); break }
+    const batch = data || []
+    out.push(...batch)
+    if (batch.length < pageSize) break   // last page reached
+  }
+  return out
+}
 
-  const plans = allData || []
+async function loadPendingReviews() {
+  // Fetch submitted (needs review) + reviewed (checked, awaiting set approval).
+  // Paginated: this set crossed 1000 rows and the un-paginated version dropped the
+  // newest submissions (oldest-first order → latest plans truncated off the end).
+  const plans = await sbFetchAll(() => sb.from('plans')
+    .select('id, plan_number, status, submitted_at, set_id, planner_id, sets(set_number, city, planner_id, planners(id,name,email,onboarding_mentor)), travelers(name, traveler_type, requires_bond)')
+    .in('status', ['submitted','approved']).order('submitted_at'))
   const listEl = document.getElementById('review-planners-list')
   const badgeEl = document.getElementById('review-badge')
   if (!listEl) return
@@ -3310,13 +3329,15 @@ async function loadPendingReviews() {
   if (allKeys.length) {
     const setIds = [...new Set(Object.values(groups).map(g => g.setId))]
     const plannerIds = [...new Set(Object.values(groups).map(g => g.pId))].filter(id => id && id !== 'unknown')
-    const [{ data: allPlans }, { data: assigns }] = await Promise.all([
-      sb.from('plans').select('set_id, planner_id, status')
-        .in('set_id', setIds)
-        .in('planner_id', plannerIds.length ? plannerIds : ['00000000-0000-0000-0000-000000000000']),
-      sb.from('set_assignments').select('set_id, planner_id, status')
-        .in('set_id', setIds)
-        .in('planner_id', plannerIds.length ? plannerIds : ['00000000-0000-0000-0000-000000000000'])
+    const safePlannerIds = plannerIds.length ? plannerIds : ['00000000-0000-0000-0000-000000000000']
+    // Paginated too: these totals feed the "X to review · Y / Z done" counter AND the
+    // fully-reviewed "Ready to approve" decision. A truncated total showed nonsense
+    // like "0 / 3 done" on a 5-plan set and could mis-mark a batch ready.
+    const [allPlans, assigns] = await Promise.all([
+      sbFetchAll(() => sb.from('plans').select('set_id, planner_id, status')
+        .in('set_id', setIds).in('planner_id', safePlannerIds)),
+      sbFetchAll(() => sb.from('set_assignments').select('set_id, planner_id, status')
+        .in('set_id', setIds).in('planner_id', safePlannerIds)),
     ])
     const totalsByKey = {}
     for (const p of (allPlans || [])) {
