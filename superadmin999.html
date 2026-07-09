@@ -4705,21 +4705,27 @@ async function loadPayments() {
   //
   //   "Available to withdraw" displayed = effectiveMax (what planner can actually request).
   //   Bonds-held metric = bond_amount across plans still in escrow (not yet approved).
-  const [{ data: allPlanners }, { data: approvedPlans }, { data: wallet }, { data: bondPlans }, adjResult, retentionResult, setsResult] = await Promise.all([
-    sb.from('planners').select('id'),
-    sb.from('plans')
+  // Every growable platform-wide fetch here is PAGINATED (sbFetchAll). This is the
+  // payout engine: approved plans drive every planner's wallet balance, and an
+  // un-paged fetch would silently understate earnings once approved plans cross
+  // 1000 rows (768 and climbing) — invisible underpayment. platform_settings is
+  // a tiny fixed lookup, so it stays a plain query. sbFetchAll swallows a missing
+  // table into [], preserving the wallet_adjustments graceful-degradation.
+  const [allPlanners, approvedPlans, wallet, bondPlans, adjustmentsAll, retentionResult, setsAll] = await Promise.all([
+    sbFetchAll(() => sb.from('planners').select('id')),
+    sbFetchAll(() => sb.from('plans')
       .select('planner_id, planner_payout_override, bond_amount_override, requires_bond_override, travelers(planner_payout, bond_amount, requires_bond)')
-      .eq('status','approved').not('planner_id','is', null),
-    sb.from('wallet_requests').select('planner_id, amount, status'),
-    sb.from('plans')
+      .eq('status','approved').not('planner_id','is', null)),
+    sbFetchAll(() => sb.from('wallet_requests').select('planner_id, amount, status')),
+    sbFetchAll(() => sb.from('plans')
       .select('bond_amount_override, travelers(bond_amount, requires_bond)')
-      .in('status', ['in_progress','submitted','bond_pending']),
-    sb.from('wallet_adjustments').select('planner_id, amount, bypass_retention'),
+      .in('status', ['in_progress','submitted','bond_pending'])),
+    sbFetchAll(() => sb.from('wallet_adjustments').select('planner_id, amount, bypass_retention')),
     sb.from('platform_settings').select('key, value_num').in('key', ['first_payout_retention_min','first_payout_retention_sets']),
-    sb.from('set_assignments').select('planner_id, status').in('status', ['completed','paid'])
+    sbFetchAll(() => sb.from('set_assignments').select('planner_id, status').in('status', ['completed','paid'])),
   ])
-  // wallet_adjustments table may not exist yet — degrade gracefully
-  const adjustments = adjResult?.error ? [] : (adjResult?.data || [])
+  // sbFetchAll already returns [] on a missing/failed table — degrade gracefully
+  const adjustments = adjustmentsAll || []
   const _retRows = retentionResult?.error ? [] : (retentionResult?.data || [])
   const _retMinRow  = _retRows.find(r => r.key === 'first_payout_retention_min')
   const _retSetsRow = _retRows.find(r => r.key === 'first_payout_retention_sets')
@@ -4727,7 +4733,7 @@ async function loadPayments() {
   const retentionSets = (_retSetsRow?.value_num != null) ? Math.max(1, Math.round(Number(_retSetsRow.value_num))) : 3
   // Completed-set count per planner — the buffer releases once this hits the threshold.
   const completedSetsBy = {}
-  for (const sa of (setsResult?.error ? [] : (setsResult?.data || []))) {
+  for (const sa of (setsAll || [])) {
     completedSetsBy[sa.planner_id] = (completedSetsBy[sa.planner_id] || 0) + 1
   }
 
