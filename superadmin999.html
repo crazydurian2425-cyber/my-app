@@ -4105,6 +4105,25 @@ async function checkSetReadyToApprove(setId) {
 }
 
 async function approveFullSet(setId, plannerId) {
+  // GUARD: never close a batch while the planner still has submitted-but-
+  // unapproved plans. Those are finished plans awaiting admin review; if the
+  // assignment flips to 'completed' with one outstanding, its commission is
+  // silently dropped from the payout total (the count mismatch that stranded
+  // 花田玲子's Plan 5 — a plan submitted AFTER the last review pass). Payout
+  // math sums 'approved' plans only, so a straggler must be reviewed first.
+  const { data: unapproved, error: guardErr } = await sb.from('plans')
+    .select('plan_number, travelers(name)')
+    .eq('set_id', setId).eq('planner_id', plannerId).eq('status', 'submitted')
+    .order('plan_number')
+  if (guardErr) { showToast('Failed to check plans: ' + guardErr.message); return }
+  if (unapproved && unapproved.length) {
+    const nums = unapproved.map(p => '#' + p.plan_number).join(', ')
+    showToast(`Can't close the batch — ${unapproved.length} plan${unapproved.length > 1 ? 's' : ''} still awaiting review (${nums}). Approve ${unapproved.length > 1 ? 'them' : 'it'} first so the commission is included in payout.`)
+    // Surface the stragglers in the pending-review queue so they're one click away.
+    loadPendingReviews()
+    return
+  }
+
   if (!confirm('Approve this planner\'s batch?\n\nThis marks them as ready for payout. The set stays active for other planners.')) return
 
   // 1. Check whether an assignment row exists at all (legacy planners may not have one).
