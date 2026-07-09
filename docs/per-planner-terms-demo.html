@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Per-planner Terms — editor + assignment demo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F5F1E8; --paper:#FFFDF8; --ink:#1B1F1C; --ink-2:#4A524C; --ink-3:#8B908A;
+  --green:#5E7B6E; --green-d:#3E5448; --amber:#D4913D; --rule:rgba(27,31,28,0.10);
+  --premium:#8A5A18; --premium-bg:rgba(212,145,61,0.12); --std-bg:rgba(94,123,110,0.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;padding:26px 20px 90px;}
+.ja{font-family:'Noto Sans JP','DM Sans',sans-serif;}
+.wrap{max-width:1140px;margin:0 auto;}
+.head h1{font-family:'DM Serif Display',serif;font-size:26px;font-weight:400;letter-spacing:-0.3px;}
+.head p{color:var(--ink-2);font-size:14px;margin-top:6px;max-width:820px;}
+.note{background:#fff;border:1px solid var(--rule);border-left:3px solid var(--amber);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--ink-2);margin:18px 0 24px;}
+.note strong{color:var(--ink);}
+.grid{display:grid;grid-template-columns:1.15fr 0.85fr;gap:22px;align-items:start;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}}
+.panel{background:var(--paper);border:1px solid var(--rule);border-radius:14px;overflow:hidden;box-shadow:0 4px 18px -10px rgba(0,0,0,0.15);}
+.panel-head{padding:13px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:10px;}
+.panel-head .dot{width:9px;height:9px;border-radius:50%;}
+.panel-head.admin .dot{background:var(--green);}
+.panel-head.planner .dot{background:var(--amber);}
+.panel-head h2{font-size:14px;font-weight:600;}
+.panel-head .tag{margin-left:auto;font-size:11px;color:var(--ink-3);background:var(--cream);padding:3px 9px;border-radius:99px;}
+.panel-body{padding:16px 18px;}
+
+/* Editor tabs */
+.tabs{display:flex;gap:6px;margin-bottom:14px;}
+.tab{flex:1;padding:9px 10px;border:1px solid var(--rule);border-radius:9px;background:#fff;cursor:pointer;font-size:12.5px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;justify-content:center;gap:7px;}
+.tab.active[data-v="standard"]{border-color:var(--green);background:var(--std-bg);color:var(--green-d);}
+.tab.active[data-v="premium"]{border-color:var(--amber);background:var(--premium-bg);color:var(--premium);}
+.chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:0.04em;text-transform:uppercase;}
+.chip.standard{background:var(--std-bg);color:var(--green-d);}
+.chip.premium{background:var(--premium-bg);color:var(--premium);}
+
+.ed-title{font-size:11.5px;color:var(--ink-3);margin:2px 0 4px;text-transform:uppercase;letter-spacing:0.05em;}
+.ed-title-fixed{font-family:'Noto Serif JP',serif;font-size:17px;color:var(--ink);background:var(--cream);border:1px dashed var(--rule);border-radius:8px;padding:8px 12px;margin-bottom:4px;}
+.ed-title-hint{font-size:11px;color:var(--ink-3);margin-bottom:14px;}
+.ed-sec{margin-bottom:12px;}
+.ed-sec label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-2);margin-bottom:4px;}
+.ed-sec input,.ed-sec textarea{width:100%;font-family:'Noto Sans JP',sans-serif;font-size:12.8px;color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:8px 10px;background:#fff;resize:vertical;}
+.ed-sec input:focus,.ed-sec textarea:focus{outline:none;border-color:var(--green);}
+.ed-actions{display:flex;align-items:center;gap:10px;margin-top:6px;}
+.btn{font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;}
+.btn-save{background:var(--green);color:#fff;}
+.saved-flash{font-size:12px;color:var(--green);opacity:0;transition:opacity .2s;}
+.saved-flash.show{opacity:1;}
+
+/* Assignment */
+.sub-h{font-size:12px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.05em;margin:22px 0 6px;}
+.prow{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px dashed var(--rule);}
+.prow:last-child{border-bottom:none;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.pinfo{flex:1;min-width:0;}
+.pname{font-size:13px;font-weight:600;}
+.pmeta{font-size:11px;color:var(--ink-3);}
+.vsel{font-family:inherit;font-size:12px;padding:6px 9px;border:1px solid var(--rule);border-radius:8px;background:#fff;cursor:pointer;}
+.vsel:focus{outline:none;border-color:var(--green);}
+
+/* Planner viewer — mimics real terms.html */
+.viewer-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.viewer-bar label{font-size:12px;color:var(--ink-3);}
+.viewer-bar select{font-family:inherit;font-size:12.5px;padding:6px 10px;border:1px solid var(--rule);border-radius:8px;background:#fff;cursor:pointer;}
+.tos{border:1px solid var(--rule);border-radius:10px;padding:22px 22px;background:#fff;min-height:300px;}
+.tos .eyebrow{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;}
+.tos h3{font-family:'Noto Serif JP','DM Serif Display',serif;font-size:24px;font-weight:700;margin-bottom:6px;}
+.tos .sub{font-size:11.5px;color:var(--ink-3);margin-bottom:8px;}
+.tos .wholine{font-size:11.5px;color:var(--ink-3);border-bottom:1px solid var(--rule);padding-bottom:14px;margin-bottom:16px;}
+.tos h4{font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:600;margin:18px 0 6px;}
+.tos p{font-family:'Noto Sans JP',sans-serif;font-size:12.8px;color:var(--ink-2);}
+.hidden{display:none;}
+.how{margin-top:30px;background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:20px 22px;}
+.how h2{font-size:15px;font-weight:600;margin-bottom:10px;}
+.how ol{padding-left:20px;}
+.how li{font-size:13px;color:var(--ink-2);margin-bottom:8px;}
+.how code{background:var(--cream);padding:1px 6px;border-radius:4px;font-size:12px;font-family:ui-monospace,Menlo,monospace;color:var(--green-d);}
+.foot{margin-top:26px;font-size:12.5px;color:var(--ink-3);text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Per-planner Terms — editor &amp; assignment</h1>
+    <p>Admin edits <strong>two versions</strong> of the terms (Normal &amp; Premium) — both start with identical content. Each planner is assigned a version; <strong>every planner defaults to Normal</strong>. When a planner opens <code>/terms</code> they always see the <strong>same title (利用規約)</strong> — only the body content changes based on their assigned version.</p>
+  </div>
+  <div class="note"><strong>Demo only — nothing is saved and no live file is touched.</strong> Content shown is a trimmed sample of your real terms. The real build puts the two versions in the DB and swaps them in the actual <a href="../terms.html" target="_blank">terms.html</a> from the planner's session.</div>
+
+  <div class="grid">
+    <!-- ADMIN -->
+    <div class="panel">
+      <div class="panel-head admin"><span class="dot"></span><h2>Admin · Terms editor</h2><span class="tag">superadmin999</span></div>
+      <div class="panel-body">
+        <div class="tabs">
+          <div class="tab active" data-v="standard" onclick="selectTab('standard')">Normal term <span class="chip standard">default</span></div>
+          <div class="tab" data-v="premium" onclick="selectTab('premium')">Premium term</div>
+        </div>
+
+        <div class="ed-title">Title (shared — planners always see this, not editable per-version)</div>
+        <div class="ed-title-fixed ja">利用規約</div>
+        <div class="ed-title-hint">Both versions carry the same public title. Only the sections below differ.</div>
+
+        <div id="editor"></div>
+        <div class="ed-actions">
+          <button class="btn btn-save" onclick="saveEditor()">Save this version</button>
+          <span class="saved-flash" id="saved-flash">✓ Saved</span>
+        </div>
+
+        <div class="sub-h">Assign a version to each planner</div>
+        <div id="assign-list"></div>
+      </div>
+    </div>
+
+    <!-- PLANNER -->
+    <div class="panel">
+      <div class="panel-head planner"><span class="dot"></span><h2>Planner view · /terms</h2><span class="tag">terms.html</span></div>
+      <div class="panel-body">
+        <div class="viewer-bar">
+          <label>Viewing as:</label>
+          <select id="who"></select>
+        </div>
+        <div class="tos" id="tos"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="how">
+    <h2>What the real build does</h2>
+    <ol>
+      <li>New table <code>terms_versions</code> (or one row with two JSON blobs) holding the <strong>Normal</strong> and <strong>Premium</strong> content — both seeded identical to today's terms, so nothing changes until you edit.</li>
+      <li>A <strong>Terms editor</strong> screen in <code>superadmin999</code> (the "CONTENT · Terms editor" nav) to edit either version.</li>
+      <li>One column on <code>planners</code>: <code>terms_variant</code>, <strong>default <code>'standard'</code></strong> — every existing and new planner sees Normal unless you move them to Premium.</li>
+      <li><code>terms.html</code> keeps its single title (利用規約 / Terms of Service) and loads the body for the logged-in planner's variant from their session — can't be changed via the URL.</li>
+    </ol>
+  </div>
+
+  <div class="foot">Journey Junction — internal concept demo</div>
+</div>
+
+<script>
+// ── Mock planners — all default to standard ("Normal") ──────
+const PLANNERS = [
+  { id:'p1', name:'安部鈴香',          city:'Osaka',   variant:'standard' },
+  { id:'p2', name:'Tania Hargreaves', city:'Sapporo', variant:'standard' },
+  { id:'p3', name:'Kenji Watanabe',   city:'Kyoto',   variant:'standard' },
+  { id:'p4', name:'Astrid Lund',      city:'Otaru',   variant:'standard' },
+];
+
+// ── Two versions, SEEDED IDENTICAL (same content) ───────────
+const SEED = [
+  { h:'1 · 当社について', body:'Journey Junction（以下「当社」）は、日本を訪れる旅行者向けに旅程作成サービスを提供するプラットフォームです。当社は、独立した訪日旅行プランナーと、日本を訪れる旅行者をつなぎます。' },
+  { h:'2 · 利用資格',     body:'プランナーとして登録するには、18歳以上であること、独立した業務委託者として就労する法的権利を有していること、有効な支払い方法を登録できることが必要です。' },
+  { h:'3 · プランナーとしての役割', body:'プランナーは、従業員としてではなく独立した業務委託者として Journey Junction と協働し、当社が定める品質基準に沿った旅程を作成します。' },
+  { h:'4 · 報酬と支払い', body:'承認されたプランごとに定額の報酬が支払われ、セットが承認された時点で支払われます。' },
+];
+const VERSIONS = {
+  standard: { label:'Normal',  sections: JSON.parse(JSON.stringify(SEED)) },
+  premium:  { label:'Premium', sections: JSON.parse(JSON.stringify(SEED)) },
+};
+
+let activeTab = 'standard';
+
+// ── Editor ──────────────────────────────────────────────────
+function renderEditor(){
+  const v = VERSIONS[activeTab];
+  document.getElementById('editor').innerHTML = v.sections.map((s,i) => `
+    <div class="ed-sec">
+      <label>Section ${i+1} heading</label>
+      <input class="ja" data-i="${i}" data-f="h" value="${s.h.replace(/"/g,'&quot;')}">
+      <label style="margin-top:6px;">Body</label>
+      <textarea class="ja" data-i="${i}" data-f="body" rows="3">${s.body}</textarea>
+    </div>`).join('');
+}
+function selectTab(v){
+  activeTab = v;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.v === v));
+  renderEditor();
+}
+function saveEditor(){
+  const v = VERSIONS[activeTab];
+  document.querySelectorAll('#editor [data-i]').forEach(el => {
+    const i = +el.dataset.i, f = el.dataset.f;
+    v.sections[i][f] = el.value;        // ← in production: write to terms_versions row
+  });
+  const flash = document.getElementById('saved-flash');
+  flash.classList.add('show'); setTimeout(() => flash.classList.remove('show'), 1200);
+  renderViewerOptions(); renderTos();
+}
+
+// ── Assignment ──────────────────────────────────────────────
+function renderAssign(){
+  const el = document.getElementById('assign-list');
+  el.innerHTML = PLANNERS.map(p => {
+    const initials = /[A-Za-z]/.test(p.name) ? p.name.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() : p.name.slice(0,1);
+    return `
+      <div class="prow">
+        <div class="avatar ja">${initials}</div>
+        <div class="pinfo">
+          <div class="pname ja">${p.name} <span class="chip ${p.variant}">${VERSIONS[p.variant].label}</span></div>
+          <div class="pmeta">${p.city}</div>
+        </div>
+        <select class="vsel" data-id="${p.id}">
+          <option value="standard" ${p.variant==='standard'?'selected':''}>Normal term</option>
+          <option value="premium"  ${p.variant==='premium'?'selected':''}>Premium term</option>
+        </select>
+      </div>`;
+  }).join('');
+  el.querySelectorAll('.vsel').forEach(sel => {
+    sel.onchange = () => {
+      PLANNERS.find(x => x.id === sel.dataset.id).variant = sel.value;  // ← sb.from('planners').update({terms_variant})
+      renderAssign(); renderViewerOptions(); renderTos();
+    };
+  });
+}
+
+// ── Planner viewer ──────────────────────────────────────────
+function renderViewerOptions(){
+  const who = document.getElementById('who');
+  const cur = who.value || PLANNERS[0].id;
+  who.innerHTML = PLANNERS.map(p => `<option value="${p.id}">${p.name} — ${VERSIONS[p.variant].label}</option>`).join('');
+  who.value = cur;
+}
+function renderTos(){
+  const p = PLANNERS.find(x => x.id === document.getElementById('who').value) || PLANNERS[0];
+  const v = VERSIONS[p.variant];
+  document.getElementById('tos').innerHTML = `
+    <div class="eyebrow ja">プランナー契約</div>
+    <h3 class="ja">利用規約</h3>
+    <div class="sub ja">最終更新日：2026年5月16日 · 日本法に準拠</div>
+    <div class="wholine ja">${p.name} さんに表示中 · <span class="chip ${p.variant}">${v.label}版</span></div>
+    ${v.sections.map(s => `<h4 class="ja">${s.h}</h4><p class="ja">${s.body}</p>`).join('')}
+  `;
+}
+
+selectTab('standard');
+renderAssign();
+renderViewerOptions();
+document.getElementById('who').onchange = renderTos;
+renderTos();
+</script>
+</body>
+</html>

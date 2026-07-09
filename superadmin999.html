@@ -1774,16 +1774,35 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:6px;">
         <div>
           <div class="card-title">Terms of Service — editor</div>
-          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.45;max-width:560px;">Edits go live on the public <a href="terms.html" target="_blank" rel="noopener" style="color:var(--green);text-decoration:none;">Terms page</a> immediately. Each field has English + 日本語. HTML tags (e.g. &lt;strong&gt;, &lt;a href&gt;) are allowed and rendered as-is — keep them balanced.</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.45;max-width:560px;">Two versions — <strong>Normal</strong> and <strong>Premium</strong> — with the same public title (利用規約 / Terms of Service). Each planner is shown the version assigned to them below. Edits go live on the public <a href="terms.html" target="_blank" rel="noopener" style="color:var(--green);text-decoration:none;">Terms page</a> immediately. Each field has English + 日本語; HTML tags (e.g. &lt;strong&gt;, &lt;a href&gt;) are allowed — keep them balanced.</div>
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
           <button class="btn btn-ghost" onclick="loadLegalEditor()">Reload</button>
           <button class="btn btn-primary" id="legal-save-btn" onclick="saveLegalDoc()">Save changes</button>
         </div>
       </div>
+      <!-- Version switch — which version's content the fields below edit -->
+      <div style="display:flex;gap:6px;margin:12px 0 10px;">
+        <button id="lv-standard" class="btn btn-sm" onclick="setLegalVersion('standard')" style="border:1px solid var(--green);background:var(--green);color:#fff;">Normal term</button>
+        <button id="lv-premium" class="btn btn-sm btn-ghost" onclick="setLegalVersion('premium')">Premium term</button>
+      </div>
       <div id="legal-status" style="font-size:12px;color:var(--ink-3);margin:6px 0 12px;"></div>
       <div id="legal-fields"></div>
       <button class="btn btn-ghost" id="legal-add-btn" style="margin-top:10px;" onclick="legalAddSection()">+ Add section</button>
+    </div>
+
+    <!-- PER-PLANNER ASSIGNMENT -->
+    <div class="card" style="max-width:920px;margin-top:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+        <div>
+          <div class="card-title">Assign a terms version to each planner</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;max-width:560px;">Everyone defaults to <strong>Normal</strong>. Switch a planner to Premium and they see the Premium terms next time they open the Terms page.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="loadTermsAssignments()">Reload</button>
+      </div>
+      <input id="terms-assign-search" placeholder="Search planners by name or city…" oninput="renderTermsAssignments()" autocomplete="off" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid var(--border-med,#cbbfa6);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;margin-bottom:10px;background:var(--surface,#fff);color:var(--ink);">
+      <div id="terms-assign-status" style="font-size:12px;color:var(--ink-3);margin-bottom:8px;"></div>
+      <div id="terms-assign-list"></div>
     </div>
   </div>
 
@@ -2796,7 +2815,7 @@ function showPage(id, btn) {
   if (id === 'new-traveler') { /* form page, no data to load */ }
   if (id === 'create-planner') renderRecentPlanners()
   if (id === 'support')      loadSupport()
-  if (id === 'legal')        loadLegalEditor()
+  if (id === 'legal')      { loadLegalEditor(); loadTermsAssignments() }
 }
 
 function showPageByName(id) {
@@ -6406,6 +6425,24 @@ function renderEditPlansList(plans) {
   }).join('')
 }
 
+// Re-gate a plan's status after its effective bond requirement changed.
+// in_progress → bond_pending when a bond becomes required — unless the bond
+// was already paid (BOND_CONFIRMED stamp), re-locking would charge it twice.
+// bond_pending → in_progress when the requirement goes away. Other statuses
+// stay untouched: pending plans are gated at advance time from the live flag,
+// submitted/approved plans are past the gate.
+async function regateBondStatus(planId, effectiveRequires, preloadedRow) {
+  const row = preloadedRow
+    || (await sb.from('plans').select('status, admin_notes').eq('id', planId).maybeSingle()).data
+  if (!row) return
+  const bondPaid = String(row.admin_notes || '').startsWith('BOND_CONFIRMED:')
+  if (effectiveRequires && row.status === 'in_progress' && !bondPaid) {
+    await sb.from('plans').update({ status: 'bond_pending' }).eq('id', planId)
+  } else if (!effectiveRequires && row.status === 'bond_pending') {
+    await sb.from('plans').update({ status: 'in_progress' }).eq('id', planId)
+  }
+}
+
 async function savePlanOverride(planId) {
   const payoutRaw = document.getElementById(`ep-payout-${planId}`).value
   const bondRaw   = document.getElementById(`ep-bond-${planId}`).value
@@ -6433,13 +6470,7 @@ async function savePlanOverride(planId) {
   // Re-gate the plan if the bond toggle now mismatches the planner's current state.
   // Pending plans get caught by the next-advance gate, but plans already in_progress
   // or bond_pending need the status flipped here so the planner-side gate behaves.
-  const { data: planRow } = await sb.from('plans').select('status').eq('id', planId).maybeSingle()
-  const curStatus = planRow?.status
-  if (requires && curStatus === 'in_progress') {
-    await sb.from('plans').update({ status: 'bond_pending' }).eq('id', planId)
-  } else if (!requires && curStatus === 'bond_pending') {
-    await sb.from('plans').update({ status: 'in_progress' }).eq('id', planId)
-  }
+  await regateBondStatus(planId, requires)
 
   showToast('Plan updated')
   openEditPlansModal()  // reload
@@ -6485,13 +6516,7 @@ async function saveAllPlanOverrides() {
     const { error } = await sb.from('plans').update(payload).eq('id', task.planId)
     if (error) return { ok: false, planId: task.planId, msg: error.message }
 
-    const { data: planRow } = await sb.from('plans').select('status').eq('id', task.planId).maybeSingle()
-    const curStatus = planRow?.status
-    if (task.requires && curStatus === 'in_progress') {
-      await sb.from('plans').update({ status: 'bond_pending' }).eq('id', task.planId)
-    } else if (!task.requires && curStatus === 'bond_pending') {
-      await sb.from('plans').update({ status: 'in_progress' }).eq('id', task.planId)
-    }
+    await regateBondStatus(task.planId, task.requires)
     return { ok: true }
   }))
 
@@ -6516,6 +6541,11 @@ async function resetPlanOverride(planId) {
     requires_bond_override: null
   }).eq('id', planId)
   if (error) { showToast('Failed: ' + error.message); return }
+  // Reverting to defaults can change the effective bond requirement (e.g. a
+  // bond added via override on a no-bond traveler) — re-gate so the plan
+  // doesn't stay bond-locked on a requirement that no longer exists.
+  const { data: p } = await sb.from('plans').select('travelers(requires_bond)').eq('id', planId).maybeSingle()
+  await regateBondStatus(planId, !!p?.travelers?.requires_bond)
   showToast('Reset to default')
   openEditPlansModal()
 }
@@ -7318,22 +7348,51 @@ async function autoTranslateField(srcId, dstId, btn) {
 // so they bypass RLS. terms.html reads the same row (anon) and overlays it on
 // its baked-in defaults.
 let _legalDict = { en:{}, ja:{} }
+// Which version the editor fields are bound to. 'standard' → legal_docs slug
+// 'terms'; 'premium' → 'terms_premium'. Both render the same public title.
+let _legalVariant = 'standard'
+function _legalSlugFor(v){ return v === 'premium' ? 'terms_premium' : 'terms' }
+function setLegalVersion(v){
+  if (v !== 'standard' && v !== 'premium') return
+  _legalVariant = v
+  // Toggle the tab button styling.
+  const std = document.getElementById('lv-standard'), prem = document.getElementById('lv-premium')
+  const on  = 'border:1px solid var(--green);background:var(--green);color:#fff;'
+  if (std)  { std.className  = 'btn btn-sm' + (v==='standard'?'':' btn-ghost'); std.setAttribute('style', v==='standard'?on:'') }
+  if (prem) { prem.className = 'btn btn-sm' + (v==='premium'?'':' btn-ghost');  prem.setAttribute('style', v==='premium'?on:'') }
+  loadLegalEditor()
+}
 function _legalEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 async function loadLegalEditor() {
   const status = document.getElementById('legal-status')
   const fields = document.getElementById('legal-fields')
   if (status) status.textContent = 'Loading…'
   if (fields) fields.innerHTML = ''
+  const slug = _legalSlugFor(_legalVariant)
   try {
-    const { data, error } = await sb.from('legal_docs').select('dict, updated_at, updated_by').eq('slug','terms').maybeSingle()
+    const { data, error } = await sb.from('legal_docs').select('dict, updated_at, updated_by').eq('slug', slug).maybeSingle()
     if (error) throw error
-    if (!data || !data.dict || !data.dict.en) {
-      if (status) status.innerHTML = 'No Terms content saved yet — run <strong>docs/schema/legal-docs.sql</strong> in Supabase once to seed it, then reload.'
+    let dict = data && data.dict
+    let fromTemplate = false
+    // Premium not seeded yet → open it populated from the Normal terms, so the
+    // two start identical. Saving then creates the premium row.
+    if (_legalVariant === 'premium' && (!dict || !dict.en)) {
+      const { data: base } = await sb.from('legal_docs').select('dict').eq('slug','terms').maybeSingle()
+      if (base && base.dict && base.dict.en) { dict = base.dict; fromTemplate = true }
+    }
+    if (!dict || !dict.en) {
+      if (status) status.innerHTML = 'No Terms content saved yet — run <strong>docs/schema/legal-docs.sql</strong> and <strong>docs/schema/per-planner-terms.sql</strong> in Supabase once, then reload.'
       return
     }
-    _legalDict = { en: data.dict.en || {}, ja: data.dict.ja || {} }
+    _legalDict = { en: dict.en || {}, ja: dict.ja || {} }
     renderLegalFields()
-    if (status) status.textContent = 'Last updated: ' + (data.updated_at ? new Date(data.updated_at).toLocaleString() : '—') + (data.updated_by ? ' · by ' + data.updated_by : '')
+    if (status) {
+      if (fromTemplate) {
+        status.innerHTML = '<strong>Premium</strong> is showing a copy of the Normal terms (not saved yet) — edit and Save to make the Premium version live.'
+      } else {
+        status.textContent = (_legalVariant === 'premium' ? 'Premium · ' : 'Normal · ') + 'Last updated: ' + (data.updated_at ? new Date(data.updated_at).toLocaleString() : '—') + (data.updated_by ? ' · by ' + data.updated_by : '')
+      }
+    }
   } catch (e) {
     const msg = (e && (e.message || e.error_description || e.details || e.hint)) || (typeof e === 'string' ? e : JSON.stringify(e))
     const missing = /relation .* does not exist|could not find the table|does not exist|schema cache|not found|42P01|PGRST20[12]|\b404\b/i.test(msg + ' ' + ((e && e.code) || ''))
@@ -7429,20 +7488,99 @@ async function saveLegalDoc() {
   })
   if (!Object.keys(en).length) { showToast('Nothing to save — load the Terms first'); return }
   const dict = { en, ja }
+  const slug = _legalSlugFor(_legalVariant)
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…' }
   try {
     const actor = (window.currentAdmin && window.currentAdmin.email) || sessionStorage.getItem('admin_email') || 'admin'
-    const { error } = await sb.from('legal_docs').upsert({ slug:'terms', dict, updated_at: new Date().toISOString(), updated_by: actor }, { onConflict: 'slug' })
+    const { error } = await sb.from('legal_docs').upsert({ slug, dict, updated_at: new Date().toISOString(), updated_by: actor }, { onConflict: 'slug' })
     if (error) throw error
     _legalDict = dict
-    if (status) status.textContent = '✓ Saved — live on the public Terms page now.'
-    try { if (typeof auditLog === 'function') auditLog('edit', 'legal_doc', 'terms', {}) } catch(e){}
+    if (status) status.textContent = '✓ Saved — live on the public Terms page now (' + (_legalVariant === 'premium' ? 'Premium' : 'Normal') + ' version).'
+    try { if (typeof auditLog === 'function') auditLog('edit', 'legal_doc', slug, {}) } catch(e){}
   } catch (e) {
     const msg = (e && (e.message || e.error_description || e.details || e.hint)) || (typeof e === 'string' ? e : JSON.stringify(e))
     if (status) status.textContent = 'Save failed: ' + msg
     showToast('Save failed — ' + (msg || 'try again'))
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Save changes' }
+  }
+}
+
+// ── Per-planner terms assignment ────────────────────────────────────────────
+// Reads/writes planners.terms_variant ('standard'|'premium') via the proxy.
+let _termsPlanners = []
+async function loadTermsAssignments() {
+  const status = document.getElementById('terms-assign-status')
+  const list = document.getElementById('terms-assign-list')
+  if (status) status.textContent = 'Loading planners…'
+  if (list) list.innerHTML = ''
+  try {
+    const { data, error } = await sb.from('planners').select('id, name, city, status, terms_variant').order('name', { ascending: true })
+    if (error) throw error
+    _termsPlanners = data || []
+    if (status) {
+      const prem = _termsPlanners.filter(p => p.terms_variant === 'premium').length
+      status.textContent = `${_termsPlanners.length} planner${_termsPlanners.length===1?'':'s'} · ${prem} on Premium, ${_termsPlanners.length - prem} on Normal`
+    }
+    renderTermsAssignments()
+  } catch (e) {
+    const msg = (e && (e.message || e.details || e.hint)) || (typeof e === 'string' ? e : JSON.stringify(e))
+    const missing = /terms_variant|column .* does not exist|42703|schema cache/i.test(msg + ' ' + ((e && e.code) || ''))
+    if (status) status.innerHTML = missing
+      ? 'The <strong>terms_variant</strong> column is not set up yet — run <strong>docs/schema/per-planner-terms.sql</strong> in Supabase once, then click Reload.'
+      : 'Load failed: ' + msg
+  }
+}
+function renderTermsAssignments() {
+  const list = document.getElementById('terms-assign-list')
+  if (!list) return
+  const q = (document.getElementById('terms-assign-search')?.value || '').toLowerCase().trim()
+  const rows = q ? _termsPlanners.filter(p => `${p.name||''} ${p.city||''}`.toLowerCase().includes(q)) : _termsPlanners
+  if (!rows.length) { list.innerHTML = `<div style="font-size:12.5px;color:var(--ink-3);padding:10px 0;">${q ? 'No matching planner.' : 'No planners.'}</div>`; return }
+  list.innerHTML = rows.map(p => {
+    const initials = /[A-Za-z]/.test(p.name||'') ? String(p.name).split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase() : String(p.name||'?').slice(0,1)
+    const v = p.terms_variant === 'premium' ? 'premium' : 'standard'
+    const chip = v === 'premium'
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(212,145,61,0.14);color:#8a5a18;text-transform:uppercase;letter-spacing:0.04em;">Premium</span>`
+      : `<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(94,123,110,0.14);color:#3e5448;text-transform:uppercase;letter-spacing:0.04em;">Normal</span>`
+    const suspended = p.status === 'suspended' ? ` · <span style="color:#b84a3e;">suspended</span>` : ''
+    return `
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px dashed var(--border,#e5e1d8);">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--green,#5E7B6E);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;">${escapeHtml(initials)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--ink);">${escapeHtml(p.name||'—')} ${chip}</div>
+          <div style="font-size:11px;color:var(--ink-3);">${escapeHtml(p.city||'—')}${suspended}</div>
+        </div>
+        <select data-tv-id="${escapeHtml(p.id)}" onchange="setPlannerTermsVariant('${jsEsc(p.id)}', this.value, this)" style="font-family:'DM Sans',sans-serif;font-size:12px;padding:6px 9px;border:1px solid var(--border-med,#cbbfa6);border-radius:8px;background:#fff;cursor:pointer;color:var(--ink);">
+          <option value="standard" ${v==='standard'?'selected':''}>Normal term</option>
+          <option value="premium" ${v==='premium'?'selected':''}>Premium term</option>
+        </select>
+      </div>`
+  }).join('')
+}
+async function setPlannerTermsVariant(id, variant, sel) {
+  const v = variant === 'premium' ? 'premium' : 'standard'
+  if (sel) sel.disabled = true
+  try {
+    const { error } = await sb.from('planners').update({ terms_variant: v }).eq('id', id)
+    if (error) throw error
+    const p = _termsPlanners.find(x => x.id === id)
+    if (p) p.terms_variant = v
+    showToast(`${(p && p.name) || 'Planner'} → ${v === 'premium' ? 'Premium' : 'Normal'} terms`)
+    // Refresh chip + the header counts without a full reload.
+    const status = document.getElementById('terms-assign-status')
+    if (status) {
+      const prem = _termsPlanners.filter(x => x.terms_variant === 'premium').length
+      status.textContent = `${_termsPlanners.length} planner${_termsPlanners.length===1?'':'s'} · ${prem} on Premium, ${_termsPlanners.length - prem} on Normal`
+    }
+    renderTermsAssignments()
+    try { if (typeof auditLog === 'function') auditLog('edit', 'planner', id, { terms_variant: v }) } catch(e){}
+  } catch (e) {
+    if (sel) sel.disabled = false
+    const msg = (e && (e.message || e.details || e.hint)) || (typeof e === 'string' ? e : JSON.stringify(e))
+    const missing = /terms_variant|column .* does not exist|42703|schema cache/i.test(msg + ' ' + ((e && e.code) || ''))
+    showToast(missing ? 'Run per-planner-terms.sql first — terms_variant column missing' : 'Save failed — ' + msg)
+    if (missing) { const st = document.getElementById('terms-assign-status'); if (st) st.innerHTML = 'The <strong>terms_variant</strong> column is not set up yet — run <strong>docs/schema/per-planner-terms.sql</strong> in Supabase once, then click Reload.' }
   }
 }
 
@@ -7519,6 +7657,17 @@ async function saveTravelerEdit() {
   updates.meta = { ...existingMeta, ...patch }
   const { error } = await sb.from('travelers').update(updates).eq('id', id)
   if (error) { showToast('Error: ' + error.message); return }
+  // Re-gate live plans: the bond toggle above only changes the traveler
+  // default; plans already gated on the old value would keep a stale
+  // bond_pending / in_progress status. Per-plan overrides win, so only
+  // plans without one follow the new default.
+  const { data: livePlans } = await sb.from('plans')
+    .select('id, status, admin_notes, requires_bond_override')
+    .eq('traveler_id', id).in('status', ['in_progress', 'bond_pending'])
+  for (const p of (livePlans || [])) {
+    const eff = p.requires_bond_override != null ? p.requires_bond_override : updates.requires_bond
+    await regateBondStatus(p.id, eff, p)
+  }
   closeModal('modal-edit-traveler')
   showToast('Traveler updated!')
   loadTravelers()
