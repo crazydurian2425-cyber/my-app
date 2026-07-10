@@ -521,6 +521,14 @@ async function handleSendEmploymentLetter(request, url) {
   const firstName = escapeForEmail((planner_name || '').trim().split(/\s+/)[0] || planner_name || '')
   const docName   = isGuarantee ? '保証書' : '業務委託契約書'
   const docNameEn = isGuarantee ? 'letter of guarantee' : 'service agreement'
+  // Intro wording differs: the employment letter welcomes a new planner; the
+  // guarantee letter is simply issued to an existing planner.
+  const introJa = isGuarantee
+    ? 'このたび、Journey Junction より保証書を発行いたしました。内容をご確認のうえ、ご署名をお願いいたします。'
+    : 'この度は、Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。'
+  const introEn = isGuarantee
+    ? 'Journey Junction has issued your letter of guarantee.'
+    : 'Thank you for joining Journey Junction as a Japan Inbound Travel Planner.'
 
   // 3. Email the planner (Resend) — Japanese (primary) + English.
   //    Chrome mirrors the approval email (buildApprovalEmailHtml in
@@ -549,7 +557,7 @@ async function handleSendEmploymentLetter(request, url) {
           <em style="font-style:italic;color:#1a7a5e;">${docName}</em>ご確認のお願い
         </h1>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${firstName} 様</p>
-        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">この度は、Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。</p>
+        <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${introJa}</p>
         <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより${docName}をご確認のうえ、ご署名をお願いいたします。このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。</p>
       </td></tr>
 
@@ -567,7 +575,7 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:18px 36px 28px 36px;">
         <div style="height:1px;background:rgba(0,0,0,0.06);margin-bottom:14px;"></div>
-        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.</p>
+        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — ${introEn} Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.</p>
       </td></tr>
 
       <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
