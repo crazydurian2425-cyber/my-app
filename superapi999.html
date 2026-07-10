@@ -113,10 +113,13 @@
 <div id="toast"></div>
 
 <script>
-// ── auth via the worker proxy (same pattern as supermentor999) ──
+// ── auth (same pattern as supermentor999: a password prompt gates the page
+// before any data loads; the entered pass is also the proxy token) ──
 const SUPABASE_ANON = 'sb_publishable_EQBMG6WS1qd1F9jMNrog1g_gU1n9grr'
 const PROXY_BASE = window.location.origin + '/api/sb'
 const API_PASS = '168168'
+const _cached = localStorage.getItem('jj_api')
+const pass = (_cached === API_PASS) ? _cached : (()=>{ const p = prompt('Admin password:'); if (p === API_PASS) { localStorage.setItem('jj_api', p); return p } localStorage.removeItem('jj_api'); alert('Wrong password'); location.reload(); return null })()
 const sb = supabase.createClient(PROXY_BASE, SUPABASE_ANON, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   global: { headers: { 'x-jj-proxy': API_PASS } }
