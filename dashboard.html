@@ -13736,6 +13736,16 @@ async function openItineraryForm(planId) {
   // a queued save from Plan 4 would fire after currentPlanId switched to Plan 5
   // and write Plan 4's form contents into Plan 5.
   if (_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null }
+  // Also neutralize any IN-FLIGHT or QUEUED autosave before we blank the day-form
+  // DOM below. openItineraryForm does container.innerHTML='' and only repopulates
+  // slots after an await — a leftover queued/flushed save (or its _autoSaveQueued
+  // follow-up) firing in that window scans zero slots. Clearing these flags stops
+  // that stale save from running against the empty rebuild DOM. (Belt-and-suspenders
+  // with the hard rule in _persistDraft that autosave never deletes a plan.)
+  _autoSaveInFlight = false
+  _autoSaveQueued = false
+  _autoSaveQueuedPid = null
+  window._itinHadStops = false
   // Reset any stale auto-save status from a previous plan
   setAutoSaveStatus('idle')
   // Each plan starts with a clean image-warning slate — first submit attempt
@@ -14078,11 +14088,11 @@ async function openItineraryForm(planId) {
     // Baseline for the cross-device clobber guard — the item-id set this device
     // loaded. A later save compares against the DB to detect another device's edit.
     if (typeof _setDraftBaseline === 'function') _setDraftBaseline(plan.id, (items || []).map(i => i.id))
-    // Track whether the form actually loaded real stops on THIS open — the
-    // autosave wipe-guard below uses it. Reset here, and set true ONLY after a
-    // successful render. If the items query returned empty (transient) or
-    // fillItineraryItems throws, this stays false → the guard refuses to let a
-    // later empty autosave wipe stops that still exist in the DB.
+    // Track whether the form actually loaded real stops on THIS open. Vestigial:
+    // it previously fed the autosave empty-wipe guard, which has since been
+    // replaced by a HARD RULE in _persistDraft (autosave never issues a plan-wide
+    // delete), so nothing reads this anymore. Kept as a cheap, accurate signal in
+    // case a future guard wants it. Reset here; set true only after a successful render.
     window._itinHadStops = false
     if (items?.length) {
       fillItineraryItems(items)
@@ -23941,8 +23951,14 @@ async function resetCurrentPlanToFresh() {
   const ok = confirm(dt('Reset this plan to a fresh state? Every itinerary item, hotel pick, transport tip, and spend-breakdown note you added will be cleared. This cannot be undone.','このプランを初期状態にリセットしますか？追加した旅程の項目、ホテルの選択、交通のヒント、支出メモがすべて消去されます。この操作は取り消せません。'))
   if (!ok) return
   // Cancel any pending debounced autosave — otherwise it might fire
-  // AFTER the wipe and write stale form contents back to the DB.
+  // AFTER the wipe and write stale form contents back to the DB. Also clear the
+  // in-flight/queued flags so a save scheduled before Reset can't fire against
+  // the wiped/rebuilt DOM.
   if (_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null }
+  _autoSaveInFlight = false
+  _autoSaveQueued = false
+  _autoSaveQueuedPid = null
+  window._itinHadStops = false
   const planId = currentPlanId
   const wiped = await _wipePlanToFresh(planId)
   if (!wiped) { showToast(dt('Reset failed — check console','リセットに失敗しました — コンソールを確認してください')); return }
@@ -24082,37 +24098,22 @@ async function _persistDraft(planId) {
   }
   jjlog('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
   if (planErr) { console.warn('plan update failed', planErr); return false }
-  // ── Data-loss guard ──
-  // If we built an empty items array but the form modal is OPEN and shows
-  // non-locked activity slots, something raced (likely an autosave fired
-  // mid-render before titles were set). DON'T wipe the DB — bail and let
-  // the next autosave with valid items handle persistence.
+  // ── Data-loss guard (HARD RULE) ──
+  // An autosave must NEVER issue a plan-wide delete. An empty `items` scan is
+  // almost always a TRANSIENT empty DOM — the openItineraryForm reopen/reset
+  // rebuild window (container.innerHTML='' before slots repopulate), or a queued
+  // save firing mid-render — NOT the planner deliberately clearing the plan.
+  // Silently deleting here is exactly what erased planners' in-progress work.
+  // The plan-level fields (title/tips/hotel) were already persisted above; we
+  // simply skip the itinerary_items sync and let a later save with real slots
+  // handle them. A genuine "clear the whole plan" is a deliberate action that
+  // goes through the Reset button (resetCurrentPlanToFresh → _wipePlanToFresh),
+  // never a silent debounced autosave. (This replaced a guard that checked a
+  // class 'is-open' the modal never has — the real class is 'open' — so it was
+  // defeated and the delete below ran during the rebuild window.)
   if (!items.length) {
-    const modalOpen = document.getElementById('modal-submit')?.classList.contains('is-open')
-                   || document.getElementById('modal-submit')?.style?.display !== 'none'
-    const visibleSlots = document.querySelectorAll('.activity-slot:not(.is-locked) .slot-title-input').length
-    if (modalOpen && visibleSlots > 0) {
-      console.warn('[autosave] BAIL: items empty but', visibleSlots, 'non-locked slots visible — refusing to wipe DB')
-      return true
-    }
-    // Empty form + the form NEVER loaded stops on this open (a failed/empty load,
-    // not a planner deleting them) → if the DB still has stops, refuse to wipe.
-    // A genuine "remove every stop" sets _itinHadStops=true (the form had loaded
-    // them first), so this never blocks a real delete. Fail-safe: any error in
-    // the count check also bails rather than risk wiping.
-    if (visibleSlots === 0 && !window._itinHadStops) {
-      try {
-        const { count, error } = await sb.from('itinerary_items')
-          .select('id', { count: 'exact', head: true }).eq('plan_id', planId)
-        if (error || (count && count > 0)) {
-          console.warn('[autosave] BAIL: empty form never loaded stops; DB has rows or check errored — refusing to wipe', { count, error })
-          return true
-        }
-      } catch (e) {
-        console.warn('[autosave] BAIL: stop-count check threw — refusing to wipe (fail-safe)', e)
-        return true
-      }
-    }
+    console.warn('[autosave] empty items scan — skipping itinerary sync (autosave never deletes a whole plan)')
+    return true
   }
   // Cross-device clobber guard — if another device saved since this one loaded
   // the plan, DON'T overwrite: warn + offer reload, then bail. Fails safe.
@@ -24122,13 +24123,7 @@ async function _persistDraft(planId) {
   // where a transient insert error emptied the plan with no rollback. There's
   // no unique(plan_id,sort_order) constraint (only the id PK), so new rows with
   // fresh UUIDs coexist with the old rows for the brief moment before cleanup.
-  if (!items.length) {
-    // No slots left — clear all rows for this plan (cascades item_images).
-    const { error: delErr } = await sb.from('itinerary_items').delete().eq('plan_id', planId)
-    if (delErr) { console.warn('itinerary delete failed', delErr); return false }
-    _setDraftBaseline(planId, [])
-    return true
-  }
+  // (items is guaranteed non-empty here — the empty case returned early above.)
   let { data: inserted, error: insErr } = await sb.from('itinerary_items').insert(
     items.map((item,idx) => ({ plan_id: planId, ...item, sort_order: idx }))
   ).select('id, sort_order')
