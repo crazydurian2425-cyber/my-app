@@ -201,8 +201,8 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
   <div class="card" id="signed-card" style="display:none;">
     <div class="signed-state">
       <div class="check">✓</div>
-      <h2 style="font-family:Georgia,serif;font-size:22px;margin-bottom:10px;">契約書は署名済みです</h2>
-      <p style="color:var(--ink-2);font-size:14px;">この契約書はすでに署名されています。ありがとうございました。</p>
+      <h2 id="signed-title" style="font-family:Georgia,serif;font-size:22px;margin-bottom:10px;">契約書は署名済みです</h2>
+      <p id="signed-desc" style="color:var(--ink-2);font-size:14px;">この契約書はすでに署名されています。ありがとうございました。</p>
       <p style="color:var(--ink-3);font-size:12px;margin-top:14px;">コピーが必要な場合は、<a href="mailto:hello@thejourneyjunction.co.uk" style="color:var(--green);">hello@thejourneyjunction.co.uk</a> までお問い合わせください。</p>
     </div>
   </div>
@@ -334,7 +334,11 @@ async function submitSignature() {
     return
   }
 
-  // 3. Show success state
+  // 3. Show success state — 保証書 wording for a guarantee, 契約書 otherwise.
+  if (letter.letter_type === 'guarantee') {
+    const _t = $('signed-title'); if (_t) _t.textContent = '保証書は署名済みです'
+    const _d = $('signed-desc');  if (_d) _d.textContent = 'この保証書はすでに署名されています。ありがとうございました。'
+  }
   $('letter-card').style.display = 'none'
   $('signed-card').style.display = 'block'
   window.scrollTo({ top: 0, behavior: 'smooth' })
