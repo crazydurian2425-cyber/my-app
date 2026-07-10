@@ -84,7 +84,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
       <div class="brand-name">Journey<em>Junction</em></div>
     </div>
 
-    <div class="title">業務委託契約書</div>
+    <div class="title" id="letter-title">業務委託契約書</div>
     <div class="subtitle">以下の内容をご確認のうえ、ご署名ください。</div>
 
     <!-- 委託者（甲）— company / principal. Static for every planner. -->
@@ -106,7 +106,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
         <div class="field-val" id="f-name">—</div>
       </div>
       <div class="field-row">
-        <div class="field-label">契約開始日</div>
+        <div class="field-label" id="start-date-label">契約開始日</div>
         <div class="field-val" id="f-start">—</div>
       </div>
       <div class="field-row">
@@ -115,8 +115,8 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
       </div>
     </div>
 
-    <!-- Letter body (Japanese) -->
-    <div class="letter-block">
+    <!-- Letter body (Japanese) — replaced with the admin-typed text for a guarantee. -->
+    <div class="letter-block" id="letter-block">
       <p>本書は、上記に記載の契約開始日より、<strong>委託者（甲）JOURNEY JUNCTION LTD</strong>と<strong>受託者（乙）</strong>との間で、訪日旅行プランナーとして業務委託契約を締結することを確認するものです。</p>
 
       <h3>業務内容および報酬</h3>
@@ -366,6 +366,18 @@ async function boot() {
   $('f-name').textContent  = letter.planner_name
   $('f-start').textContent = new Date(letter.start_date + 'T00:00:00').toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' })
   $('f-today').textContent = new Date().toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' })
+
+  // Letter of guarantee: swap the fixed contract body for the admin's typed
+  // text. textContent (not innerHTML) so the content is shown as safe escaped
+  // text — a stray "<" can never break or inject into the page.
+  if (letter.letter_type === 'guarantee') {
+    const _t = document.getElementById('letter-title');      if (_t)  _t.textContent = '保証書'
+    const _l = document.getElementById('start-date-label');  if (_l)  _l.textContent = '有効開始日'
+    const _b = document.getElementById('letter-block')
+    if (_b) { _b.textContent = letter.custom_body || ''; _b.style.whiteSpace = 'pre-wrap' }
+    document.title = '保証書 — Journey Junction'
+    const _sub = document.querySelector('#submit-btn'); if (_sub) _sub.textContent = '署名済み保証書を送信'
+  }
 
   $('letter-card').style.display = 'block'
 

@@ -469,28 +469,40 @@ async function handleSendEmploymentLetter(request, url) {
 
   let body
   try { body = await request.json() } catch (_) { return jsonResp(400, { error: 'Invalid JSON' }) }
-  const { planner_id, planner_name, planner_email, start_date } = body || {}
+  const { planner_id, planner_name, planner_email, start_date, letter_type, custom_body } = body || {}
   if (!planner_id || !planner_name || !planner_email || !start_date) {
     return jsonResp(400, { error: 'Missing required fields' })
   }
+  const isGuarantee = letter_type === 'guarantee'
+  if (isGuarantee && (!custom_body || !String(custom_body).trim())) {
+    return jsonResp(400, { error: 'Guarantee letter body is required' })
+  }
 
-  // 1. Insert the row (service role bypasses RLS)
+  // 1. Insert the row (service role bypasses RLS). letter_type / custom_body are
+  //    ONLY sent for a guarantee — an employment letter inserts exactly the
+  //    original fields, so it is unaffected even if the guarantee migration
+  //    (add-guarantee-letters.sql) has not been run yet.
   const sbHeaders = {
     'apikey': SUPABASE_SERVICE_KEY,
     'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
   }
+  const insertRow = {
+    planner_id,
+    planner_name,
+    planner_email,
+    start_date,
+    created_by: cred.user
+  }
+  if (isGuarantee) {
+    insertRow.letter_type = 'guarantee'
+    insertRow.custom_body = String(custom_body)
+  }
   const insertResp = await fetch(`${SUPABASE_URL}/rest/v1/employment_letters`, {
     method: 'POST',
     headers: sbHeaders,
-    body: JSON.stringify({
-      planner_id,
-      planner_name,
-      planner_email,
-      start_date,
-      created_by: cred.user
-    })
+    body: JSON.stringify(insertRow)
   })
   if (!insertResp.ok) {
     const errText = await insertResp.text().catch(() => '')
@@ -507,6 +519,8 @@ async function handleSendEmploymentLetter(request, url) {
   //    preserving the ?token, so this is the tidy form planners see.
   const signUrl = `${PUBLIC_SITE_URL}/sign-letter?token=${encodeURIComponent(row.signing_token)}`
   const firstName = escapeForEmail((planner_name || '').trim().split(/\s+/)[0] || planner_name || '')
+  const docName   = isGuarantee ? '保証書' : '業務委託契約書'
+  const docNameEn = isGuarantee ? 'letter of guarantee' : 'service agreement'
 
   // 3. Email the planner (Resend) — Japanese (primary) + English.
   //    Chrome mirrors the approval email (buildApprovalEmailHtml in
@@ -532,17 +546,17 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:24px 36px 4px 36px;">
         <h1 style="margin:0 0 12px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
-          <em style="font-style:italic;color:#1a7a5e;">業務委託契約書</em>ご確認のお願い
+          <em style="font-style:italic;color:#1a7a5e;">${docName}</em>ご確認のお願い
         </h1>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${firstName} 様</p>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">この度は、Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。</p>
-        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより業務委託契約書をご確認のうえ、ご署名をお願いいたします。このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。</p>
+        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより${docName}をご確認のうえ、ご署名をお願いいたします。このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。</p>
       </td></tr>
 
       <tr><td style="padding:0 36px 8px 36px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr><td align="center" style="padding:6px 0 14px;">
-            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">契約書を確認して署名する →</a>
+            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">${docName}を確認して署名する →</a>
           </td></tr>
         </table>
       </td></tr>
@@ -553,7 +567,7 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:18px 36px 28px 36px;">
         <div style="height:1px;background:rgba(0,0,0,0.06);margin-bottom:14px;"></div>
-        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review and sign your service agreement using the button above. This link is personal to you; please do not share it.</p>
+        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.</p>
       </td></tr>
 
       <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
@@ -573,7 +587,7 @@ async function handleSendEmploymentLetter(request, url) {
     body: JSON.stringify({
       from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
       to: planner_email,
-      subject: 'Journey Junction — 業務委託契約書へのご署名のお願い',
+      subject: `Journey Junction — ${docName}へのご署名のお願い`,
       html: emailHtml
     })
   })
@@ -597,10 +611,19 @@ async function handleGetLetter(request, url) {
     'apikey': SUPABASE_SERVICE_KEY,
     'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
   }
-  const resp = await fetch(
-    `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status,signed_at,signature_image_url`,
+  // Request the guarantee columns too; if they don't exist yet (migration not
+  // run), retry with the base columns so the sign page still works for the
+  // existing employment letters. Missing letter_type → treated as employment.
+  let resp = await fetch(
+    `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status,signed_at,signature_image_url,letter_type,custom_body`,
     { headers: sbHeaders }
   )
+  if (!resp.ok) {
+    resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status,signed_at,signature_image_url`,
+      { headers: sbHeaders }
+    )
+  }
   if (!resp.ok) return jsonResp(500, { error: 'DB lookup failed' })
   const rows = await resp.json()
   const letter = rows?.[0]

@@ -2423,20 +2423,32 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
   <div class="modal" style="max-width:520px;">
     <div class="modal-header">
       <div>
-        <div class="modal-title">Send engagement letter</div>
+        <div class="modal-title" id="el-modal-title">Send engagement letter</div>
         <div class="modal-sub" id="el-planner-name">—</div>
       </div>
       <button class="modal-close" onclick="closeModal('modal-employment-letter')">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
+        <label class="form-label">Letter type</label>
+        <div style="display:flex;border:1px solid rgba(0,0,0,0.16);border-radius:8px;overflow:hidden;">
+          <button type="button" id="el-type-emp" onclick="setLetterType('employment')" style="flex:1;padding:9px 8px;border:none;background:#1a7a5e;color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;">📜 Engagement (fixed)</button>
+          <button type="button" id="el-type-gua" onclick="setLetterType('guarantee')" style="flex:1;padding:9px 8px;border:none;background:#fff;color:#8a8678;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;">🔏 Guarantee (editable)</button>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
         <label class="form-label">Planner name (as shown on letter) <span style="color:var(--red);">*</span></label>
         <input class="form-input" id="el-name" type="text" maxlength="200">
         <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Snapshot at sign time — editable here only.</div>
       </div>
       <div class="form-group" style="margin-top:12px;">
-        <label class="form-label">Engagement start date <span style="color:var(--red);">*</span></label>
+        <label class="form-label" id="el-date-label">Engagement start date <span style="color:var(--red);">*</span></label>
         <input class="form-input" id="el-start-date" type="date">
+      </div>
+      <div class="form-group" id="el-body-group" style="margin-top:12px;display:none;">
+        <label class="form-label">Guarantee body — editable every send <span style="color:var(--red);">*</span></label>
+        <textarea id="el-body" rows="9" style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.16);border-radius:8px;font-size:13px;font-family:inherit;line-height:1.6;resize:vertical;color:var(--ink);"></textarea>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Prefilled with a default 保証書 template — change it any time before sending. Each letter stores its own copy. <a href="#" onclick="resetGuaranteeTpl();return false;" style="color:var(--green);text-decoration:none;">↺ Reset template</a></div>
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label class="form-label">Send to email</label>
@@ -6683,6 +6695,37 @@ async function togglePlannerStatus() {
 }
 
 // ── EMPLOYMENT LETTER (admin) ──────────────────────────────────────
+// Default editable body for a Letter of guarantee (保証書). The admin can
+// change this freely before every send; each letter stores its own copy.
+const GUARANTEE_TEMPLATE_JA =
+`当社は、下記のプランナーが Journey Junction の訪日旅行プランナーとして業務を遂行するにあたり、本保証書をもってその身元および業務の履行を保証いたします。
+
+1. プランナーは、当社の定める品質基準および期限を遵守するものとします。
+2. 業務上知り得た旅行者の個人情報を、第三者に開示しないものとします。
+3. 故意または重大な過失により、当社または旅行者に損害を与えた場合、その責任を負うものとします。
+
+本保証は、上記の有効開始日より効力を生じます。`
+
+// Current letter type in the modal ('employment' | 'guarantee').
+let _elLetterType = 'employment'
+
+function setLetterType(t) {
+  _elLetterType = (t === 'guarantee') ? 'guarantee' : 'employment'
+  const emp = document.getElementById('el-type-emp')
+  const gua = document.getElementById('el-type-gua')
+  if (emp) { emp.style.background = _elLetterType === 'employment' ? '#1a7a5e' : '#fff'; emp.style.color = _elLetterType === 'employment' ? '#fff' : '#8a8678' }
+  if (gua) { gua.style.background = _elLetterType === 'guarantee' ? '#1a7a5e' : '#fff'; gua.style.color = _elLetterType === 'guarantee' ? '#fff' : '#8a8678' }
+  const bodyGroup = document.getElementById('el-body-group')
+  if (bodyGroup) bodyGroup.style.display = _elLetterType === 'guarantee' ? 'block' : 'none'
+  const dateLabel = document.getElementById('el-date-label')
+  if (dateLabel) dateLabel.innerHTML = (_elLetterType === 'guarantee' ? 'Guarantee start date（有効開始日）' : 'Engagement start date') + ' <span style="color:var(--red);">*</span>'
+  const title = document.getElementById('el-modal-title')
+  if (title) title.textContent = _elLetterType === 'guarantee' ? 'Send letter of guarantee' : 'Send engagement letter'
+  const body = document.getElementById('el-body')
+  if (_elLetterType === 'guarantee' && body && !body.value.trim()) body.value = GUARANTEE_TEMPLATE_JA
+}
+function resetGuaranteeTpl() { const b = document.getElementById('el-body'); if (b) b.value = GUARANTEE_TEMPLATE_JA }
+
 async function openEmploymentLetterModal() {
   if (!viewingPlannerId) return
   const p = allPlanners.find(x => x.id === viewingPlannerId)
@@ -6694,6 +6737,9 @@ async function openEmploymentLetterModal() {
   // new Date().toISOString() is UTC and drifts a day behind during 00:00–09:00 JST.
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date())
   document.getElementById('el-start-date').value = today
+  // Reset to the (fixed) engagement letter every open; clear any prior body.
+  const bodyEl = document.getElementById('el-body'); if (bodyEl) bodyEl.value = ''
+  setLetterType('employment')
   const btn = document.getElementById('el-submit-btn')
   if (btn) { btn.disabled = false; btn.textContent = 'Send letter' }
   // Load past letters for this planner
@@ -6707,13 +6753,22 @@ async function loadEmploymentLetterHistory(plannerId) {
   wrap.innerHTML = '<div style="font-size:11px;color:var(--ink-3);">Loading history…</div>'
   let rows = []
   try {
-    const { data, error } = await sb.from('employment_letters')
-      .select('id, planner_name, start_date, status, sent_at, signed_at, signature_image_url')
+    // Try WITH letter_type; if that column doesn't exist yet (guarantee
+    // migration not run), fall back to the base columns so history still works.
+    let q = await sb.from('employment_letters')
+      .select('id, planner_name, start_date, status, sent_at, signed_at, signature_image_url, letter_type')
       .eq('planner_id', plannerId)
       .order('sent_at', { ascending: false })
       .limit(10)
-    if (error) throw error
-    rows = data || []
+    if (q.error) {
+      q = await sb.from('employment_letters')
+        .select('id, planner_name, start_date, status, sent_at, signed_at, signature_image_url')
+        .eq('planner_id', plannerId)
+        .order('sent_at', { ascending: false })
+        .limit(10)
+    }
+    if (q.error) throw q.error
+    rows = q.data || []
   } catch (e) {
     wrap.innerHTML = '<div style="font-size:11px;color:var(--red);">History unavailable — run phase_a_employment_letters.sql.</div>'
     return
@@ -6750,7 +6805,7 @@ async function loadEmploymentLetterHistory(plannerId) {
           : ''
         return `<div style="padding:8px 10px;background:var(--cream);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;gap:10px;font-size:12px;">
           <div style="flex:1;min-width:0;">
-            <div style="color:var(--ink);font-weight:500;">${escapeHtml(r.planner_name)} · start ${escapeHtml(r.start_date)}</div>
+            <div style="color:var(--ink);font-weight:500;">${escapeHtml(r.planner_name)}${r.letter_type === 'guarantee' ? ' · 保証書' : ''} · start ${escapeHtml(r.start_date)}</div>
             <div style="color:var(--ink-3);font-size:10.5px;margin-top:2px;">Sent ${when}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
@@ -6769,7 +6824,14 @@ async function sendEmploymentLetter() {
   const email = document.getElementById('el-email')?.value?.trim()
   if (!name || !startDate || !email) { showToast('Name, start date, and email are required'); return }
 
-  if (!confirm(`Send engagement letter to ${name} <${email}>?\n\nStart date: ${startDate}\n\nThey'll get an email with a unique signing link.`)) return
+  const letterType = _elLetterType === 'guarantee' ? 'guarantee' : 'employment'
+  const customBody = (document.getElementById('el-body')?.value || '').trim()
+  if (letterType === 'guarantee' && customBody.length < 10) {
+    showToast('Please enter the guarantee letter body (at least a sentence).'); return
+  }
+
+  const kind = letterType === 'guarantee' ? 'letter of guarantee' : 'engagement letter'
+  if (!confirm(`Send ${kind} to ${name} <${email}>?\n\nStart date: ${startDate}\n\nThey'll get an email with a unique signing link.`)) return
 
   const btn = document.getElementById('el-submit-btn')
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…' }
@@ -6784,7 +6846,9 @@ async function sendEmploymentLetter() {
         planner_id: viewingPlannerId,
         planner_name: name,
         planner_email: email,
-        start_date: startDate
+        start_date: startDate,
+        letter_type: letterType,
+        custom_body: letterType === 'guarantee' ? customBody : null
       })
     })
   } catch (e) {
@@ -6803,7 +6867,7 @@ async function sendEmploymentLetter() {
   } else {
     showToast(`Letter sent to ${email}`)
   }
-  if (typeof auditLog === 'function') auditLog('employment_letter.send', 'planner', viewingPlannerId, { name, email, start_date: startDate })
+  if (typeof auditLog === 'function') auditLog('employment_letter.send', 'planner', viewingPlannerId, { name, email, start_date: startDate, letter_type: letterType })
   loadEmploymentLetterHistory(viewingPlannerId)
   // Don't close the modal — admin may want to see updated history
   if (btn) { btn.disabled = false; btn.textContent = 'Send another' }
