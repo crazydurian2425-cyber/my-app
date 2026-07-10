@@ -294,8 +294,10 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
   .compose textarea{font-size:14px;min-height:42px;}
   .compose-send{padding:10px 16px;}
 
-  /* Quick-replies bar wraps nicely on narrow */
-  #quick-replies{padding:6px 12px;}
+  /* Quick-replies bar wraps nicely on narrow — but CAP its height so it can't
+     cover the whole message list on a phone. Chips scroll inside this bounded
+     area; the "Quick" button still hides the bar entirely. */
+  #quick-replies{padding:6px 12px;max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 }
 @media (max-width:480px){
   /* Hide the conv stats (Open/Unread counters) on tiny phones to save room */
