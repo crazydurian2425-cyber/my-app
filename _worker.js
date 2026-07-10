@@ -521,14 +521,19 @@ async function handleSendEmploymentLetter(request, url) {
   const firstName = escapeForEmail((planner_name || '').trim().split(/\s+/)[0] || planner_name || '')
   const docName   = isGuarantee ? '保証書' : '業務委託契約書'
   const docNameEn = isGuarantee ? 'letter of guarantee' : 'service agreement'
-  // Intro wording differs: the employment letter welcomes a new planner; the
-  // guarantee letter is simply issued to an existing planner.
+  // Guarantee vs employment wording. Every employment string below is unchanged;
+  // the guarantee variants use the approved 保証書 email copy.
+  const headingSuffix = isGuarantee ? 'のご確認およびご署名のお願い' : 'ご確認のお願い'
+  const signVerb      = isGuarantee ? '確認・署名する' : '確認して署名する'
   const introJa = isGuarantee
-    ? 'このたび、Journey Junction より保証書を発行いたしました。内容をご確認のうえ、ご署名をお願いいたします。'
+    ? 'このたび、Journey Junctionより保証書を発行いたしました。内容をご確認のうえ、ご署名をお願いいたします。'
     : 'この度は、Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。'
-  const introEn = isGuarantee
-    ? 'Journey Junction has issued your letter of guarantee.'
-    : 'Thank you for joining Journey Junction as a Japan Inbound Travel Planner.'
+  const linkPrivacyJa = isGuarantee
+    ? 'このリンクはご本人様専用となっておりますので、第三者への共有はお控えください。'
+    : 'このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。'
+  const bodyEn = isGuarantee
+    ? 'Journey Junction has issued your Guarantee Letter. Please review and sign it using the button above. This link is personal to you. Please do not share it with anyone else.'
+    : `Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.`
 
   // 3. Email the planner (Resend) — Japanese (primary) + English.
   //    Chrome mirrors the approval email (buildApprovalEmailHtml in
@@ -554,17 +559,17 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:24px 36px 4px 36px;">
         <h1 style="margin:0 0 12px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
-          <em style="font-style:italic;color:#1a7a5e;">${docName}</em>ご確認のお願い
+          <em style="font-style:italic;color:#1a7a5e;">${docName}</em>${headingSuffix}
         </h1>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${firstName} 様</p>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${introJa}</p>
-        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより${docName}をご確認のうえ、ご署名をお願いいたします。このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。</p>
+        <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">下記のボタンより${docName}をご確認のうえ、ご署名をお願いいたします。${linkPrivacyJa}</p>
       </td></tr>
 
       <tr><td style="padding:0 36px 8px 36px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr><td align="center" style="padding:6px 0 14px;">
-            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">${docName}を確認して署名する →</a>
+            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">${docName}を${signVerb} →</a>
           </td></tr>
         </table>
       </td></tr>
@@ -575,7 +580,7 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:18px 36px 28px 36px;">
         <div style="height:1px;background:rgba(0,0,0,0.06);margin-bottom:14px;"></div>
-        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — ${introEn} Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.</p>
+        <p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678;"><strong style="color:#7a7a74;">English</strong> — ${bodyEn}</p>
       </td></tr>
 
       <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
@@ -595,7 +600,7 @@ async function handleSendEmploymentLetter(request, url) {
     body: JSON.stringify({
       from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
       to: planner_email,
-      subject: `Journey Junction — ${docName}へのご署名のお願い`,
+      subject: `Journey Junction — ${docName}${isGuarantee ? 'のご確認およびご署名のお願い' : 'へのご署名のお願い'}`,
       html: emailHtml
     })
   })
