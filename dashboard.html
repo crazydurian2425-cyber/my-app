@@ -10094,6 +10094,43 @@ let _lastActivityAt = Date.now()
 ;['mousemove','mousedown','keydown','scroll','touchstart','click','wheel'].forEach(ev =>
   window.addEventListener(ev, () => { _lastActivityAt = Date.now() }, { passive: true, capture: true })
 )
+// ── Per-planner Google API usage counter (powers /superapi999) ───────────
+// Counts each Google call the browser actually FIRES (cache hits don't fire,
+// so this tracks real billable usage), accumulates in memory, and flushes to
+// api_usage_daily via the jj_bump_api_usage RPC. 100% fire-and-forget:
+// _countApi() is a single in-memory +1 (nanoseconds, no DOM, no network), and
+// the flush is async + try/catch-wrapped, so this can never lag, freeze, or
+// affect any app logic. Flush rides a 60s cadence + a page-hide backstop, and
+// only writes when there's something to report — an idle planner writes 0.
+const _apiCounts = {}
+function _countApi(kind){
+  try { _apiCounts[kind] = (_apiCounts[kind] || 0) + 1 } catch (e) {}
+}
+let _apiFlushInFlight = false
+async function _flushApiCounts(){
+  try {
+    if (_apiFlushInFlight) return
+    const keys = Object.keys(_apiCounts)
+    if (!keys.length) return
+    if (typeof planner === 'undefined' || !planner?.id) return
+    _apiFlushInFlight = true
+    // Snapshot + clear so new calls accumulate fresh during the round-trip.
+    const payload = {}
+    keys.forEach(k => { payload[k] = _apiCounts[k]; delete _apiCounts[k] })
+    const { error } = await sb.rpc('jj_bump_api_usage', { p_counts: payload })
+    // On failure, fold the counts back so nothing is lost (RPC missing → the
+    // SQL hasn't been run yet; app is entirely unaffected either way).
+    if (error) keys.forEach(k => { _apiCounts[k] = (_apiCounts[k] || 0) + payload[k] })
+  } catch (e) { /* analytics must never affect the app */ }
+  finally { _apiFlushInFlight = false }
+}
+try { setInterval(() => { _flushApiCounts() }, 60000) } catch (e) {}
+try {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') _flushApiCounts()
+  })
+} catch (e) {}
+
 function _startPresenceHeartbeat(plannerId){
   if (!plannerId || window._presenceTimer) return
   // Stamp last_login_at ONCE per session entry — a fresh form login OR a resumed
@@ -15381,6 +15418,7 @@ async function _lookupStationGeneric(rawLoc, sideHint) {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
     const bias = _airporty ? null : buildDestBias(city)
     if (bias) body.locationBias = bias
+    _countApi('places_search')
     const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
       method: 'POST',
       headers: {
@@ -15486,6 +15524,7 @@ async function _lookupStationAndAttach(transportSlot) {
       }
       const bias = _airporty ? null : buildDestBias(city)
       if (bias) body.locationBias = bias
+      _countApi('places_search')
       const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
         headers: {
@@ -15602,6 +15641,7 @@ async function _initArrivalStationLookup() {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
     const bias = _airporty ? null : buildDestBias(city)
     if (bias) body.locationBias = bias
+    _countApi('places_search')
     const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
       method: 'POST',
       headers: {
@@ -16832,6 +16872,7 @@ async function _enrichHotelSlotFromPlaceId(slot, placeId) {
     let _fetchP = window._enrichFetches.get(placeId)
     if (!_fetchP) {
       _fetchP = (async () => {
+        _countApi('places_details')
         const resp = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
           headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields }
         })
@@ -17671,6 +17712,7 @@ async function fetchPlacesPredictions(slot, query) {
   const bias = buildDestBias(window._currentDestination)
   if (bias) body.locationBias = bias
   try {
+    _countApi('places_autocomplete')
     const resp = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY },
@@ -17773,6 +17815,7 @@ async function selectPlaceForSlot(slot, placeId) {
   const sessionToken = slot.dataset.placesSessionToken || ''
   try {
     const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?sessionToken=${encodeURIComponent(sessionToken)}`
+    _countApi('places_details')
     const resp = await fetch(url, {
       headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields }
     })
@@ -18161,6 +18204,7 @@ function _hydrateChipPhoto(imgEl, photoName, maxWidthPx) {
       const store = await caches.open('jj_photos_v1')
       let resp = await store.match(directUrl)
       if (!resp) {
+        _countApi('places_photo')
         resp = await fetch(directUrl)
         if (!resp.ok) throw new Error('photo ' + resp.status)
         try { await store.put(directUrl, resp.clone()) } catch (e) {}
@@ -19347,6 +19391,7 @@ async function _fetchDriveAnchor(fromId, toId, dayBucket) {
     }
   } catch (e) {}
   try {
+    _countApi('routes')
     const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
       headers: {
@@ -19494,6 +19539,7 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
       'routes.distanceMeters',
       'routes.polyline.encodedPolyline',
     ].join(',')
+    _countApi('routes')
     const resp = await fetch('https://routes.googleapis.com/directions/v2:computeRoutes', {
       method: 'POST',
       headers: {
@@ -20076,6 +20122,7 @@ async function _resolvePlaceIdByName(name, biasCity) {
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
     const bias = (typeof buildDestBias === 'function') ? buildDestBias(biasCity) : null
     if (bias) body.locationBias = bias
+    _countApi('places_search')
     const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
       method: 'POST',
       headers: {
@@ -20714,6 +20761,7 @@ function loadMapsJs() {
   if (_mapsJsPromise) return _mapsJsPromise
   _mapsJsPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script')
+    _countApi('maps_js')
     s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_PLACES_API_KEY)}&libraries=geometry&v=weekly`
     s.async = true
     s.defer = true
@@ -20944,6 +20992,7 @@ async function _fetchNearbyAlternatives(centerLat, centerLng, includedType) {
     rankPreference: 'POPULARITY',
   }
   try {
+    _countApi('places_nearby')
     const resp = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY, 'X-Goog-FieldMask': fields },

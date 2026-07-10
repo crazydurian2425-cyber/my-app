@@ -9,10 +9,10 @@
 // so only share this password with people you'd trust at admin level.
 // ─────────────────────────────────────────────────────────────
 
-const PROTECTED_PATHS = ['/superadmin999.html', '/supercs999.html', '/supermentor999.html']
+const PROTECTED_PATHS = ['/superadmin999.html', '/supercs999.html', '/supermentor999.html', '/superapi999.html']
 
 const CREDENTIALS = [
-  { user: 'admin', pass: '168168', allow: ['/superadmin999.html', '/supercs999.html', '/supermentor999.html'] },
+  { user: 'admin', pass: '168168', allow: ['/superadmin999.html', '/supercs999.html', '/supermentor999.html', '/superapi999.html'] },
 ]
 
 // Resend API key — loaded from the Worker secret `env.RESEND_API_KEY`
@@ -323,6 +323,8 @@ const PROXY_ALLOWED_TABLES = new Set([
   'planner_problems','planner_problem_steps','planner_remarks',
   // Best-effort cleanup targets (may not exist; wrapped in try/catch client-side)
   'wallet_ledger','chat_messages','typing_drafts',
+  // Per-planner API usage console (/superapi999.html — docs/schema/api-usage-tracking.sql)
+  'api_usage_daily',
 ])
 const PROXY_ALLOWED_RPCS    = new Set(['postpone_all_travelers'])
 const PROXY_ALLOWED_BUCKETS = new Set(['chat-media'])
