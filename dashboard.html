@@ -20726,6 +20726,52 @@ function _enforceArrivalFloors(dayContainer) {
   if (bumped) _sortSlotsInPlace(dayContainer)
 }
 
+// When a day's FIRST real stop sits AT the hotel / arrival point, the traveler
+// is ALREADY there — no travel is needed — so it should begin right at the
+// day-start, not float at some stale saved time (the "checkout shows 9:20 when
+// the day starts 8:30" report). The tell is simple: if the first stop were
+// somewhere ELSE, the gap-fill would have inserted a transport leg as the first
+// non-locked slot, and that leg would carry the timing. So we ONLY seed when the
+// first non-locked slot is a venue (not a transport). Pull a LATE first stop UP
+// to the day-start only; never push an already-early stop later. The normal
+// chain + arrival-floor passes then cascade the rest of the day from here.
+function _seedFirstStopFromDayStart(dayContainer) {
+  if (!dayContainer) return
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  // Walk from the top: collect the day-start anchor, stop at the first non-locked slot.
+  let anchor = null, first = null
+  for (const s of slots) {
+    if (s.classList.contains('is-locked')) {
+      if (!first && (s.dataset.anchorType === 'morning' || s.dataset.anchorType === 'arrival')) anchor = s
+      continue
+    }
+    first = s
+    break
+  }
+  if (!anchor || !first) return
+  // First real stop is a transport → it's a leg to somewhere else; let the leg
+  // time the day (this is the "not at the hotel" branch of the planner's rule).
+  if (first.classList.contains('slot-type-transport')) return
+  // Day-start "ready to move" time: morning → wake + 5-min get-moving buffer
+  // (8:30 wake → 8:35 first stop); arrival day → arrival + 10-min disembark.
+  let startMin = null
+  if (anchor.dataset.anchorType === 'morning') {
+    const m = String(_wakeTimeForTiming(window._currentDailyTiming)).match(/^(\d{1,2}):(\d{2})$/)
+    if (m) startMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + 5
+  } else if (anchor.dataset.anchorType === 'arrival') {
+    const at = anchor.dataset.arrivalTime || window._currentArrivalTime || '14:00'
+    const m = String(at).match(/^(\d{1,2}):(\d{2})$/)
+    if (m) startMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + 10
+  }
+  if (startMin == null) return
+  const target = _snapUp30(minsToHHMM(Math.min(startMin, 23 * 60 + 45)))
+  const cur = parseSlotTime(first.querySelector('.slot-time-input')?.value || '')
+  const tgt = parseSlotTime(target)
+  if (tgt != null && (cur == null || cur > tgt)) {   // only pull a late/blank first stop up
+    _applySlotTime(first, target)
+  }
+}
+
 function _enforceTimeChain(dayContainer) {
   if (!dayContainer) return
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
@@ -20756,8 +20802,18 @@ function _enforceTimeChain(dayContainer) {
       aReleaseMin = aStart + _venueEffectiveDur(a)
     }
     if (aReleaseMin == null) continue
-    // Snap b's expected start to the 15-min grid.
-    const expectedB = _snapUp30(minsToHHMM(Math.min(aReleaseMin, 23 * 60 + 45)))
+    // Expected start for b. A TRANSPORT leg must leave at EXACTLY the departure
+    // _suggestTransportStart computes (15-min grid + type floors) — the same
+    // value refreshTransportSlot writes and the leg card shows. If the chain
+    // instead snapped it to the 5-min grid, the leg's stored time (e.g. 08:50)
+    // would disagree with its card label + the day-end summary (which read
+    // depart+duration → 09:00 → 09:11 on the card but 08:50 → 09:01 in the
+    // summary). Timing transports the one canonical way keeps card, stored
+    // time, and summary identical. Every non-transport slot keeps the 5-min grid.
+    const bIsTransport = b.classList.contains('slot-type-transport')
+    const expectedB = (bIsTransport && !a.classList.contains('slot-type-transport'))
+      ? _suggestTransportStart(a, b)
+      : _snapUp30(minsToHHMM(Math.min(aReleaseMin, 23 * 60 + 45)))
     const curB = b.querySelector('.slot-time-input')?.value || ''
     if (curB !== expectedB) {
       _applySlotTime(b, expectedB)
@@ -21434,9 +21490,11 @@ function _computeActualDayEnd(dayContainer, isLastDay) {
   if (startMin == null) return null
   if (last.classList.contains('slot-type-transport')) {
     // Transport already includes the journey time — its arrival IS the end.
-    const cells = last.querySelectorAll('.transport-grid .tg-value')
-    const m = (cells[1]?.textContent || '').match(/(\d+)\s*min/i)
-    return startMin + (m ? parseInt(m[1], 10) : 0)
+    // Use the shared arrival calc (grid cell, else persisted routeMins / route
+    // snapshot) so the day-end matches the leg card's arrival even before the
+    // async route paint lands — and never diverges from it.
+    const arr = _transportArrivalMin(last)
+    return arr != null ? arr : startMin
   }
   // Venue: end = start + stay + 20-min back-to-hotel buffer. On the departure
   // day there is no hotel to return to (the traveler heads to the gateway), so
@@ -22102,6 +22160,10 @@ function refreshDayDistances(dayContainer) {
     el.innerHTML = `<span class="sd-icon">${desc.icon}</span><span class="sd-text">${escapeHtml(desc.label)}</span>`
     dayContainer.insertBefore(el, bSlot)
   }
+  // Anchor the day's first stop to the day-start when it sits AT the hotel
+  // (no transport leg precedes it) — runs BEFORE the chain so the rest of the
+  // day cascades from that start rather than from a stale first-stop time.
+  _seedFirstStopFromDayStart(dayContainer)
   // Final brute-force chain enforcement — catches any case where the
   // per-transport auto-sync didn't fully cascade (stale DOM order, Routes
   // API races, mode swaps with cached results).
