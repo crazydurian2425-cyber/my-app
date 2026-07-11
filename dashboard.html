@@ -23886,7 +23886,13 @@ async function submitPlan() {
     if (submitLabel) submitLabel.textContent = t('dash.btn.submitPlan','Submit plan')
     return
   }
-  await sb.from('itinerary_items').delete().eq('plan_id', currentPlanId)
+  // PHASE 2: INSERT-FIRST. Capture the existing rows but do NOT delete them yet —
+  // we insert the new set + save images, and only THEN remove the old rows. If the
+  // network drops (or any step fails) between here and that cleanup, the plan keeps
+  // its original rows instead of being left empty. Mirrors the autosave path, which
+  // already never leaves a plan empty on a mid-write failure.
+  const { data: _oldItemRows } = await sb.from('itinerary_items').select('id').eq('plan_id', currentPlanId)
+  const _oldItemIds = (_oldItemRows || []).map(r => r.id)
   if (body.items?.length) {
     const rows = body.items.map((item, idx) => ({ plan_id: currentPlanId, ...item, sort_order: idx }))
     let { data: insertedItems, error: itemErr } = await sb.from('itinerary_items').insert(rows).select('id, sort_order')
@@ -23959,6 +23965,16 @@ async function submitPlan() {
       // don't line up with insertedItems. Surface so we can see it.
       showToast(`Uploaded ${uploadOk} image(s) but no rows matched. Check console.`)
       console.warn('image-row mismatch', { uploadedBySortOrder, existingUrlsBySortOrder, insertedItems })
+    }
+    // PHASE 2: the new rows + their images are safely persisted — NOW remove the
+    // OLD rows (and their images) by the ids captured BEFORE the insert, so we
+    // never touch the just-inserted set. A failure here at worst leaves stale rows
+    // (cleaned on the next save) — it can never leave the plan empty. If the insert
+    // above failed, we already returned without reaching here, so the old rows stay.
+    if (_oldItemIds.length) {
+      try { await sb.from('item_images').delete().in('item_id', _oldItemIds) } catch (e) { console.warn('[submit] old item_images cleanup failed', e) }
+      const { error: _oldDelErr } = await sb.from('itinerary_items').delete().in('id', _oldItemIds)
+      if (_oldDelErr) console.warn('[submit] old itinerary cleanup failed (non-fatal)', _oldDelErr)
     }
   }
   // Advance next plan — ONLY on a forward submission. If we just resubmitted a revision,
