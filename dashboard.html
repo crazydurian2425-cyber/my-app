@@ -14076,6 +14076,13 @@ async function openItineraryForm(planId) {
   // closed) before rebuilding.
   dayCount = _durDays
   maxDayCount = dayCount   // Cap — planner cannot exceed the traveler's duration
+  // PHASE-1 SAFETY: from here until slots are re-filled below, the day-form DOM is
+  // blanked/partial. Mark it NOT ready so any autosave firing in this window (or
+  // during the item-fetch await further down) SKIPS the itinerary_items sync — a
+  // partial-scan delete is what gutted planners' Day 1. Placed AFTER all early
+  // returns so a non-opening path (plan not found / reassigned / read-only) never
+  // leaves the flag stuck false. Re-armed to true once fillItineraryItems completes.
+  window._itinFormReady = false
   document.querySelectorAll('#modal-submit .day-section').forEach(s => s.remove())
   document.querySelectorAll('#days-container .wiz-page').forEach(p => p.remove())
   const container = document.getElementById('days-container')
@@ -14147,6 +14154,11 @@ async function openItineraryForm(planId) {
       if (typeof _initDepartureStationLookup === 'function') _initDepartureStationLookup()
     }
   }
+  // PHASE-1 SAFETY: the day-form slots are now painted (fillItineraryItems ran,
+  // or the plan was genuinely empty). Re-arm saves — from here the DOM represents
+  // the whole plan, so _persistDraft may sync itinerary_items again. Runs for every
+  // status/branch above, so a plan the planner ADDS stops to still autosaves.
+  window._itinFormReady = true
 
   // Submit button state — target the actual submit button (.wiz-submit)
   // explicitly. Before the wizard refactor this was `#modal-submit .btn-main`
@@ -24168,18 +24180,28 @@ async function _persistDraft(planId) {
   jjlog('[autosave] plan update result', { planId, planErr, written: planErr ? null : 'ok', itemsCount: items.length })
   if (planErr) { console.warn('plan update failed', planErr); return false }
   // ── Data-loss guard (HARD RULE) ──
-  // An autosave must NEVER issue a plan-wide delete. An empty `items` scan is
-  // almost always a TRANSIENT empty DOM — the openItineraryForm reopen/reset
-  // rebuild window (container.innerHTML='' before slots repopulate), or a queued
-  // save firing mid-render — NOT the planner deliberately clearing the plan.
-  // Silently deleting here is exactly what erased planners' in-progress work.
-  // The plan-level fields (title/tips/hotel) were already persisted above; we
-  // simply skip the itinerary_items sync and let a later save with real slots
-  // handle them. A genuine "clear the whole plan" is a deliberate action that
-  // goes through the Reset button (resetCurrentPlanToFresh → _wipePlanToFresh),
-  // never a silent debounced autosave. (This replaced a guard that checked a
-  // class 'is-open' the modal never has — the real class is 'open' — so it was
-  // defeated and the delete below ran during the rebuild window.)
+  // An autosave must NEVER sync itinerary_items from an INCOMPLETE DOM scan —
+  // because the sync below deletes every DB row not in the scan, so a partial
+  // scan permanently erases the missing rows. Bail (skip the items sync, leave
+  // the DB untouched) on any of three incomplete-scan conditions. The plan-level
+  // fields (title/tips/hotel) were already saved above; the items get persisted
+  // by the next save that runs against a complete DOM. A genuine "clear the whole
+  // plan" is a deliberate action via the Reset button, never a silent autosave.
+  //
+  //  (a) FORM STILL REBUILDING — openItineraryForm blanks the DOM then re-fills
+  //      after an await; a save in that window scans a partial/empty form. This
+  //      is the confirmed cause of planners' Day-1 gutting on reopen/navigation.
+  if (window._itinFormReady === false) {
+    console.warn('[autosave] form not fully rendered yet — skipping itinerary sync (no delete)')
+    return true
+  }
+  //  (b) JAPANESE IME MID-COMPOSITION — during kana→kanji conversion the title
+  //      input reads empty, dropping that slot from the scan. Wait for the commit.
+  if (window._imeComposing) {
+    console.warn('[autosave] Japanese IME composing — skipping itinerary sync until committed')
+    return true
+  }
+  //  (c) EMPTY SCAN — no titled slots at all (transient blank DOM).
   if (!items.length) {
     console.warn('[autosave] empty items scan — skipping itinerary sync (autosave never deletes a whole plan)')
     return true
@@ -24328,6 +24350,26 @@ function setAutoSaveStatus(state) {
   }
   else if (state === 'idle') { el.textContent = ''; el.style.color = '' }
 }
+
+// ── PHASE-1 SAFETY: form-ready + Japanese-IME guards ────────────────────────
+// _itinFormReady: false ONLY during the openItineraryForm rebuild window (set
+// there). Default true so normal saves work when no rebuild is in progress.
+// _imeComposing: true while a Japanese kana→kanji conversion is mid-flight — the
+// text field reads EMPTY during that instant, which would drop the slot (and
+// maybe its whole day) from the scan. Both are checked in _persistDraft BEFORE it
+// touches itinerary_items, so an incomplete scan can never delete saved rows.
+if (window._itinFormReady === undefined) window._itinFormReady = true
+if (window._imeComposing === undefined) window._imeComposing = false
+;(function _installImeGuard(){
+  try {
+    document.addEventListener('compositionstart', () => { window._imeComposing = true }, true)
+    document.addEventListener('compositionend', () => {
+      window._imeComposing = false
+      // A save was skipped mid-composition — persist the now-committed text.
+      if (typeof autoSaveDraft === 'function' && typeof currentPlanId !== 'undefined' && currentPlanId) autoSaveDraft()
+    }, true)
+  } catch (e) { /* non-fatal — the form-ready + empty guards still protect */ }
+})();
 
 async function silentSaveDraft(scheduledPlanId) {
   // Use the planId captured when autoSaveDraft was SCHEDULED, not when this
