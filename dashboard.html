@@ -23870,6 +23870,22 @@ async function submitPlan() {
   // Save items — surface any error to the user instead of silently failing.
   // Old item_images rows are wiped via cascade on plan_id (or via the items
   // delete cascade). We re-insert from the per-slot URL map collected above.
+  //
+  // PHASE-1 SAFETY (mirrors autosave): submit's delete below is a PLAN-WIDE wipe.
+  // Never run it on an incomplete/empty scan — if the form is mid-rebuild, a
+  // Japanese IME conversion is mid-flight, or the scan produced no items, the
+  // planner's rows would be deleted and replaced with a partial/empty set. Abort
+  // the item write, roll the status back off 'submitted', and let them retry — the
+  // on-screen items are untouched, so nothing is lost. (Full submit atomicity —
+  // insert-first / one transaction — is the Phase 2 change, done with a test pass.)
+  if (window._itinFormReady === false || window._imeComposing || !body.items?.length) {
+    console.warn('[submit] incomplete item scan — aborting item write to protect the plan', { ready: window._itinFormReady, ime: window._imeComposing, n: body.items?.length })
+    if (_prevStatus) await sb.from('plans').update({ status: _prevStatus }).eq('id', currentPlanId)
+    showToast(dt('Could not read your itinerary fully — please wait a moment and submit again.','旅程を完全に読み取れませんでした。少し待ってからもう一度提出してください。'))
+    if (submitBtn) submitBtn.disabled = false
+    if (submitLabel) submitLabel.textContent = t('dash.btn.submitPlan','Submit plan')
+    return
+  }
   await sb.from('itinerary_items').delete().eq('plan_id', currentPlanId)
   if (body.items?.length) {
     const rows = body.items.map((item, idx) => ({ plan_id: currentPlanId, ...item, sort_order: idx }))
