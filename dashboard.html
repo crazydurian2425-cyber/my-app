@@ -20864,6 +20864,18 @@ function _applySlotTime(slot, hhmm) {
   if (slot._placeData && typeof renderLinkedChip === 'function') {
     renderLinkedChip(slot)
   }
+  // A transport leg shows a "depart → arrive" range in its card header. Keep it
+  // in lockstep with the (hidden) departure we just set, so a later re-time of
+  // the leg can never leave the card showing one time while the stored value —
+  // and the day-end summary that reads it — say another. Arrival = depart +
+  // the leg's own travel duration (grid cell / routeMins / snapshot).
+  if (slot.classList.contains('slot-type-transport')) {
+    const range = slot.querySelector('.transport-time-range')
+    if (range && range.textContent.includes('→') && typeof _transportArrivalMin === 'function') {
+      const arr = _transportArrivalMin(slot)
+      if (arr != null) range.textContent = `${formatTimeDisplay(hhmm)} → ${formatTimeDisplay(minsToHHMM(arr))}`
+    }
+  }
 }
 
 // In-place sort of slots by time-input value — same logic as resortSlots
@@ -22206,6 +22218,17 @@ function refreshDayDistances(dayContainer) {
   // transport that drops the traveler there. Runs after the transport pass
   // above (which can re-time a departure) so nothing downstream un-syncs it.
   _enforceArrivalFloors(dayContainer)
+  // FINAL authoritative cascade. Every earlier pass fixes ONE direction
+  // (transport-from-previous-venue, OR venue-from-previous-transport) and they
+  // run in sequence, so a late pass — the transport re-render just above, or the
+  // floor guard — can change a stop AFTER the leg below it was already computed
+  // from it, leaving that leg stale by one edit (meal 10:20 + 30 min → taxi
+  // shows 10:55 instead of 10:50). _enforceTimeChain does BOTH directions in a
+  // single left-to-right sweep, each stop timed from its already-finalised
+  // predecessor, so running it LAST pins the whole day to one consistent chain
+  // with nothing stale. _applySlotTime keeps each transport card's depart→arrive
+  // label in step. Idempotent — a settled day is left byte-for-byte unchanged.
+  _enforceTimeChain(dayContainer)
   // Re-evaluate the hotel time-window warning on every hotel slot. The
   // bug it fixes: planner picks 11:30 AM on a Hotel check-out (after
   // 11:00 deadline) → _selectTimeDDImpl calls _refreshHotelTimeWarning
