@@ -20743,30 +20743,31 @@ function _enforceArrivalFloors(dayContainer) {
 function _seedFirstStopFromDayStart(dayContainer) {
   if (!dayContainer) return
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
-  // Walk from the top: collect the day-start anchor, stop at the first non-locked slot.
-  let anchor = null, first = null
-  for (const s of slots) {
-    if (s.classList.contains('is-locked')) {
-      if (!first && (s.dataset.anchorType === 'morning' || s.dataset.anchorType === 'arrival')) anchor = s
-      continue
-    }
-    first = s
-    break
-  }
-  if (!anchor || !first) return
+  // First real (non-locked) stop. NOTE: this runs mid-refreshDayDistances, which
+  // STRIPS the locked bookends near the top (they're re-rendered at the end), so
+  // the day-start anchor is NOT in the DOM here — we must derive the start time
+  // from the day number + globals rather than reading the (absent) anchor. That
+  // was the original bug: keying off the anchor made this a silent no-op.
+  const first = slots.find(s => !s.classList.contains('is-locked'))
+  if (!first) return
   // First real stop is a transport → it's a leg to somewhere else; let the leg
   // time the day (this is the "not at the hotel" branch of the planner's rule).
   if (first.classList.contains('slot-type-transport')) return
-  // Day-start "ready to move" time: morning → wake + 5-min get-moving buffer
-  // (8:30 wake → 8:35 first stop); arrival day → arrival + 10-min disembark.
+  // Day-start "ready to move" time, mirroring renderDayBookends' anchor logic:
+  //   Day 1 WITH an arrival method → arrival anchor → arrival + 10-min disembark.
+  //   Day 1 without a method       → no top anchor   → don't seed.
+  //   Day 2+                       → morning anchor  → wake + 5-min get-moving.
+  const m = dayContainer.id.match(/slots-day-(\d+)/)
+  const dayNum = m ? parseInt(m[1], 10) : 1
   let startMin = null
-  if (anchor.dataset.anchorType === 'morning') {
-    const m = String(_wakeTimeForTiming(window._currentDailyTiming)).match(/^(\d{1,2}):(\d{2})$/)
-    if (m) startMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + 5
-  } else if (anchor.dataset.anchorType === 'arrival') {
-    const at = anchor.dataset.arrivalTime || window._currentArrivalTime || '14:00'
-    const m = String(at).match(/^(\d{1,2}):(\d{2})$/)
-    if (m) startMin = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + 10
+  if (dayNum === 1) {
+    if (!window._currentArrivalMethod) return
+    const mm = String(window._currentArrivalTime || '14:00').match(/^(\d{1,2}):(\d{2})$/)
+    if (mm) startMin = parseInt(mm[1], 10) * 60 + parseInt(mm[2], 10) + 10
+  } else {
+    const wk = (typeof _wakeTimeForTiming === 'function') ? _wakeTimeForTiming(window._currentDailyTiming) : '08:30'
+    const mm = String(wk).match(/^(\d{1,2}):(\d{2})$/)
+    if (mm) startMin = parseInt(mm[1], 10) * 60 + parseInt(mm[2], 10) + 5
   }
   if (startMin == null) return
   const target = _snapUp30(minsToHHMM(Math.min(startMin, 23 * 60 + 45)))
