@@ -13783,6 +13783,9 @@ async function openItineraryForm(planId) {
   _autoSaveQueued = false
   _autoSaveQueuedPid = null
   window._itinHadStops = false
+  // PHASE 2: fresh "explicit removals" set for this plan open. A stop is only ever
+  // deleted from the DB if the planner clicks × (removeSlot adds its row id here).
+  window._pendingItemDeletes = new Set()
   // Reset any stale auto-save status from a previous plan
   setAutoSaveStatus('idle')
   // Each plan starts with a clean image-warning slate — first submit attempt
@@ -15123,6 +15126,11 @@ function fillItineraryItems(items) {
       const slot = [...container.querySelectorAll(':scope > .activity-slot:not(.is-locked)')]
         .find(s => !_beforeAddNonLocked.has(s))
       if (!slot) return
+      // PHASE 2 (keyed diff): stamp this slot with its DB row id so saves UPDATE it
+      // in place instead of delete-and-reinsert. A stop carrying an id is never
+      // deleted unless the planner explicitly removes it (×). The element keeps its
+      // id even if its title reads blank for a moment — so a reflow can't lose it.
+      if (it && it.id) slot.dataset.rowId = it.id
       // Time
       const timeInput = slot.querySelector('.slot-time-input')
       if (timeInput) timeInput.value = it.time || '09:00'
@@ -20626,40 +20634,101 @@ function _addMinutes(hhmm, mins) {
 // nearest available time" mental model). Catches edge cases where the
 // per-transport auto-sync didn't fire cleanly: stale DOM order, Routes
 // API races, mode swaps with cached results, etc.
+// Compute a transport leg's ARRIVAL time (minutes since midnight) = its
+// departure + the leg's travel duration, reading the duration from the most
+// authoritative source available, in priority order:
+//   1. the visible grid cell ("N min") — freshest once Routes has painted it;
+//   2. a planner's manual-minutes override;
+//   3. dataset.routeMins — the persisted Google / override travel time;
+//   4. the plan's route_snapshot (rehydrated SYNCHRONOUSLY at load, so it's
+//      available even before the async route-apply paints the grid);
+//   5. a haversine heuristic (needs BOTH endpoints linked).
+// Returns null only when NONE of these yield a duration, in which case callers
+// skip the pair rather than clobbering the next stop with the DEPARTURE time.
+// Module-level so both _enforceTimeChain and _enforceArrivalFloors share ONE
+// arrival calc (no duplicated logic to drift out of sync).
+function _transportArrivalMin(slot) {
+  const dep = parseSlotTime(slot.querySelector('.slot-time-input')?.value || '')
+  if (dep == null) return null
+  // Routes-API patched cells: [distance, duration, cost]. Index 1 = duration.
+  const cells = slot.querySelectorAll('.transport-grid .tg-value')
+  const txt = cells[1]?.textContent || ''
+  const m = txt.match(/(\d+)\s*min/i)
+  if (m) return dep + parseInt(m[1], 10)
+  // Planner override: the grid cell is blanked for absurd-distance (tooFar)
+  // legs, but a manual duration still lives on the dataset — honor it so the
+  // arrival chain propagates instead of stalling.
+  if (slot.dataset.manualMins === '1') {
+    const rm = parseInt(slot.dataset.routeMins, 10)
+    if (Number.isFinite(rm)) return dep + rm
+  }
+  // Persisted Google travel time. On plan-open the route apply — which paints
+  // the grid cell read above and sets dataset.routeMins — runs in an async IIFE
+  // that resolves AFTER the first chain pass, so the cell reads empty there and
+  // the next stop was left stranded at the transport's DEPARTURE time (start
+  // BEFORE arrival — the reported bug). Both of these sources are populated
+  // synchronously when the slot is built (routeSnap at load; routeMins once a
+  // fetch/apply has run), so reading them lets the chain compute the real
+  // arrival on THAT pass instead of depending on the async paint winning the
+  // race. The grid cell still takes priority above, so steady state is
+  // unchanged — this only adds coverage when the cell isn't parseable yet.
+  {
+    const rm = parseInt(slot.dataset.routeMins, 10)
+    if (Number.isFinite(rm) && rm >= 0) return dep + rm
+    const snap = (typeof _readSlotRouteSnap === 'function') ? _readSlotRouteSnap(slot) : null
+    const sm = (snap && snap.d) ? Number(snap.d.durationMin) : NaN
+    if (Number.isFinite(sm) && sm >= 0) return dep + sm
+  }
+  // Fallback heuristic — needs BOTH endpoints linked. If we can't compute
+  // a real travel estimate, return null so the chain enforcement skips
+  // this pair (rather than clobbering `next` with depart-time).
+  const { prev, next } = _findVenueNeighbors(slot)
+  if (!prev || !next) return null
+  const a = getSlotLatLng(prev), b = getSlotLatLng(next)
+  if (!a || !b) return null
+  const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
+  if (!Number.isFinite(km)) return null
+  const mode = slot.dataset.transportMode || 'taxi'
+  const est = _transportEstimates(mode, km)
+  if (!est || est.mins == null) return null
+  return dep + est.mins
+}
+
+// FINAL arrival-floor guard. Runs as the LAST time-mutation of
+// refreshDayDistances — after the closing refreshTransportSlot pass has settled
+// every transport's departure + arrival (that pass recomputes the departure via
+// _suggestTransportStart's 15-min rounding, which can leave the next stop timed
+// off a STALE arrival). For each venue sitting directly after a transport, make
+// sure it starts AT OR AFTER that transport's arrival — pushing a too-early stop
+// FORWARD only. It never pulls a stop earlier and never touches the transport,
+// so a planner's deliberate later gap is preserved while the impossible
+// "activity starts before you arrive" state can't survive a refresh. Idempotent:
+// a stop already at/after arrival is left byte-for-byte unchanged.
+function _enforceArrivalFloors(dayContainer) {
+  if (!dayContainer) return
+  const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
+  let bumped = false
+  for (let i = 1; i < slots.length; i++) {
+    const prev = slots[i - 1], b = slots[i]
+    if (!prev.classList.contains('slot-type-transport')) continue  // only transport → venue
+    if (b.classList.contains('slot-type-transport')) continue
+    if (b.classList.contains('is-locked')) continue                // never move locked bookends
+    const arr = _transportArrivalMin(prev)
+    if (arr == null) continue                                      // no confident arrival → leave as-is
+    const floor = _snapUp30(minsToHHMM(Math.min(arr, 23 * 60 + 45)))
+    const cur = parseSlotTime(b.querySelector('.slot-time-input')?.value || '')
+    const flo = parseSlotTime(floor)
+    if (cur != null && flo != null && cur < flo) {                 // ONLY when it starts before arrival
+      _applySlotTime(b, floor)
+      bumped = true
+    }
+  }
+  if (bumped) _sortSlotsInPlace(dayContainer)
+}
+
 function _enforceTimeChain(dayContainer) {
   if (!dayContainer) return
   const slots = [...dayContainer.querySelectorAll(':scope > .activity-slot')]
-  // Read transport heuristic durations from the visible grid cell so this
-  // works whether the Routes API has resolved or not.
-  const _transportArrivalMin = (slot) => {
-    const dep = parseSlotTime(slot.querySelector('.slot-time-input')?.value || '')
-    if (dep == null) return null
-    // Routes-API patched cells: [distance, duration, cost]. Index 1 = duration.
-    const cells = slot.querySelectorAll('.transport-grid .tg-value')
-    const txt = cells[1]?.textContent || ''
-    const m = txt.match(/(\d+)\s*min/i)
-    if (m) return dep + parseInt(m[1], 10)
-    // Planner override: the grid cell is blanked for absurd-distance (tooFar)
-    // legs, but a manual duration still lives on the dataset — honor it so the
-    // arrival chain propagates instead of stalling.
-    if (slot.dataset.manualMins === '1') {
-      const rm = parseInt(slot.dataset.routeMins, 10)
-      if (Number.isFinite(rm)) return dep + rm
-    }
-    // Fallback heuristic — needs BOTH endpoints linked. If we can't compute
-    // a real travel estimate, return null so the chain enforcement skips
-    // this pair (rather than clobbering `next` with depart-time).
-    const { prev, next } = _findVenueNeighbors(slot)
-    if (!prev || !next) return null
-    const a = getSlotLatLng(prev), b = getSlotLatLng(next)
-    if (!a || !b) return null
-    const km = haversineKm(a.lat, a.lng, b.lat, b.lng)
-    if (!Number.isFinite(km)) return null
-    const mode = slot.dataset.transportMode || 'taxi'
-    const est = _transportEstimates(mode, km)
-    if (!est || est.mins == null) return null
-    return dep + est.mins
-  }
   const _venueEffectiveDur = (slot) => {
     const type = slot.querySelector('.slot-type-select')?.value || 'activity'
     let stay = parseInt(slot.querySelector('.slot-duration-input')?.value || '0', 10) || 0
@@ -22064,6 +22133,11 @@ function refreshDayDistances(dayContainer) {
   // name + coords (toName, distance, duration, cost all populate).
   dayContainer.querySelectorAll(':scope > .activity-slot.slot-type-transport')
     .forEach(refreshTransportSlot)
+  // Authoritative last word on arrival timing: now that every transport's
+  // departure + arrival is settled, guarantee no stop is timed BEFORE the
+  // transport that drops the traveler there. Runs after the transport pass
+  // above (which can re-time a departure) so nothing downstream un-syncs it.
+  _enforceArrivalFloors(dayContainer)
   // Re-evaluate the hotel time-window warning on every hotel slot. The
   // bug it fixes: planner picks 11:30 AM on a Hotel check-out (after
   // 11:00 deadline) → _selectTimeDDImpl calls _refreshHotelTimeWarning
@@ -23264,6 +23338,10 @@ function addSlot(dayNum, seed = null, opts = {}) {
 
 function removeSlot(id) {
   const el = document.getElementById(id);
+  // PHASE 2 (keyed diff): if this slot was loaded from the DB (has a row id),
+  // record an EXPLICIT deletion — the ONLY way a stop is removed from the database.
+  // A save never infers a deletion from "missing from the scan".
+  if (el?.dataset?.rowId) { (window._pendingItemDeletes || (window._pendingItemDeletes = new Set())).add(el.dataset.rowId) }
   const dayNum = el?.closest('.day-section')?.id?.replace('day-','')
   // Capture the slots container BEFORE removing the element so we can refresh
   // distance indicators on the now-shrunk chain.
@@ -24119,7 +24197,6 @@ async function _persistDraft(planId) {
     if (typeof _enforceHotelBookendUnicity === 'function') _enforceHotelBookendUnicity(c)
   })
   const items = []
-  const urlsByOrder = {}
   document.querySelectorAll('.activity-slot').forEach(slot => {
     const slotsContainer = slot.closest('[id^="slots-day-"]')
     let dayNum = slotsContainer ? parseInt(slotsContainer.id.replace('slots-day-', '')) : NaN
@@ -24153,6 +24230,8 @@ async function _persistDraft(planId) {
         if (Number.isFinite(_costNum)) _st.cost = _costNum; else delete _st.cost
         notes = _serializeTips(_st)
       }
+      const _photoUrls = [...slot.querySelectorAll('.img-preview-wrap')]
+        .map(w => w.dataset.url).filter(Boolean)
       items.push({
         day_number: dayNum,
         time:       slot.querySelector('.slot-time-input')?.value || null,
@@ -24165,11 +24244,11 @@ async function _persistDraft(planId) {
         is_locked:  isLockedRow,
         route_snapshot: (slotType === 'transport') ? _readSlotRouteSnap(slot) : null,
         sort_order: sortOrder,
-        ...getPlaceFieldsForSlot(slot)
+        ...getPlaceFieldsForSlot(slot),
+        _rowId:    slot.dataset.rowId || null,   // PHASE 2: stable DB id (null = new slot)
+        _slotEl:   slot,                          // PHASE 2: to stamp a new id back after insert
+        _photoUrls,                              // PHASE 2: photos keyed to this row
       })
-      const urls = [...slot.querySelectorAll('.img-preview-wrap')]
-        .map(w => w.dataset.url).filter(Boolean)
-      if (urls.length) urlsByOrder[sortOrder] = urls
     }
   })
   // Legacy fields (transport-tips / spend-breakdown / local-tips) were
@@ -24241,66 +24320,85 @@ async function _persistDraft(planId) {
   // Cross-device clobber guard — if another device saved since this one loaded
   // the plan, DON'T overwrite: warn + offer reload, then bail. Fails safe.
   if (await _draftHasConflict(planId)) { _warnPlanConflict(); return true }
-  // Re-sync itinerary_items with INSERT-FIRST, then delete-stale — so a failed
-  // insert can NEVER wipe the draft. The old delete-then-insert left a window
-  // where a transient insert error emptied the plan with no rollback. There's
-  // no unique(plan_id,sort_order) constraint (only the id PK), so new rows with
-  // fresh UUIDs coexist with the old rows for the brief moment before cleanup.
-  // (items is guaranteed non-empty here — the empty case returned early above.)
-  let { data: inserted, error: insErr } = await sb.from('itinerary_items').insert(
-    items.map((item,idx) => ({ plan_id: planId, ...item, sort_order: idx }))
-  ).select('id, sort_order')
-  // Graceful degrade: route_snapshot column not added yet (run docs/schema/
-  // add-route-snapshot.sql) — strip it and retry so autosave keeps working;
-  // the plan just doesn't get the zero-API-call reopen until the SQL runs.
-  if (insErr && /route_snapshot/i.test(insErr.message || '')) {
-    console.warn('[autosave] route_snapshot column missing — run docs/schema/add-route-snapshot.sql in Supabase. Retrying without it.')
-    const retry = await sb.from('itinerary_items').insert(
-      items.map((item,idx) => { const { route_snapshot, ...rest } = item; return { plan_id: planId, ...rest, sort_order: idx } })
-    ).select('id, sort_order')
-    inserted = retry.data; insErr = retry.error
-  }
-  // Insert failed → leave the existing rows untouched (no data loss); next save retries.
-  if (insErr) { console.warn('itinerary insert failed — kept existing rows (no wipe)', insErr); return false }
-  const _newIds = (inserted || []).map(r => r.id)
-  // Drop the OLD rows now that the new set is safely in (cascade clears their
-  // item_images). Non-fatal: a failure here at worst leaves stale rows until the
-  // next save — far better than losing the draft.
-  if (_newIds.length) {
-    // The old rows may carry item_images (RESTRICT FK) — clear those FIRST, or
-    // the itinerary_items delete is rejected and the stale rows linger. That
-    // false-trips the cross-device conflict guard below (DB set = new+leftover ≠
-    // baseline) and shows duplicate stops on reload. Look up the stale ids, drop
-    // their images, then the rows.
-    const { data: staleRows } = await sb.from('itinerary_items')
-      .select('id').eq('plan_id', planId).not('id', 'in', `(${_newIds.join(',')})`)
-    const staleIds = (staleRows || []).map(r => r.id)
-    if (staleIds.length) {
-      try { await sb.from('item_images').delete().in('item_id', staleIds) } catch (e) { console.warn('stale item_images cleanup failed', e) }
-      const { error: delErr } = await sb.from('itinerary_items').delete().in('id', staleIds)
-      if (delErr) console.warn('stale itinerary cleanup failed (non-fatal)', delErr)
+  // ── KEYED DIFF (Phase 2) — replaces insert-all/delete-stale ──────────────────
+  // Existing rows (slot carries a DB id) are UPDATED in place; new slots (no id)
+  // are INSERTED and stamped with their id; rows are DELETED **only** when the
+  // planner explicitly removed them (× → _pendingItemDeletes). Nothing is ever
+  // deleted for being absent from the scan — so a partial / blank-title / mid-
+  // reflow scan physically cannot erase a saved row. Worst case of any bug here
+  // is a leftover or duplicate stop (cosmetic), never a lost one.
+  const _clean = it => { const { _rowId, _slotEl, _photoUrls, ...rest } = it; return rest }
+  const _toUpdate = items.filter(it => it._rowId)
+  const _toInsert = items.filter(it => !it._rowId)
+
+  // 1. UPDATE existing rows in one batched upsert on the id PK (route_snapshot degrade).
+  if (_toUpdate.length) {
+    const _rows = _toUpdate.map(it => ({ id: it._rowId, plan_id: planId, ..._clean(it) }))
+    let up = await sb.from('itinerary_items').upsert(_rows, { onConflict: 'id' })
+    if (up.error && /route_snapshot/i.test(up.error.message || '')) {
+      up = await sb.from('itinerary_items').upsert(_rows.map(r => { const { route_snapshot, ...x } = r; return x }), { onConflict: 'id' })
     }
+    if (up.error) { console.warn('[autosave] item update failed — kept existing rows (no wipe)', up.error); return false }
   }
-  // Set the clobber-guard baseline to the plan's ACTUAL item-id set right now
-  // (not just the rows we inserted) — so any stale row that couldn't be removed
-  // is part of OUR baseline and never false-trips the guard on the next save.
+  // 2. INSERT new slots, then stamp their new ids back onto the DOM so the NEXT
+  //    save UPDATES them instead of inserting duplicates.
+  if (_toInsert.length) {
+    const _rows = _toInsert.map(it => ({ plan_id: planId, ..._clean(it) }))
+    let ins = await sb.from('itinerary_items').insert(_rows).select('id')
+    if (ins.error && /route_snapshot/i.test(ins.error.message || '')) {
+      ins = await sb.from('itinerary_items').insert(_rows.map(r => { const { route_snapshot, ...x } = r; return x })).select('id')
+    }
+    if (ins.error) { console.warn('[autosave] item insert failed — kept existing rows (no wipe)', ins.error); return false }
+    ;(ins.data || []).forEach((row, i) => {
+      const it = _toInsert[i]
+      if (it && row?.id) { it._rowId = row.id; if (it._slotEl) it._slotEl.dataset.rowId = row.id }
+    })
+  }
+  // 3. DELETE only rows the planner EXPLICITLY removed (× button). item_images
+  //    first (RESTRICT FK on the live DB), then the rows; clear each on success.
+  const _dels = [...(window._pendingItemDeletes || [])]
+  if (_dels.length) {
+    try { await sb.from('item_images').delete().in('item_id', _dels) } catch (e) { console.warn('explicit item_images delete failed', e) }
+    const { error: delErr } = await sb.from('itinerary_items').delete().in('id', _dels)
+    if (delErr) console.warn('explicit itinerary delete failed (non-fatal)', delErr)
+    else if (window._pendingItemDeletes) _dels.forEach(id => window._pendingItemDeletes.delete(id))
+  }
+  // 4. PHOTOS — reconcile each saved row's item_images against the DOM by stable
+  //    row id, INSERT-FIRST (add new, THEN remove gone), so a photo is never lost.
+  const _rowIds = items.map(it => it._rowId).filter(Boolean)
+  if (_rowIds.length) {
+    const _desired = new Map()  // rowId -> Set(url)
+    for (const it of items) if (it._rowId) _desired.set(it._rowId, new Set(it._photoUrls || []))
+    const { data: _curImgs } = await sb.from('item_images').select('id, item_id, url').in('item_id', _rowIds)
+    const _curByRow = new Map() // rowId -> [{id,url}]
+    for (const im of (_curImgs || [])) { if (!_curByRow.has(im.item_id)) _curByRow.set(im.item_id, []); _curByRow.get(im.item_id).push(im) }
+    const _add = []
+    for (const [rowId, urls] of _desired) {
+      const have = new Set((_curByRow.get(rowId) || []).map(im => im.url))
+      for (const url of urls) if (!have.has(url)) {
+        const sp = url.split('/itinerary-images/')[1] || url.split('/chat-media/')[1] || url
+        _add.push({ item_id: rowId, url, storage_path: sp })
+      }
+    }
+    if (_add.length) { const { error } = await sb.from('item_images').insert(_add); if (error) console.warn('[autosave] photo add failed (non-fatal)', error) }
+    const _del = []
+    for (const [rowId, imgs] of _curByRow) {
+      const want = _desired.get(rowId) || new Set()
+      // SAFETY: never delete ALL of a row's photos from an autosave. An empty
+      // desired set is almost always a transient render (the slot momentarily had
+      // no image-preview wraps, e.g. mid-reflow) — NOT a genuine "removed every
+      // photo". Keep them; a leftover photo is cosmetic, a lost one is not.
+      // Removing SOME photos (want non-empty) still works normally.
+      if (!want.size) continue
+      for (const im of imgs) if (!want.has(im.url)) _del.push(im.id)
+    }
+    if (_del.length) { const { error } = await sb.from('item_images').delete().in('id', _del); if (error) console.warn('[autosave] photo cleanup failed (non-fatal)', error) }
+  }
+  // Keep the (disabled) clobber-guard baseline roughly in sync — harmless.
   try {
     const { data: nowRows } = await sb.from('itinerary_items').select('id').eq('plan_id', planId)
     _setDraftBaseline(planId, (nowRows || []).map(r => r.id))
-  } catch (e) { _setDraftBaseline(planId, _newIds) }
-  // Re-link images to the freshly-inserted item rows
-  const imageRows = []
-  for (const row of (inserted || [])) {
-    const urls = urlsByOrder[row.sort_order] || []
-    for (const url of urls) {
-      const sp = url.split('/itinerary-images/')[1] || url.split('/chat-media/')[1] || url
-      imageRows.push({ item_id: row.id, url, storage_path: sp })
-    }
-  }
-  if (imageRows.length) {
-    const { error: imgErr } = await sb.from('item_images').insert(imageRows)
-    if (imgErr) { console.warn('item_images insert failed', imgErr); /* don't block — text is saved */ }
-  }
+  } catch (e) {}
   return true
 }
 
@@ -24392,6 +24490,10 @@ function setAutoSaveStatus(state) {
 // touches itinerary_items, so an incomplete scan can never delete saved rows.
 if (window._itinFormReady === undefined) window._itinFormReady = true
 if (window._imeComposing === undefined) window._imeComposing = false
+// PHASE 2 (keyed diff): the ONLY set of rows a save may delete — populated solely
+// by removeSlot (× button). A save never deletes a row for being "absent from the
+// scan", so a blank/mid-reflow/mid-render slot can never lose its saved row.
+if (!window._pendingItemDeletes) window._pendingItemDeletes = new Set()
 ;(function _installImeGuard(){
   try {
     document.addEventListener('compositionstart', () => { window._imeComposing = true }, true)
