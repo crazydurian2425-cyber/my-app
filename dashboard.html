@@ -20114,13 +20114,27 @@ const _PLACEID_CACHE_PREFIX = 'jj_placeid_v1_'
 async function _resolvePlaceIdByName(name, biasCity) {
   const q = String(name || '').trim()
   if (!q) return null
-  const ck = `${_PLACEID_CACHE_PREFIX}${q.toLowerCase()}|${String(biasCity || '').toLowerCase()}`
+  // AIRPORT strings (e.g. "Kansai International Airport (KIX)") must resolve to
+  // the REAL airport. Search VERBATIM + UNBIASED and reject a non-airport match
+  // — otherwise the destination-city bias pulls a same-named city place (a
+  // "Kansai Airport Limousine Bus" stop in Kyoto sits 80km from the real KIX
+  // yet outranks it), which then gets baked into the arrival/departure leg as a
+  // ~4.6km hop. Mirrors the airport handling already in the station lookups.
+  // ONLY airport strings change here; every other venue keeps its city bias.
+  const _airporty = (typeof _airportish === 'function') && _airportish(q)
+  // Separate cache namespace for airports so a previously-poisoned
+  // "<name>|<city>" entry is never reused for an airport query.
+  const ck = _airporty
+    ? `${_PLACEID_CACHE_PREFIX}air|${q.toLowerCase()}`
+    : `${_PLACEID_CACHE_PREFIX}${q.toLowerCase()}|${String(biasCity || '').toLowerCase()}`
   try { const raw = localStorage.getItem(ck); if (raw) { const o = JSON.parse(raw); if (o && o.id) return o } } catch (e) {}
   if (_readRoutesDaily() >= ROUTES_DAILY_CAP) return null
   try {
-    const query = (biasCity && !q.toLowerCase().includes(String(biasCity).toLowerCase())) ? `${q}, ${biasCity}` : q
+    const query = _airporty
+      ? q
+      : (biasCity && !q.toLowerCase().includes(String(biasCity).toLowerCase())) ? `${q}, ${biasCity}` : q
     const body = { textQuery: query, maxResultCount: 1, languageCode: 'en' }
-    const bias = (typeof buildDestBias === 'function') ? buildDestBias(biasCity) : null
+    const bias = _airporty ? null : ((typeof buildDestBias === 'function') ? buildDestBias(biasCity) : null)
     if (bias) body.locationBias = bias
     _countApi('places_search')
     const resp = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -20128,7 +20142,7 @@ async function _resolvePlaceIdByName(name, biasCity) {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.location',
+        'X-Goog-FieldMask': 'places.id,places.location,places.types',
       },
       body: JSON.stringify(body),
     })
@@ -20136,6 +20150,12 @@ async function _resolvePlaceIdByName(name, biasCity) {
     const data = await resp.json()
     const p = data?.places?.[0]
     if (!p?.id) return null
+    // Airport query → accept ONLY a real airport; else return null so the leg
+    // keeps its heuristic distance rather than anchoring to a wrong pin.
+    if (_airporty) {
+      const _isAirport = Array.isArray(p.types) && p.types.some(t => t === 'airport' || t === 'international_airport')
+      if (!_isAirport) return null
+    }
     const out = { id: p.id, lat: p.location?.latitude ?? null, lng: p.location?.longitude ?? null }
     _lsSafeSet(ck, JSON.stringify(out))
     _bumpRoutesDaily()
