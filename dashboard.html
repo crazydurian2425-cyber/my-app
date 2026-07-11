@@ -18948,7 +18948,12 @@ function _suggestTransportStart(prevSlot, nextSlot) {
   // a tight next-slot time would pull transport BACKWARD (e.g. 3:30 → 3:15)
   // instead of just shifting Senso-ji forward.
   let total = baseMin + stayMin
-  total = Math.ceil(total / 15) * 15
+  // Leave on the 5-minute grid — the same grid the whole day chain uses
+  // (_snapUp30). Rounding to 15 min here made the transport wait past the
+  // previous stop's real release (checkout 8:35 + 15 min = 8:50 → departs
+  // 8:50, NOT 9:00), which also opened a 5-vs-15 min gap between this
+  // departure and the chain's own value.
+  total = Math.ceil(total / 5) * 5
   if (total > 23 * 60 + 45) total = 23 * 60 + 45
   return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`
 }
