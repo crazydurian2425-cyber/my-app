@@ -24422,9 +24422,26 @@ async function _persistDraft(planId) {
   const _toUpdate = items.filter(it => it._rowId)
   const _toInsert = items.filter(it => !it._rowId)
 
+  // ── CROSS-PLAN SAFETY ──────────────────────────────────────────────────────
+  // Only UPDATE/DELETE/photo-touch rows that ALREADY BELONG TO THIS PLAN. A slot
+  // carrying another plan's row id (e.g. a display glitch that shows a different
+  // plan's stops) is SKIPPED entirely — never upserted — so a row can NEVER be
+  // MOVED from one plan into another (the upsert would otherwise rewrite its
+  // plan_id). Its content simply doesn't save, which is the correct/safe outcome.
+  const { data: _ownRows } = await sb.from('itinerary_items').select('id').eq('plan_id', planId)
+  const _ownIds = new Set((_ownRows || []).map(r => r.id))
+  const _toUpdateOwned = _toUpdate.filter(it => _ownIds.has(it._rowId))
+  if (_toUpdateOwned.length !== _toUpdate.length) {
+    console.warn('[autosave] skipped', _toUpdate.length - _toUpdateOwned.length, 'slot(s) whose row id is not in plan', planId, '— refusing to move rows across plans')
+  }
+  // Rows the photo step may reconcile: owned updates + brand-new inserts (their
+  // ids get stamped in step 2). Foreign rows are excluded so we never touch
+  // another plan's photos.
+  const _safeItems = [..._toUpdateOwned, ..._toInsert]
+
   // 1. UPDATE existing rows in one batched upsert on the id PK (route_snapshot degrade).
-  if (_toUpdate.length) {
-    const _rows = _toUpdate.map(it => ({ id: it._rowId, plan_id: planId, ..._clean(it) }))
+  if (_toUpdateOwned.length) {
+    const _rows = _toUpdateOwned.map(it => ({ id: it._rowId, plan_id: planId, ..._clean(it) }))
     let up = await sb.from('itinerary_items').upsert(_rows, { onConflict: 'id' })
     if (up.error && /route_snapshot/i.test(up.error.message || '')) {
       up = await sb.from('itinerary_items').upsert(_rows.map(r => { const { route_snapshot, ...x } = r; return x }), { onConflict: 'id' })
@@ -24447,7 +24464,9 @@ async function _persistDraft(planId) {
   }
   // 3. DELETE only rows the planner EXPLICITLY removed (× button). item_images
   //    first (RESTRICT FK on the live DB), then the rows; clear each on success.
-  const _dels = [...(window._pendingItemDeletes || [])]
+  // CROSS-PLAN SAFETY: only delete explicit removals that belong to THIS plan —
+  // never delete another plan's row even if it was removed while displayed here.
+  const _dels = [...(window._pendingItemDeletes || [])].filter(id => _ownIds.has(id))
   if (_dels.length) {
     try { await sb.from('item_images').delete().in('item_id', _dels) } catch (e) { console.warn('explicit item_images delete failed', e) }
     const { error: delErr } = await sb.from('itinerary_items').delete().in('id', _dels)
@@ -24456,10 +24475,10 @@ async function _persistDraft(planId) {
   }
   // 4. PHOTOS — reconcile each saved row's item_images against the DOM by stable
   //    row id, INSERT-FIRST (add new, THEN remove gone), so a photo is never lost.
-  const _rowIds = items.map(it => it._rowId).filter(Boolean)
+  const _rowIds = _safeItems.map(it => it._rowId).filter(Boolean)
   if (_rowIds.length) {
     const _desired = new Map()  // rowId -> Set(url)
-    for (const it of items) if (it._rowId) _desired.set(it._rowId, new Set(it._photoUrls || []))
+    for (const it of _safeItems) if (it._rowId) _desired.set(it._rowId, new Set(it._photoUrls || []))
     const { data: _curImgs } = await sb.from('item_images').select('id, item_id, url').in('item_id', _rowIds)
     const _curByRow = new Map() // rowId -> [{id,url}]
     for (const im of (_curImgs || [])) { if (!_curByRow.has(im.item_id)) _curByRow.set(im.item_id, []); _curByRow.get(im.item_id).push(im) }
