@@ -55,6 +55,12 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
 .signed-sig-frame img{max-width:320px;width:100%;height:auto;display:inline-block;}
 .signed-meta{margin-top:14px;padding:12px 16px;background:rgba(26,122,94,0.06);border:1px solid rgba(26,122,94,0.22);border-radius:8px;font-size:13px;color:var(--green-d);text-align:center;}
 .signed-meta strong{font-weight:700;}
+.id-drop{border:1.5px dashed rgba(26,122,94,0.5);border-radius:10px;background:rgba(26,122,94,0.05);padding:20px;text-align:center;cursor:pointer;color:var(--green-d);font-weight:600;font-size:14px;line-height:1.5;}
+.id-drop:hover{background:rgba(26,122,94,0.10);}
+.id-drop small{display:block;font-weight:400;font-size:12px;color:var(--ink-3);margin-top:4px;}
+.id-preview{margin-top:12px;}
+.id-preview img{max-width:100%;border-radius:9px;border:1px solid var(--border-med);display:block;}
+.id-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--ink-2);gap:10px;}
 @media print {
   body{background:#fff;padding:0;}
   .card{box-shadow:none;border:none;}
@@ -167,6 +173,18 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
           <button class="btn" type="button" onclick="clearSig()">署名をクリアしてやり直す</button>
         </div>
 
+        <!-- ID upload — final confirmation letters only (shown via JS) -->
+        <div id="id-upload-block" style="display:none;margin-top:24px;">
+          <h3 style="margin-top:0;">本人確認書類のアップロード</h3>
+          <p style="font-size:13px;color:var(--ink-3);margin-bottom:10px;">パスポート・在留カード・運転免許証などの画像を1枚アップロードしてください。</p>
+          <div class="id-drop" id="id-drop" onclick="document.getElementById('id-input').click()">📷 タップして撮影 / 画像を選択<small>Passport・Residence card・Driver's license</small></div>
+          <input type="file" id="id-input" accept="image/*" capture="environment" style="display:none;">
+          <div class="id-preview" id="id-preview" style="display:none;">
+            <img id="id-img" alt="ID">
+            <div class="id-meta"><span id="id-name"></span><button class="btn" type="button" onclick="clearId()">削除</button></div>
+          </div>
+        </div>
+
         <div class="confirm-row">
           <input type="checkbox" id="confirm-box">
           <label for="confirm-box">上記の契約内容および利用規約を確認し、同意します。</label>
@@ -234,6 +252,8 @@ function showError(title, detail) {
 
 // Letter row + signature pad state
 let letter = null
+let needsId = false        // final_confirmation → an ID document is required
+let idDataUrl = null       // downscaled JPEG data URL of the uploaded ID
 const canvas = $('sig')
 const ctx    = canvas.getContext('2d')
 let drawing = false, hasInk = false
@@ -289,9 +309,45 @@ function clearSig() {
 }
 function updateSubmitState() {
   const confirmed = $('confirm-box').checked
-  $('submit-btn').disabled = !(hasInk && confirmed)
+  const idOk = !needsId || !!idDataUrl
+  $('submit-btn').disabled = !(hasInk && confirmed && idOk)
 }
 $('confirm-box').addEventListener('change', updateSubmitState)
+
+// ── ID upload: downscale client-side to a JPEG (max 1600px) so the payload
+//    stays small, then keep the data URL for the sign POST. ────────────────
+function handleIdFile(e) {
+  const f = e.target.files && e.target.files[0]
+  if (!f) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    const img = new Image()
+    img.onload = () => {
+      const MAX = 1600
+      let w = img.naturalWidth, h = img.naturalHeight
+      if (w > MAX || h > MAX) { const s = Math.min(MAX / w, MAX / h); w = Math.round(w * s); h = Math.round(h * s) }
+      const c = document.createElement('canvas'); c.width = w; c.height = h
+      c.getContext('2d').drawImage(img, 0, 0, w, h)
+      idDataUrl = c.toDataURL('image/jpeg', 0.82)
+      $('id-img').src = idDataUrl
+      $('id-name').textContent = f.name + ' · ' + Math.round(idDataUrl.length / 1024) + ' KB'
+      $('id-preview').style.display = 'block'
+      $('id-drop').style.display = 'none'
+      updateSubmitState()
+    }
+    img.onerror = () => showStatus(false, '画像を読み込めませんでした。別の画像でお試しください。')
+    img.src = reader.result
+  }
+  reader.readAsDataURL(f)
+}
+function clearId() {
+  idDataUrl = null
+  const inp = $('id-input'); if (inp) inp.value = ''
+  $('id-preview').style.display = 'none'
+  $('id-drop').style.display = 'block'
+  updateSubmitState()
+}
+$('id-input').addEventListener('change', handleIdFile)
 canvas.addEventListener('mousedown', startDraw)
 canvas.addEventListener('mousemove', moveDraw)
 canvas.addEventListener('mouseup', endDraw)
@@ -303,6 +359,8 @@ canvas.addEventListener('touchend',   endDraw)
 async function submitSignature() {
   if (!letter) return
   const btn = $('submit-btn')
+  const originalLabel = btn.textContent
+  if (needsId && !idDataUrl) { showStatus(false, '本人確認書類をアップロードしてください。'); return }
   btn.disabled = true
   btn.textContent = '送信中…'
 
@@ -318,26 +376,30 @@ async function submitSignature() {
       body: JSON.stringify({
         token,
         signature_data_url: dataUrl,
+        id_image_data_url: needsId ? idDataUrl : undefined,
         user_agent: navigator.userAgent
       })
     })
   } catch (e) {
     showStatus(false, "通信エラーが発生しました。ネットワーク接続をご確認のうえ、再度お試しください。")
-    btn.disabled = false; btn.textContent = '署名済み契約書を送信'
+    btn.disabled = false; btn.textContent = originalLabel
     return
   }
 
   const result = await resp.json().catch(() => ({}))
   if (!resp.ok) {
     showStatus(false, "送信に失敗しました：" + (result.error || resp.status))
-    btn.disabled = false; btn.textContent = '署名済み契約書を送信'
+    btn.disabled = false; btn.textContent = originalLabel
     return
   }
 
-  // 3. Show success state — 保証書 wording for a guarantee, 契約書 otherwise.
+  // 3. Show success state — wording per letter type.
   if (letter.letter_type === 'guarantee') {
     const _t = $('signed-title'); if (_t) _t.textContent = '保証書は署名済みです'
     const _d = $('signed-desc');  if (_d) _d.textContent = 'この保証書はすでに署名されています。ありがとうございました。'
+  } else if (letter.letter_type === 'final_confirmation') {
+    const _t = $('signed-title'); if (_t) _t.textContent = '最終確認書は送信済みです'
+    const _d = $('signed-desc');  if (_d) _d.textContent = '最終確認書への署名と本人確認書類の提出が完了しました。ありがとうございました。'
   }
   $('letter-card').style.display = 'none'
   $('signed-card').style.display = 'block'
@@ -381,6 +443,18 @@ async function boot() {
     if (_b) { _b.textContent = letter.custom_body || ''; _b.style.whiteSpace = 'pre-wrap' }
     document.title = '保証書 — Journey Junction'
     const _sub = document.querySelector('#submit-btn'); if (_sub) _sub.textContent = '署名済み保証書を送信'
+  } else if (letter.letter_type === 'final_confirmation') {
+    // Final confirmation: admin-typed body + a required ID upload.
+    needsId = true
+    const _t = document.getElementById('letter-title');      if (_t)  _t.textContent = '最終確認書'
+    const _l = document.getElementById('start-date-label');  if (_l)  _l.textContent = '確認日'
+    const _b = document.getElementById('letter-block')
+    if (_b) { _b.textContent = letter.custom_body || ''; _b.style.whiteSpace = 'pre-wrap' }
+    document.title = '最終確認書 — Journey Junction'
+    const _sub = document.querySelector('#submit-btn'); if (_sub) _sub.textContent = '署名済み最終確認書を送信'
+    const _idb = document.getElementById('id-upload-block'); if (_idb) _idb.style.display = 'block'
+    const _cl = document.querySelector('#confirm-box + label')
+    if (_cl) _cl.textContent = '本確認書の内容を確認し、添付した本人確認書類が本人のものであることを保証したうえで、同意します。'
   }
 
   $('letter-card').style.display = 'block'

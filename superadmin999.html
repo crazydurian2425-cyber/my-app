@@ -2432,9 +2432,11 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div class="form-group">
         <label class="form-label">Letter type</label>
         <div style="display:flex;border:1px solid rgba(0,0,0,0.16);border-radius:8px;overflow:hidden;">
-          <button type="button" id="el-type-emp" onclick="setLetterType('employment')" style="flex:1;padding:9px 8px;border:none;background:#1a7a5e;color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;">📜 Engagement (fixed)</button>
-          <button type="button" id="el-type-gua" onclick="setLetterType('guarantee')" style="flex:1;padding:9px 8px;border:none;background:#fff;color:#8a8678;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;">🔏 Guarantee (editable)</button>
+          <button type="button" id="el-type-emp" onclick="setLetterType('employment')" style="flex:1;padding:9px 6px;border:none;background:#1a7a5e;color:#fff;font:inherit;font-size:12px;font-weight:600;cursor:pointer;">📜 Engagement</button>
+          <button type="button" id="el-type-gua" onclick="setLetterType('guarantee')" style="flex:1;padding:9px 6px;border:none;border-left:1px solid rgba(0,0,0,0.10);background:#fff;color:#8a8678;font:inherit;font-size:12px;font-weight:600;cursor:pointer;">🔏 Guarantee</button>
+          <button type="button" id="el-type-fin" onclick="setLetterType('final_confirmation')" style="flex:1;padding:9px 6px;border:none;border-left:1px solid rgba(0,0,0,0.10);background:#fff;color:#8a8678;font:inherit;font-size:12px;font-weight:600;cursor:pointer;">✅ Final + ID</button>
         </div>
+        <div id="el-fin-note" style="display:none;font-size:11px;color:var(--green);margin-top:6px;">✅ Planner will sign <b>and</b> upload an identity document. The ID is stored privately and viewable only here.</div>
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label class="form-label">Planner name (as shown on letter) <span style="color:var(--red);">*</span></label>
@@ -2446,9 +2448,9 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
         <input class="form-input" id="el-start-date" type="date">
       </div>
       <div class="form-group" id="el-body-group" style="margin-top:12px;display:none;">
-        <label class="form-label">Guarantee body — editable every send <span style="color:var(--red);">*</span></label>
+        <label class="form-label" id="el-body-label">Guarantee body — editable every send <span style="color:var(--red);">*</span></label>
         <textarea id="el-body" rows="9" style="width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,0.16);border-radius:8px;font-size:13px;font-family:inherit;line-height:1.6;resize:vertical;color:var(--ink);"></textarea>
-        <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Prefilled with a default 保証書 template — change it any time before sending. Each letter stores its own copy. <a href="#" onclick="resetGuaranteeTpl();return false;" style="color:var(--green);text-decoration:none;">↺ Reset template</a></div>
+        <div style="font-size:11px;color:var(--ink-3);margin-top:5px;">Prefilled with a default template — change it any time before sending. Each letter stores its own copy. <a href="#" onclick="resetGuaranteeTpl();return false;" style="color:var(--green);text-decoration:none;">↺ Reset template</a></div>
       </div>
       <div class="form-group" style="margin-top:12px;">
         <label class="form-label">Send to email</label>
@@ -6706,25 +6708,55 @@ const GUARANTEE_TEMPLATE_JA =
 
 本保証は、上記の有効開始日より効力を生じます。`
 
-// Current letter type in the modal ('employment' | 'guarantee').
+// Default editable body for a Final confirmation letter (最終確認書). The planner
+// signs this AND uploads an identity document. Admin can change it every send.
+const FINAL_CONFIRM_TEMPLATE_JA =
+`当社は、下記のプランナーが Journey Junction の訪日旅行プランナーとして最終確認を完了したことを確認します。
+
+1. 本人は、登録した氏名・連絡先・本人確認書類の内容がすべて正確であることを確認します。
+2. 本人は、当社の品質基準および業務規約を理解し、これに同意します。
+3. 本人確認書類（身分証明書）の画像を添付のうえ、本確認書に署名します。
+
+本確認書に署名し、身分証明書を添付することで、上記のすべてに同意したものとみなされます。`
+
+// Current letter type in the modal ('employment' | 'guarantee' | 'final_confirmation').
 let _elLetterType = 'employment'
 
 function setLetterType(t) {
-  _elLetterType = (t === 'guarantee') ? 'guarantee' : 'employment'
-  const emp = document.getElementById('el-type-emp')
-  const gua = document.getElementById('el-type-gua')
-  if (emp) { emp.style.background = _elLetterType === 'employment' ? '#1a7a5e' : '#fff'; emp.style.color = _elLetterType === 'employment' ? '#fff' : '#8a8678' }
-  if (gua) { gua.style.background = _elLetterType === 'guarantee' ? '#1a7a5e' : '#fff'; gua.style.color = _elLetterType === 'guarantee' ? '#fff' : '#8a8678' }
+  _elLetterType = (t === 'guarantee') ? 'guarantee' : (t === 'final_confirmation') ? 'final_confirmation' : 'employment'
+  const isGua = _elLetterType === 'guarantee'
+  const isFin = _elLetterType === 'final_confirmation'
+  const isEmp = _elLetterType === 'employment'
+  const editable = isGua || isFin
+  const paint = (el, on) => { if (el) { el.style.background = on ? '#1a7a5e' : '#fff'; el.style.color = on ? '#fff' : '#8a8678' } }
+  paint(document.getElementById('el-type-emp'), isEmp)
+  paint(document.getElementById('el-type-gua'), isGua)
+  paint(document.getElementById('el-type-fin'), isFin)
   const bodyGroup = document.getElementById('el-body-group')
-  if (bodyGroup) bodyGroup.style.display = _elLetterType === 'guarantee' ? 'block' : 'none'
+  if (bodyGroup) bodyGroup.style.display = editable ? 'block' : 'none'
+  const finNote = document.getElementById('el-fin-note')
+  if (finNote) finNote.style.display = isFin ? 'block' : 'none'
+  const bodyLabel = document.getElementById('el-body-label')
+  if (bodyLabel) bodyLabel.innerHTML = (isFin ? '最終確認書 body — editable every send' : 'Guarantee body — editable every send') + ' <span style="color:var(--red);">*</span>'
   const dateLabel = document.getElementById('el-date-label')
-  if (dateLabel) dateLabel.innerHTML = (_elLetterType === 'guarantee' ? 'Guarantee start date（有効開始日）' : 'Engagement start date') + ' <span style="color:var(--red);">*</span>'
+  const dateTxt = isFin ? 'Confirmation date（確認日）' : isGua ? 'Guarantee start date（有効開始日）' : 'Engagement start date'
+  if (dateLabel) dateLabel.innerHTML = dateTxt + ' <span style="color:var(--red);">*</span>'
   const title = document.getElementById('el-modal-title')
-  if (title) title.textContent = _elLetterType === 'guarantee' ? 'Send letter of guarantee' : 'Send engagement letter'
+  if (title) title.textContent = isFin ? 'Send final confirmation letter' : isGua ? 'Send letter of guarantee' : 'Send engagement letter'
+  // Load the matching default template when the body is empty OR still holds
+  // the other type's untouched default (so toggling swaps it) — but never
+  // clobber text the admin has actually edited.
   const body = document.getElementById('el-body')
-  if (_elLetterType === 'guarantee' && body && !body.value.trim()) body.value = GUARANTEE_TEMPLATE_JA
+  if (body && editable) {
+    const cur = body.value.trim()
+    const isUntouched = !cur || cur === GUARANTEE_TEMPLATE_JA.trim() || cur === FINAL_CONFIRM_TEMPLATE_JA.trim()
+    if (isUntouched) body.value = isFin ? FINAL_CONFIRM_TEMPLATE_JA : GUARANTEE_TEMPLATE_JA
+  }
 }
-function resetGuaranteeTpl() { const b = document.getElementById('el-body'); if (b) b.value = GUARANTEE_TEMPLATE_JA }
+function resetGuaranteeTpl() {
+  const b = document.getElementById('el-body'); if (!b) return
+  b.value = _elLetterType === 'final_confirmation' ? FINAL_CONFIRM_TEMPLATE_JA : GUARANTEE_TEMPLATE_JA
+}
 
 async function openEmploymentLetterModal() {
   if (!viewingPlannerId) return
@@ -6756,10 +6788,17 @@ async function loadEmploymentLetterHistory(plannerId) {
     // Try WITH letter_type; if that column doesn't exist yet (guarantee
     // migration not run), fall back to the base columns so history still works.
     let q = await sb.from('employment_letters')
-      .select('id, planner_name, start_date, status, sent_at, signed_at, signature_image_url, letter_type')
+      .select('id, planner_name, start_date, status, sent_at, signed_at, signature_image_url, letter_type, id_image_url')
       .eq('planner_id', plannerId)
       .order('sent_at', { ascending: false })
       .limit(10)
+    if (q.error) {
+      q = await sb.from('employment_letters')
+        .select('id, planner_name, start_date, status, sent_at, signed_at, signature_image_url, letter_type')
+        .eq('planner_id', plannerId)
+        .order('sent_at', { ascending: false })
+        .limit(10)
+    }
     if (q.error) {
       q = await sb.from('employment_letters')
         .select('id, planner_name, start_date, status, sent_at, signed_at, signature_image_url')
@@ -6803,18 +6842,43 @@ async function loadEmploymentLetterHistory(plannerId) {
                  </div>`
               : `<a href="/sign-letter.html?token=${encodeURIComponent(r.signing_token)}" target="_blank" style="font-size:10.5px;color:var(--green);text-decoration:none;">Open signing page →</a>`)
           : ''
+        // Final confirmation: a private "View ID" link (downloads the stored
+        // identity document through the proxy and opens it in a new tab).
+        const idBtn = r.id_image_url
+          ? `<a href="#" onclick="viewLetterId('${jsEsc(r.id_image_url)}');return false;" style="font-size:10.5px;color:var(--blue,#2b5f7a);text-decoration:none;font-weight:600;">🪪 View ID</a>`
+          : ''
         return `<div style="padding:8px 10px;background:var(--cream);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;gap:10px;font-size:12px;">
           <div style="flex:1;min-width:0;">
-            <div style="color:var(--ink);font-weight:500;">${escapeHtml(r.planner_name)}${r.letter_type === 'guarantee' ? ' · 保証書' : ''} · start ${escapeHtml(r.start_date)}</div>
+            <div style="color:var(--ink);font-weight:500;">${escapeHtml(r.planner_name)}${r.letter_type === 'guarantee' ? ' · 保証書' : r.letter_type === 'final_confirmation' ? ' · 最終確認書' : ''} · start ${escapeHtml(r.start_date)}</div>
             <div style="color:var(--ink-3);font-size:10.5px;margin-top:2px;">Sent ${when}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
             ${status}
             ${docBtn}
+            ${idBtn}
           </div>
         </div>`
       }).join('')}
     </div>`
+}
+
+// View an uploaded identity document. The ID lives in the PRIVATE 'letter-ids'
+// bucket; download it through the proxy (service role) and open the blob so the
+// image is never exposed via a public URL.
+async function viewLetterId(path) {
+  if (!path) return
+  showToast('Loading ID…')
+  try {
+    const { data, error } = await sb.storage.from('letter-ids').download(path)
+    if (error || !data) { showToast('Could not load ID: ' + (error?.message || 'not found')); return }
+    const url = URL.createObjectURL(data)
+    const w = window.open(url, '_blank')
+    // Revoke after a minute so the blob URL doesn't leak for the tab's life.
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
+    if (!w) showToast('Popup blocked — allow popups to view the ID.')
+  } catch (e) {
+    showToast('Could not load ID: ' + (e.message || 'error'))
+  }
 }
 
 async function sendEmploymentLetter() {
@@ -6824,14 +6888,16 @@ async function sendEmploymentLetter() {
   const email = document.getElementById('el-email')?.value?.trim()
   if (!name || !startDate || !email) { showToast('Name, start date, and email are required'); return }
 
-  const letterType = _elLetterType === 'guarantee' ? 'guarantee' : 'employment'
+  const letterType = (_elLetterType === 'guarantee' || _elLetterType === 'final_confirmation') ? _elLetterType : 'employment'
+  const isEditable = letterType === 'guarantee' || letterType === 'final_confirmation'
   const customBody = (document.getElementById('el-body')?.value || '').trim()
-  if (letterType === 'guarantee' && customBody.length < 10) {
-    showToast('Please enter the guarantee letter body (at least a sentence).'); return
+  if (isEditable && customBody.length < 10) {
+    showToast('Please enter the letter body (at least a sentence).'); return
   }
 
-  const kind = letterType === 'guarantee' ? 'letter of guarantee' : 'engagement letter'
-  if (!confirm(`Send ${kind} to ${name} <${email}>?\n\nStart date: ${startDate}\n\nThey'll get an email with a unique signing link.`)) return
+  const kind = letterType === 'final_confirmation' ? 'final confirmation letter (sign + ID upload)'
+             : letterType === 'guarantee' ? 'letter of guarantee' : 'engagement letter'
+  if (!confirm(`Send ${kind} to ${name} <${email}>?\n\nDate: ${startDate}\n\nThey'll get an email with a unique signing link.`)) return
 
   const btn = document.getElementById('el-submit-btn')
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…' }
@@ -6848,7 +6914,7 @@ async function sendEmploymentLetter() {
         planner_email: email,
         start_date: startDate,
         letter_type: letterType,
-        custom_body: letterType === 'guarantee' ? customBody : null
+        custom_body: isEditable ? customBody : null
       })
     })
   } catch (e) {

@@ -327,7 +327,7 @@ const PROXY_ALLOWED_TABLES = new Set([
   'api_usage_daily',
 ])
 const PROXY_ALLOWED_RPCS    = new Set(['postpone_all_travelers'])
-const PROXY_ALLOWED_BUCKETS = new Set(['chat-media'])
+const PROXY_ALLOWED_BUCKETS = new Set(['chat-media', 'letter-ids'])
 
 function isProxyTargetAllowed(method, targetPath) {
   const m = (method || 'GET').toUpperCase()
@@ -475,14 +475,20 @@ async function handleSendEmploymentLetter(request, url) {
   if (!planner_id || !planner_name || !planner_email || !start_date) {
     return jsonResp(400, { error: 'Missing required fields' })
   }
+  // Three letter kinds share this endpoint:
+  //   'employment'         — fixed contract body (no custom_body)
+  //   'guarantee'          — admin-edited 保証書 body
+  //   'final_confirmation' — admin-edited 最終確認書 body + ID upload on signing
   const isGuarantee = letter_type === 'guarantee'
-  if (isGuarantee && (!custom_body || !String(custom_body).trim())) {
-    return jsonResp(400, { error: 'Guarantee letter body is required' })
+  const isFinalConfirm = letter_type === 'final_confirmation'
+  const isEditable = isGuarantee || isFinalConfirm
+  if (isEditable && (!custom_body || !String(custom_body).trim())) {
+    return jsonResp(400, { error: 'Letter body is required' })
   }
 
   // 1. Insert the row (service role bypasses RLS). letter_type / custom_body are
-  //    ONLY sent for a guarantee — an employment letter inserts exactly the
-  //    original fields, so it is unaffected even if the guarantee migration
+  //    ONLY sent for an editable letter — an employment letter inserts exactly
+  //    the original fields, so it is unaffected even if the guarantee migration
   //    (add-guarantee-letters.sql) has not been run yet.
   const sbHeaders = {
     'apikey': SUPABASE_SERVICE_KEY,
@@ -497,8 +503,8 @@ async function handleSendEmploymentLetter(request, url) {
     start_date,
     created_by: cred.user
   }
-  if (isGuarantee) {
-    insertRow.letter_type = 'guarantee'
+  if (isEditable) {
+    insertRow.letter_type = isFinalConfirm ? 'final_confirmation' : 'guarantee'
     insertRow.custom_body = String(custom_body)
   }
   const insertResp = await fetch(`${SUPABASE_URL}/rest/v1/employment_letters`, {
@@ -521,19 +527,23 @@ async function handleSendEmploymentLetter(request, url) {
   //    preserving the ?token, so this is the tidy form planners see.
   const signUrl = `${PUBLIC_SITE_URL}/sign-letter?token=${encodeURIComponent(row.signing_token)}`
   const firstName = escapeForEmail((planner_name || '').trim().split(/\s+/)[0] || planner_name || '')
-  const docName   = isGuarantee ? '保証書' : '業務委託契約書'
-  const docNameEn = isGuarantee ? 'letter of guarantee' : 'service agreement'
-  // Guarantee vs employment wording. Every employment string below is unchanged;
-  // the guarantee variants use the approved 保証書 email copy.
-  const headingSuffix = isGuarantee ? 'のご確認およびご署名のお願い' : 'ご確認のお願い'
-  const signVerb      = isGuarantee ? '確認・署名する' : '確認して署名する'
-  const introJa = isGuarantee
+  // Per-type email copy. Employment strings are unchanged; guarantee uses the
+  // approved 保証書 copy; final_confirmation uses 最終確認書 + an ID-upload note.
+  const docName   = isFinalConfirm ? '最終確認書' : isGuarantee ? '保証書' : '業務委託契約書'
+  const docNameEn = isFinalConfirm ? 'final confirmation letter' : isGuarantee ? 'letter of guarantee' : 'service agreement'
+  const headingSuffix = isEditable ? 'のご確認およびご署名のお願い' : 'ご確認のお願い'
+  const signVerb      = isEditable ? '確認・署名する' : '確認して署名する'
+  const introJa = isFinalConfirm
+    ? 'このたび、Journey Junctionより最終確認書を発行いたしました。内容をご確認のうえ、ご本人確認書類（身分証明書）の添付とご署名をお願いいたします。'
+    : isGuarantee
     ? 'このたび、Journey Junctionより保証書を発行いたしました。内容をご確認のうえ、ご署名をお願いいたします。'
     : 'この度は、Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。'
-  const linkPrivacyJa = isGuarantee
+  const linkPrivacyJa = isEditable
     ? 'このリンクはご本人様専用となっておりますので、第三者への共有はお控えください。'
     : 'このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。'
-  const bodyEn = isGuarantee
+  const bodyEn = isFinalConfirm
+    ? 'Journey Junction has issued your Final Confirmation Letter. Please review it, attach your identity document, and sign using the button above. This link is personal to you. Please do not share it with anyone else.'
+    : isGuarantee
     ? 'Journey Junction has issued your Guarantee Letter. Please review and sign it using the button above. This link is personal to you. Please do not share it with anyone else.'
     : `Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.`
 
@@ -602,7 +612,7 @@ async function handleSendEmploymentLetter(request, url) {
     body: JSON.stringify({
       from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
       to: planner_email,
-      subject: `Journey Junction — ${docName}${isGuarantee ? 'のご確認およびご署名のお願い' : 'へのご署名のお願い'}`,
+      subject: `Journey Junction — ${docName}${isEditable ? 'のご確認およびご署名のお願い' : 'へのご署名のお願い'}`,
       html: emailHtml
     })
   })
@@ -655,13 +665,18 @@ async function handleSignLetter(request, url) {
   }
   let body
   try { body = await request.json() } catch (_) { return jsonResp(400, { error: 'Invalid JSON' }) }
-  const { token, signature_data_url, user_agent } = body || {}
+  const { token, signature_data_url, id_image_data_url, user_agent } = body || {}
   if (!token || !signature_data_url) return jsonResp(400, { error: 'Missing token or signature' })
   // Cap the inline signature (stored in a text column + emailed as an attachment)
   // to ~1.5 MB of data-URL — a drawn signature is only a few KB, so this stops
   // storage-bloat / payload abuse on this public endpoint.
   if (typeof signature_data_url !== 'string' || signature_data_url.length > 1_500_000) {
     return jsonResp(413, { error: 'Signature too large' })
+  }
+  // ID photo (final confirmation only) is downscaled client-side to a JPEG, but
+  // cap generously at ~6 MB of data-URL as an abuse guard.
+  if (id_image_data_url != null && (typeof id_image_data_url !== 'string' || id_image_data_url.length > 6_000_000)) {
+    return jsonResp(413, { error: 'ID image too large' })
   }
 
   const sbHeaders = {
@@ -670,11 +685,18 @@ async function handleSignLetter(request, url) {
     'Content-Type': 'application/json'
   }
 
-  // 1. Validate the letter exists and is pending
-  const fetchResp = await fetch(
-    `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status`,
+  // 1. Validate the letter exists and is pending. letter_type may be absent on
+  //    old rows / pre-migration DBs — retry without it so signing still works.
+  let fetchResp = await fetch(
+    `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status,letter_type`,
     { headers: sbHeaders }
   )
+  if (!fetchResp.ok) {
+    fetchResp = await fetch(
+      `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status`,
+      { headers: sbHeaders }
+    )
+  }
   if (!fetchResp.ok) return jsonResp(500, { error: 'DB lookup failed' })
   const rows = await fetchResp.json()
   const letter = rows?.[0]
@@ -684,6 +706,10 @@ async function handleSignLetter(request, url) {
   // Positively require 'pending' — don't allow signing a letter in any other/
   // unknown/null state (e.g. a future 'expired'/'revoked').
   if (letter.status !== 'pending')   return jsonResp(409, { error: 'Letter is not awaiting signature' })
+
+  // A final confirmation letter MUST carry an identity document.
+  const needsId = letter.letter_type === 'final_confirmation'
+  if (needsId && !id_image_data_url) return jsonResp(400, { error: 'Identity document is required' })
 
   // 2. Validate it's a PNG data URL and keep the raw base64 (for the email
   //    attachment). data URL shape: "data:image/png;base64,xxx"
@@ -698,21 +724,50 @@ async function handleSignLetter(request, url) {
   //    text column, and the sign page / admin render it straight from the
   //    data URL in an <img src>. This removes the bucket dependency entirely.
   const imageUrl = signature_data_url
+  const signedAt = new Date().toISOString()
+
+  // 3b. If an ID document was supplied (final confirmation), upload it to the
+  //     PRIVATE 'letter-ids' bucket via the service role. Stored as a path only
+  //     (bucket is private) — the admin console downloads it through the proxy.
+  //     A failed upload must NOT silently drop the ID, so we hard-fail here.
+  let idPath = null
+  if (id_image_data_url) {
+    const im = String(id_image_data_url).match(/^data:image\/(png|jpe?g|webp);base64,(.+)$/)
+    if (!im) return jsonResp(400, { error: 'ID document must be a PNG/JPEG/WebP data URL' })
+    const ext = im[1] === 'png' ? 'png' : im[1] === 'webp' ? 'webp' : 'jpg'
+    const idBytes = Uint8Array.from(atob(im[2]), c => c.charCodeAt(0))
+    idPath = `${letter.id}/id_${Date.now()}.${ext}`
+    const upResp = await fetch(`${SUPABASE_URL}/storage/v1/object/letter-ids/${idPath}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': `image/${im[1] === 'jpg' ? 'jpeg' : im[1]}`,
+        'x-upsert': 'true'
+      },
+      body: idBytes
+    })
+    if (!upResp.ok) {
+      console.error('ID upload failed:', await upResp.text().catch(() => ''))
+      return jsonResp(500, { error: 'Could not store the identity document' })
+    }
+  }
 
   // 4. Update the letter row
-  const signedAt = new Date().toISOString()
+  const updateFields = {
+    status: 'signed',
+    signed_at: signedAt,
+    signature_image_url: imageUrl,
+    signed_user_agent: (user_agent || '').slice(0, 500),
+    signed_ip: request.headers.get('cf-connecting-ip') || null
+  }
+  if (idPath) { updateFields.id_image_url = idPath; updateFields.id_uploaded_at = signedAt }
   const updateResp = await fetch(
     `${SUPABASE_URL}/rest/v1/employment_letters?id=eq.${letter.id}`,
     {
       method: 'PATCH',
       headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({
-        status: 'signed',
-        signed_at: signedAt,
-        signature_image_url: imageUrl,
-        signed_user_agent: (user_agent || '').slice(0, 500),
-        signed_ip: request.headers.get('cf-connecting-ip') || null
-      })
+      body: JSON.stringify(updateFields)
     }
   )
   if (!updateResp.ok) {
@@ -722,14 +777,21 @@ async function handleSignLetter(request, url) {
 
   // 5. Email support@ with the signed details
   const signedDateHuman = new Date(signedAt).toLocaleString('ja-JP')
+  const docLabel = letter.letter_type === 'final_confirmation' ? 'Final confirmation letter'
+                 : letter.letter_type === 'guarantee' ? 'Letter of guarantee'
+                 : 'Engagement letter'
+  const idLine = idPath
+    ? `<p style="color:#3a3a36;line-height:1.6;font-size:14px;margin:0 0 8px;"><strong>Identity document:</strong> ✓ uploaded — view in admin (never shared by email).</p>`
+    : ''
   const html = `
     <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;padding:32px;background:#f5f4f0;">
       <div style="background:#fff;border-radius:12px;padding:32px;border:1px solid rgba(0,0,0,0.08);">
-        <h2 style="font-family:Georgia,serif;color:#1a1a18;margin:0 0 14px;">Engagement letter signed</h2>
+        <h2 style="font-family:Georgia,serif;color:#1a1a18;margin:0 0 14px;">${docLabel} signed</h2>
         <p style="color:#3a3a36;line-height:1.6;font-size:14px;margin:0 0 8px;"><strong>Planner:</strong> ${escapeForEmail(letter.planner_name)}</p>
         <p style="color:#3a3a36;line-height:1.6;font-size:14px;margin:0 0 8px;"><strong>Email:</strong> ${escapeForEmail(letter.planner_email)}</p>
         <p style="color:#3a3a36;line-height:1.6;font-size:14px;margin:0 0 8px;"><strong>Start date:</strong> ${escapeForEmail(letter.start_date)}</p>
-        <p style="color:#3a3a36;line-height:1.6;font-size:14px;margin:0 0 18px;"><strong>Signed at:</strong> ${escapeForEmail(signedDateHuman)}</p>
+        <p style="color:#3a3a36;line-height:1.6;font-size:14px;margin:0 0 8px;"><strong>Signed at:</strong> ${escapeForEmail(signedDateHuman)}</p>
+        ${idLine}
         <div style="margin:18px 0;padding:14px;background:#faf9f6;border:1px solid rgba(0,0,0,0.06);border-radius:8px;text-align:center;">
           <div style="font-size:11px;color:#7a7a74;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Signature</div>
           <div style="font-size:13px;color:#3a3a36;">Attached as <strong>signature.png</strong> · view in admin for the on-page copy.</div>
@@ -749,7 +811,7 @@ async function handleSignLetter(request, url) {
       body: JSON.stringify({
         from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
         to: 'hello@thejourneyjunction.co.uk',
-        subject: `Engagement letter signed by ${letter.planner_name}`,
+        subject: `${docLabel} signed by ${letter.planner_name}`,
         html,
         attachments: [{ filename: 'signature.png', content: b64 }]
       })
