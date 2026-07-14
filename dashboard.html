@@ -14110,7 +14110,19 @@ async function openItineraryForm(planId) {
   // Pre-fill from saved plan row (if any)
   if (plan.itin_title) { const el = document.getElementById('itin-title');      if (el) el.value = plan.itin_title }
   if (plan.start_date) setItinDate('itin-start', plan.start_date)
-  if (plan.end_date)   setItinDate('itin-end',   plan.end_date)
+  // END DATE is ALWAYS derived from start + duration ("終了日 · 期間から自動設定").
+  // Never trust a stored end_date: a stale one — e.g. saved in a moment when the
+  // traveler's duration string was missing, so the parser fell back to its 1-night
+  // (2-day) default — would keep showing a wrong trip length even while the day tabs
+  // read the live duration. Recomputing on every open means the end can never
+  // disagree with the duration again. (_durDays parsed above; t.arrival_date already
+  // reflects any arrival_date_snapshot override.)
+  {
+    const _effStart = plan.start_date || t.arrival_date
+    if (_effStart && typeof addDaysLocal === 'function') {
+      setItinDate('itin-end', addDaysLocal(_effStart, _durDays - 1))
+    }
+  }
   if (plan.transport_tips)  { const el = document.getElementById('transport-tips');  if (el) el.value = plan.transport_tips }
   if (plan.spend_breakdown) { const el = document.getElementById('spend-breakdown'); if (el) el.value = plan.spend_breakdown }
   if (plan.local_tips)      { const el = document.getElementById('local-tips');      if (el) el.value = plan.local_tips }
