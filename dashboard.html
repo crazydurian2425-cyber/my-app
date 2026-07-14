@@ -13965,8 +13965,12 @@ async function openItineraryForm(planId) {
   window._currentDestination   = t.destination    || null
   // Expose the trip's start date so Places chips can compute the calendar
   // date for each day's slots — used to show planned-day opening hours and
-  // flag places closed on that weekday.
-  window._currentTripStartDate = plan.start_date || t.arrival_date || null
+  // flag places closed on that weekday. Prefer the TRAVELER's arrival_date
+  // (the single source of truth for dates now — see the itin-start/end
+  // derivation below) so a stale carried-forward plan.start_date can't make
+  // the chips compute the wrong weekday. t.arrival_date already reflects any
+  // arrival_date_snapshot override.
+  window._currentTripStartDate = t.arrival_date || plan.start_date || null
   // Per-plan hotel anchor — drives the morning/end-of-day locked rows.
   // Falls back to a meta hint if the planner hasn't picked a hotel yet.
   window._currentHotelName     = plan.hotel_name     || _tmeta.unit_hotel_name     || null
@@ -14109,19 +14113,21 @@ async function openItineraryForm(planId) {
 
   // Pre-fill from saved plan row (if any)
   if (plan.itin_title) { const el = document.getElementById('itin-title');      if (el) el.value = plan.itin_title }
-  if (plan.start_date) setItinDate('itin-start', plan.start_date)
-  // END DATE is ALWAYS derived from start + duration ("終了日 · 期間から自動設定").
-  // Never trust a stored end_date: a stale one — e.g. saved in a moment when the
-  // traveler's duration string was missing, so the parser fell back to its 1-night
-  // (2-day) default — would keep showing a wrong trip length even while the day tabs
-  // read the live duration. Recomputing on every open means the end can never
-  // disagree with the duration again. (_durDays parsed above; t.arrival_date already
-  // reflects any arrival_date_snapshot override.)
-  {
-    const _effStart = plan.start_date || t.arrival_date
-    if (_effStart && typeof addDaysLocal === 'function') {
-      setItinDate('itin-end', addDaysLocal(_effStart, _durDays - 1))
-    }
+  // START + END DATES ARE ALWAYS DERIVED FROM THE TRAVELER BRIEF — never from the
+  // stored plan.start_date/end_date. The planner CANNOT edit these fields (they're
+  // read-only "旅行者が設定" / "期間から自動設定"), so the traveler's arrival_date +
+  // duration is the single source of truth. Trusting the stored plan value here was
+  // the dates half of the cross-plan corruption: a plan whose row carried a
+  // PREVIOUS trip's start_date (e.g. 8/8 from a Hiroshima plan) would override the
+  // correct traveler date (8/6) — brief said Osaka 8/6, itinerary showed 8/8.
+  // Deriving from t.arrival_date (which already reflects any arrival_date_snapshot)
+  // makes the dates always match the brief and impossible to carry forward; the
+  // dates were already set from the traveler at ~14067, this just guarantees no
+  // stored value overrides them. (End also recomputed so it can't disagree with
+  // the live duration.)
+  if (t.arrival_date && typeof addDaysLocal === 'function') {
+    setItinDate('itin-start', t.arrival_date)
+    setItinDate('itin-end', addDaysLocal(t.arrival_date, _durDays - 1))
   }
   if (plan.transport_tips)  { const el = document.getElementById('transport-tips');  if (el) el.value = plan.transport_tips }
   if (plan.spend_breakdown) { const el = document.getElementById('spend-breakdown'); if (el) el.value = plan.spend_breakdown }
