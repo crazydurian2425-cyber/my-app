@@ -24228,6 +24228,11 @@ async function _wipePlanToFresh(planId) {
     hotel_lng:            null,
     hotel_check_in_time:  null,
     hotel_check_out_time: null,
+    // The traveler message was MISSING from this list since the column was
+    // added — so a reset/reassigned plan kept the previous message and it
+    // resurfaced on the "fresh" plan (the 箱根 leftover-message report), and
+    // a reassigned planner could inherit the previous planner's note.
+    personal_message_to_traveler: null,
     hotel_stores_bags:    null,
   }).eq('id', planId)
   if (updErr) { console.warn('[wipe-plan] plan update failed', updErr); return false }
@@ -24242,7 +24247,7 @@ async function _wipePlanToFresh(planId) {
 // isn't accessible (e.g. unexpected error path).
 async function resetCurrentPlanToFresh() {
   if (!currentPlanId) { showToast(dt('No plan is currently open','現在開いているプランがありません')); return }
-  const ok = confirm(dt('Reset this plan to a fresh state? Every itinerary item, hotel pick, transport tip, and spend-breakdown note you added will be cleared. This cannot be undone.','このプランを初期状態にリセットしますか？追加した旅程の項目、ホテルの選択、交通のヒント、支出メモがすべて消去されます。この操作は取り消せません。'))
+  const ok = confirm(dt('Reset this plan to a fresh state? Every itinerary item, hotel pick, transport tip, spend-breakdown note, and the personal message to the traveler will be cleared. This cannot be undone.','このプランを初期状態にリセットしますか？追加した旅程の項目、ホテルの選択、交通のヒント、支出メモ、旅行者へのメッセージがすべて消去されます。この操作は取り消せません。'))
   if (!ok) return
   // Cancel any pending debounced autosave — otherwise it might fire
   // AFTER the wipe and write stale form contents back to the DB. Also clear the
