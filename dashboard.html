@@ -24052,14 +24052,19 @@ async function submitPlan() {
   // Old item_images rows are wiped via cascade on plan_id (or via the items
   // delete cascade). We re-insert from the per-slot URL map collected above.
   //
+  // Tapping Submit is a deliberate commit — any kana→kanji conversion is over
+  // by definition. Clear a possibly-stuck IME flag here so a dropped iOS
+  // compositionend (which left _imeComposing=true forever) can't block the
+  // submit with "couldn't read the itinerary". The real data protection below
+  // is the empty-scan check (body.items?.length), which is untouched.
+  window._imeComposing = false
   // PHASE-1 SAFETY (mirrors autosave): submit's delete below is a PLAN-WIDE wipe.
-  // Never run it on an incomplete/empty scan — if the form is mid-rebuild, a
-  // Japanese IME conversion is mid-flight, or the scan produced no items, the
-  // planner's rows would be deleted and replaced with a partial/empty set. Abort
-  // the item write, roll the status back off 'submitted', and let them retry — the
-  // on-screen items are untouched, so nothing is lost. (Full submit atomicity —
-  // insert-first / one transaction — is the Phase 2 change, done with a test pass.)
-  if (window._itinFormReady === false || window._imeComposing || !body.items?.length) {
+  // Never run it on an incomplete/empty scan — if the form is mid-rebuild or the
+  // scan produced no items, the planner's rows would be deleted and replaced with
+  // a partial/empty set. Abort the item write, roll the status back off
+  // 'submitted', and let them retry — the on-screen items are untouched, so
+  // nothing is lost.
+  if (window._itinFormReady === false || !body.items?.length) {
     console.warn('[submit] incomplete item scan — aborting item write to protect the plan', { ready: window._itinFormReady, ime: window._imeComposing, n: body.items?.length })
     if (_prevStatus) await sb.from('plans').update({ status: _prevStatus }).eq('id', currentPlanId)
     showToast(dt('Could not read your itinerary fully — please wait a moment and submit again.','旅程を完全に読み取れませんでした。少し待ってからもう一度提出してください。'))
@@ -24622,14 +24627,36 @@ if (window._imeComposing === undefined) window._imeComposing = false
 // scan", so a blank/mid-reflow/mid-render slot can never lose its saved row.
 if (!window._pendingItemDeletes) window._pendingItemDeletes = new Set()
 ;(function _installImeGuard(){
+  // SELF-HEALING. iOS Safari frequently DROPS compositionend (tap-away,
+  // predictive-text accept, field switch). With no backup, _imeComposing got
+  // stuck `true` forever → every submit hit the "couldn't read the itinerary"
+  // guard and the plan could never be submitted (iPhone + Japanese only —
+  // exactly the reported bug). So clear the flag not just on compositionend
+  // but also on a safety timeout and on blur/typing, and re-arm the timeout
+  // on each compositionstart. A real kana→kanji conversion is over in well
+  // under 4s, so this can never mis-clear a live composition.
+  let _imeSafetyT = null
+  const _clearIme = (fireSave) => {
+    if (!window._imeComposing) { if (_imeSafetyT) { clearTimeout(_imeSafetyT); _imeSafetyT = null } return }
+    window._imeComposing = false
+    if (_imeSafetyT) { clearTimeout(_imeSafetyT); _imeSafetyT = null }
+    if (fireSave && typeof autoSaveDraft === 'function' && typeof currentPlanId !== 'undefined' && currentPlanId) autoSaveDraft()
+  }
   try {
-    document.addEventListener('compositionstart', () => { window._imeComposing = true }, true)
-    document.addEventListener('compositionend', () => {
-      window._imeComposing = false
-      // A save was skipped mid-composition — persist the now-committed text.
-      if (typeof autoSaveDraft === 'function' && typeof currentPlanId !== 'undefined' && currentPlanId) autoSaveDraft()
+    document.addEventListener('compositionstart', () => {
+      window._imeComposing = true
+      if (_imeSafetyT) clearTimeout(_imeSafetyT)
+      _imeSafetyT = setTimeout(() => _clearIme(false), 4000)   // backup if compositionend never fires
     }, true)
+    document.addEventListener('compositionend', () => _clearIme(true), true)
+    // Extra safety nets for the dropped-event case: leaving the field, or any
+    // non-composition keystroke, means the conversion is done.
+    document.addEventListener('blur', () => _clearIme(false), true)
+    document.addEventListener('keydown', (e) => { if (window._imeComposing && !e.isComposing) _clearIme(false) }, true)
   } catch (e) { /* non-fatal — the form-ready + empty guards still protect */ }
+  // Belt-and-suspenders: a deliberate button/link tap means the planner is
+  // done typing — never let a stuck IME flag block a real click (e.g. Submit).
+  try { document.addEventListener('pointerdown', (e) => { if (window._imeComposing && e.target.closest('button, a, .wiz-submit')) _clearIme(false) }, true) } catch (e) {}
 })();
 
 async function silentSaveDraft(scheduledPlanId) {
