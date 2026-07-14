@@ -24239,6 +24239,12 @@ async function _wipePlanToFresh(planId) {
     // a reassigned planner could inherit the previous planner's note.
     personal_message_to_traveler: null,
     hotel_stores_bags:    null,
+    // start_date/end_date were ALSO missing — a reset/reassigned plan kept the
+    // OLD trip's dates, which is half of the "brief=Osaka / itinerary=Hiroshima"
+    // corruption (the itinerary showed the previous trip's 8/8-8/10). Clear them
+    // so a wiped plan re-derives dates from the current traveler on next open.
+    start_date:           null,
+    end_date:             null,
   }).eq('id', planId)
   if (updErr) { console.warn('[wipe-plan] plan update failed', updErr); return false }
   jjlog('[wipe-plan] done', planId)
@@ -24370,6 +24376,18 @@ async function _persistDraft(planId) {
   // we just don't update those columns (existing DB values are left
   // intact). The new column is personal_message_to_traveler, fed from
   // the Review page textarea.
+  // CROSS-PLAN GUARD: the plan-level fields below (title/dates/message/stats)
+  // are read from the LIVE DOM, exactly like the items sync further down — so
+  // the SAME "form still rebuilding" guard must protect this write too. During
+  // openItineraryForm's rebuild the DOM transiently holds the PREVIOUS plan's
+  // title/dates; a save firing in that window (e.g. an iOS compositionend) would
+  // otherwise stamp that stale title/dates onto THIS plan's row. That is the
+  // write path behind the "brief=Osaka / itinerary=Hiroshima" corruption. Bail
+  // early (nothing to persist mid-rebuild); the next save on a settled form saves.
+  if (window._itinFormReady === false) {
+    console.warn('[autosave] form mid-rebuild — skipping plan-level + item write (no cross-plan bleed)')
+    return true
+  }
   const _personalMessage = document.getElementById('review-personal-message')?.value?.trim() || null
   const _baseBody = {
     itin_title: document.getElementById('itin-title')?.value?.trim() || '',
