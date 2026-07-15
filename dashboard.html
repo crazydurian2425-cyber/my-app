@@ -10641,8 +10641,8 @@ async function loadPendingPayments() {
             const amtFmt     = fmtMoney(Number(r.amount || 0))
             return `
             <div style="padding:14px 18px;border-top:1px solid var(--border);">
-              <div style="display:flex;align-items:flex-start;gap:14px;">
-                <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+                <div style="flex:1 1 180px;min-width:180px;">
                   <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;">${escapeHtml(reasonShow)}</div>
                   ${descShow ? `<div style="font-size:12.5px;color:var(--text-2);line-height:1.55;margin-bottom:8px;">${escapeHtml(descShow)}</div>` : ''}
                   ${r.payment_instructions ? `<div style="margin-top:10px;padding:10px 12px;background:rgba(0,0,0,0.04);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-2);line-height:1.55;white-space:pre-wrap;"><div style="font-size:10px;text-transform:uppercase;letter-spacing:0.10em;color:var(--text-3);font-weight:700;margin-bottom:4px;">${t('pp.card.howToPay','How to pay')}</div>${escapeHtml(r.payment_instructions)}</div>` : ''}
