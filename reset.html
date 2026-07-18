@@ -13,12 +13,12 @@ body{font-family:'Noto Sans JP','DM Sans',system-ui,sans-serif;background:#f5f4f
 .card{background:#fff;border:1px solid rgba(0,0,0,0.08);border-radius:16px;padding:40px;width:100%;max-width:420px;}
 .logo{font-family:'DM Serif Display',serif;font-size:26px;color:#1a1a18;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
 .logo img{width:24px;height:24px;border-radius:50%;}
-.logo span{color:#1a7a5e;}
+.logo span{color:var(--green,#1a7a5e);}
 .sub{font-size:13px;color:#9a9a94;margin-bottom:24px;line-height:1.5;}
 .email-pill{display:inline-block;background:#f5f4f0;border:1px solid rgba(0,0,0,0.08);border-radius:6px;padding:3px 8px;font-size:12px;color:#1a1a18;font-weight:500;}
 .label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:#7a7a74;margin-bottom:6px;display:block;margin-top:4px;}
 .input{width:100%;padding:11px 14px;border:1px solid rgba(0,0,0,0.13);border-radius:8px;font-size:14px;font-family:'Noto Sans JP','DM Sans',sans-serif;color:#1a1a18;outline:none;transition:border-color 0.15s;margin-bottom:14px;}
-.input:focus{border-color:#2d9e7a;}
+.input:focus{border-color:var(--green-mid,#2d9e7a);}
 .input.code{font-family:'JetBrains Mono','SF Mono',Menlo,monospace;font-size:18px;letter-spacing:0.4em;text-align:center;padding:14px;}
 /* Password input wrapper — gives the eye toggle a place to sit. */
 .pw-wrap{position:relative;}
@@ -29,16 +29,16 @@ body{font-family:'Noto Sans JP','DM Sans',system-ui,sans-serif;background:#f5f4f
 .pw-rules{margin:-8px 0 14px;padding:0;list-style:none;font-size:12px;color:#7a7a74;}
 .pw-rules li{display:flex;align-items:center;gap:6px;padding:2px 0;}
 .pw-rules li::before{content:"·";color:#9a9a94;font-weight:700;width:14px;display:inline-block;text-align:center;}
-.pw-rules li.ok{color:#0f5240;}
-.pw-rules li.ok::before{content:"✓";color:#1a7a5e;}
-.btn{width:100%;padding:12px;border-radius:8px;background:#1a7a5e;color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:'Noto Sans JP','DM Sans',sans-serif;margin-bottom:8px;}
+.pw-rules li.ok{color:var(--green-dark,#0f5240);}
+.pw-rules li.ok::before{content:"✓";color:var(--green,#1a7a5e);}
+.btn{width:100%;padding:12px;border-radius:8px;background:var(--green,#1a7a5e);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:'Noto Sans JP','DM Sans',sans-serif;margin-bottom:8px;}
 .btn:disabled{background:#b4b4ae;cursor:not-allowed;}
-.btn-link{background:none;border:0;color:#1a7a5e;font-size:12px;cursor:pointer;font-family:inherit;padding:6px;}
+.btn-link{background:none;border:0;color:var(--green,#1a7a5e);font-size:12px;cursor:pointer;font-family:inherit;padding:6px;}
 .btn-link:hover{text-decoration:underline;}
 .error{background:#fdecea;color:#c0392b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;}
-.success{background:#e8f5f0;color:#0f5240;border-radius:8px;padding:14px;font-size:13px;margin-bottom:14px;display:none;line-height:1.5;}
+.success{background:#e8f5f0;color:var(--green-dark,#0f5240);border-radius:8px;padding:14px;font-size:13px;margin-bottom:14px;display:none;line-height:1.5;}
 .foot{font-size:12px;color:#9a9a94;margin-top:14px;text-align:center;}
-.foot a{color:#1a7a5e;text-decoration:none;}
+.foot a{color:var(--green,#1a7a5e);text-decoration:none;}
 /* Mobile: 16px form fields so iOS Safari doesn't zoom-in on focus. Keep the
    OTP code field at 18px (already >16, no zoom) so it isn't shrunk. */
 @media (max-width:640px){ input,select,textarea{ font-size:16px !important; } .input.code{ font-size:18px !important; } }

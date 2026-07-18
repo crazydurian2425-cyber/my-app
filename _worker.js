@@ -77,9 +77,9 @@ const BRANDS = {
     // Design-token overrides injected into <head> for this host — reskins every
     // var(--green*) colour app-wide without touching the page source.
     green: '#3A5647', greenDark: '#2E4639', greenMid: '#7FA187', greenLight: '#E9EFEA',
-    // Email header: no raster logo yet (only SVG supplied, which email clients
-    // strip), so the letter template renders a text wordmark instead.
-    emailLogoImg: '',
+    // Email header: raster PNG (email clients strip SVG) — the rounded VBD
+    // app-icon tile, shown as a round 32px logo beside the wordmark.
+    emailLogoImg: 'https://itinerarydesignhub.com/vbd-app-icon.png',
     wordmarkLead: 'Vacations ',
     wordmarkAccent: 'by Design',
     footer: 'Vacations by Design Ltd · 9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR · Company No. 03039047',

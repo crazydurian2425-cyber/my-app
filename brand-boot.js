@@ -22,7 +22,7 @@
     vbd: {
       key: 'vbd',
       name: 'Vacations by Design',
-      icon: '/vbd-app-icon.svg',
+      icon: '/vbd-app-icon.png',
       wordmarkLead: 'Vacations',   // dark half
       wordmarkAccent: 'by Design', // sage half
       tokens: {
@@ -111,7 +111,7 @@
       var links = document.querySelectorAll('link[rel~="icon"]');
       for (var i = 0; i < links.length; i++) links[i].parentNode.removeChild(links[i]);
       var ic = document.createElement('link');
-      ic.rel = 'icon'; ic.type = 'image/svg+xml'; ic.href = B.icon;
+      ic.rel = 'icon'; ic.type = 'image/png'; ic.href = B.icon;
       head().appendChild(ic);
     }
   } catch (e) {}
