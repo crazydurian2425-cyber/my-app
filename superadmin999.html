@@ -2757,6 +2757,37 @@ const JJ_PLANNER_URL = 'https://journeyjunctionplanner.com'
 // Resend API key lives server-side in _worker.js. superadmin999.html never holds it.
 const APPROVAL_FROM = 'Journey Junction <hello@thejourneyjunction.co.uk>'
 
+// Approval / welcome email chrome per brand. The applicant's brand comes from
+// planner_applications.brand (the domain they applied on), so a Journey Junction
+// applicant gets a JJ welcome and a Vacations by Design applicant gets a VBD one,
+// no matter which admin console approves them. (VBD has no raster email logo yet
+// — email clients strip SVG — so it renders a text wordmark.)
+const APPROVAL_BRANDS = {
+  jj: {
+    key: 'jj',
+    name: 'Journey Junction',
+    from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
+    site: 'https://journeyjunctionplanner.com',
+    accent: '#1a7a5e',
+    logoImg: 'https://journeyjunctionplanner.com/jj.jpg?v=2',
+    wordmark: 'Journey<span style="color:#1a7a5e;font-style:italic;">Junction</span>',
+    footer: 'Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277'
+  },
+  vbd: {
+    key: 'vbd',
+    name: 'Vacations by Design',
+    from: 'Vacations by Design <hello@thevacationsbydesign.co.uk>',
+    site: 'https://itinerarydesignhub.com',
+    accent: '#3A5647',
+    logoImg: '',
+    wordmark: 'Vacations <span style="color:#3A5647;font-style:italic;">by Design</span>',
+    footer: 'Vacations by Design Ltd · 9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR · Company No. 03039047'
+  }
+}
+function approvalBrand(bk){ return APPROVAL_BRANDS[bk === 'vbd' ? 'vbd' : 'jj'] }
+// Applicant's brand for the currently-open welcome-email modal (set on open).
+let _welcomeBrand = 'jj'
+
 // Simple admin password protection
 const ADMIN_PASS = '168168'
 const _cachedAdmin = localStorage.getItem('jj_admin')
@@ -9048,13 +9079,15 @@ async function sendApprovalEmailAuto(app){
     console.warn('Resend API key not set — falling back to manual email')
     return false
   }
-  const loginUrl = buildPlannerLoginUrl()
+  const _bk = app.brand === 'vbd' ? 'vbd' : 'jj'
+  const B = approvalBrand(_bk)
+  const loginUrl = buildPlannerLoginUrl(_bk)
   const firstName = (app.name || '').split(' ')[0] || 'プランナー'
-  const subject = `Journey Junction プランナーへのご応募が承認されました`
+  const subject = `${B.name} プランナーへのご応募が承認されました`
   // Use the same branded template as the manual send so the auto-fired email
   // also includes the logo + consistent footer. `middle` is empty since we
   // don't have an admin-edited body in the auto path.
-  const html = buildApprovalEmailHtml({ firstName, middle: '', loginUrl })
+  const html = buildApprovalEmailHtml({ firstName, middle: '', loginUrl, B })
 
   try {
     const r = await fetch('https://api.resend.com/emails', {
@@ -9064,7 +9097,7 @@ async function sendApprovalEmailAuto(app){
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: APPROVAL_FROM,
+        from: B.from,
         to: app.email,
         subject,
         html
@@ -9085,12 +9118,13 @@ async function sendApprovalEmailAuto(app){
   }
 }
 
-function buildPlannerLoginUrl(){
-  // Prefer the explicit config. Only fall back to window.location if the admin panel
-  // is served from a real http(s) host AND JJ_PLANNER_URL wasn't customized.
+function buildPlannerLoginUrl(bk){
+  // Brand-aware: a Vacations by Design applicant gets an itinerarydesignhub.com
+  // login link; everyone else the Journey Junction domain.
   // Clean URL (no .html): the site serves login.html at /login and even
   // 308-redirects /login.html → /login, so the email shows a tidy link.
-  const configured = (JJ_PLANNER_URL || '').replace(/\/$/, '')
+  const site = (bk && APPROVAL_BRANDS[bk]) ? APPROVAL_BRANDS[bk].site : (JJ_PLANNER_URL || '')
+  const configured = (site || '').replace(/\/$/, '')
   if (configured) return configured + '/login'
   const proto = window.location.protocol
   if (proto === 'http:' || proto === 'https:') {
@@ -9103,27 +9137,35 @@ function buildPlannerLoginUrl(){
 function openApprovalEmail(id){
   const app = _allApps.find(x => x.id === id)
   if (!app) return
-  const loginUrl = buildPlannerLoginUrl()
+  _welcomeBrand = app.brand === 'vbd' ? 'vbd' : 'jj'   // brand the applicant applied under
+  const B = approvalBrand(_welcomeBrand)
+  const loginUrl = buildPlannerLoginUrl(_welcomeBrand)
   document.getElementById('welcome-to').textContent = app.email
-  document.getElementById('welcome-subject').value = `Journey Junction プランナーへのご応募が承認されました`
+  document.getElementById('welcome-subject').value = `${B.name} プランナーへのご応募が承認されました`
   document.getElementById('welcome-body').value =
 `こんにちは ${app.name.split(' ')[0]} さん、
 
-Journey Junction プランナーへのご応募が承認されました。
+${B.name} プランナーへのご応募が承認されました。
 
 ご応募時に設定されたメールアドレスとパスワードでログインしてください：
 ${loginUrl}
 
 開始にあたってご不明な点がございましたら、このメールにそのままご返信ください。
 
-— Journey Junction`
+— ${B.name}`
   openModal('modal-welcome-email')
 }
 
 // Branded HTML wrapper for approval emails. The editable body from the
 // admin modal becomes the inner paragraphs; the brand chrome (logo, CTA
 // button, footer) is fixed.
-function buildApprovalEmailHtml({ firstName, middle, loginUrl }) {
+function buildApprovalEmailHtml({ firstName, middle, loginUrl, B }) {
+  B = B || approvalBrand('jj')
+  // JJ has a raster round logo; VBD has only an SVG (email clients strip SVG),
+  // so it renders a text wordmark with no <img>.
+  const logoCell = B.logoImg
+    ? `<td style="vertical-align:middle;padding-right:10px;"><img src="${B.logoImg}" alt="${escapeHtml(B.name)}" width="32" height="32" style="display:block;border-radius:50%;border:0;outline:none;text-decoration:none;"></td>`
+    : ''
   const paras = (middle || '')
     .split(/\n{2,}/)
     .map(p => p.trim())
@@ -9138,11 +9180,9 @@ function buildApprovalEmailHtml({ firstName, middle, loginUrl }) {
       <tr><td style="padding:32px 36px 8px 36px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="vertical-align:middle;padding-right:10px;">
-              <img src="https://journeyjunctionplanner.com/jj.jpg?v=2" alt="Journey Junction" width="32" height="32" style="display:block;border-radius:50%;border:0;outline:none;text-decoration:none;">
-            </td>
+            ${logoCell}
             <td style="vertical-align:middle;font-family:Georgia,'DM Serif Display',serif;font-size:22px;color:#1a1a18;letter-spacing:-0.4px;">
-              Journey<span style="color:#1a7a5e;font-style:italic;">Junction</span>
+              ${B.wordmark}
             </td>
           </tr>
         </table>
@@ -9151,17 +9191,17 @@ function buildApprovalEmailHtml({ firstName, middle, loginUrl }) {
 
       <tr><td style="padding:24px 36px 4px 36px;">
         <h1 style="margin:0 0 6px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
-          ようこそ、<em style="font-style:italic;color:#1a7a5e;">${escapeHtml(firstName)}</em> さん
+          ようこそ、<em style="font-style:italic;color:${B.accent};">${escapeHtml(firstName)}</em> さん
         </h1>
         <p style="margin:0 0 22px;font-size:14px;line-height:1.6;color:#5a554c;">
-          Journey Junction プランナーへのご応募が<strong style="color:#1a7a5e;">承認されました</strong>。ご応募時に設定されたメールアドレスとパスワードでログインいただけます。
+          ${escapeHtml(B.name)} プランナーへのご応募が<strong style="color:${B.accent};">承認されました</strong>。ご応募時に設定されたメールアドレスとパスワードでログインいただけます。
         </p>
       </td></tr>
 
       <tr><td style="padding:0 36px 8px 36px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr><td align="center" style="padding:6px 0 14px;">
-            <a href="${escapeHtml(loginUrl)}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">プランナーポータルを開く →</a>
+            <a href="${escapeHtml(loginUrl)}" style="display:inline-block;background:${B.accent};color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">プランナーポータルを開く →</a>
           </td></tr>
         </table>
       </td></tr>
@@ -9177,7 +9217,7 @@ function buildApprovalEmailHtml({ firstName, middle, loginUrl }) {
 
       <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
         <p style="margin:0;font-size:11px;line-height:1.55;color:#8c8678;">
-          Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277
+          ${escapeHtml(B.footer)}
         </p>
       </td></tr>
     </table>
@@ -9207,11 +9247,12 @@ async function sendApprovalEmail(){
     .replace(/^[^、,\s][^、,]*?\s*さん[、,]\s*\n+/, '')
     .replace(/^Bonjour\s+[^,]+,\s*\n+/i, '')
     .replace(/^Hi\s+[^,]+,\s*\n+/i, '')
-    .replace(/\n*—\s*Journey Junction\s*$/i, '')
+    .replace(/\n*—\s*(Journey Junction|Vacations by Design)\s*$/i, '')
     .trim()
 
-  const loginUrl = buildPlannerLoginUrl()
-  const html = buildApprovalEmailHtml({ firstName, middle, loginUrl })
+  const B = approvalBrand(_welcomeBrand)
+  const loginUrl = buildPlannerLoginUrl(_welcomeBrand)
+  const html = buildApprovalEmailHtml({ firstName, middle, loginUrl, B })
 
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…' }
   try {
@@ -9219,7 +9260,7 @@ async function sendApprovalEmail(){
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ from: APPROVAL_FROM, to, subject, html, text: body })
+      body: JSON.stringify({ from: B.from, brand: B.key, to, subject, html, text: body })
     })
     if (!r.ok) {
       const t = await r.text()

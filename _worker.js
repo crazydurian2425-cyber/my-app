@@ -494,10 +494,15 @@ async function handleSendApproval(request, brand) {
   try { body = await request.json() } catch (_) {
     return jsonResp(400, { error: 'Invalid JSON' })
   }
-  const { to, subject, html, text } = body
+  const { to, subject, html, text, brand: bodyBrand } = body
   if (!to || !subject || (!html && !text)) {
     return jsonResp(400, { error: 'Missing required fields: to, subject, html|text' })
   }
+  // The approval email is branded by the APPLICANT's brand (superadmin sends it
+  // as `brand`), not the admin's viewing domain — so a Vacations by Design
+  // applicant's welcome comes from the VBD sender. brandByKey only ever maps to
+  // a verified sender ('jj'/'vbd'), so honouring it can't spoof an arbitrary from.
+  const sendBrand = bodyBrand ? brandByKey(bodyBrand) : brand
   // Validate recipients are well-formed addresses (string or array). Stops this
   // authed endpoint from being abused as a generic relay with junk targets.
   const _emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -513,11 +518,9 @@ async function handleSendApproval(request, brand) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      // FORCE the verified sender for THIS request's brand — never honour a
-      // client-supplied `from`, so this can't be used to spoof mail from the
-      // brand domain. (The email body is built client-side in superadmin999.html;
-      // making that body brand-aware is a follow-up — see notes.)
-      from: brand.emailFrom,
+      // FORCE a verified sender (the applicant's brand) — never honour a raw
+      // client-supplied `from` string, so this can't be used to spoof mail.
+      from: sendBrand.emailFrom,
       to,
       subject,
       html,
