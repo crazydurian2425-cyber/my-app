@@ -44,9 +44,10 @@ const PUBLIC_SITE_URL = 'https://journeyjunctionplanner.com'
 //   journeyjunctionplanner.com → Journey Junction   (default)
 //   itinerarydesignhub.com     → Vacations by Design (Sage & Poppy)
 // Journey Junction's values equal the previously-hardcoded ones, so
-// nothing about the live JJ site or its emails changes. Only the new
-// host gets a different brand — and only the new host loads
-// /brand-apply.js + the injected token override (see brandRewriter).
+// nothing about the live JJ site or its emails changes. This Worker uses
+// the brand only for the outbound-email identity (email handlers below);
+// the VISUAL skin is applied client-side by /brand-boot.js, since static
+// pages are served directly by the asset layer and never reach this Worker.
 // ─────────────────────────────────────────────────────────────
 const BRANDS = {
   'journeyjunctionplanner.com': {
