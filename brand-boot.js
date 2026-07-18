@@ -59,8 +59,8 @@
         ['15791277', '03039047'],
         ['20 June 2024', '29 March 1995'],
         ['2024年6月20日', '1995年3月29日'],
-        ['Director: Midhun Peter', 'Director: Mathilde Gilberte Renee Robert'],
-        ['Midhun Peter', 'Mathilde Gilberte Renee Robert']
+        ['Director: Midhun Peter', 'Director: Charalambos Andrew Kyrillou'],
+        ['Midhun Peter', 'Charalambos Andrew Kyrillou']
       ]
     }
   };
