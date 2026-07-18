@@ -94,6 +94,14 @@ function brandFor(host) {
   return BRANDS[h] || BRANDS['journeyjunctionplanner.com']
 }
 
+// Resolve a brand by its key ('jj' / 'vbd') — used to brand a letter/email by
+// the PLANNER's stored brand rather than the admin's viewing domain. Unknown /
+// missing key → Journey Junction.
+function brandByKey(key) {
+  for (const h in BRANDS) if (BRANDS[h].key === key) return BRANDS[h]
+  return BRANDS['journeyjunctionplanner.com']
+}
+
 // NOTE: the visual skin is applied CLIENT-SIDE by /brand-boot.js, not here.
 // On this project's Cloudflare setup static files (.html/images) are served
 // directly by the asset layer and never invoke this Worker (it only runs for
@@ -141,7 +149,7 @@ export default {
 
     // ── Create-planner endpoint (admin only) ──
     if (url.pathname === '/api/create-planner' && request.method === 'POST') {
-      return handleCreatePlanner(request)
+      return handleCreatePlanner(request, brand)
     }
 
     // ── Employment-letter endpoints ──
@@ -294,7 +302,7 @@ async function handleSupabaseProxy(request, url) {
 // Bypasses application/approval flow. Uses service-role key to create the
 // auth user (email pre-confirmed, no signup verification email) and insert
 // a matching row in the `planners` table.
-async function handleCreatePlanner(request) {
+async function handleCreatePlanner(request, brand) {
   const cred = checkAuth(request, null)
   if (!cred || cred.user !== 'admin') return challenge()
 
@@ -352,13 +360,26 @@ async function handleCreatePlanner(request) {
     phone: phone || null,
     city: 'Tokyo',
     admin_created: true,
-    is_subaccount: !!is_subaccount
+    is_subaccount: !!is_subaccount,
+    // Direct-created planners take the brand of the admin console they were
+    // created from (jj / vbd).
+    brand: brand.key
   }
-  const planResp = await fetch(`${SUPABASE_URL}/rest/v1/planners`, {
+  let planResp = await fetch(`${SUPABASE_URL}/rest/v1/planners`, {
     method: 'POST',
     headers: { ...sbHeaders, 'Prefer': 'return=representation' },
     body: JSON.stringify(planRow)
   })
+  if (!planResp.ok) {
+    // Maybe the `brand` column isn't migrated yet — retry without it before
+    // giving up (and before the orphan-user cleanup below).
+    const noBrand = Object.assign({}, planRow); delete noBrand.brand
+    planResp = await fetch(`${SUPABASE_URL}/rest/v1/planners`, {
+      method: 'POST',
+      headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+      body: JSON.stringify(noBrand)
+    })
+  }
   if (!planResp.ok) {
     const errText = await planResp.text().catch(() => '')
     // Best-effort cleanup: delete the orphan auth user so admin can retry
@@ -545,6 +566,25 @@ async function handleSendEmploymentLetter(request, url, brand) {
   if (!planner_id || !planner_name || !planner_email || !start_date) {
     return jsonResp(400, { error: 'Missing required fields' })
   }
+
+  // The letter's identity follows the PLANNER (their stored brand), NOT the
+  // admin's viewing domain — so a Journey Junction planner always gets a Journey
+  // Junction contract even if issued from the VBD console, and vice-versa. This
+  // reassignment flows through every brand.* use below (email from/footer/
+  // wordmark, signing-link domain, and the stored letter.brand). Falls back to
+  // the request-domain brand if the lookup fails or the brand column is absent.
+  try {
+    const pr = await fetch(
+      `${SUPABASE_URL}/rest/v1/planners?id=eq.${encodeURIComponent(planner_id)}&select=brand`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    )
+    if (pr.ok) {
+      const pj = await pr.json().catch(() => null)
+      const bk = pj && pj[0] && pj[0].brand
+      if (bk) brand = brandByKey(bk)
+    }
+  } catch (e) { /* keep the request-domain brand as fallback */ }
+
   // Three letter kinds share this endpoint:
   //   'employment'         — fixed contract body (no custom_body)
   //   'guarantee'          — admin-edited 保証書 body

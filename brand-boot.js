@@ -16,8 +16,10 @@
 (function () {
   var HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '');
 
+  // Keyed by brand KEY (not hostname) so it can be resolved from the logged-in
+  // planner's record as well as from the domain.
   var BRANDS = {
-    'itinerarydesignhub.com': {
+    vbd: {
       key: 'vbd',
       name: 'Vacations by Design',
       icon: '/vbd-app-icon.svg',
@@ -54,8 +56,25 @@
     }
   };
 
-  var B = BRANDS[HOST];
-  if (!B) return;                 // default host (Journey Junction) → untouched
+  // Which brand key applies?
+  //   • Dashboard (logged in) → the PLANNER's own brand, from the record cached
+  //     at login. So a Journey Junction planner never sees Vacations by Design
+  //     (or vice-versa), even if they open the other brand's domain.
+  //   • Public pages (login / apply / legal …) → the viewing domain, so a NEW
+  //     applicant sees the brand of the site they're actually on. (We must NOT
+  //     read a stale cached planner brand here.)
+  function hostBrandKey() { return HOST === 'itinerarydesignhub.com' ? 'vbd' : 'jj'; }
+  var key = null;
+  try {
+    if (/(^|\/)dashboard/i.test(location.pathname)) {
+      var pj = JSON.parse(localStorage.getItem('jj_planner') || 'null');
+      if (pj && pj.brand) key = pj.brand;
+    }
+  } catch (e) {}
+  if (!key) key = hostBrandKey();
+
+  var B = BRANDS[key];
+  if (!B) return;                 // Journey Junction (default) → untouched
   window.__BRAND__ = B;
 
   var FROM = 'Journey Junction';

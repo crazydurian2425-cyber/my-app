@@ -1024,11 +1024,21 @@ async function submitApplication(){
     // sees a "Something went wrong" even though the row may have
     // actually inserted. Plain `.insert({...})` without a select returns
     // {error} only and avoids the SELECT permission check.
-    const { error: insErr } = await sb.from('planner_applications').insert({
+    const _appRow = {
       name, email, city, japan_depth, languages, heard_from,
       status: 'pending',
-      ...(geo || {})
-    })
+      ...(geo || {}),
+      // Stamp the brand of the domain this application came from (jj / vbd). On
+      // approval this carries onto the planner, tying them to that brand for good.
+      brand: (location.hostname || '').toLowerCase().replace(/^www\./, '') === 'itinerarydesignhub.com' ? 'vbd' : 'jj'
+    }
+    let { error: insErr } = await sb.from('planner_applications').insert(_appRow)
+    if (insErr && /brand/i.test(insErr.message || '')) {
+      // `brand` column not migrated yet — retry without it so applications never
+      // break; the planner then defaults to Journey Junction on approval.
+      delete _appRow.brand
+      ;({ error: insErr } = await sb.from('planner_applications').insert(_appRow))
+    }
     if (insErr) {
       console.error('[apply] planner_applications insert failed', insErr)
       // Surface the underlying message inline so missing columns / RLS

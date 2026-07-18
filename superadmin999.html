@@ -8988,7 +8988,7 @@ async function approveApplication(id){
   const { data: existing } = await sb.from('planners').select('id').eq('id', app.user_id).maybeSingle()
 
   if (!existing) {
-    const { error: insErr } = await sb.from('planners').insert({
+    const _plannerRow = {
       id: app.user_id,
       name:  app.name,
       email: app.email,
@@ -8997,8 +8997,16 @@ async function approveApplication(id){
       // A brand-new planner has no bank details yet. Send an explicit NULL so the
       // row can't inherit a drifted non-NULL column default ('' etc.) that trips
       // planners_bank_account_type_check on insert (see fix-bank-account-type-check.sql).
-      bank_account_type: null
-    })
+      bank_account_type: null,
+      // Carry the brand the planner applied under — ties them to it permanently.
+      brand: app.brand || 'jj'
+    }
+    let { error: insErr } = await sb.from('planners').insert(_plannerRow)
+    if (insErr && /brand/i.test(insErr.message || '')) {
+      // `brand` column not migrated yet — retry without it (defaults to jj).
+      delete _plannerRow.brand
+      ;({ error: insErr } = await sb.from('planners').insert(_plannerRow))
+    }
     if (insErr) { showToast('Create planner failed: ' + insErr.message); return }
   }
 
