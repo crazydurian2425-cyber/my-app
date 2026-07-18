@@ -36,6 +36,100 @@ let SUPABASE_SERVICE_KEY = ''
 // domain — never the raw *.workers.dev host the admin panel may be opened on.
 const PUBLIC_SITE_URL = 'https://journeyjunctionplanner.com'
 
+// ─────────────────────────────────────────────────────────────
+// Multi-brand (white-label) config, keyed by request hostname.
+// Both custom domains hit this one Worker + one Supabase project
+// (shared data). The hostname just picks a skin: logo, colours,
+// company name, and the outbound-email identity.
+//   journeyjunctionplanner.com → Journey Junction   (default)
+//   itinerarydesignhub.com     → Vacations by Design (Sage & Poppy)
+// Journey Junction's values equal the previously-hardcoded ones, so
+// nothing about the live JJ site or its emails changes. Only the new
+// host gets a different brand — and only the new host loads
+// /brand-apply.js + the injected token override (see brandRewriter).
+// ─────────────────────────────────────────────────────────────
+const BRANDS = {
+  'journeyjunctionplanner.com': {
+    key: 'jj',
+    name: 'Journey Junction',
+    emailFrom: 'Journey Junction <hello@thejourneyjunction.co.uk>',
+    supportEmail: 'hello@thejourneyjunction.co.uk',
+    siteUrl: 'https://journeyjunctionplanner.com',
+    accent: '#1a7a5e',
+    // JJ email header uses a raster round logo + the "Journey<i>Junction</i>" lockup.
+    emailLogoImg: 'https://journeyjunctionplanner.com/jj.jpg?v=2',
+    wordmarkLead: '',            // '' → template falls back to Journey<i>Junction</i>
+    wordmarkAccent: '',
+    footer: 'Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277',
+  },
+  'itinerarydesignhub.com': {
+    key: 'vbd',
+    name: 'Vacations by Design',
+    legalName: 'Vacations by Design Ltd',
+    slogan: 'Your journey, by design.',
+    emailFrom: 'Vacations by Design <hello@thevacationsbydesign.co.uk>',
+    supportEmail: 'hello@thevacationsbydesign.co.uk',
+    siteUrl: 'https://itinerarydesignhub.com',
+    icon: '/vbd-app-icon.svg',
+    accent: '#3A5647',           // Sage Forest (primary)
+    pop: '#EE6C3A',              // Poppy
+    // Design-token overrides injected into <head> for this host — reskins every
+    // var(--green*) colour app-wide without touching the page source.
+    green: '#3A5647', greenDark: '#2E4639', greenMid: '#7FA187', greenLight: '#E9EFEA',
+    // Email header: no raster logo yet (only SVG supplied, which email clients
+    // strip), so the letter template renders a text wordmark instead.
+    emailLogoImg: '',
+    wordmarkLead: 'Vacations by ',
+    wordmarkAccent: 'Design',
+    footer: 'Vacations by Design Ltd · United Kingdom',
+  },
+}
+
+// Resolve the brand for a request host. Strips port + leading www., and
+// defaults to Journey Junction for anything unknown (workers.dev preview,
+// localhost, apex/www variants not explicitly listed).
+function brandFor(host) {
+  const h = String(host || '').toLowerCase().replace(/:\d+$/, '').replace(/^www\./, '')
+  return BRANDS[h] || BRANDS['journeyjunctionplanner.com']
+}
+
+// The subset of the brand safe to expose to the browser (window.__BRAND__).
+// No email addresses / server-only fields.
+function brandPublic(b) {
+  return {
+    key: b.key, name: b.name, slogan: b.slogan || '',
+    accent: b.accent || '', pop: b.pop || '', icon: b.icon || '',
+    wordmarkLead: b.wordmarkLead || '', wordmarkAccent: b.wordmarkAccent || '',
+  }
+}
+
+// HTMLRewriter that injects the brand skin into <head> for a non-default brand:
+//   • window.__BRAND__ config
+//   • <style> redefining the --green* tokens to the brand palette (!important so
+//     it wins over each page's own :root definition regardless of order)
+//   • a brand favicon <link>
+//   • /brand-apply.js (finishes title + wordmark + name text client-side)
+function brandRewriter(brand) {
+  const cfg = JSON.stringify(brandPublic(brand))
+  const inject =
+    `<script>window.__BRAND__=${cfg};</script>` +
+    `<style id="brand-override">:root{` +
+      `--green:${brand.green} !important;` +
+      // Both token spellings appear across pages: dashboard uses --green-dark,
+      // the login/signup/apply/forgot pages use --green-d. Override both.
+      `--green-dark:${brand.greenDark} !important;` +
+      `--green-d:${brand.greenDark} !important;` +
+      `--green-mid:${brand.greenMid} !important;` +
+      `--green-light:${brand.greenLight} !important;` +
+      `--brand-accent:${brand.accent};--brand-pop:${brand.pop};` +
+    `}</style>` +
+    `<link rel="icon" type="image/svg+xml" href="${brand.icon}">` +
+    `<script src="/brand-apply.js" defer></script>`
+  return new HTMLRewriter().on('head', {
+    element(el) { el.append(inject, { html: true }) },
+  })
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url)
@@ -53,6 +147,9 @@ export default {
     // (an invalid header character), crashing the proxy with a 1101.
     if (env.SUPABASE_SERVICE_KEY) SUPABASE_SERVICE_KEY = String(env.SUPABASE_SERVICE_KEY).trim()
 
+    // Which brand is this request for? (hostname → skin + email identity)
+    const brand = brandFor(url.hostname)
+
     // ── Supabase API proxy (admin/CS only — gates the service-role key) ──
     // Browser-side Supabase clients in superadmin999.html / supercs999.html
     // point at `/api/sb` instead of the real Supabase URL. Every request is
@@ -68,7 +165,7 @@ export default {
 
     // ── Email-proxy endpoint (admin only) ──
     if (url.pathname === '/api/send-approval' && request.method === 'POST') {
-      return handleSendApproval(request)
+      return handleSendApproval(request, brand)
     }
 
     // ── Create-planner endpoint (admin only) ──
@@ -78,13 +175,13 @@ export default {
 
     // ── Employment-letter endpoints ──
     if (url.pathname === '/api/send-employment-letter' && request.method === 'POST') {
-      return handleSendEmploymentLetter(request, url)
+      return handleSendEmploymentLetter(request, url, brand)
     }
     if (url.pathname === '/api/letter' && request.method === 'GET') {
       return handleGetLetter(request, url)
     }
     if (url.pathname === '/api/letter/sign' && request.method === 'POST') {
-      return handleSignLetter(request, url)
+      return handleSignLetter(request, url, brand)
     }
 
     // ── Translation endpoint (CS console JA→EN) ──
@@ -104,7 +201,17 @@ export default {
     }
 
     if (env.ASSETS) {
-      const assetResp = await env.ASSETS.fetch(request)
+      // Logo asset swap: on a non-default brand, serve the brand icon in place of
+      // the JJ logo files, so every <img src="jj.jpg"|"jjlogo.png"> shows the
+      // brand mark with zero page edits. (Content-type follows the served file —
+      // browsers render by type, not extension.)
+      let assetRequest = request
+      if (brand.key !== 'jj' && brand.icon &&
+          (url.pathname === '/jj.jpg' || url.pathname === '/jjlogo.png')) {
+        assetRequest = new Request(new URL(brand.icon, url.origin).toString(), request)
+      }
+
+      const assetResp = await env.ASSETS.fetch(assetRequest)
       // Always revalidate HTML so a fresh deploy shows up immediately instead of
       // the browser serving a stale cached page (the recurring "I changed it but
       // still see the old one"). The browser still caches, but must check with a
@@ -114,7 +221,11 @@ export default {
       if ((assetResp.headers.get('content-type') || '').includes('text/html')) {
         const h = new Headers(assetResp.headers)
         h.set('Cache-Control', 'no-cache')
-        return new Response(assetResp.body, { status: assetResp.status, statusText: assetResp.statusText, headers: h })
+        let htmlResp = new Response(assetResp.body, { status: assetResp.status, statusText: assetResp.statusText, headers: h })
+        // Inject the brand skin into <head> for non-default brands only. JJ pages
+        // are returned untouched (byte-identical to before).
+        if (brand.key !== 'jj') htmlResp = brandRewriter(brand).transform(htmlResp)
+        return htmlResp
       }
       return assetResp
     }
@@ -392,7 +503,7 @@ function checkAuth(request, pathname) {
 }
 
 // POST /api/send-approval — admin-only proxy to Resend
-async function handleSendApproval(request) {
+async function handleSendApproval(request, brand) {
   // Require Basic Auth, restricted to the 'admin' credential.
   const cred = checkAuth(request, null)
   if (!cred || cred.user !== 'admin') return challenge()
@@ -424,9 +535,11 @@ async function handleSendApproval(request) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      // FORCE the verified sender — never honour a client-supplied `from`, so
-      // this can't be used to spoof mail from the brand domain.
-      from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
+      // FORCE the verified sender for THIS request's brand — never honour a
+      // client-supplied `from`, so this can't be used to spoof mail from the
+      // brand domain. (The email body is built client-side in superadmin999.html;
+      // making that body brand-aware is a follow-up — see notes.)
+      from: brand.emailFrom,
       to,
       subject,
       html,
@@ -462,7 +575,7 @@ function challenge() {
 // POST /api/send-employment-letter — admin only.
 // Body: { planner_id, planner_name, planner_email, start_date }
 // Creates the employment_letters row + emails the planner with a signing link.
-async function handleSendEmploymentLetter(request, url) {
+async function handleSendEmploymentLetter(request, url, brand) {
   const cred = checkAuth(request, null)
   if (!cred || cred.user !== 'admin') return challenge()
   if (!SUPABASE_SERVICE_KEY || !RESEND_API_KEY) {
@@ -525,8 +638,20 @@ async function handleSendEmploymentLetter(request, url) {
   // 2. Build the signing link — canonical branded domain, clean URL (no .html).
   //    The site serves /sign-letter and 308-redirects /sign-letter.html while
   //    preserving the ?token, so this is the tidy form planners see.
-  const signUrl = `${PUBLIC_SITE_URL}/sign-letter?token=${encodeURIComponent(row.signing_token)}`
+  const signUrl = `${brand.siteUrl}/sign-letter?token=${encodeURIComponent(row.signing_token)}`
   const firstName = escapeForEmail((planner_name || '').trim().split(/\s+/)[0] || planner_name || '')
+  // Brand-derived bits for the email template (JJ values reproduce the original output).
+  const bAccent = brand.accent || '#1a7a5e'
+  const bName   = brand.name
+  const bFooter = brand.footer || 'Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277'
+  // Header identity: a raster round logo when the brand supplies one (JJ), else a
+  // text wordmark (email clients strip SVG, so brands with only an SVG mark get text).
+  const bLogoCell = brand.emailLogoImg
+    ? `<td style="vertical-align:middle;padding-right:10px;"><img src="${brand.emailLogoImg}" alt="${bName}" width="32" height="32" style="display:block;border-radius:50%;border:0;outline:none;text-decoration:none;"></td>`
+    : ''
+  const bWordmark = brand.wordmarkLead
+    ? `${brand.wordmarkLead}<span style="color:${bAccent};font-style:italic;">${brand.wordmarkAccent}</span>`
+    : `Journey<span style="color:${bAccent};font-style:italic;">Junction</span>`
   // Per-type email copy. Employment strings are unchanged; guarantee uses the
   // approved 保証書 copy; final_confirmation uses 最終確認書 + an ID-upload note.
   const docName   = isFinalConfirm ? '最終確認書' : isGuarantee ? '保証書' : '業務委託契約書'
@@ -534,18 +659,18 @@ async function handleSendEmploymentLetter(request, url) {
   const headingSuffix = isEditable ? 'のご確認およびご署名のお願い' : 'ご確認のお願い'
   const signVerb      = isEditable ? '確認・署名する' : '確認して署名する'
   const introJa = isFinalConfirm
-    ? 'このたび、Journey Junctionより最終確認書を発行いたしました。内容をご確認のうえ、ご本人確認書類（身分証明書）の添付とご署名をお願いいたします。'
+    ? `このたび、${bName}より最終確認書を発行いたしました。内容をご確認のうえ、ご本人確認書類（身分証明書）の添付とご署名をお願いいたします。`
     : isGuarantee
-    ? 'このたび、Journey Junctionより保証書を発行いたしました。内容をご確認のうえ、ご署名をお願いいたします。'
-    : 'この度は、Journey Junction の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。'
+    ? `このたび、${bName}より保証書を発行いたしました。内容をご確認のうえ、ご署名をお願いいたします。`
+    : `この度は、${bName} の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。`
   const linkPrivacyJa = isEditable
     ? 'このリンクはご本人様専用となっておりますので、第三者への共有はお控えください。'
     : 'このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。'
   const bodyEn = isFinalConfirm
-    ? 'Journey Junction has issued your Final Confirmation Letter. Please review it, attach your identity document, and sign using the button above. This link is personal to you. Please do not share it with anyone else.'
+    ? `${bName} has issued your Final Confirmation Letter. Please review it, attach your identity document, and sign using the button above. This link is personal to you. Please do not share it with anyone else.`
     : isGuarantee
-    ? 'Journey Junction has issued your Guarantee Letter. Please review and sign it using the button above. This link is personal to you. Please do not share it with anyone else.'
-    : `Thank you for joining Journey Junction as a Japan Inbound Travel Planner. Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.`
+    ? `${bName} has issued your Guarantee Letter. Please review and sign it using the button above. This link is personal to you. Please do not share it with anyone else.`
+    : `Thank you for joining ${bName} as a Japan Inbound Travel Planner. Please review and sign your ${docNameEn} using the button above. This link is personal to you; please do not share it.`
 
   // 3. Email the planner (Resend) — Japanese (primary) + English.
   //    Chrome mirrors the approval email (buildApprovalEmailHtml in
@@ -558,11 +683,9 @@ async function handleSendEmploymentLetter(request, url) {
       <tr><td style="padding:32px 36px 8px 36px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td style="vertical-align:middle;padding-right:10px;">
-              <img src="https://journeyjunctionplanner.com/jj.jpg?v=2" alt="Journey Junction" width="32" height="32" style="display:block;border-radius:50%;border:0;outline:none;text-decoration:none;">
-            </td>
+            ${bLogoCell}
             <td style="vertical-align:middle;font-family:Georgia,'DM Serif Display',serif;font-size:22px;color:#1a1a18;letter-spacing:-0.4px;">
-              Journey<span style="color:#1a7a5e;font-style:italic;">Junction</span>
+              ${bWordmark}
             </td>
           </tr>
         </table>
@@ -571,7 +694,7 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="padding:24px 36px 4px 36px;">
         <h1 style="margin:0 0 12px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;letter-spacing:-0.2px;">
-          <em style="font-style:italic;color:#1a7a5e;">${docName}</em>${headingSuffix}
+          <em style="font-style:italic;color:${bAccent};">${docName}</em>${headingSuffix}
         </h1>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${firstName} 様</p>
         <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#5a554c;">${introJa}</p>
@@ -581,13 +704,13 @@ async function handleSendEmploymentLetter(request, url) {
       <tr><td style="padding:0 36px 8px 36px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr><td align="center" style="padding:6px 0 14px;">
-            <a href="${signUrl}" style="display:inline-block;background:#1a7a5e;color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">${docName}を${signVerb} →</a>
+            <a href="${signUrl}" style="display:inline-block;background:${bAccent};color:#ffffff;text-decoration:none;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500;letter-spacing:0.02em;">${docName}を${signVerb} →</a>
           </td></tr>
         </table>
       </td></tr>
 
       <tr><td style="padding:0 36px 4px 36px;">
-        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">ボタンが動作しない場合は、以下のリンクをコピーしてブラウザに貼り付けてください：<br><a href="${signUrl}" style="color:#1a7a5e;word-break:break-all;">${signUrl}</a></p>
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">ボタンが動作しない場合は、以下のリンクをコピーしてブラウザに貼り付けてください：<br><a href="${signUrl}" style="color:${bAccent};word-break:break-all;">${signUrl}</a></p>
       </td></tr>
 
       <tr><td style="padding:18px 36px 28px 36px;">
@@ -597,7 +720,7 @@ async function handleSendEmploymentLetter(request, url) {
 
       <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
         <p style="margin:0;font-size:11px;line-height:1.55;color:#8c8678;">
-          Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277
+          ${bFooter}
         </p>
       </td></tr>
     </table>
@@ -610,9 +733,9 @@ async function handleSendEmploymentLetter(request, url) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
+      from: brand.emailFrom,
       to: planner_email,
-      subject: `Journey Junction — ${docName}${isEditable ? 'のご確認およびご署名のお願い' : 'へのご署名のお願い'}`,
+      subject: `${bName} — ${docName}${isEditable ? 'のご確認およびご署名のお願い' : 'へのご署名のお願い'}`,
       html: emailHtml
     })
   })
@@ -659,7 +782,7 @@ async function handleGetLetter(request, url) {
 // POST /api/letter/sign — public. Body: { token, signature_data_url, user_agent }
 // Validates the token, uploads the signature PNG to storage, updates the row,
 // emails support@. Single round-trip from the sign page.
-async function handleSignLetter(request, url) {
+async function handleSignLetter(request, url, brand) {
   if (!SUPABASE_SERVICE_KEY || !RESEND_API_KEY) {
     return jsonResp(500, { error: 'Worker not configured' })
   }
@@ -796,7 +919,7 @@ async function handleSignLetter(request, url) {
           <div style="font-size:11px;color:#7a7a74;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Signature</div>
           <div style="font-size:13px;color:#3a3a36;">Attached as <strong>signature.png</strong> · view in admin for the on-page copy.</div>
         </div>
-        <p style="color:#7a7a74;font-size:12px;margin-top:18px;">View in admin: <a href="${url.protocol}//${url.host}/superadmin999.html" style="color:#1a7a5e;">${url.host}/superadmin999.html</a></p>
+        <p style="color:#7a7a74;font-size:12px;margin-top:18px;">View in admin: <a href="${url.protocol}//${url.host}/superadmin999.html" style="color:${brand.accent || '#1a7a5e'};">${url.host}/superadmin999.html</a></p>
       </div>
     </div>
   `
@@ -809,8 +932,8 @@ async function handleSignLetter(request, url) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Journey Junction <hello@thejourneyjunction.co.uk>',
-        to: 'hello@thejourneyjunction.co.uk',
+        from: brand.emailFrom,
+        to: brand.supportEmail,
         subject: `${docLabel} signed by ${letter.planner_name}`,
         html,
         attachments: [{ filename: 'signature.png', content: b64 }]
