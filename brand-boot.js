@@ -1,16 +1,17 @@
 /* ─────────────────────────────────────────────────────────────
    Brand bootstrap — CLIENT-SIDE white-label skin, keyed by hostname.
 
-   Loaded from every page's <head> as a normal (render-blocking) script.
-   Static files are served directly by Cloudflare's asset layer (the Worker
-   only runs for /api/*), so the skin MUST be applied here, not in the Worker.
+   Loaded from every page's <head>. Static files are served directly by
+   Cloudflare's asset layer (the Worker only runs for /api/*), so the skin
+   is applied here, not in the Worker.
 
-   • Journey Junction host  → this file no-ops (site byte-for-byte unchanged).
-   • Vacations by Design host → applies palette + favicon (Phase 1, before the
-     body paints, so no colour flash) and logo + wordmark + name (Phase 2, on
-     DOM ready).
+   • Journey Junction host   → no-op (site byte-for-byte unchanged).
+   • Vacations by Design host → palette + Space Grotesk wordmark + favicon
+     (Phase 1, pre-paint) and a full text/attribute rewrite that ALSO
+     re-runs on DOM changes (Phase 2 + MutationObserver), so dynamically
+     rendered content (hero, modals, chat, i18n language switches) is fixed.
 
-   Public brand info only (name, palette, logo). Email identity stays server-side.
+   Only public brand info here. Email identity stays server-side (_worker.js).
    ───────────────────────────────────────────────────────────── */
 (function () {
   var HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '');
@@ -20,10 +21,8 @@
       key: 'vbd',
       name: 'Vacations by Design',
       icon: '/vbd-app-icon.svg',
-      wordmarkLead: 'Vacations by ',
-      wordmarkAccent: 'Design',
-      // Sage & Poppy → the app's existing design tokens (both --green-dark and
-      // --green-d spellings are used across pages, so set both).
+      wordmarkLead: 'Vacations',   // dark half
+      wordmarkAccent: 'by Design', // sage half
       tokens: {
         '--green': '#3A5647',
         '--green-dark': '#2E4639',
@@ -32,46 +31,114 @@
         '--green-light': '#E9EFEA',
         '--brand-accent': '#3A5647',
         '--brand-pop': '#EE6C3A'
-      }
+      },
+      // Ordered, literal find→replace applied to every text node + key attributes.
+      // Longest / most specific FIRST. Case-specific name variants included.
+      // Company facts we don't have for VBD (incorporation date, director) are
+      // stripped rather than shown wrong.
+      replace: [
+        ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
+        ['Flat 2, 64 Heathmere Drive, Birmingham, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
+        ['JOURNEY JUNCTION', 'VACATIONS BY DESIGN'],
+        ['Journey Junction', 'Vacations by Design'],
+        ['JourneyJunction', 'Vacations by Design'],
+        ['15791277', '03039047'],
+        ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk'],
+        ['journeyjunctionplanner.com', 'itinerarydesignhub.com'],
+        // Facts not supplied for VBD — remove so JJ's don't leak through.
+        [' · Incorporated 20 June 2024', ''],
+        [' · 設立：2024年6月20日', ''],
+        [' · 設立日：2024年6月20日', ''],
+        ['Incorporated 20 June 2024', ''],
+        ['Director: Midhun Peter', ''],
+        ['取締役：Midhun Peter', ''],
+        ['Director: Midhun Peter', '']
+      ]
     }
   };
 
   var B = BRANDS[HOST];
-  if (!B) return;               // default host (Journey Junction) → untouched
+  if (!B) return;                 // default host (Journey Junction) → untouched
   window.__BRAND__ = B;
 
-  // ── Phase 1 — colours + favicon (synchronous, during <head> parse) ──
+  var FROM = 'Journey Junction';
+  var LEAD = (B.wordmarkLead || 'Vacations') + ' ';
+  var ACC  = B.wordmarkAccent || 'by Design';
+
+  function head() { return document.head || document.documentElement; }
+
+  // ── Phase 1 — palette, Space Grotesk wordmark, favicon (before body paints) ──
   try {
     var css = ':root{';
     for (var k in B.tokens) {
       if (!B.tokens.hasOwnProperty(k)) continue;
-      // !important so it wins over each page's own :root token; --brand-* are new
-      // (no existing declaration) so they don't need it.
       var imp = k.indexOf('--brand-') === 0 ? '' : ' !important';
       css += k + ':' + B.tokens[k] + imp + ';';
     }
     css += '}';
+    // Wordmark in Space Grotesk; portal tag / slogan uppercase + letterspaced.
+    css += ".brand,.brand-name,.brand-line-1,.brand-line-2,.logo-mark,.brand-tag-text,.logo-sub{font-family:'Space Grotesk','DM Sans',sans-serif !important;}";
+    css += '.brand-line-1,.brand-line-2,.logo-mark{font-weight:500 !important;letter-spacing:-0.01em;}';
+    css += '.brand-tag-text,.logo-sub{text-transform:uppercase;letter-spacing:0.16em;}';
+    css += '#rt-status-dot{background:#7FA187 !important;}';
     var st = document.createElement('style');
     st.id = 'brand-override';
     st.textContent = css;
-    (document.head || document.documentElement).appendChild(st);
+    head().appendChild(st);
+
+    var gf = document.createElement('link');
+    gf.rel = 'stylesheet';
+    gf.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap';
+    head().appendChild(gf);
 
     if (B.icon) {
       var links = document.querySelectorAll('link[rel~="icon"]');
       for (var i = 0; i < links.length; i++) links[i].parentNode.removeChild(links[i]);
       var ic = document.createElement('link');
       ic.rel = 'icon'; ic.type = 'image/svg+xml'; ic.href = B.icon;
-      (document.head || document.documentElement).appendChild(ic);
+      head().appendChild(ic);
     }
   } catch (e) {}
 
-  // ── Phase 2 — title, wordmark, name text, logo images (needs the DOM) ──
-  var FROM = 'Journey Junction';
-  var LEAD = (B.wordmarkLead || 'Vacations by ').replace(/\s+$/, '') + ' ';
-  var ACC  = B.wordmarkAccent || 'Design';
+  // ── Text-replacement engine ──
+  function rewrite(s) {
+    if (!s || s.indexOf('Journey') === -1 && s.indexOf('JOURNEY') === -1 &&
+        s.indexOf('15791277') === -1 && s.indexOf('Heathmere') === -1 &&
+        s.indexOf('Incorporated') === -1 && s.indexOf('Midhun') === -1 &&
+        s.indexOf('取締役') === -1 && s.indexOf('設立') === -1) return s;
+    var out = s, r = B.replace;
+    for (var i = 0; i < r.length; i++) {
+      if (out.indexOf(r[i][0]) > -1) out = out.split(r[i][0]).join(r[i][1]);
+    }
+    return out;
+  }
 
-  // Replace a word in an element's FIRST direct text node only (nested nodes,
-  // e.g. the sidebar live-status dot, are preserved).
+  var ATTRS = ['title', 'alt', 'placeholder', 'aria-label', 'value', 'content'];
+
+  function swapTextNode(t) {
+    var v = rewrite(t.nodeValue);
+    if (v !== t.nodeValue) t.nodeValue = v;
+  }
+
+  function swapAttrsOne(el) {
+    if (!el.getAttribute) return;
+    for (var i = 0; i < ATTRS.length; i++) {
+      if (!el.hasAttribute(ATTRS[i])) continue;
+      var a = el.getAttribute(ATTRS[i]);
+      var b = rewrite(a);
+      if (b !== a) el.setAttribute(ATTRS[i], b);
+    }
+  }
+
+  // Replace the JJ logo image with the brand icon.
+  function swapLogosIn(el) {
+    if (!B.icon) return;
+    var logos = el.querySelectorAll ? el.querySelectorAll('img[src*="jj.jpg"],img[src*="jjlogo"]') : [];
+    for (var j = 0; j < logos.length; j++) logos[j].src = B.icon;
+    if (el.tagName === 'IMG' && /jj\.jpg|jjlogo/.test(el.getAttribute('src') || '')) el.src = B.icon;
+  }
+
+  // Replace a word in an element's FIRST direct text node only (nested nodes kept).
   function setFirstText(el, from, to) {
     for (var i = 0; i < el.childNodes.length; i++) {
       var c = el.childNodes[i];
@@ -83,13 +150,13 @@
     return false;
   }
 
-  // Two-tone brand lockup. Both shapes:
-  //   inline:  Journey<span>Junction</span>                       (prev = text)
-  //   stacked: <span>Journey</span><span>Junction <dot/></span>   (prev = element)
+  // Two-tone wordmark lockup. Shapes:
+  //   inline:  Journey<em|span>Junction</em|span>                (prev = text)
+  //   stacked: <span>Journey</span><span>Junction <dot/></span>  (prev = element)
   function swapLockups(root) {
-    var els = root.querySelectorAll('span,i,em,b,strong,div');
-    for (var i = 0; i < els.length; i++) {
-      var acc = els[i];
+    var q = root.querySelectorAll ? root.querySelectorAll('span,em,i,b,strong,div') : [];
+    for (var i = 0; i < q.length; i++) {
+      var acc = q[i];
       if ((acc.textContent || '').trim() !== 'Junction') continue;
       var done = false;
       var ps = acc.previousSibling;
@@ -104,35 +171,45 @@
     }
   }
 
-  function swapText(root) {
+  // Rewrite an element subtree (text + attributes + logos + lockups).
+  function swapEl(el) {
     try {
-      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+      swapLockups(el);
+      var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
       var n, list = [];
       while ((n = w.nextNode())) list.push(n);
-      for (var i = 0; i < list.length; i++) {
-        var v = list[i].nodeValue;
-        if (v.indexOf(FROM) > -1)              v = v.split(FROM).join(B.name);
-        if (v.indexOf('JourneyJunction') > -1) v = v.split('JourneyJunction').join(B.name);
-        if (v !== list[i].nodeValue) list[i].nodeValue = v;
+      for (var i = 0; i < list.length; i++) swapTextNode(list[i]);
+      swapAttrsOne(el);
+      if (el.querySelectorAll) {
+        var withAttr = el.querySelectorAll('[title],[alt],[placeholder],[aria-label],[value],[content]');
+        for (var j = 0; j < withAttr.length; j++) swapAttrsOne(withAttr[j]);
       }
+      swapLogosIn(el);
     } catch (e) {}
   }
 
-  function swapAttrs(root) {
-    var alts = root.querySelectorAll('img[alt*="Journey Junction"]');
-    for (var i = 0; i < alts.length; i++) alts[i].alt = B.name;
-    if (B.icon) {
-      var logos = root.querySelectorAll('img[src*="jj.jpg"],img[src*="jjlogo"]');
-      for (var j = 0; j < logos.length; j++) logos[j].src = B.icon;
-    }
-  }
-
   function apply() {
-    if (document.title.indexOf(FROM) > -1)      document.title = document.title.split(FROM).join(B.name);
-    else if (/^\s*Journey\s*Junction\s*$/i.test(document.title)) document.title = B.name;
-    swapLockups(document.body);
-    swapText(document.body);
-    swapAttrs(document.body);
+    if (rewrite(document.title) !== document.title) document.title = rewrite(document.title);
+    // head meta (description / og:*)
+    var metas = document.querySelectorAll('meta[content]');
+    for (var i = 0; i < metas.length; i++) swapAttrsOne(metas[i]);
+    swapEl(document.body);
+
+    // Self-heal: re-apply to anything added later (loop-safe — we only edit text/
+    // attributes, which don't add nodes, so our own edits never retrigger this).
+    try {
+      var obs = new MutationObserver(function (muts) {
+        for (var a = 0; a < muts.length; a++) {
+          var added = muts[a].addedNodes;
+          for (var b = 0; b < added.length; b++) {
+            var node = added[b];
+            if (node.nodeType === 1) swapEl(node);
+            else if (node.nodeType === 3) swapTextNode(node);
+          }
+        }
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply);

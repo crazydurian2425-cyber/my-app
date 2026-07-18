@@ -79,9 +79,9 @@ const BRANDS = {
     // Email header: no raster logo yet (only SVG supplied, which email clients
     // strip), so the letter template renders a text wordmark instead.
     emailLogoImg: '',
-    wordmarkLead: 'Vacations by ',
-    wordmarkAccent: 'Design',
-    footer: 'Vacations by Design Ltd · United Kingdom',
+    wordmarkLead: 'Vacations ',
+    wordmarkAccent: 'by Design',
+    footer: 'Vacations by Design Ltd · 9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR · Company No. 03039047',
   },
 }
 
@@ -93,42 +93,12 @@ function brandFor(host) {
   return BRANDS[h] || BRANDS['journeyjunctionplanner.com']
 }
 
-// The subset of the brand safe to expose to the browser (window.__BRAND__).
-// No email addresses / server-only fields.
-function brandPublic(b) {
-  return {
-    key: b.key, name: b.name, slogan: b.slogan || '',
-    accent: b.accent || '', pop: b.pop || '', icon: b.icon || '',
-    wordmarkLead: b.wordmarkLead || '', wordmarkAccent: b.wordmarkAccent || '',
-  }
-}
-
-// HTMLRewriter that injects the brand skin into <head> for a non-default brand:
-//   • window.__BRAND__ config
-//   • <style> redefining the --green* tokens to the brand palette (!important so
-//     it wins over each page's own :root definition regardless of order)
-//   • a brand favicon <link>
-//   • /brand-apply.js (finishes title + wordmark + name text client-side)
-function brandRewriter(brand) {
-  const cfg = JSON.stringify(brandPublic(brand))
-  const inject =
-    `<script>window.__BRAND__=${cfg};</script>` +
-    `<style id="brand-override">:root{` +
-      `--green:${brand.green} !important;` +
-      // Both token spellings appear across pages: dashboard uses --green-dark,
-      // the login/signup/apply/forgot pages use --green-d. Override both.
-      `--green-dark:${brand.greenDark} !important;` +
-      `--green-d:${brand.greenDark} !important;` +
-      `--green-mid:${brand.greenMid} !important;` +
-      `--green-light:${brand.greenLight} !important;` +
-      `--brand-accent:${brand.accent};--brand-pop:${brand.pop};` +
-    `}</style>` +
-    `<link rel="icon" type="image/svg+xml" href="${brand.icon}">` +
-    `<script src="/brand-apply.js" defer></script>`
-  return new HTMLRewriter().on('head', {
-    element(el) { el.append(inject, { html: true }) },
-  })
-}
+// NOTE: the visual skin is applied CLIENT-SIDE by /brand-boot.js, not here.
+// On this project's Cloudflare setup static files (.html/images) are served
+// directly by the asset layer and never invoke this Worker (it only runs for
+// /api/*), so Worker-side HTML injection / asset-swap can't work. The Worker's
+// brand role is limited to the outbound-email identity below (brandFor + the
+// email handlers), which ARE /api/* routes.
 
 export default {
   async fetch(request, env) {
@@ -201,17 +171,7 @@ export default {
     }
 
     if (env.ASSETS) {
-      // Logo asset swap: on a non-default brand, serve the brand icon in place of
-      // the JJ logo files, so every <img src="jj.jpg"|"jjlogo.png"> shows the
-      // brand mark with zero page edits. (Content-type follows the served file —
-      // browsers render by type, not extension.)
-      let assetRequest = request
-      if (brand.key !== 'jj' && brand.icon &&
-          (url.pathname === '/jj.jpg' || url.pathname === '/jjlogo.png')) {
-        assetRequest = new Request(new URL(brand.icon, url.origin).toString(), request)
-      }
-
-      const assetResp = await env.ASSETS.fetch(assetRequest)
+      const assetResp = await env.ASSETS.fetch(request)
       // Always revalidate HTML so a fresh deploy shows up immediately instead of
       // the browser serving a stale cached page (the recurring "I changed it but
       // still see the old one"). The browser still caches, but must check with a
@@ -221,11 +181,7 @@ export default {
       if ((assetResp.headers.get('content-type') || '').includes('text/html')) {
         const h = new Headers(assetResp.headers)
         h.set('Cache-Control', 'no-cache')
-        let htmlResp = new Response(assetResp.body, { status: assetResp.status, statusText: assetResp.statusText, headers: h })
-        // Inject the brand skin into <head> for non-default brands only. JJ pages
-        // are returned untouched (byte-identical to before).
-        if (brand.key !== 'jj') htmlResp = brandRewriter(brand).transform(htmlResp)
-        return htmlResp
+        return new Response(assetResp.body, { status: assetResp.status, statusText: assetResp.statusText, headers: h })
       }
       return assetResp
     }
