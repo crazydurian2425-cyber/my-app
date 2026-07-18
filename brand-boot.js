@@ -27,7 +27,8 @@
     vbd: {
       key: 'vbd',
       name: 'Vacations by Design',
-      icon: '/vbd-app-icon.png',
+      icon: '/vbd-app-icon.png',       // rounded tile — used for the in-page sidebar logo
+      favicon: '/vbd-icon.png',        // the mark alone — used for the browser-tab favicon
       wordmarkLead: 'Vacations',   // dark half
       wordmarkAccent: 'by Design', // sage half
       tokens: {
@@ -120,14 +121,15 @@
     gf.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap';
     head().appendChild(gf);
 
-    if (B.icon) {
+    var favicon = B.favicon || B.icon;
+    if (favicon) {
       var links = document.querySelectorAll('link[rel~="icon"]');
       for (var i = 0; i < links.length; i++) links[i].parentNode.removeChild(links[i]);
       var ic = document.createElement('link');
-      ic.rel = 'icon'; ic.type = 'image/png'; ic.href = B.icon;
+      ic.rel = 'icon'; ic.type = 'image/png'; ic.href = favicon;
       head().appendChild(ic);
-      var pl = new Image(); pl.src = B.icon;   // preload so the swap is instant
     }
+    if (B.icon) { var pl = new Image(); pl.src = B.icon; }   // preload in-page logo swap
 
     // Anti-flash: hide ONLY the brand lockup (logo + wordmark) until Phase 2
     // rewrites it to VBD, so a refresh never shows a flash of the Journey
