@@ -45,14 +45,11 @@
         ['15791277', '03039047'],
         ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk'],
         ['journeyjunctionplanner.com', 'itinerarydesignhub.com'],
-        // Facts not supplied for VBD — remove so JJ's don't leak through.
-        [' · Incorporated 20 June 2024', ''],
-        [' · 設立：2024年6月20日', ''],
-        [' · 設立日：2024年6月20日', ''],
-        ['Incorporated 20 June 2024', ''],
-        ['Director: Midhun Peter', ''],
-        ['取締役：Midhun Peter', ''],
-        ['Director: Midhun Peter', '']
+        // Incorporation date + director → VBD's real Companies House details.
+        ['20 June 2024', '29 March 1995'],
+        ['2024年6月20日', '1995年3月29日'],
+        ['Midhun Peter', 'Mathilde Gilberte Renee Robert'], // NBSP variant (letter signature)
+        ['Midhun Peter', 'Mathilde Gilberte Renee Robert']
       ]
     }
   };
@@ -101,11 +98,10 @@
   } catch (e) {}
 
   // ── Text-replacement engine ──
+  // No pre-filter: each rule self-guards with indexOf (cheap), and a pre-filter
+  // risks skipping date-only / lowercase-email / JP-only text nodes.
   function rewrite(s) {
-    if (!s || s.indexOf('Journey') === -1 && s.indexOf('JOURNEY') === -1 &&
-        s.indexOf('15791277') === -1 && s.indexOf('Heathmere') === -1 &&
-        s.indexOf('Incorporated') === -1 && s.indexOf('Midhun') === -1 &&
-        s.indexOf('取締役') === -1 && s.indexOf('設立') === -1) return s;
+    if (!s) return s;
     var out = s, r = B.replace;
     for (var i = 0; i < r.length; i++) {
       if (out.indexOf(r[i][0]) > -1) out = out.split(r[i][0]).join(r[i][1]);
@@ -209,6 +205,18 @@
         }
       });
       obs.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+
+    // Some pages (the letter) set document.title via JS after load — re-fix it
+    // when it changes. Loop-safe: only reassign when the value actually changes.
+    try {
+      var tEl = document.querySelector('title');
+      if (tEl) {
+        new MutationObserver(function () {
+          var r = rewrite(document.title);
+          if (r !== document.title) document.title = r;
+        }).observe(tEl, { childList: true, characterData: true, subtree: true });
+      }
     } catch (e) {}
   }
 
