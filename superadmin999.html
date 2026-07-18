@@ -836,7 +836,7 @@ body.theme-dark .admin-theme-toggle:hover{background:rgba(255,255,255,0.06);colo
 body.theme-dark .admin-theme-toggle .sun{display:none;}
 body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
 </style>
-<script src="/brand-boot.js"></script></head>
+</head>
 <body>
 
 <!-- Mobile sidebar toggle (burger) -->
@@ -6106,6 +6106,7 @@ function renderPlanners(planners, meta) {
             ${p.last_login_country ? `<span title="Last login: ${escapeHtml(p.last_login_country)}${p.last_login_city?' · '+escapeHtml(p.last_login_city):''}" style="margin-right:5px;">${flagEmoji(p.last_login_country) || '🌐'}</span>` : ''}
             ${escapeHtml(p.name)}
             ${p.admin_created ? '<span title="Direct-create account (admin tool, bypassed application flow)" style="display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 7px;background:rgba(94,123,110,0.12);border:1px solid rgba(94,123,110,0.30);border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:#4A6759;font-weight:700;font-family:\'DM Sans\',sans-serif;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Admin</span>' : ''}
+            ${brandBadge(p.brand)}
             ${p.last_login_country && p.last_login_country.toUpperCase() !== 'JP' ? '<span title="Last login outside Japan" style="margin-left:4px;color:#c0392b;font-size:11px;">⚠️</span>' : ''}
             ${availChip}
           </div>
@@ -8829,6 +8830,20 @@ function filterApps(status, btn){
   renderApps()
 }
 
+// Small pill marking which brand a planner / applicant belongs to (jj / vbd).
+// Uses fixed inline colours (not brand tokens) so it reads the same on every
+// console: green = Journey Junction, poppy = Vacations by Design.
+function brandBadge(b) {
+  const vbd = b === 'vbd'
+  const label = vbd ? 'VBD' : 'JJ'
+  const title = vbd ? 'Vacations by Design — applied via itinerarydesignhub.com'
+                    : 'Journey Junction — applied via journeyjunctionplanner.com'
+  const css = vbd
+    ? 'background:rgba(238,108,58,0.12);border:1px solid rgba(238,108,58,0.40);color:#B24A1C;'
+    : 'background:rgba(26,122,94,0.10);border:1px solid rgba(26,122,94,0.32);color:#1A6F53;'
+  return `<span title="${title}" style="display:inline-flex;align-items:center;margin-left:6px;padding:1px 7px;border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;font-family:'DM Sans',sans-serif;${css}">${label}</span>`
+}
+
 function renderApps(){
   const listEl = document.getElementById('apps-list')
   const countEl = document.getElementById('apps-count')
@@ -8866,6 +8881,7 @@ function renderApps(){
               <div style="font-weight:600;color:var(--ink);">
                 ${a.signup_country ? `<span title="Signup from ${escapeHtml(a.signup_country)}${a.signup_city?' · '+escapeHtml(a.signup_city):''}" style="margin-right:5px;">${flagEmoji(a.signup_country) || '🌐'}</span>` : ''}
                 ${escapeHtml(a.name||'—')}
+                ${brandBadge(a.brand)}
                 ${a.signup_country && a.signup_country.toUpperCase() !== 'JP' ? '<span title="Country mismatch — applicant claims Japan" style="margin-left:5px;color:#c0392b;font-size:11px;">⚠️</span>' : ''}
               </div>
               <div style="color:var(--ink-3);font-size:12px;">${escapeHtml(a.email||'')}</div>
