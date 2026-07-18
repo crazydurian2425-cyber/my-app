@@ -511,16 +511,29 @@ async function resetPassword() {
   label.textContent = t('form.btnSending')
   hideMessages()
 
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(email)
-  })
-
-  if (error) {
-    showError(translateAuthError(error.message))
-    btn.disabled = false
-    btn.classList.remove('loading')
-    label.textContent = t('form.btnSend')
-    return
+  // Branded, per-planner reset email via the Worker (looks up the planner's
+  // brand by email → JJ planner gets a JJ email, VBD planner a VBD email).
+  // Falls back to Supabase's own email ONLY if the endpoint is unreachable, so
+  // password reset can never fully break.
+  let sent = false
+  try {
+    const r = await fetch('/api/send-reset', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    sent = r.ok
+  } catch (e) {}
+  if (!sent) {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(email)
+    })
+    if (error) {
+      showError(translateAuthError(error.message))
+      btn.disabled = false
+      btn.classList.remove('loading')
+      label.textContent = t('form.btnSend')
+      return
+    }
   }
 
   // Send the user straight to the code-entry page so they can paste the

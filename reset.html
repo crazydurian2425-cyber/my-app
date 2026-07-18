@@ -178,10 +178,22 @@ async function sendCode() {
   if (!email) { showError('メールアドレスを入力してください'); return }
   hideMessages()
 
-  const { error } = await sb.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(email)
-  })
-  if (error) { showError(translateAuthError(error.message, '認証コードの送信に失敗しました')); return }
+  // Branded, per-planner reset email via the Worker; fall back to Supabase's own
+  // email only if the endpoint is unreachable so reset can never break.
+  let sent = false
+  try {
+    const r = await fetch('/api/send-reset', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+    sent = r.ok
+  } catch (e) {}
+  if (!sent) {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(email)
+    })
+    if (error) { showError(translateAuthError(error.message, '認証コードの送信に失敗しました')); return }
+  }
 
   userEmail = email
   showStep('code')
@@ -191,10 +203,20 @@ async function sendCode() {
 async function resendCode() {
   if (!userEmail) return showStep('email')
   hideMessages()
-  const { error } = await sb.auth.resetPasswordForEmail(userEmail, {
-    redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(userEmail)
-  })
-  if (error) return showError(translateAuthError(error.message, '認証コードの再送信に失敗しました'))
+  let sent = false
+  try {
+    const r = await fetch('/api/send-reset', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: userEmail })
+    })
+    sent = r.ok
+  } catch (e) {}
+  if (!sent) {
+    const { error } = await sb.auth.resetPasswordForEmail(userEmail, {
+      redirectTo: window.location.origin + '/reset.html?email=' + encodeURIComponent(userEmail)
+    })
+    if (error) return showError(translateAuthError(error.message, '認証コードの再送信に失敗しました'))
+  }
   showSuccess(escapeHtml(userEmail) + ' に新しい認証コードを送信しました')
 }
 

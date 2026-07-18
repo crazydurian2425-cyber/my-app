@@ -163,6 +163,11 @@ export default {
       return handleSignLetter(request, url, brand)
     }
 
+    // ── Branded password-reset email (public) ──
+    if (url.pathname === '/api/send-reset' && request.method === 'POST') {
+      return handleSendReset(request)
+    }
+
     // ── Translation endpoint (CS console JA→EN) ──
     if (url.pathname === '/api/translate' && request.method === 'POST') {
       return handleTranslate(request, env)
@@ -952,6 +957,114 @@ async function handleSignLetter(request, url, brand) {
   } catch (_) { /* swallow — letter is signed regardless */ }
 
   return jsonResp(200, { ok: true, signature_url: imageUrl })
+}
+
+// Best-effort per-email cooldown (per Worker isolate) — a light guard against
+// reset-email spamming. Robust rate limiting would need KV/Durable Objects.
+const _resetCooldown = new Map()
+
+// POST /api/send-reset — PUBLIC. Body { email }.
+// Sends a password-reset OTP email branded by the PLANNER's brand (looked up by
+// email), replacing Supabase's single global recovery template. We generate the
+// recovery OTP server-side via the admin API (which does NOT send an email),
+// then send our own branded email via Resend. reset.html still verifies with
+// sb.auth.verifyOtp({ type: 'recovery' }) exactly as before.
+// Always returns { ok: true } so it can't be used to probe which emails exist.
+async function handleSendReset(request) {
+  if (!SUPABASE_SERVICE_KEY || !RESEND_API_KEY) return jsonResp(500, { error: 'Worker not configured' })
+  let body
+  try { body = await request.json() } catch (_) { return jsonResp(400, { error: 'Invalid JSON' }) }
+  const email = String(body?.email || '').trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResp(400, { error: 'Invalid email' })
+
+  // Light per-isolate cooldown (30s) — silently succeeds on rapid repeats.
+  const now = Date.now()
+  if (now - (_resetCooldown.get(email) || 0) < 30000) return jsonResp(200, { ok: true })
+  _resetCooldown.set(email, now)
+
+  const sbHeaders = {
+    apikey: SUPABASE_SERVICE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json'
+  }
+
+  // Brand = the planner's own brand (by email); defaults to Journey Junction.
+  let brand = brandByKey('jj')
+  try {
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/planners?email=eq.${encodeURIComponent(email)}&select=brand&limit=1`, { headers: sbHeaders })
+    if (pr.ok) { const j = await pr.json().catch(() => null); const bk = j && j[0] && j[0].brand; if (bk) brand = brandByKey(bk) }
+  } catch (e) {}
+
+  // Generate a recovery OTP server-side (no email is sent by this call).
+  let otp = ''
+  try {
+    const gl = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+      method: 'POST', headers: sbHeaders,
+      body: JSON.stringify({ type: 'recovery', email })
+    })
+    if (gl.ok) {
+      const gj = await gl.json().catch(() => null)
+      otp = (gj && (gj.email_otp || (gj.properties && gj.properties.email_otp))) || ''
+    }
+  } catch (e) {}
+  // No OTP (email isn't a user / generate failed) → return ok without sending.
+  if (!otp) return jsonResp(200, { ok: true })
+
+  try {
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: brand.emailFrom,
+        to: email,
+        subject: `${brand.name} — パスワード再設定コード`,
+        html: buildResetEmailHtml(brand, otp)
+      })
+    })
+  } catch (e) { /* swallow — still return ok */ }
+  return jsonResp(200, { ok: true })
+}
+
+// Branded password-reset OTP email. Same table-based chrome as the letter email
+// (email-client safe). Shows the 6-digit code prominently; no magic link (the
+// OTP-only flow avoids inbox link-scanners consuming a one-time token).
+function buildResetEmailHtml(brand, otp) {
+  const accent = brand.accent || '#1a7a5e'
+  const footer = brand.footer || 'Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277'
+  const logoCell = brand.emailLogoImg
+    ? `<td style="vertical-align:middle;padding-right:10px;"><img src="${brand.emailLogoImg}" alt="${escapeForEmail(brand.name)}" width="32" height="32" style="display:block;border-radius:50%;border:0;outline:none;text-decoration:none;"></td>`
+    : ''
+  const wordmark = brand.wordmarkLead
+    ? `${brand.wordmarkLead}<span style="color:${accent};font-style:italic;">${brand.wordmarkAccent}</span>`
+    : `Journey<span style="color:${accent};font-style:italic;">Junction</span>`
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f4f0;padding:40px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','DM Sans',Helvetica,Arial,sans-serif;">
+  <tr><td align="center">
+    <table role="presentation" width="480" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;border:1px solid rgba(0,0,0,0.06);border-radius:14px;overflow:hidden;">
+      <tr><td style="padding:32px 36px 8px 36px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+          ${logoCell}
+          <td style="vertical-align:middle;font-family:Georgia,'DM Serif Display',serif;font-size:22px;color:#1a1a18;letter-spacing:-0.4px;">${wordmark}</td>
+        </tr></table>
+        <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(176,138,62,0.35),transparent);margin-top:18px;"></div>
+      </td></tr>
+      <tr><td style="padding:24px 36px 4px 36px;">
+        <h1 style="margin:0 0 12px;font-family:Georgia,'DM Serif Display',serif;font-size:24px;font-weight:400;color:#1a1a18;">パスワードの再設定</h1>
+        <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#5a554c;">下記の認証コードを再設定ページに入力してください。有効期限は1時間です。</p>
+      </td></tr>
+      <tr><td style="padding:0 36px 8px 36px;">
+        <div style="background:#faf9f6;border:1px solid rgba(0,0,0,0.08);border-radius:10px;padding:18px;text-align:center;">
+          <div style="font-family:'JetBrains Mono',Menlo,monospace;font-size:30px;font-weight:700;letter-spacing:0.35em;color:${accent};">${escapeForEmail(otp)}</div>
+        </div>
+      </td></tr>
+      <tr><td style="padding:14px 36px 4px 36px;">
+        <p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678;">このメールに心当たりがない場合は、そのまま破棄してください。パスワードは変更されません。<br><strong style="color:#7a7a74;">English</strong> — Enter this code on the password-reset page. It expires in 1 hour. If you didn't request this, ignore this email.</p>
+      </td></tr>
+      <tr><td style="background:#faf7ef;padding:18px 36px;border-top:1px solid rgba(0,0,0,0.05);">
+        <p style="margin:0;font-size:11px;line-height:1.55;color:#8c8678;">${escapeForEmail(footer)}</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>`
 }
 
 // HTML-escape for safe embedding in email templates
