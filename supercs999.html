@@ -99,6 +99,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);h
 .conv-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
 .conv-tag{font-size:9.5px;font-weight:600;padding:2px 7px;border-radius:99px;background:rgba(45,158,122,0.10);color:var(--green-dark,#0f5240);border:1px solid rgba(45,158,122,0.22);letter-spacing:0.03em;text-transform:uppercase;}
 .conv-tag.tag-bond     {background:rgba(193,125,42,0.10);color:var(--amber,#b87333);border-color:rgba(193,125,42,0.30);}
+/* HELP — escalation tag: mentor is stuck, someone senior should take the reply.
+   Always red so it jumps out in the list. */
+.conv-tag.tag-help     {background:rgba(192,57,43,0.14);color:#e07b6d;border-color:rgba(192,57,43,0.45);}
+/* Brand chip on inbox rows: which company this planner belongs to */
+.conv-brand{font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;letter-spacing:0.05em;border:1px solid;}
+.conv-brand.jj {background:rgba(45,158,122,0.12);color:#4FB891;border-color:rgba(45,158,122,0.38);}
+.conv-brand.vbd{background:rgba(238,108,58,0.13);color:#EE8C5E;border-color:rgba(238,108,58,0.42);}
+/* Mentor filter dropdown — sits in the tag-filter row, chip-sized */
+.mentor-filter-sel{padding:2px 6px;border-radius:99px;background:transparent;border:1px solid var(--border-med);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink-3);cursor:pointer;font-family:'DM Sans',sans-serif;max-width:130px;flex-shrink:0;}
+.mentor-filter-sel.on{border-color:var(--green-mid);background:rgba(45,158,122,0.12);color:var(--green-dark,#0f5240);}
 .conv-tag.tag-payout   {background:rgba(45,158,122,0.10);color:var(--green-dark,#0f5240);border-color:rgba(45,158,122,0.22);}
 .conv-tag.tag-dispute  {background:rgba(224,104,85,0.10);color:var(--red,#c0392b);border-color:rgba(224,104,85,0.32);}
 .conv-tag.tag-training {background:rgba(126,174,216,0.10);color:#3b7fb8;border-color:rgba(126,174,216,0.32);}
@@ -114,6 +124,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);h
 .cc-tag-chip{padding:3px 9px;border-radius:99px;border:1px dashed var(--border-med);background:transparent;color:var(--ink-3);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:0.02em;text-transform:uppercase;}
 .cc-tag-chip:hover{border-color:var(--ink-3);color:var(--ink);}
 .cc-tag-chip.on{border-style:solid;border-color:var(--green-mid);background:rgba(45,158,122,0.10);color:var(--green-dark,#0f5240);}
+.cc-tag-chip[data-tag="help"].on{border-color:rgba(192,57,43,0.55);background:rgba(192,57,43,0.12);color:#e07b6d;}
+.tag-filter-chip[data-tag="help"].on{border-color:rgba(192,57,43,0.55);background:rgba(192,57,43,0.12);color:#e07b6d;}
 .conv-av{width:34px;height:34px;border-radius:50%;background:var(--green-light);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
 .conv-body{flex:1;min-width:0;}
 .conv-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;}
@@ -348,6 +360,11 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
     <button class="tag-filter-chip" data-tag="payout"   onclick="toggleTagFilter('payout')">payout</button>
     <button class="tag-filter-chip" data-tag="dispute"  onclick="toggleTagFilter('dispute')">dispute</button>
     <button class="tag-filter-chip" data-tag="training" onclick="toggleTagFilter('training')">training</button>
+    <button class="tag-filter-chip" data-tag="help"     onclick="toggleTagFilter('help')" title="Mentor needs someone to take over the reply">help</button>
+    <!-- Mentor filter — narrow the inbox to one onboarding mentor's planners -->
+    <select class="mentor-filter-sel" id="mentor-filter" onchange="setMentorFilter(this.value)" title="Filter by onboarding mentor">
+      <option value="">👤 mentor</option>
+    </select>
   </div>
   <div style="padding:0 12px 8px;">
     <input type="search" id="inbox-search" placeholder="Search by name, email, or message…" oninput="onInboxSearchInput()"
@@ -453,6 +470,7 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
       <button class="cc-tag-chip" data-tag="payout"   onclick="toggleConvTag('payout')">payout</button>
       <button class="cc-tag-chip" data-tag="dispute"  onclick="toggleConvTag('dispute')">dispute</button>
       <button class="cc-tag-chip" data-tag="training" onclick="toggleConvTag('training')">training</button>
+      <button class="cc-tag-chip" data-tag="help"     onclick="toggleConvTag('help')" title="Tag when you don't know how to reply — someone will take it over">🆘 help</button>
     </div>
   </div>
 
@@ -475,6 +493,10 @@ body.cs-resizing *{cursor:ew-resize!important;user-select:none!important;}
     <div class="contact-row" id="row-mentor">
       <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
       <div class="cmain"><div class="clabel">Onboarding mentor</div><div class="cval" id="info-mentor">—</div></div>
+    </div>
+    <div class="contact-row" id="row-brand">
+      <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24H4a1 1 0 0 0-1 1v5.59c0 .53.21 1.04.59 1.41l9.58 9.59a2 2 0 0 0 2.83 0l4.59-4.59a2 2 0 0 0 0-2.83Z"/><circle cx="7.5" cy="7.5" r=".5"/></svg></div>
+      <div class="cmain"><div class="clabel">Brand</div><div class="cval" id="info-brand">—</div></div>
     </div>
     <div class="contact-row" id="row-joined">
       <div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
@@ -1024,6 +1046,7 @@ let _convsHasMore = false
 // Active tag-filter chip (null = no tag filter). Composes on top of the
 // status filter (Open/Unread/Mine/Closed) and the search box.
 let _activeTagFilter = null
+let _activeMentorFilter = ''   // '' = all mentors
 
 function toggleTagFilter(tag) {
   _activeTagFilter = (_activeTagFilter === tag) ? null : tag
@@ -1033,6 +1056,37 @@ function toggleTagFilter(tag) {
     chip.classList.toggle('on', chip.getAttribute('data-tag') === _activeTagFilter)
   })
   loadConversations()
+}
+
+// ── Mentor filter — view the inbox one onboarding mentor at a time ──
+function setMentorFilter(v) {
+  _activeMentorFilter = v || ''
+  const sel = document.getElementById('mentor-filter')
+  if (sel) sel.classList.toggle('on', !!_activeMentorFilter)
+  loadConversations()
+}
+
+// The planner join used by the inbox queries. When a mentor filter is active it
+// must be an INNER join (!inner) so `.eq('planners.onboarding_mentor', …)`
+// filters the conversation rows themselves, not just the embedded planner.
+function _plannerJoin() {
+  const inner = _activeMentorFilter ? '!inner' : ''
+  return `*, planners:planner_id${inner}(id,name,email,phone,city,status,onboarding_mentor,brand)`
+}
+
+// Populate the mentor dropdown from the live planner list (distinct mentors).
+async function loadMentorFilterOptions() {
+  try {
+    const { data } = await sb.from('planners')
+      .select('onboarding_mentor')
+      .not('onboarding_mentor', 'is', null)
+      .limit(1000)
+    const names = [...new Set((data || []).map(r => (r.onboarding_mentor || '').trim()).filter(Boolean))].sort()
+    const sel = document.getElementById('mentor-filter')
+    if (!sel || !names.length) return
+    sel.innerHTML = '<option value="">👤 mentor</option>'
+      + names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')
+  } catch (e) { /* dropdown stays with just the default option */ }
 }
 
 // Apply filter chip → query predicate. Mirrors the chip the user clicked.
@@ -1053,6 +1107,11 @@ function _applyFilter(q) {
   // Tag filter narrows further (composes with the status filter above).
   if (_activeTagFilter) {
     q = q.contains('tags', [_activeTagFilter])
+  }
+  // Mentor filter — needs the !inner planner join (see _plannerJoin) so this
+  // predicate on the embedded planner narrows the conversation rows.
+  if (_activeMentorFilter) {
+    q = q.eq('planners.onboarding_mentor', _activeMentorFilter)
   }
   return q
 }
@@ -1084,7 +1143,7 @@ async function loadConversations(opts = {}) {
 
     // Step 2: conversations matching by preview OR planner_id
     let q = sb.from('conversations')
-      .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)')
+      .select(_plannerJoin())
       .not('last_message_at', 'is', null)   // hide conversations that never had a real message
       .order('pinned', { ascending: false })
       .order('last_message_at', { ascending: false, nullsFirst: false })
@@ -1106,7 +1165,7 @@ async function loadConversations(opts = {}) {
   }
 
   let q = sb.from('conversations')
-    .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)', { count: 'exact' })
+    .select(_plannerJoin(), { count: 'exact' })
     .not('last_message_at', 'is', null)
     .order('pinned', { ascending: false })  // pinned to top
     .order('last_message_at', { ascending: false, nullsFirst: false })
@@ -1183,8 +1242,12 @@ function renderInbox() {
     const pinMark = pinned ? '<span class="conv-pin-mark" title="Pinned">📌</span>' : ''
     const mentorChip = p.onboarding_mentor
       ? `<span class="conv-tag" style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.4);" title="Onboarding mentor">👤 ${escapeHtml(p.onboarding_mentor)}</span>` : ''
-    const chipsRow = (mentorChip || shownTags.length || tagOverflow || assigneeChip)
-      ? `<div class="conv-chips">${mentorChip}${tagChipsHtml}${tagOverflow}${assigneeChip}</div>` : ''
+    // Brand chip — which company this planner belongs to (jj default for
+    // pre-migration rows). Always shown so both brands are tellable at a glance.
+    const brandChip = p.brand === 'vbd'
+      ? '<span class="conv-brand vbd" title="Vacations by Design planner">VBD</span>'
+      : '<span class="conv-brand jj" title="Journey Junction planner">JJ</span>'
+    const chipsRow = `<div class="conv-chips">${brandChip}${mentorChip}${tagChipsHtml}${tagOverflow}${assigneeChip}</div>`
 
     return `
       <div class="conv-row ${unread?'unread':''} ${isActive?'active':''} ${pinned?'pinned':''}" onclick="openConversation('${escapeHtml(c.id)}')">
@@ -1235,7 +1298,7 @@ async function openConversation(id) {
     // beyond what's loaded). Fetch directly so deep links + cross-filter
     // links keep working.
     const { data } = await sb.from('conversations')
-      .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)')
+      .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor,brand)')
       .eq('id', id).maybeSingle()
     conv = data
   }
@@ -1265,6 +1328,10 @@ async function openConversation(id) {
   const rowCity  = document.getElementById('row-city');  if (rowCity)  rowCity.classList.toggle('empty', !p.city)
   const elMentor = document.getElementById('info-mentor'); if (elMentor) elMentor.textContent = p.onboarding_mentor || '—'
   const rowMentor = document.getElementById('row-mentor'); if (rowMentor) rowMentor.classList.toggle('empty', !p.onboarding_mentor)
+  const elBrand = document.getElementById('info-brand')
+  if (elBrand) elBrand.innerHTML = p.brand === 'vbd'
+    ? '<span class="conv-brand vbd">VBD</span> Vacations by Design'
+    : '<span class="conv-brand jj">JJ</span> Journey Junction'
   const badge = document.getElementById('info-status')
   badge.textContent = p.status || 'active'
   badge.className = 'info-badge ' + (p.status === 'active' ? 'ok' : 'amber')
@@ -2675,7 +2742,7 @@ async function upsertConvFromRealtime(convId) {
   if (!convId) return
   const { data: row } = await sb
     .from('conversations')
-    .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor)')
+    .select('*, planners:planner_id(id,name,email,phone,city,status,onboarding_mentor,brand)')
     .eq('id', convId)
     .maybeSingle()
   if (!row) return removeConvFromRealtime(convId)
@@ -2694,7 +2761,10 @@ async function upsertConvFromRealtime(convId) {
   // Tag filter also must match (if any)
   const tagMatches = !_activeTagFilter
     || (Array.isArray(row.tags) && row.tags.includes(_activeTagFilter))
-  const matches = statusMatches && tagMatches
+  // Mentor filter too — this fetch uses a plain join, so check client-side
+  const mentorMatches = !_activeMentorFilter
+    || (row.planners && row.planners.onboarding_mentor === _activeMentorFilter)
+  const matches = statusMatches && tagMatches && mentorMatches
 
   // If this row is the currently-open conversation, also refresh activeConv +
   // its controls so other agents' pin/snooze/assign/tag edits flow in live.
@@ -2791,6 +2861,7 @@ loadConversations().then(() => {
   attachInboxChannel()
   handleDeepLink()
 })
+loadMentorFilterOptions()   // fill the mentor dropdown (independent of inbox load)
 
 // Refresh "time ago" labels every 60s
 setInterval(() => renderInbox(), 60000)
