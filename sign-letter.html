@@ -160,7 +160,7 @@ canvas#sig{display:block;width:100%;height:160px;cursor:crosshair;touch-action:n
         <div style="font-family:Georgia,serif;font-size:13.5px;color:var(--ink-3);margin-bottom:6px;font-weight:600;">委託者（甲）</div>
         <div style="font-weight:700;font-size:14px;">JOURNEY JUNCTION LTD</div>
         <div style="font-size:12px;color:var(--ink-3);">代表者：Midhun Peter（Director）</div>
-        <div style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:26px;color:#1a2e6e;border-bottom:1px solid var(--border-med);padding-bottom:2px;margin-top:12px;width:fit-content;min-width:180px;">Midhun&nbsp;Peter</div>
+        <div id="co-sig" style="font-family:'Brush Script MT','Segoe Script',cursive;font-size:26px;color:#1a2e6e;border-bottom:1px solid var(--border-med);padding-bottom:2px;margin-top:12px;width:fit-content;min-width:180px;">Midhun&nbsp;Peter</div>
       </div>
       <!-- Mode A: pending — draw + submit -->
       <div id="mode-pending" class="no-print">
@@ -278,6 +278,20 @@ function applyLetterBrand(bk) {
   // mailto: hrefs on the signed/thank-you card
   const mails = document.querySelectorAll('a[href*="thejourneyjunction.co.uk"]')
   for (let i = 0; i < mails.length; i++) mails[i].href = mails[i].href.split('thejourneyjunction.co.uk').join('thevacationsbydesign.co.uk')
+
+  // Signature in a WEB font (Great Vibes) so the cursive renders identically on
+  // every device — the local 'Brush Script MT' fallback shows as plain text on
+  // iOS/Android (which is what the JJ signature also does; this fixes it for VBD).
+  const sig = document.getElementById('co-sig')
+  if (sig) {
+    const gf = document.createElement('link')
+    gf.rel = 'stylesheet'
+    gf.href = 'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap'
+    document.head.appendChild(gf)
+    sig.style.fontFamily = "'Great Vibes', cursive"
+    sig.style.fontSize = '40px'
+    sig.style.lineHeight = '1.15'
+  }
 }
 
 function showError(title, detail) {
