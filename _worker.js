@@ -571,17 +571,33 @@ async function handleSendEmploymentLetter(request, url, brand) {
     planner_name,
     planner_email,
     start_date,
-    created_by: cred.user
+    created_by: cred.user,
+    // Which company issued this letter (jj / vbd). Stored per-letter so the
+    // contract ALWAYS renders its issuing brand, never the viewing domain — an
+    // existing Journey Junction contract can never be reskinned to another brand.
+    brand: brand.key
   }
   if (isEditable) {
     insertRow.letter_type = isFinalConfirm ? 'final_confirmation' : 'guarantee'
     insertRow.custom_body = String(custom_body)
   }
-  const insertResp = await fetch(`${SUPABASE_URL}/rest/v1/employment_letters`, {
+  let insertResp = await fetch(`${SUPABASE_URL}/rest/v1/employment_letters`, {
     method: 'POST',
     headers: sbHeaders,
     body: JSON.stringify(insertRow)
   })
+  // Defensive: if the `brand` column doesn't exist yet (add-letter-brand.sql not
+  // run), retry without it so letter creation never breaks. Such a letter then
+  // reads back as Journey Junction (the default) — run the migration to brand
+  // VBD letters correctly.
+  if (!insertResp.ok) {
+    const noBrand = Object.assign({}, insertRow); delete noBrand.brand
+    insertResp = await fetch(`${SUPABASE_URL}/rest/v1/employment_letters`, {
+      method: 'POST',
+      headers: sbHeaders,
+      body: JSON.stringify(noBrand)
+    })
+  }
   if (!insertResp.ok) {
     const errText = await insertResp.text().catch(() => '')
     return jsonResp(insertResp.status, { error: 'DB insert failed: ' + errText })
@@ -716,19 +732,13 @@ async function handleGetLetter(request, url) {
     'apikey': SUPABASE_SERVICE_KEY,
     'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
   }
-  // Request the guarantee columns too; if they don't exist yet (migration not
-  // run), retry with the base columns so the sign page still works for the
-  // existing employment letters. Missing letter_type → treated as employment.
-  let resp = await fetch(
-    `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status,signed_at,signature_image_url,letter_type,custom_body`,
-    { headers: sbHeaders }
-  )
-  if (!resp.ok) {
-    resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status,signed_at,signature_image_url`,
-      { headers: sbHeaders }
-    )
-  }
+  // Request the guarantee + brand columns too; if a migration hasn't run yet,
+  // fall back progressively so the sign page still works. Missing letter_type →
+  // treated as employment; missing brand → treated as Journey Junction.
+  const base = `${SUPABASE_URL}/rest/v1/employment_letters?signing_token=eq.${encodeURIComponent(token)}&select=id,planner_name,planner_email,start_date,status,signed_at,signature_image_url`
+  let resp = await fetch(base + ',letter_type,custom_body,brand', { headers: sbHeaders })
+  if (!resp.ok) resp = await fetch(base + ',letter_type,custom_body', { headers: sbHeaders }) // brand column absent
+  if (!resp.ok) resp = await fetch(base, { headers: sbHeaders })                              // guarantee columns absent too
   if (!resp.ok) return jsonResp(500, { error: 'DB lookup failed' })
   const rows = await resp.json()
   const letter = rows?.[0]

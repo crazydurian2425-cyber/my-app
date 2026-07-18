@@ -242,6 +242,44 @@ const params = new URLSearchParams(location.search)
 const token  = params.get('token')
 
 const $ = id => document.getElementById(id)
+
+// ── Per-letter brand ────────────────────────────────────────────────
+// The contract renders the company that ISSUED it (letter.brand), NEVER the
+// viewing domain — so an existing Journey Junction contract can never be
+// reskinned to another brand. Default + every pre-brand letter = Journey
+// Junction (the page's static content, untouched). Only a 'vbd' letter is
+// transformed to Vacations by Design.
+const LETTER_BRAND_NAME = { jj: 'Journey Junction', vbd: 'Vacations by Design' }
+function applyLetterBrand(bk) {
+  if (bk !== 'vbd') return
+  const img = document.querySelector('.brand img')
+  if (img) { img.src = '/vbd-app-icon.svg'; img.alt = 'Vacations by Design' }
+  const wm = document.querySelector('.brand-name')
+  if (wm) { wm.innerHTML = 'Vacations <em>by Design</em>' }
+  const NB = String.fromCharCode(160)
+  const reps = [
+    ['JOURNEY JUNCTION LTD', 'VACATIONS BY DESIGN LTD'],
+    ['Journey Junction', 'Vacations by Design'],
+    ['15791277', '03039047'],
+    ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
+    ['Midhun' + NB + 'Peter', 'Mathilde Gilberte Renee Robert'],
+    ['Midhun Peter', 'Mathilde Gilberte Renee Robert'],
+    ['2024年6月20日', '1995年3月29日'],
+    ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk']
+  ]
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
+  const list = []; let n
+  while ((n = w.nextNode())) list.push(n)
+  for (let i = 0; i < list.length; i++) {
+    let v = list[i].nodeValue; const o = v
+    for (let j = 0; j < reps.length; j++) if (v.indexOf(reps[j][0]) > -1) v = v.split(reps[j][0]).join(reps[j][1])
+    if (v !== o) list[i].nodeValue = v
+  }
+  // mailto: hrefs on the signed/thank-you card
+  const mails = document.querySelectorAll('a[href*="thejourneyjunction.co.uk"]')
+  for (let i = 0; i < mails.length; i++) mails[i].href = mails[i].href.split('thejourneyjunction.co.uk').join('thevacationsbydesign.co.uk')
+}
+
 function showError(title, detail) {
   $('letter-card').style.display = 'none'
   $('signed-card').style.display = 'none'
@@ -428,6 +466,12 @@ async function boot() {
   letter = await resp.json()
   if (letter.status === 'cancelled') { showError('契約はキャンセルされました', 'この契約はキャンセルされました。サポートまでお問い合わせください。'); return }
 
+  // Render the company that ISSUED this letter (letter.brand) — never the
+  // viewing domain. Missing brand (all pre-migration letters) → Journey Junction.
+  const bname = LETTER_BRAND_NAME[letter.brand] || 'Journey Junction'
+  applyLetterBrand(letter.brand)
+  document.title = document.title.split('Journey Junction').join(bname)
+
   // Fill the editable header fields — Japanese date format
   $('f-name').textContent  = letter.planner_name
   $('f-start').textContent = new Date(letter.start_date + 'T00:00:00').toLocaleDateString('ja-JP', { year:'numeric', month:'long', day:'numeric' })
@@ -441,7 +485,7 @@ async function boot() {
     const _l = document.getElementById('start-date-label');  if (_l)  _l.textContent = '有効開始日'
     const _b = document.getElementById('letter-block')
     if (_b) { _b.textContent = letter.custom_body || ''; _b.style.whiteSpace = 'pre-wrap' }
-    document.title = '保証書 — Journey Junction'
+    document.title = '保証書 — ' + bname
     const _sub = document.querySelector('#submit-btn'); if (_sub) _sub.textContent = '署名済み保証書を送信'
   } else if (letter.letter_type === 'final_confirmation') {
     // Final confirmation: admin-typed body + a required ID upload.
@@ -450,7 +494,7 @@ async function boot() {
     const _l = document.getElementById('start-date-label');  if (_l)  _l.textContent = '確認日'
     const _b = document.getElementById('letter-block')
     if (_b) { _b.textContent = letter.custom_body || ''; _b.style.whiteSpace = 'pre-wrap' }
-    document.title = '最終確認書 — Journey Junction'
+    document.title = '最終確認書 — ' + bname
     const _sub = document.querySelector('#submit-btn'); if (_sub) _sub.textContent = '署名済み最終確認書を送信'
     const _idb = document.getElementById('id-upload-block'); if (_idb) _idb.style.display = 'block'
     const _cl = document.querySelector('#confirm-box + label')
