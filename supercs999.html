@@ -79,9 +79,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);h
 .inbox-stat-label{font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;}
 .inbox-stat-val{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:0;line-height:1;}
 .inbox-filter{display:flex;gap:4px;padding:8px 12px 4px;border-bottom:none;}
-/* Tag-filter row — single line, scrolls horizontally if it overflows. */
-.inbox-tag-filter{display:flex;flex-wrap:nowrap;gap:4px;padding:4px 12px 6px;overflow-x:auto;scrollbar-width:none;}
-.inbox-tag-filter::-webkit-scrollbar{display:none;}
+/* Tag-filter row — wraps onto extra lines so the help chip + mentor dropdown
+   are always visible in the narrow sidebar (was a hidden horizontal scroll,
+   which silently cut them off). */
+.inbox-tag-filter{display:flex;flex-wrap:wrap;gap:4px;padding:4px 12px 6px;}
 .tag-filter-chip{padding:2px 7px;border-radius:99px;background:transparent;border:1px solid var(--border-med);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink-3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .12s,border-color .12s,color .12s;white-space:nowrap;flex-shrink:0;}
 .tag-filter-chip:hover{border-color:var(--ink-3);color:var(--ink);}
 .tag-filter-chip.on{border-color:var(--green-mid);background:rgba(45,158,122,0.12);color:var(--green-dark,#0f5240);}
