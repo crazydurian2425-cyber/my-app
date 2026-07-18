@@ -158,9 +158,11 @@
     return out;
   }
 
-  // Attributes we rewrite. NOTE: 'value' is deliberately excluded — we must never
+  // Attributes we rewrite. 'href' is included so mailto:/absolute JJ links follow
+  // the brand (only name/email/domain reps run on data pages, so a link target
+  // can't be corrupted). NOTE: 'value' is deliberately EXCLUDED — we must never
   // touch a form input's value (autosave / wallet read those).
-  var ATTRS = ['title', 'alt', 'placeholder', 'aria-label', 'content'];
+  var ATTRS = ['title', 'alt', 'placeholder', 'aria-label', 'content', 'href'];
 
   function swapTextNode(t) {
     var v = rewrite(t.nodeValue);
@@ -227,7 +229,7 @@
       for (var i = 0; i < list.length; i++) swapTextNode(list[i]);
       swapAttrsOne(el);
       if (el.querySelectorAll) {
-        var withAttr = el.querySelectorAll('[title],[alt],[placeholder],[aria-label],[content]');
+        var withAttr = el.querySelectorAll('[title],[alt],[placeholder],[aria-label],[content],[href]');
         for (var j = 0; j < withAttr.length; j++) swapAttrsOne(withAttr[j]);
       }
       swapLogosIn(el);
@@ -246,7 +248,13 @@
     try {
       var obs = new MutationObserver(function (muts) {
         for (var a = 0; a < muts.length; a++) {
-          var added = muts[a].addedNodes;
+          var m = muts[a];
+          // Attribute changed on an existing element (e.g. a title/aria-label
+          // re-set by an i18n language toggle) — re-rewrite just that element.
+          // Loop-safe: rewrite is idempotent, and swapAttrsOne only writes when
+          // the value actually changes, so it can't retrigger itself.
+          if (m.type === 'attributes') { swapAttrsOne(m.target); continue; }
+          var added = m.addedNodes;
           for (var b = 0; b < added.length; b++) {
             var node = added[b];
             if (node.nodeType === 1) swapEl(node);
@@ -254,7 +262,7 @@
           }
         }
       });
-      obs.observe(document.body, { childList: true, subtree: true });
+      obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ATTRS });
     } catch (e) {}
 
     // Some pages set document.title via JS after load — re-fix without looping.
