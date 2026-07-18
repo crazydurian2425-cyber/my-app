@@ -1,17 +1,22 @@
 /* ─────────────────────────────────────────────────────────────
-   Brand bootstrap — CLIENT-SIDE white-label skin, keyed by hostname.
+   Brand bootstrap — CLIENT-SIDE white-label skin.
 
    Loaded from every page's <head>. Static files are served directly by
    Cloudflare's asset layer (the Worker only runs for /api/*), so the skin
    is applied here, not in the Worker.
 
-   • Journey Junction host   → no-op (site byte-for-byte unchanged).
-   • Vacations by Design host → palette + Space Grotesk wordmark + favicon
-     (Phase 1, pre-paint) and a full text/attribute rewrite that ALSO
-     re-runs on DOM changes (Phase 2 + MutationObserver), so dynamically
-     rendered content (hero, modals, chat, i18n language switches) is fixed.
+   • Journey Junction  → no-op (site byte-for-byte unchanged).
+   • Vacations by Design → palette + Space Grotesk wordmark + PNG favicon
+     (Phase 1, pre-paint) and a text/attribute rewrite that re-runs on DOM
+     changes (Phase 2 + MutationObserver) so dynamic content is fixed too.
 
-   Only public brand info here. Email identity stays server-side (_worker.js).
+   SAFETY (important): the brand NAME / email / domain are replaced on every
+   page. The COMPANY FACTS (registered address, company number, incorporation
+   date, director) are replaced ONLY on the legal/footer pages that actually
+   show them — NEVER on data pages (dashboard / support), so a real travel date
+   / number / person name that happens to equal a JJ company fact can't be
+   corrupted. brand-boot only ever reads/writes DISPLAY text + a few attributes
+   (never a form input's live .value), so autosave / wallet data is untouched.
    ───────────────────────────────────────────────────────────── */
 (function () {
   var HOST = (location.hostname || '').toLowerCase().replace(/^www\./, '');
@@ -34,23 +39,26 @@
         '--brand-accent': '#3A5647',
         '--brand-pop': '#EE6C3A'
       },
-      // Ordered, literal find→replace applied to every text node + key attributes.
-      // Longest / most specific FIRST. Case-specific name variants included.
-      // Company facts we don't have for VBD (incorporation date, director) are
-      // stripped rather than shown wrong.
+      // Brand name / email / domain — safe on EVERY page (specific strings,
+      // negligible collision with user travel data).
       replace: [
-        ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
-        ['Flat 2, 64 Heathmere Drive, Birmingham, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
         ['JOURNEY JUNCTION', 'VACATIONS BY DESIGN'],
         ['Journey Junction', 'Vacations by Design'],
         ['JourneyJunction', 'Vacations by Design'],
-        ['15791277', '03039047'],
         ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk'],
-        ['journeyjunctionplanner.com', 'itinerarydesignhub.com'],
-        // Incorporation date + director → VBD's real Companies House details.
+        ['journeyjunctionplanner.com', 'itinerarydesignhub.com']
+      ],
+      // Company facts — applied ONLY on legal/footer pages (see IS_LEGAL_PAGE).
+      // These strings are real-world values (a date, an 8-digit number, a person
+      // name) that could otherwise collide with genuine itinerary/wallet data,
+      // so they must never run on data pages.
+      replaceLegal: [
+        ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
+        ['Flat 2, 64 Heathmere Drive, Birmingham, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
+        ['15791277', '03039047'],
         ['20 June 2024', '29 March 1995'],
         ['2024年6月20日', '1995年3月29日'],
-        ['Midhun Peter', 'Mathilde Gilberte Renee Robert'], // NBSP variant (letter signature)
+        ['Director: Midhun Peter', 'Director: Mathilde Gilberte Renee Robert'],
         ['Midhun Peter', 'Mathilde Gilberte Renee Robert']
       ]
     }
@@ -58,11 +66,11 @@
 
   // Which brand key applies?
   //   • Dashboard (logged in) → the PLANNER's own brand, from the record cached
-  //     at login. So a Journey Junction planner never sees Vacations by Design
-  //     (or vice-versa), even if they open the other brand's domain.
+  //     at login, so a JJ planner never sees VBD (or vice-versa) even on the
+  //     other brand's domain.
   //   • Public pages (login / apply / legal …) → the viewing domain, so a NEW
-  //     applicant sees the brand of the site they're actually on. (We must NOT
-  //     read a stale cached planner brand here.)
+  //     applicant sees the brand of the site they're on. (Do NOT read a stale
+  //     cached planner brand here.)
   function hostBrandKey() { return HOST === 'itinerarydesignhub.com' ? 'vbd' : 'jj'; }
   var key = null;
   try {
@@ -76,6 +84,12 @@
   var B = BRANDS[key];
   if (!B) return;                 // Journey Junction (default) → untouched
   window.__BRAND__ = B;
+
+  // Company-fact replacements run ONLY on the legal/footer pages that show them.
+  // Everything else (dashboard, support, reset, index, …) gets NAME-only, so
+  // user data can never be rewritten.
+  var IS_LEGAL_PAGE = /(login|apply|forgot|signup|privacy|terms)/i.test(location.pathname);
+  var REPS = IS_LEGAL_PAGE ? B.replace.concat(B.replaceLegal) : B.replace;
 
   var FROM = 'Journey Junction';
   var LEAD = (B.wordmarkLead || 'Vacations') + ' ';
@@ -92,7 +106,6 @@
       css += k + ':' + B.tokens[k] + imp + ';';
     }
     css += '}';
-    // Wordmark in Space Grotesk; portal tag / slogan uppercase + letterspaced.
     css += ".brand,.brand-name,.brand-line-1,.brand-line-2,.logo-mark,.brand-tag-text,.logo-sub{font-family:'Space Grotesk','DM Sans',sans-serif !important;}";
     css += '.brand-line-1,.brand-line-2,.logo-mark{font-weight:500 !important;letter-spacing:-0.01em;}';
     css += '.brand-tag-text,.logo-sub{text-transform:uppercase;letter-spacing:0.16em;}';
@@ -116,19 +129,19 @@
     }
   } catch (e) {}
 
-  // ── Text-replacement engine ──
-  // No pre-filter: each rule self-guards with indexOf (cheap), and a pre-filter
-  // risks skipping date-only / lowercase-email / JP-only text nodes.
+  // ── Text-replacement engine (uses the page-scoped REPS) ──
   function rewrite(s) {
     if (!s) return s;
-    var out = s, r = B.replace;
-    for (var i = 0; i < r.length; i++) {
-      if (out.indexOf(r[i][0]) > -1) out = out.split(r[i][0]).join(r[i][1]);
+    var out = s;
+    for (var i = 0; i < REPS.length; i++) {
+      if (out.indexOf(REPS[i][0]) > -1) out = out.split(REPS[i][0]).join(REPS[i][1]);
     }
     return out;
   }
 
-  var ATTRS = ['title', 'alt', 'placeholder', 'aria-label', 'value', 'content'];
+  // Attributes we rewrite. NOTE: 'value' is deliberately excluded — we must never
+  // touch a form input's value (autosave / wallet read those).
+  var ATTRS = ['title', 'alt', 'placeholder', 'aria-label', 'content'];
 
   function swapTextNode(t) {
     var v = rewrite(t.nodeValue);
@@ -145,7 +158,6 @@
     }
   }
 
-  // Replace the JJ logo image with the brand icon.
   function swapLogosIn(el) {
     if (!B.icon) return;
     var logos = el.querySelectorAll ? el.querySelectorAll('img[src*="jj.jpg"],img[src*="jjlogo"]') : [];
@@ -196,7 +208,7 @@
       for (var i = 0; i < list.length; i++) swapTextNode(list[i]);
       swapAttrsOne(el);
       if (el.querySelectorAll) {
-        var withAttr = el.querySelectorAll('[title],[alt],[placeholder],[aria-label],[value],[content]');
+        var withAttr = el.querySelectorAll('[title],[alt],[placeholder],[aria-label],[content]');
         for (var j = 0; j < withAttr.length; j++) swapAttrsOne(withAttr[j]);
       }
       swapLogosIn(el);
@@ -205,7 +217,6 @@
 
   function apply() {
     if (rewrite(document.title) !== document.title) document.title = rewrite(document.title);
-    // head meta (description / og:*)
     var metas = document.querySelectorAll('meta[content]');
     for (var i = 0; i < metas.length; i++) swapAttrsOne(metas[i]);
     swapEl(document.body);
@@ -226,8 +237,7 @@
       obs.observe(document.body, { childList: true, subtree: true });
     } catch (e) {}
 
-    // Some pages (the letter) set document.title via JS after load — re-fix it
-    // when it changes. Loop-safe: only reassign when the value actually changes.
+    // Some pages set document.title via JS after load — re-fix without looping.
     try {
       var tEl = document.querySelector('title');
       if (tEl) {
