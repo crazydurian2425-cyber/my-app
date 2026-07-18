@@ -289,8 +289,24 @@ function applyLetterBrand(bk) {
     gf.href = 'https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap'
     document.head.appendChild(gf)
     sig.style.fontFamily = "'Great Vibes', cursive"
-    sig.style.fontSize = '40px'
-    sig.style.lineHeight = '1.15'
+    sig.style.lineHeight = '1.1'
+    sig.style.whiteSpace = 'nowrap'   // never wrap — always one line
+    // Auto-scale the signature down until it fits the card on a single line, so it
+    // reads as one line on every device (desktop, phone, any width).
+    const fitSig = () => {
+      const parent = sig.parentElement
+      let avail = (parent ? parent.clientWidth : 320) - 36   // minus the box padding
+      if (avail < 80) avail = 80
+      let size = 42
+      sig.style.fontSize = size + 'px'
+      let guard = 0
+      while (sig.scrollWidth > avail && size > 12 && guard++ < 60) { size -= 1; sig.style.fontSize = size + 'px' }
+    }
+    // Measure after the web font actually loads (fallback metrics differ), plus a
+    // timeout backstop, and re-fit on rotate/resize.
+    if (document.fonts && document.fonts.load) document.fonts.load("40px 'Great Vibes'").then(fitSig).catch(fitSig)
+    setTimeout(fitSig, 400)
+    window.addEventListener('resize', fitSig)
   }
 }
 
