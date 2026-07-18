@@ -355,7 +355,7 @@ body.theme-dark .compose-send{
 }
 body.theme-dark .compose-send:hover{background:#3FA17D!important;}
 </style>
-</head>
+<script src="/brand-boot.js"></script></head>
 <body>
 
 <aside class="sidebar">
@@ -735,11 +735,41 @@ function pingCs(msg) {
       try { await sb.auth.signOut() } catch (_) {}
       localStorage.clear()
       window.location.replace('login.html')
+      return
     }
+    // Status check — same policy as dashboard.html: if admin suspended this
+    // planner, kick them out silently. They get the generic "invalid email or
+    // password" if they try to log back in, so suspension isn't disclosed.
+    try {
+      const { data: row } = await sb.from('planners').select('status').eq('id', user.id).maybeSingle()
+      if (row && row.status === 'suspended') {
+        try { await sb.auth.signOut() } catch (_) {}
+        localStorage.clear()
+        window.location.replace('login.html')
+      }
+    } catch (_) { /* network blip — keep the chat usable this time */ }
   } catch (e) {
     console.warn('auth verify skipped', e)
   }
 })();
+
+// ── PERIODIC SUSPENSION CHECK (every 60s) ───────────────────
+// Mirrors dashboard.html: if admin suspends a planner WHILE they're in the
+// chat, kick them out within the minute. Silent — no toast, so the planner
+// can't distinguish suspension from a session expiry.
+setInterval(async () => {
+  try {
+    if (document.hidden) return
+    const id = planner?.id
+    if (!id) return
+    const { data: row } = await sb.from('planners').select('status').eq('id', id).maybeSingle()
+    if (row && row.status === 'suspended') {
+      try { await sb.auth.signOut() } catch (_) {}
+      localStorage.clear()
+      window.location.replace('login.html')
+    }
+  } catch (_) { /* network blip — silent */ }
+}, 60_000)
 
 // ── SIDEBAR ─────────────────────────────────────────────────
 document.getElementById('sidebar-avatar').textContent = (planner.name||'?').split(/\s+/).map(w=>w[0]).filter(Boolean).join('').slice(0,2).toUpperCase()
