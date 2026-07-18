@@ -126,8 +126,25 @@
       var ic = document.createElement('link');
       ic.rel = 'icon'; ic.type = 'image/png'; ic.href = B.icon;
       head().appendChild(ic);
+      var pl = new Image(); pl.src = B.icon;   // preload so the swap is instant
     }
+
+    // Anti-flash: hide ONLY the brand lockup (logo + wordmark) until Phase 2
+    // rewrites it to VBD, so a refresh never shows a flash of the Journey
+    // Junction logo/name. The sage palette already applied above (pre-paint), so
+    // the rest of the page renders normally. Revealed in apply(); a safety timer
+    // reveals regardless so the logo can never get stuck hidden.
+    var hs = document.createElement('style');
+    hs.id = 'brand-hide';
+    hs.textContent = '.brand,.brand-lockup,.sidebar-logo,.logo{visibility:hidden !important;}';
+    head().appendChild(hs);
+    setTimeout(revealBrand, 1500);
   } catch (e) {}
+
+  function revealBrand() {
+    var h = document.getElementById('brand-hide');
+    if (h && h.parentNode) h.parentNode.removeChild(h);
+  }
 
   // ── Text-replacement engine (uses the page-scoped REPS) ──
   function rewrite(s) {
@@ -220,6 +237,7 @@
     var metas = document.querySelectorAll('meta[content]');
     for (var i = 0; i < metas.length; i++) swapAttrsOne(metas[i]);
     swapEl(document.body);
+    revealBrand();   // brand lockup is now VBD — un-hide it
 
     // Self-heal: re-apply to anything added later (loop-safe — we only edit text/
     // attributes, which don't add nodes, so our own edits never retrigger this).
