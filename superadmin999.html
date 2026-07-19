@@ -10,6 +10,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Journey Junction — Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Shared default Terms body — lets the Terms editor pre-fill + edit the current
+     10-article agreement (same source the public Terms page reads). -->
+<script src="/terms-default.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -7625,11 +7628,19 @@ async function loadLegalEditor() {
       const { data: base } = await sb.from('legal_docs').select('dict').eq('slug','terms').maybeSingle()
       if (base && base.dict && base.dict.en) { dict = base.dict; fromTemplate = true }
     }
-    if (!dict || !dict.en) {
-      if (status) status.innerHTML = 'No Terms content saved yet — run <strong>docs/schema/legal-docs.sql</strong> and <strong>docs/schema/per-planner-terms.sql</strong> in Supabase once, then reload.'
+    _legalDict = { en: (dict && dict.en) || {}, ja: (dict && dict.ja) || {} }
+    // The 10-article agreement body (key 'body2026') is held in the shared
+    // terms-default.js so the editor always opens on the CURRENT agreement even
+    // before it has ever been saved to the DB. Editing + Save writes it to
+    // legal_docs, which the public Terms page overlays on top of the baked-in copy.
+    if (window.TERMS_DEFAULT) {
+      if (!_legalDict.en.body2026) _legalDict.en.body2026 = window.TERMS_DEFAULT.en
+      if (!_legalDict.ja.body2026) _legalDict.ja.body2026 = window.TERMS_DEFAULT.ja
+    }
+    if (!_legalDict.en.body2026 && !(dict && dict.en)) {
+      if (status) status.innerHTML = 'No Terms content saved yet — run <strong>docs/schema/legal-docs.sql</strong> in Supabase once, then reload.'
       return
     }
-    _legalDict = { en: dict.en || {}, ja: dict.ja || {} }
     renderLegalFields()
     if (status) {
       if (fromTemplate) {
@@ -7672,9 +7683,28 @@ function _legalGroupTitle(prefix){
 function renderLegalFields() {
   const fields = document.getElementById('legal-fields')
   if (!fields) return
-  const keys = Object.keys(_legalDict.en)
   const taStyle = "width:100%;font-size:12.5px;font-family:'DM Sans',sans-serif;line-height:1.5;border:1px solid var(--line,#e5e1d8);border-radius:6px;padding:6px 8px;resize:vertical;box-sizing:border-box;background:var(--bg,#fff);color:var(--ink);"
-  let html = '', lastGroup = null
+  let html = ''
+  // ── The agreement itself (the 10 articles) — the main thing to edit here. ──
+  // Rendered first, big, with data-legal-key="body2026" so the existing Save
+  // button picks it up like any other field.
+  if ('body2026' in _legalDict.en || 'body2026' in _legalDict.ja) {
+    const bigStyle = taStyle + "min-height:360px;font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;font-size:12px;"
+    const ben = _legalDict.en.body2026 || '', bja = _legalDict.ja.body2026 || ''
+    html += `<div style="border:2px solid var(--green,#2f6b53);border-radius:10px;padding:14px 16px;margin-bottom:18px;background:var(--surface-2,#faf9f5);">
+      <div style="font-size:14px;font-weight:800;color:var(--green-dark,#2f6b53);margin-bottom:2px;">Full agreement — the 10 articles</div>
+      <div style="font-size:11.5px;color:var(--ink-3);margin-bottom:10px;line-height:1.5;">The complete Planner Terms of Service body shown on the public page. It uses the neutral word <strong>&ldquo;the Company / 当社&rdquo;</strong> throughout, plus the base name <strong>Journey Junction</strong> in Article&nbsp;1 &mdash; which is shown automatically as <strong>Vacations by Design</strong> to VBD planners, so edit it once here for both brands. HTML tags (&lt;h2&gt;, &lt;p&gt;, &lt;ol&gt;&lt;li&gt;, &lt;strong&gt;) are allowed &mdash; keep them balanced. Edits go live on Save.</div>
+      <div style="font-size:10px;color:var(--ink-3);margin-bottom:2px;font-weight:600;">日本語 &nbsp;<span style="font-weight:400;">(the authoritative version)</span></div>
+      <textarea data-legal-key="body2026" data-legal-lang="ja" style="${bigStyle}margin-bottom:12px;">${_legalEsc(bja)}</textarea>
+      <div style="font-size:10px;color:var(--ink-3);margin-bottom:2px;font-weight:600;">English</div>
+      <textarea data-legal-key="body2026" data-legal-lang="en" style="${bigStyle}">${_legalEsc(ben)}</textarea>
+    </div>`
+  }
+  // Everything else (page header, company card, contact card, custom sections).
+  // Legacy per-paragraph keys (s1..s11) are hidden — the public page no longer
+  // reads them, and Save drops them, cleaning them out of the DB.
+  const keys = Object.keys(_legalDict.en).filter(k => k !== 'body2026' && !/^s\d+(\.|$)/.test(k))
+  let lastGroup = null
   for (const k of keys) {
     const g = _legalGroupOf(k)
     if (g !== lastGroup) {
