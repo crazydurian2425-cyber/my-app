@@ -150,12 +150,29 @@ function dateNDaysAgo(n){
 }
 function rangeStart(){ if(RANGE==='today')return tokyoToday(); if(RANGE==='7d')return dateNDaysAgo(6); return dateNDaysAgo(13) }
 
+// Supabase caps a single response at 1000 rows. This page's query had no
+// .order() and no pagination, so once the 14-day window crossed 1000 rows the
+// server returned an arbitrary 1000 (≈ oldest first) and the NEWEST days fell
+// off the end — "today" read 0 while planners were still writing. Page through
+// instead of raising the cap, ordered by a total key so paging is deterministic.
+async function sbFetchAllErr(builder, pageSize = 1000){
+  const out = []
+  for (let from = 0; ; from += pageSize){
+    const { data, error } = await builder().range(from, from + pageSize - 1)
+    if (error) return { data: out, error }
+    const batch = data || []
+    out.push(...batch)
+    if (batch.length < pageSize) break   // last page reached
+  }
+  return { data: out, error: null }
+}
+
 async function load(){
   try {
     const since = dateNDaysAgo(13)
     const [{ data: usage, error: e1 }, { data: plist, error: e2 }] = await Promise.all([
-      sb.from('api_usage_daily').select('planner_id, usage_date, api, count').gte('usage_date', since),
-      sb.from('planners').select('id, name, city')
+      sbFetchAllErr(() => sb.from('api_usage_daily').select('planner_id, usage_date, api, count').gte('usage_date', since).order('usage_date').order('planner_id').order('api')),
+      sbFetchAllErr(() => sb.from('planners').select('id, name, city, brand').order('id'))
     ])
     if (e1) {
       document.getElementById('rpcwarn').textContent = ' — table api_usage_daily not found: run docs/schema/api-usage-tracking.sql in Supabase.'
@@ -166,7 +183,7 @@ async function load(){
     RAW = usage || []
     if (e2) console.warn('planners lookup failed — rows will show ids', e2)
     PLANNERS = {}
-    ;(plist || []).forEach(p => { PLANNERS[p.id] = { name: p.name || '—', city: p.city || '' } })
+    ;(plist || []).forEach(p => { PLANNERS[p.id] = { name: p.name || '—', city: p.city || '', brand: (p.brand === 'vbd' ? 'vbd' : 'jj') } })
     render()
     document.getElementById('updated').textContent = 'updated ' + new Date().toLocaleTimeString()
   } catch (e) {
@@ -208,12 +225,16 @@ function render(){
   document.getElementById('rangelbl').textContent = RANGE==='today'?'today':(RANGE==='7d'?'last 7 days':'last 14 days')
 
   // rows
-  let rows = Object.entries(byPlanner).map(([id,b]) => ({ id, p: PLANNERS[id]||{name:'(unknown '+id.slice(0,6)+')',city:''}, b }))
+  let rows = Object.entries(byPlanner).map(([id,b]) => ({ id, p: PLANNERS[id]||{name:'(unknown '+id.slice(0,6)+')',city:'',brand:''}, b }))
   const totalCalls = rows.reduce((s,x)=>s+x.b.total,0)
   const totalCost  = rows.reduce((s,x)=>s+x.b.cost,0)
   const active     = rows.filter(x=>x.b.total>0).length
   const avg        = active ? totalCalls/active : 0
   const top        = rows.slice().sort((a,b)=>b.b.total-a.b.total)[0]
+  // Both brands share one DB, so the table already combines JJ + VBD. Split the
+  // total per brand for the "at a glance" line (unknown/deleted planners excluded).
+  const byBrand = { jj:0, vbd:0 }
+  rows.forEach(x => { if (x.p.brand==='vbd') byBrand.vbd+=x.b.total; else if (x.p.brand==='jj') byBrand.jj+=x.b.total })
 
   document.getElementById('kpis').innerHTML = `
     <div class="kpi today"><div class="n">${totalCalls.toLocaleString()}</div><div class="l">Total calls</div><div class="sub">${document.getElementById('rangelbl').textContent}</div></div>
@@ -241,7 +262,8 @@ function render(){
   document.getElementById('insights').innerHTML =
     (hot ? `<div style="margin-bottom:8px">🔴 <b>${escapeHtml(hot.p.name)}</b> — ${hot.b.total.toLocaleString()} calls, ~${Math.round(hot.b.total/avg)}× average. Worth checking their session for a loop.</div>` : `<div style="margin-bottom:8px">🟢 No planner is far above average — usage looks healthy.</div>`)
     + `<div style="margin-bottom:8px">📸 Photos are <b>${photoShare}%</b> of calls (first view per device; near-zero after).</div>`
-    + `<div>📊 ${active} active planner${active===1?'':'s'} · avg <b>${Math.round(avg)}</b> calls each ${document.getElementById('rangelbl').textContent}.</div>`
+    + `<div style="margin-bottom:8px">📊 ${active} active planner${active===1?'':'s'} · avg <b>${Math.round(avg)}</b> calls each ${document.getElementById('rangelbl').textContent}.</div>`
+    + `<div>🏷️ By brand — ${brandBadge('jj')} <b>${byBrand.jj.toLocaleString()}</b> · ${brandBadge('vbd')} <b>${byBrand.vbd.toLocaleString()}</b> calls ${document.getElementById('rangelbl').textContent}.</div>`
 
   // table
   rows = rows.filter(x => !q || (x.p.name+x.p.city).toLowerCase().includes(q))
@@ -252,7 +274,7 @@ function render(){
     const isHot = b.total > Math.max(avg*3, 500)
     const status = isHot ? '<span class="flag hot">⚠ high</span>' : '<span class="flag ok">normal</span>'
     return `<tr>
-      <td><div class="pn">${escapeHtml(p.name)}</div><div class="pmeta">${escapeHtml(p.city||'')}</div></td>
+      <td><div class="pn">${escapeHtml(p.name)}${brandBadge(p.brand)}</div><div class="pmeta">${escapeHtml(p.city||'')}</div></td>
       <td class="num barcell"><div class="fill ${isHot?'hot':''}" style="width:${pct}%"></div><span>${b.total.toLocaleString()}</span></td>
       <td class="num">${b.places.toLocaleString()}</td>
       <td class="num">${b.routes.toLocaleString()}</td>
@@ -264,6 +286,13 @@ function render(){
 }
 
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+// Small brand pill (JJ / VBD). Both brands live in one DB; this only labels who's who.
+function brandBadge(b){
+  const base='display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:800;letter-spacing:.04em;vertical-align:middle;'
+  if (b==='vbd') return `<span style="${base}background:#efe6fb;color:#6b4d9e;border:1px solid #d3c0ef;">VBD</span>`
+  if (b==='jj')  return `<span style="${base}background:#e8f1f6;color:#2b5f7a;border:1px solid #bcd7e6;">JJ</span>`
+  return ''
+}
 function setRange(r,btn){ RANGE=r; document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on')); btn.classList.add('on'); render() }
 function sortBy(k){ SORT=k; render() }
 
