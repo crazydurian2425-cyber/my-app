@@ -436,13 +436,135 @@ const _TERMS_2026_JA = `
   <p>本利用規約または本プラットフォームの利用に関して疑義または紛争が生じた場合には、当社およびプランナーは誠意をもって協議し、その解決に努めるものとします。</p>
   <p>本利用規約は、本プラットフォームの利用および業務委託契約の対象事項に関する当社とプランナーとの間の完全な合意を構成するものであり、本利用規約締結以前の口頭または書面による説明、協議、了解または合意に優先して適用されます。</p>
 `
-// Japanese is authoritative. On the English toggle, show a short note that the
-// Japanese version governs, then the same agreement (no unreviewed English legal
-// text is fabricated).
+const _TERMS_2026_EN = `
+  <h2>Article 1 – About the Company</h2>
+  <p><strong>Journey Junction</strong> (the <strong>"Company," "we," "our," or "us"</strong>) operates a platform (the <strong>"Platform"</strong>) that provides customized travel planning and itinerary creation services for travelers visiting Japan.</p>
+  <p>The Company engages independent inbound travel planners (the <strong>"Planner(s)"</strong>) to prepare customized travel itineraries and assigns itinerary assignments through the Platform based on travelers' requests.</p>
+  <p>All travel contracts, reservation procedures, travel arrangements, payment collection, and other travel-related transactions are handled by the Company or service providers designated by the Company. The Planner is an independent contractor responsible solely for itinerary creation and related travel planning services and is <strong>not authorized</strong> to enter into travel contracts, confirm reservations, collect travel payments, or otherwise act on behalf of the Company in dealings with travelers.</p>
+  <p>By creating a Planner account and using the Platform, the Planner acknowledges that they have read, understood, and agreed to be bound by these Terms of Service, the Independent Contractor Agreement, and the Company's Privacy Policy.</p>
+
+  <h2>Article 2 – Eligibility</h2>
+  <p>To register as a Planner on the Platform, an applicant must satisfy all of the following requirements:</p>
+  <ol>
+    <li>Be at least eighteen (18) years of age.</li>
+    <li>Have the legal right to perform services as an independent contractor in their country of residence.</li>
+    <li>Successfully complete the Company's identity verification procedures.</li>
+    <li>Register a valid payment method approved by the Company.</li>
+    <li>Provide accurate, complete, and up-to-date registration information and keep such information current at all times.</li>
+  </ol>
+  <p>The Company may require the submission of additional identity verification documents or other supporting information whenever reasonably necessary.</p>
+
+  <h2>Article 3 – Planner Responsibilities and Services</h2>
+  <p>The Planner performs services through the Platform as an <strong>independent contractor</strong> and not as an employee of the Company.</p>
+  <p>All assignments are allocated randomly through the Company's assignment allocation system. Once an assignment has been allocated, <strong>neither the Company nor the Planner may change, exchange, reassign, substitute, select, or otherwise modify the assigned assignment in any manner whatsoever.</strong></p>
+  <p>The Planner shall prepare each assigned itinerary in the order specified by the Company and within the applicable deadline.</p>
+  <p>The Planner may not proceed to the next itinerary until the currently assigned itinerary has been completed.</p>
+  <p>After completing all itineraries within an assigned set, the Planner shall submit the completed set to the Company for review and approval.</p>
+  <p>The Company's review process normally takes approximately thirty (30) minutes during the Company's official support hours.</p>
+  <p>If an itinerary is incomplete, contains insufficient information, or fails to satisfy the Company's quality standards, operational guidelines, or business requirements, the Company may require revisions before granting approval.</p>
+  <p>If the Planner expects that an assigned set cannot be completed by the applicable deadline, the Planner must contact the Company's Customer Support and request an extension <strong>before the deadline expires</strong>.</p>
+  <p>If the Planner fails to obtain an approved extension and does not complete all itineraries within the assigned set before the applicable deadline, the assignment set shall be treated as an <strong>Incomplete Assignment</strong>. In such event, the Planner may forfeit all rights to the <strong>Performance-based Compensation</strong>, commissions, <strong>Performance Achievement Bonuses</strong>, and any other compensation relating to that assignment set.</p>
+  <p>The Planner shall prepare accurate, practical, and factually correct itineraries that appropriately reflect each traveler's requests.</p>
+  <p>The Planner shall communicate professionally and respectfully with travelers and Company personnel at all times and shall not engage in discriminatory, abusive, threatening, harassing, or otherwise inappropriate conduct.</p>
+  <p>The Planner shall submit only itineraries and other content that the Planner has personally created or is otherwise legally authorized to use.</p>
+
+  <h2>Article 4 – Compensation, Payments and Wallet</h2>
+  <p>The Planner shall be compensated on a <strong>performance-based compensation</strong> basis. Compensation for each assignment shall be paid according to the amount determined by the Company for the applicable assignment. The applicable compensation for each assignment or assignment set will be displayed on the Platform.</p>
+  <p>All compensation paid through the Platform constitutes <strong>performance-based compensation</strong> under the Independent Contractor Agreement. It does not constitute a salary, fixed wage, guaranteed income, employee bonus, employment benefits, or any other form of employee compensation.</p>
+  <h3>Payment Conditions</h3>
+  <p>Performance-based Compensation shall become payable only after all of the following conditions have been satisfied:</p>
+  <ol>
+    <li>The Planner has completed every itinerary within the assigned set;</li>
+    <li>The completed assignment set has been submitted to the Company; and</li>
+    <li>The assignment set has been reviewed and approved by the Company.</li>
+  </ol>
+  <p>Following approval, the Company will generally process payment within twenty-four (24) hours using the Planner's registered payment method. Payment may be delayed due to banking schedules, system maintenance, network interruptions, or other circumstances beyond the Company's reasonable control.</p>
+  <p>The Planner may withdraw the available balance in the Wallet in accordance with the Company's designated withdrawal procedures.</p>
+  <h3>Performance Achievement Bonus</h3>
+  <p>In addition to the standard Performance-based Compensation, a Planner who completes, submits, and receives Company approval for <strong>two (2) or more assignment sets</strong> within a consecutive seven (7)-day cycle shall receive a <strong>Performance Achievement Bonus</strong> of <strong>JPY 150,000</strong>, which will be credited to the Planner's Wallet at the end of the applicable cycle.</p>
+  <p>The initial seven-day cycle begins on the date the Planner completes, submits, and receives Company approval for their first assignment set.</p>
+  <p>Each subsequent cycle begins on the day immediately following the end of the previous seven-day cycle and continues for seven (7) consecutive calendar days.</p>
+  <p>If fewer than two (2) assignment sets are completed, submitted, and approved during any cycle, no Performance Achievement Bonus shall be awarded for that cycle.</p>
+  <p>The Performance Achievement Bonus is a conditional incentive payment in addition to the Planner's Performance-based Compensation. It does not constitute a salary, guaranteed wage, guaranteed income, or any other continuing entitlement to compensation.</p>
+  <h3>Wallet Retention Buffer <span style="font-weight:400;font-style:italic;color:var(--ink-3);">(Retention Buffer for Fraud Prevention and Payment Disputes)</span></h3>
+  <p>To protect the Platform against fraud, payment disputes, and other payment-related risks, the Company maintains a <strong>Wallet Retention Buffer</strong> of <strong>JPY 60,000</strong>.</p>
+  <p>The Wallet Retention Buffer shall remain temporarily held in the Planner's Wallet until the Planner has successfully completed <strong>three (3) consecutive assignment sets</strong> and each of those assignment sets has been reviewed and approved by the Company.</p>
+  <p><strong>Any Wallet balance exceeding the JPY 60,000 Wallet Retention Buffer may be withdrawn at any time, even before the Planner has completed three (3) assignment sets, in accordance with the Company's designated withdrawal procedures.</strong></p>
+  <p>Upon successful completion and Company approval of three (3) consecutive assignment sets, the Wallet Retention Buffer shall be automatically released and credited to the Planner's available Wallet balance.</p>
+  <p>Once released, the Planner may withdraw the entire available Wallet balance in accordance with the Company's designated withdrawal procedures.</p>
+  <p>The Wallet Retention Buffer is <strong>not</strong> a fee, deposit, bond, or payment made by the Planner to the Company. It is an internal payment protection mechanism under which a portion of the Planner's Wallet balance is temporarily retained for payment administration purposes.</p>
+
+  <h2>Article 5 – Premium Assignments</h2>
+  <p>Premium Assignments are high-value itinerary assignments that are randomly allocated by the Company's assignment allocation system based on a traveler's real-time reservation status. Premium Assignments primarily include assignments relating to corporate travelers, group travel, high-value travel, or travelers whose flights, accommodations, transportation, experiences, travel schedules, or other major travel arrangements have already been confirmed.</p>
+  <p>Because the travel arrangements for Premium Assignments have already been finalized, they require a higher standard of accuracy, responsibility, and strict compliance with deadlines than standard assignments. If the submission of an itinerary is delayed, remains incomplete, or is not completed by the applicable deadline, the traveler's confirmed reservations or other travel arrangements may be adversely affected. Accordingly, where the Company considers it necessary, it may require confirmation of the Planner's commitment to perform the assignment before work commences.</p>
+  <p>Once a Premium Assignment has been allocated, it is managed based on confirmed travel reservations and operational schedules. <strong>Accordingly, neither the Company nor the Planner may change, exchange, skip, transfer, reassign, substitute, select, or otherwise modify the assigned Premium Assignment in any manner whatsoever.</strong></p>
+  <h3>Refundable Security Deposit</h3>
+  <p>For Premium Assignments designated by the Company, the Planner may be required to provide a <strong>one-time Refundable Security Deposit</strong> before work on the assignment may commence.</p>
+  <p>The Refundable Security Deposit is <strong>not</strong> a fee, service charge, or any other payment made to the Company. It is required solely to confirm the Planner's commitment to perform the assigned Premium Assignment responsibly and to complete it within the specified deadline.</p>
+  <p>Following confirmation of the Refundable Security Deposit, processing on the Platform is normally completed within approximately thirty (30) minutes, after which the Planner may begin the assigned Premium Assignment.</p>
+  <p>The Refundable Security Deposit shall be used solely to facilitate reservation verification and reservation-related procedures carried out by the designated Tour Guide Agent responsible for reservation confirmation.</p>
+  <p>Because Premium Assignments involve greater responsibility and more complex work than standard assignments, they may qualify for higher <strong>Performance-based Compensation</strong>, commissions, <strong>Performance Achievement Bonuses</strong>, and other incentive payments.</p>
+  <p>If the Planner completes all itineraries within the assigned Premium Assignment set by the specified deadline, submits the completed set to the Company, and receives the Company's review and approval, the Refundable Security Deposit shall be returned in full to the Planner's Wallet together with all applicable <strong>Performance-based Compensation</strong>, commissions, <strong>Performance Achievement Bonuses</strong>, and any other compensation relating to that assignment set.</p>
+  <p>After the Refundable Security Deposit and all applicable compensation have been credited to the Planner's Wallet, the Planner may withdraw the available Wallet balance in accordance with the Company's designated withdrawal procedures.</p>
+  <p>If a Refundable Security Deposit is required but the Planner fails to provide it, the Planner shall not be permitted to commence or continue the applicable Premium Assignment.</p>
+  <p>Furthermore, if the Planner's failure to provide the required Refundable Security Deposit results in the assigned set containing the Premium Assignment not being completed by the applicable deadline, that assignment set shall be treated as an <strong>Incomplete Assignment</strong> under these Terms of Service. In such event, the Planner may forfeit all rights to the <strong>Performance-based Compensation</strong>, commissions, <strong>Performance Achievement Bonuses</strong>, and any other compensation relating to that assignment set.</p>
+
+  <h2>Article 6 – Intellectual Property</h2>
+  <p>The Planner shall retain ownership of all copyrights and other intellectual property rights, to the extent permitted by applicable law, in the itineraries and other work products created by the Planner.</p>
+  <p>By submitting any itinerary or other work product through the Platform, the Planner grants the Company a worldwide, non-exclusive, royalty-free, transferable license to store, reproduce, display, distribute, and use such work product solely for the purposes of providing services to travelers, operating the Platform, quality assurance, customer support, and the Company's business operations.</p>
+  <p>Except where required by law or reasonably necessary for the operation of the Platform or the Services, the Company will not publish or use the Planner's work outside the Platform without the Planner's prior consent.</p>
+  <p>The Planner represents and warrants that all itineraries, images, text, documents, and other content submitted through the Platform are either the Planner's original work or are lawfully used with all necessary rights, licenses, or permissions, and do not infringe any copyright, trademark, privacy right, publicity right, or other intellectual property right of any third party.</p>
+
+  <h2>Article 7 – Confidentiality and Prohibited Conduct</h2>
+  <p>The Planner shall keep strictly confidential all information obtained through the Platform or during the performance of services, including but not limited to the Company's business operations, Platform, systems, traveler information, assignment information, itinerary content, operational manuals, communications, payment information, and all other non-public information.</p>
+  <p>The Planner shall not disclose, publish, reproduce, distribute, copy, share, or otherwise make any Confidential Information available to any third party without the Company's prior written consent.</p>
+  <p>The Planner further agrees that the following activities are strictly prohibited:</p>
+  <ol>
+    <li>Contacting travelers outside the Platform.</li>
+    <li>Soliciting, negotiating, or conducting transactions directly with travelers without the Company's authorization.</li>
+    <li>Sharing telephone numbers, email addresses, social media accounts, or any other contact information for the purpose of bypassing the Platform.</li>
+    <li>Receiving travel payments or any other money directly from travelers.</li>
+    <li>Entering into travel contracts, confirming reservations, issuing travel documents, or otherwise representing the Company in dealings with travelers.</li>
+    <li>Submitting plagiarized content or any material that infringes the intellectual property rights of any third party.</li>
+    <li>Submitting false, misleading, inaccurate, fraudulent, or copied information.</li>
+    <li>Reverse engineering, scraping, unauthorized access, or any other improper use of the Platform, systems, APIs, or related technology.</li>
+    <li>Interfering with or disrupting the operation of the Platform or the services provided to other Planners or travelers.</li>
+    <li>Defaming, harassing, threatening, or otherwise infringing the rights or reputation of the Company, travelers, or any third party.</li>
+    <li>Posting, transmitting, or sharing discriminatory, abusive, threatening, violent, obscene, or otherwise inappropriate content.</li>
+    <li>Posting, publishing, or sharing screenshots, Platform pages, itineraries, traveler information, conversations, internal documents, operational materials, or any other information obtained through the Platform on social media, websites, blogs, online forums, messaging applications, video-sharing platforms, or any other public or private medium.</li>
+    <li>Violating any applicable law, these Terms of Service, or the Independent Contractor Agreement.</li>
+  </ol>
+
+  <h2>Article 8 – Suspension and Termination</h2>
+  <p>The Company may suspend, restrict, or permanently terminate a Planner's access to the Platform without prior notice if the Company reasonably determines that the Planner has:</p>
+  <ol>
+    <li>Violated these Terms of Service or the Independent Contractor Agreement;</li>
+    <li>Repeatedly submitted itineraries that fail to satisfy the Company's quality standards;</li>
+    <li>Repeatedly failed to complete assigned work within the applicable deadlines without approved extensions;</li>
+    <li>Engaged in fraud, misuse, false declarations, or other improper conduct relating to the Wallet Retention Buffer or the Refundable Security Deposit;</li>
+    <li>Provided false, inaccurate, or misleading registration information;</li>
+    <li>Obtained unauthorized access to the Platform or engaged in any other fraudulent or unlawful activity;</li>
+    <li>Become subject to any legal or regulatory requirement requiring suspension or termination; or</li>
+    <li>Otherwise engaged in conduct that materially interferes with the proper operation, security, or integrity of the Platform.</li>
+  </ol>
+  <p>Termination or suspension of a Planner's account shall not affect the Planner's entitlement to Performance-based Compensation for assignment sets that were lawfully completed, submitted, reviewed, and approved by the Company before the effective date of the suspension or termination.</p>
+  <p>Any assignment that remains incomplete, unsubmitted, or unapproved at the time of suspension or termination shall be handled in accordance with these Terms of Service and the Independent Contractor Agreement.</p>
+
+  <h2>Article 9 – Disclaimer and Limitation of Liability</h2>
+  <p>The Platform and all related services are provided on an <strong>"AS IS"</strong> and <strong>"AS AVAILABLE"</strong> basis.</p>
+  <p>The Company makes no representation or warranty, whether express or implied, regarding the availability of assignments, the amount of income a Planner may earn, uninterrupted access to the Platform, or the suitability of the Platform for any particular purpose.</p>
+  <p>The Company shall not be liable for any loss, delay, interruption, or damage resulting from events beyond its reasonable control, including but not limited to natural disasters, telecommunications failures, system failures, banking delays, third-party service interruptions, cyber incidents, or governmental actions.</p>
+  <p>To the maximum extent permitted by applicable law, the Company's total aggregate liability arising out of or relating to these Terms of Service, the Platform, or the Independent Contractor Agreement shall not exceed the total amount of <strong>Performance-based Compensation</strong> actually paid by the Company to the applicable Planner during the three (3) months immediately preceding the event giving rise to the claim.</p>
+
+  <h2>Article 10 – Miscellaneous</h2>
+  <p>These Terms of Service shall be read together with and form an integral part of the Independent Contractor Agreement between the Company and the Planner.</p>
+  <p>Any matter not expressly provided for in these Terms of Service shall be governed by the Independent Contractor Agreement, the Privacy Policy, the Company's operational policies, business guidelines, and any other rules or procedures established by the Company.</p>
+  <p>If any provision of these Terms of Service is held to be invalid, illegal, or unenforceable by a court or competent authority, the remaining provisions shall continue in full force and effect.</p>
+  <p>In the event of any question, dispute, or disagreement arising out of or relating to these Terms of Service or the use of the Platform, the Company and the Planner shall first attempt to resolve the matter through good-faith discussions.</p>
+  <p>These Terms of Service, together with the Independent Contractor Agreement and any documents expressly incorporated by reference, constitute the entire agreement between the Company and the Planner concerning the use of the Platform and supersede all prior oral or written discussions, negotiations, understandings, representations, or agreements relating to the same subject matter.</p>
+`
 TM_I18N.ja.body2026 = _TERMS_2026_JA
-TM_I18N.en.body2026 =
-  '<div style="background:var(--surface-2,#faf7ef);border:1px solid var(--border,rgba(0,0,0,.08));border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;line-height:1.6;color:var(--ink-2,#5a554c);">This Planner Agreement is provided in <strong>Japanese</strong>, which is the sole governing version. Contact support if you need an English copy.</div>'
-  + _TERMS_2026_JA
+TM_I18N.en.body2026 = _TERMS_2026_EN
 
 let TM_LANG = localStorage.getItem('jj_planner_lang') || 'ja'
 if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
