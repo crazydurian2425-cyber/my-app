@@ -949,6 +949,28 @@ async function login() {
     showError(t('err.invalid'), 'err.invalid'); resetBtn(); return
   }
 
+  // ── Brand gate ──────────────────────────────────────────────────
+  // A planner can only sign in on their OWN brand's site: a Journey Junction
+  // planner on itinerarydesignhub.com (or a VBD planner on
+  // journeyjunctionplanner.com) is signed out and pointed to the right site.
+  // Unknown hosts (workers.dev preview, localhost) count as JJ. Missing brand
+  // (pre-migration rows) = JJ.
+  const _hostBrand = (location.hostname || '').toLowerCase().replace(/^www\./, '') === 'itinerarydesignhub.com' ? 'vbd' : 'jj'
+  const _plannerBrand = planner.brand === 'vbd' ? 'vbd' : 'jj'
+  if (_plannerBrand !== _hostBrand) {
+    try { await sb.auth.signOut() } catch (_) {}
+    const _dest     = _plannerBrand === 'vbd' ? 'https://itinerarydesignhub.com/login' : 'https://journeyjunctionplanner.com/login'
+    const _destName = _plannerBrand === 'vbd' ? 'Vacations by Design' : 'Journey Junction'
+    const _box = document.getElementById('err'), _msgEl = document.getElementById('err-msg')
+    _msgEl.removeAttribute('data-i18n')
+    // Static trusted strings only — no user input in this HTML.
+    _msgEl.innerHTML = (TM_LANG === 'ja')
+      ? `このアカウントは ${_destName} のアカウントです。<a href="${_dest}" style="color:inherit;font-weight:600;text-decoration:underline;">こちらからログイン</a>してください。`
+      : `This account belongs to ${_destName}. Please <a href="${_dest}" style="color:inherit;font-weight:600;text-decoration:underline;">sign in there</a>.`
+    _box.classList.add('show')
+    resetBtn(); return
+  }
+
   // Capture IP + geo for fraud detection — best-effort, never blocks login.
   // Tries ipapi.co then ipwho.is as fallback.
   ;(async () => {
