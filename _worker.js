@@ -69,7 +69,10 @@ const BRANDS = {
     legalName: 'Vacations by Design Ltd',
     slogan: 'Your journey, by design.',
     emailFrom: 'Vacations by Design <hello@thevacationsbydesign.co.uk>',
-    supportEmail: 'hello@thevacationsbydesign.co.uk',
+    // INTERIM: thevacationsbydesign.co.uk has NO MX records (no mailbox), so
+    // internal notices (signed letters) route to the JJ inbox until a real VBD
+    // mailbox exists — then set this back to hello@thevacationsbydesign.co.uk.
+    supportEmail: 'hello@thejourneyjunction.co.uk',
     siteUrl: 'https://itinerarydesignhub.com',
     icon: '/vbd-app-icon.svg',
     accent: '#3A5647',           // Sage Forest (primary)
