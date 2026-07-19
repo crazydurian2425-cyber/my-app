@@ -244,11 +244,28 @@
     } catch (e) {}
   }
 
+  // Keep the brand wordmark out of browser auto-translation. Chrome/Edge treat a
+  // Japanese page's English wordmark as translatable and mangle it (e.g.
+  // "Vacations by Design" → "Baths by Design"). We mark ONLY the brand lockup
+  // notranslate — the rest of the UI still translates for the viewer.
+  var _BRAND_MARK_SEL = '.logo,.brand,.brand-lockup,.sidebar-logo,.brand-name,.logo-mark,.brand-line-1,.brand-line-2';
+  function protectBrandFromTranslate(root) {
+    try {
+      var scope = root && root.querySelectorAll ? root : document;
+      var els = scope.querySelectorAll(_BRAND_MARK_SEL);
+      for (var q = 0; q < els.length; q++) {
+        els[q].setAttribute('translate', 'no');
+        if (els[q].classList) els[q].classList.add('notranslate');
+      }
+    } catch (e) {}
+  }
+
   function apply() {
     if (rewrite(document.title) !== document.title) document.title = rewrite(document.title);
     var metas = document.querySelectorAll('meta[content]');
     for (var i = 0; i < metas.length; i++) swapAttrsOne(metas[i]);
     swapEl(document.body);
+    protectBrandFromTranslate();
     revealBrand();   // brand lockup is now VBD — un-hide it
 
     // Self-heal: re-apply to anything added later (loop-safe — we only edit text/
@@ -265,7 +282,7 @@
           var added = m.addedNodes;
           for (var b = 0; b < added.length; b++) {
             var node = added[b];
-            if (node.nodeType === 1) swapEl(node);
+            if (node.nodeType === 1) { swapEl(node); protectBrandFromTranslate(node); }
             else if (node.nodeType === 3) swapTextNode(node);
           }
         }
