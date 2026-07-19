@@ -197,12 +197,13 @@ export default {
       if ((assetResp.headers.get('content-type') || '').includes('text/html')) {
         const h = new Headers(assetResp.headers)
         h.set('Cache-Control', 'no-cache')
-        // VBD only: brand the raw <title> + inject social-preview tags so a
-        // shared link (WhatsApp/LINE/Facebook/iMessage/crawlers, none of which
-        // run the client-side skin) shows Vacations by Design, not Journey
-        // Junction. Best-effort: any failure returns the page unmodified. JJ is
+        // Any non-JJ brand: brand the raw <title> + inject social-preview tags so
+        // a shared link (WhatsApp/LINE/Facebook/iMessage/crawlers, none of which
+        // run the client-side skin) shows that brand, not Journey Junction. This
+        // is generic — every future brand gets it automatically, no code change.
+        // Best-effort: any failure returns the page unmodified. JJ (the base) is
         // served byte-for-byte unchanged.
-        if (brand.key === 'vbd' && assetResp.status === 200) {
+        if (brand.key && brand.key !== 'jj' && assetResp.status === 200) {
           let html = await assetResp.text()
           try { html = brandStaticHtml(html, brand, url) } catch (e) { /* keep original */ }
           return new Response(html, { status: 200, statusText: assetResp.statusText, headers: h })
@@ -217,30 +218,39 @@ export default {
 
 // ── Brand a public HTML page for no-JS consumers (social previews / crawlers) ──
 // The client-side skin (brand-boot.js) never runs for link-preview crawlers, so
-// a raw VBD page would show the baked-in "Journey Junction" <title> and no image.
-// Rewrite the title to the brand name and inject Open Graph / Twitter tags. Pure
-// string ops; the caller wraps this in try/catch so it can never break a page.
+// a raw non-JJ page would show the baked-in "Journey Junction" <title> and no
+// image. Rewrite the title to the brand name and inject Open Graph / Twitter
+// tags. Brand-generic (reads only brand.{name,slogan,siteUrl,emailLogoImg,icon})
+// so every future brand works with no edit here. Pure string ops; the caller
+// wraps this in try/catch so it can never break a page.
 function brandStaticHtml(html, brand, url) {
   const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  // 1) Title — swap the JJ name inside the existing <title>…</title>.
+  // 1) Title — swap the JJ base name inside the existing <title>…</title>.
   html = html.replace(/<title>([\s\S]*?)<\/title>/i, (m, t) =>
     '<title>' + t.split('Journey Junction').join(brand.name) + '</title>')
   // 2) Social preview tags (the source pages ship none) — inject before </head>.
   const name = esc(brand.name)
-  const img  = esc(brand.emailLogoImg || (brand.siteUrl + '/vbd-app-icon.png'))
-  const pageUrl = esc(brand.siteUrl + url.pathname)
   const desc = esc(brand.slogan || ('Design bespoke, lived-in Japan itineraries with ' + brand.name + '.'))
-  const tags =
+  const pageUrl = esc(brand.siteUrl + url.pathname)
+  // Preview image: prefer the absolute email logo; else resolve brand.icon to an
+  // absolute URL on the brand's own domain. Omitted entirely if the brand has none.
+  let imgRaw = brand.emailLogoImg || brand.icon || ''
+  if (imgRaw && !/^https?:/i.test(imgRaw)) imgRaw = brand.siteUrl + (imgRaw.charAt(0) === '/' ? imgRaw : '/' + imgRaw)
+  const img = esc(imgRaw)
+  let tags =
     '\n<meta property="og:type" content="website">' +
     '\n<meta property="og:site_name" content="' + name + '">' +
     '\n<meta property="og:title" content="' + name + '">' +
     '\n<meta property="og:description" content="' + desc + '">' +
-    '\n<meta property="og:image" content="' + img + '">' +
     '\n<meta property="og:url" content="' + pageUrl + '">' +
     '\n<meta name="twitter:card" content="summary">' +
     '\n<meta name="twitter:title" content="' + name + '">' +
-    '\n<meta name="twitter:description" content="' + desc + '">' +
-    '\n<meta name="twitter:image" content="' + img + '">\n'
+    '\n<meta name="twitter:description" content="' + desc + '">'
+  if (img) {
+    tags += '\n<meta property="og:image" content="' + img + '">' +
+            '\n<meta name="twitter:image" content="' + img + '">'
+  }
+  tags += '\n'
   if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, tags + '</head>')
   return html
 }
