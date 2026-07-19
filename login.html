@@ -963,6 +963,9 @@ async function login() {
     const _destName = _plannerBrand === 'vbd' ? 'Vacations by Design' : 'Journey Junction'
     const _box = document.getElementById('err'), _msgEl = document.getElementById('err-msg')
     _msgEl.removeAttribute('data-i18n')
+    // data-brand-keep: this message must name the OTHER brand + link to its
+    // domain — stop brand-boot's skin from rewriting it into nonsense.
+    _msgEl.setAttribute('data-brand-keep', '')
     // Static trusted strings only — no user input in this HTML.
     _msgEl.innerHTML = (TM_LANG === 'ja')
       ? `このアカウントは ${_destName} のアカウントです。<a href="${_dest}" style="color:inherit;font-weight:600;text-decoration:underline;">こちらからログイン</a>してください。`
@@ -1026,12 +1029,13 @@ function showError(msg, key){
   const msgEl = document.getElementById('err-msg')
   if (key) msgEl.setAttribute('data-i18n', key)
   else     msgEl.removeAttribute('data-i18n')
+  msgEl.removeAttribute('data-brand-keep')   // only the brand-gate message opts out of the skin
   msgEl.textContent = msg
   box.classList.add('show')
 }
 function hideError(){
   const msgEl = document.getElementById('err-msg')
-  if (msgEl) msgEl.removeAttribute('data-i18n')
+  if (msgEl) { msgEl.removeAttribute('data-i18n'); msgEl.removeAttribute('data-brand-keep') }
   document.getElementById('err').classList.remove('show')
 }
 

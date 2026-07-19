@@ -164,13 +164,21 @@
   // touch a form input's value (autosave / wallet read those).
   var ATTRS = ['title', 'alt', 'placeholder', 'aria-label', 'content', 'href'];
 
+  // Opt-out: anything inside [data-brand-keep] is never rewritten. Used for
+  // messages that must genuinely name the OTHER brand (e.g. the login brand
+  // gate telling a Journey Junction planner to use the JJ site).
+  function _kept(el) {
+    return !!(el && el.closest && el.closest('[data-brand-keep]'));
+  }
+
   function swapTextNode(t) {
+    if (_kept(t.parentElement)) return;
     var v = rewrite(t.nodeValue);
     if (v !== t.nodeValue) t.nodeValue = v;
   }
 
   function swapAttrsOne(el) {
-    if (!el.getAttribute) return;
+    if (!el.getAttribute || _kept(el)) return;
     for (var i = 0; i < ATTRS.length; i++) {
       if (!el.hasAttribute(ATTRS[i])) continue;
       var a = el.getAttribute(ATTRS[i]);
