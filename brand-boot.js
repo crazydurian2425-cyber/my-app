@@ -46,6 +46,9 @@
         ['JOURNEY JUNCTION', 'VACATIONS BY DESIGN'],
         ['Journey Junction', 'Vacations by Design'],
         ['JourneyJunction', 'Vacations by Design'],
+        // VBD's job title differs from JJ's. Specific enough that it can't
+        // collide with traveller/itinerary data, so it runs on every page.
+        ['訪日旅行プランナー', '旅程デザイナー'],
         ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk'],
         ['journeyjunctionplanner.com', 'itinerarydesignhub.com']
       ],

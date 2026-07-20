@@ -256,8 +256,8 @@ const LETTER_BRAND_NAME = { jj: 'Journey Junction', vbd: 'Vacations by Design' }
 // Journey Junction text with names swapped. Guarantee / final-confirmation
 // letters are unaffected (their custom_body overwrites the block after this).
 const VBD_EMPLOYMENT_BODY_HTML = `
-  <p style="color:var(--ink-3);font-size:13px;margin-top:-6px;"><strong>（訪日旅行プランナー業務）</strong></p>
-  <p>本契約（以下「本契約」といいます。）は、契約開始日として記載された日付より、<strong>VACATIONS BY DESIGN LTD</strong>（以下「甲」といいます。）と、訪日旅行プランナー（以下「乙」といいます。）との間で締結されるものです。</p>
+  <p style="color:var(--ink-3);font-size:13px;margin-top:-6px;"><strong>（旅程デザイナー業務）</strong></p>
+  <p>本契約（以下「本契約」といいます。）は、契約開始日として記載された日付より、<strong>VACATIONS BY DESIGN LTD</strong>（以下「甲」といいます。）と、旅程デザイナー（以下「乙」といいます。）との間で締結されるものです。</p>
   <p>甲は乙に対し、旅行プランニングおよび旅程作成業務を委託し、乙は本契約に定める条件に従って当該業務を遂行するものとします。</p>
 
   <h3>第1条　業務内容および報酬</h3>
@@ -288,7 +288,7 @@ const VBD_EMPLOYMENT_BODY_HTML = `
   <h3>第4条　会社の事業内容および運営体制</h3>
   <p>甲は、英国において設立・登録された旅行会社であり、世界中の旅行者に対し、オーダーメイドの旅行プランニングおよび旅程作成サービスを提供しています。</p>
   <p>旅行者との契約の締結、予約手続き、旅行手配および料金の受領・決済は、すべて英国法人であるVACATIONS BY DESIGN LTDが行います。</p>
-  <p>甲は、日本国内に旅行業を営む営業所、支店その他の旅行者対応拠点を設置していません。甲が日本国内で業務を委託する訪日旅行プランナーは、旅行者向けの旅程作成業務のみを担当する独立した業務委託者であり、甲の従業員ではありません。</p>
+  <p>甲は、日本国内に旅行業を営む営業所、支店その他の旅行者対応拠点を設置していません。甲が日本国内で業務を委託する旅程デザイナーは、旅行者向けの旅程作成業務のみを担当する独立した業務委託者であり、甲の従業員ではありません。</p>
   <p>乙は、甲を代理して旅行者と連絡を取ること、旅行代金その他の金銭を受領すること、旅行契約を締結すること、予約を確定すること、旅行書類を発行すること、またはその他旅行者との取引において甲を代表する行為を行う権限を有しません。</p>
   <p>予約手続きその他の旅行手配が必要な場合は、甲が指定する担当者または提携するサービス提供事業者がこれを行うものとします。</p>
   <p>甲の事業は英国法人を通じて運営されており、日本国内で旅行業を営む事業者として運営されるものではありません。そのため、甲の事業運営は、英国において適用される法令および規制に従って行われます。</p>
@@ -315,23 +315,42 @@ const VBD_EMPLOYMENT_BODY_HTML = `
   <p style="margin-top:14px;">以下に両当事者が署名することにより、上記の内容を確認・理解し、本契約の条件および甲の利用規約に同意したものとみなされます。</p>
 `
 
-function applyLetterBrand(bk) {
-  if (bk !== 'vbd') return
-  const img = document.querySelector('.brand img')
-  if (img) { img.src = '/vbd-app-icon.svg'; img.alt = 'Vacations by Design' }
-  const wm = document.querySelector('.brand-name')
-  if (wm) { wm.innerHTML = 'Vacations <em>by Design</em>' }
-  const NB = String.fromCharCode(160)
-  const reps = [
+// JJ→VBD substitutions for a VBD letter. Module-level so they can ALSO be applied
+// to the admin-typed guarantee / final-confirmation body, which boot() injects
+// AFTER applyLetterBrand() has already walked the DOM (see brandCustomBody).
+const NB = String.fromCharCode(160)
+const VBD_REPS = [
     ['JOURNEY JUNCTION LTD', 'VACATIONS BY DESIGN LTD'],
     ['Journey Junction', 'Vacations by Design'],
     ['15791277', '03039047'],
     ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
     ['Midhun' + NB + 'Peter', 'Charalambos A. Kyrillou'],
     ['Midhun Peter', 'Charalambos Andrew Kyrillou'],
-    ['2024年6月20日', '1995年3月29日'],
-    ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk']
-  ]
+  ['2024年6月20日', '1995年3月29日'],
+  // VBD's job title differs from JJ's (訪日旅行プランナー → 旅程デザイナー).
+  ['訪日旅行プランナー', '旅程デザイナー'],
+  ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk']
+]
+
+// Apply the VBD substitutions to a plain string (used for the admin-typed
+// guarantee / final-confirmation body, which is set as textContent after the
+// DOM walk below has already run — without this it would keep JJ's name/title).
+function brandCustomBody(s, bk) {
+  let v = String(s == null ? '' : s)
+  if (bk !== 'vbd') return v
+  for (let i = 0; i < VBD_REPS.length; i++) {
+    if (v.indexOf(VBD_REPS[i][0]) > -1) v = v.split(VBD_REPS[i][0]).join(VBD_REPS[i][1])
+  }
+  return v
+}
+
+function applyLetterBrand(bk) {
+  if (bk !== 'vbd') return
+  const img = document.querySelector('.brand img')
+  if (img) { img.src = '/vbd-app-icon.svg'; img.alt = 'Vacations by Design' }
+  const wm = document.querySelector('.brand-name')
+  if (wm) { wm.innerHTML = 'Vacations <em>by Design</em>' }
+  const reps = VBD_REPS
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   const list = []; let n
   while ((n = w.nextNode())) list.push(n)
@@ -585,7 +604,7 @@ async function boot() {
     const _t = document.getElementById('letter-title');      if (_t)  _t.textContent = '保証書'
     const _l = document.getElementById('start-date-label');  if (_l)  _l.textContent = '有効開始日'
     const _b = document.getElementById('letter-block')
-    if (_b) { _b.textContent = letter.custom_body || ''; _b.style.whiteSpace = 'pre-wrap' }
+    if (_b) { _b.textContent = brandCustomBody(letter.custom_body, letter.brand); _b.style.whiteSpace = 'pre-wrap' }
     document.title = '保証書 — ' + bname
     const _sub = document.querySelector('#submit-btn'); if (_sub) _sub.textContent = '署名済み保証書を送信'
   } else if (letter.letter_type === 'final_confirmation') {
@@ -594,7 +613,7 @@ async function boot() {
     const _t = document.getElementById('letter-title');      if (_t)  _t.textContent = '最終確認書'
     const _l = document.getElementById('start-date-label');  if (_l)  _l.textContent = '確認日'
     const _b = document.getElementById('letter-block')
-    if (_b) { _b.textContent = letter.custom_body || ''; _b.style.whiteSpace = 'pre-wrap' }
+    if (_b) { _b.textContent = brandCustomBody(letter.custom_body, letter.brand); _b.style.whiteSpace = 'pre-wrap' }
     document.title = '最終確認書 — ' + bname
     const _sub = document.querySelector('#submit-btn'); if (_sub) _sub.textContent = '署名済み最終確認書を送信'
     const _idb = document.getElementById('id-upload-block'); if (_idb) _idb.style.display = 'block'

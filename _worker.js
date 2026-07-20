@@ -53,6 +53,7 @@ const BRANDS = {
   'journeyjunctionplanner.com': {
     key: 'jj',
     name: 'Journey Junction',
+    roleName: '訪日旅行プランナー',   // job title used in emails/letters
     emailFrom: 'Journey Junction <hello@thejourneyjunction.co.uk>',
     supportEmail: 'hello@thejourneyjunction.co.uk',
     siteUrl: 'https://journeyjunctionplanner.com',
@@ -66,6 +67,7 @@ const BRANDS = {
   'itinerarydesignhub.com': {
     key: 'vbd',
     name: 'Vacations by Design',
+    roleName: '旅程デザイナー',       // VBD's job title differs from JJ's
     legalName: 'Vacations by Design Ltd',
     slogan: 'Your journey, by design.',
     emailFrom: 'Vacations by Design <hello@thevacationsbydesign.co.uk>',
@@ -716,6 +718,7 @@ async function handleSendEmploymentLetter(request, url, brand) {
   // Brand-derived bits for the email template (JJ values reproduce the original output).
   const bAccent = brand.accent || '#1a7a5e'
   const bName   = brand.name
+  const bRole   = brand.roleName || '訪日旅行プランナー'
   const bFooter = brand.footer || 'Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277'
   // Header identity: a raster round logo when the brand supplies one (JJ), else a
   // text wordmark (email clients strip SVG, so brands with only an SVG mark get text).
@@ -735,7 +738,7 @@ async function handleSendEmploymentLetter(request, url, brand) {
     ? `このたび、${bName}より最終確認書を発行いたしました。内容をご確認のうえ、ご本人確認書類（身分証明書）の添付とご署名をお願いいたします。`
     : isGuarantee
     ? `このたび、${bName}より保証書を発行いたしました。内容をご確認のうえ、ご署名をお願いいたします。`
-    : `この度は、${bName} の訪日旅行プランナーへご応募・ご登録いただき、誠にありがとうございます。`
+    : `この度は、${bName} の${bRole}へご応募・ご登録いただき、誠にありがとうございます。`
   const linkPrivacyJa = isEditable
     ? 'このリンクはご本人様専用となっておりますので、第三者への共有はお控えください。'
     : 'このリンクはご本人様専用ですので、第三者と共有されないようお願いいたします。'
