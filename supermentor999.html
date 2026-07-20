@@ -184,6 +184,11 @@
 
   <div class="bar">
     <input id="q" placeholder="Search name, email, phone, LINE/Discord handle…" oninput="render()">
+    <select id="fBrand" onchange="render()">
+      <option value="">All brands</option>
+      <option value="jj">Journey Junction only</option>
+      <option value="vbd">Vacations by Design only</option>
+    </select>
     <select id="fSet" onchange="render()"><option value="">All sets</option></select>
     <select id="fCh" onchange="render()"><option value="">All channel accounts</option></select>
     <select id="fLt" onchange="render()">
@@ -272,6 +277,19 @@ let chFilterFilled = false
 
 // ── helpers ──────────────────────────────────────────────────────────────
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+// JJ / VBD pill on each planner row — same look as the superadmin + CS consoles.
+// Mentors handle both brands in one list, so the badge is the only way to tell
+// which company a planner belongs to.
+function brandBadge(b) {
+  const vbd = b === 'vbd'
+  const label = vbd ? 'VBD' : 'JJ'
+  const title = vbd ? 'Vacations by Design — signed up via itinerarydesignhub.com'
+                    : 'Journey Junction — signed up via journeyjunctionplanner.com'
+  const css = vbd
+    ? 'background:rgba(238,108,58,0.12);border:1px solid rgba(238,108,58,0.40);color:#B24A1C;'
+    : 'background:rgba(26,122,94,0.10);border:1px solid rgba(26,122,94,0.32);color:#1A6F53;'
+  return `<span title="${title}" style="display:inline-flex;align-items:center;margin-left:6px;padding:1px 7px;border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;font-family:'DM Sans',sans-serif;${css}">${label}</span>`
+}
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'), 2600) }
 function fmtDT(iso){ if(!iso) return '—'; const d=new Date(iso); return `${MONTHS[d.getMonth()]} ${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
 function fmtD(iso){ if(!iso) return '—'; const d=new Date(iso); return `${MONTHS[d.getMonth()]} ${d.getDate()}` }
@@ -387,6 +405,9 @@ async function loadAll(showSpinner){
       id: p.id, name: p.name || '—', email: p.email || '', phone: p.phone || '—',
       joined: p.created_at, login: p.last_seen_at || p.last_login_at,
       mentor: p.onboarding_mentor || null,
+      // Which brand the planner signed up under ('jj' | 'vbd'); pre-migration
+      // rows have no value and are Journey Junction by definition.
+      brand: p.brand || 'jj',
       ch: p.contact_channel || null, acct: p.contact_account || '',
       status: p.mentor_status || 'onboarding',
       accountStatus: p.status,
@@ -520,6 +541,7 @@ function channelHtml(p){
 function render(){
   renderKpis(); renderMentorTabs(); renderMentorStats(); fillChannelFilter(); fillSetFilter(); closeQpop()
   const q  = (document.getElementById('q').value||'').toLowerCase()
+  const fBrand = document.getElementById('fBrand').value
   const fSet = document.getElementById('fSet').value
   const fCh = document.getElementById('fCh').value
   const fLt = document.getElementById('fLt').value
@@ -530,6 +552,7 @@ function render(){
   let shown = 0
   planners.forEach(p=>{
     if (mentorTab==='__none__' ? p.mentor : (mentorTab && p.mentor!==mentorTab)) return
+    if (fBrand && p.brand !== fBrand) return
     if (fSet==='__none__' ? p.set : (fSet && (!p.set || p.set.id !== fSet))) return
     if (q && !`${p.name} ${p.email} ${p.phone} ${p.acct}`.toLowerCase().includes(q)) return
     if (fCh && `${p.ch} · ${p.acct}` !== fCh) return
@@ -559,7 +582,7 @@ function render(){
     const tr = document.createElement('tr')
     tr.className = 'main' + (p.id===openId?' open':'')
     tr.innerHTML = `
-      <td><span class="caret">▶</span><span class="pname">${escapeHtml(p.name)}</span>${p.accountStatus==='suspended'?'<span class="suspended">suspended</span>':''}<div class="pmail" style="margin-left:17px">${escapeHtml(p.email)}<br>joined ${fmtD(p.joined)} · seen ${timeAgo(p.login)}</div></td>
+      <td><span class="caret">▶</span><span class="pname">${escapeHtml(p.name)}</span>${brandBadge(p.brand)}${p.accountStatus==='suspended'?'<span class="suspended">suspended</span>':''}<div class="pmail" style="margin-left:17px">${escapeHtml(p.email)}<br>joined ${fmtD(p.joined)} · seen ${timeAgo(p.login)}</div></td>
       <td>${mentorSelect(p)}</td>
       <td>${channelHtml(p)}</td>
       <td>${letterHtml(p)}</td>
