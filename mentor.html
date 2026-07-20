@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Mentor clock-in</title>
+<style>
+  :root{--ink:#1A2E25;--ink2:#5a6b62;--ink3:#9aa39d;--line:#e6e0d4;--cream:#e7e1d3;--card:#fffdf8;
+    --green:#2C5F2D;--greenbg:#eef7ef;--greenbd:#9ccdaf;--amber:#b87333;--amberbg:#fdf3e3;
+    --red:#b3261e;--redbg:#fdecea}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 26px;width:100%;max-width:400px;box-shadow:0 10px 30px rgba(20,40,30,.08)}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{font-size:12.5px;color:var(--ink2);margin:0 0 18px}
+  label{display:block;font-size:12px;font-weight:700;color:var(--ink2);margin:12px 0 5px}
+  input{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  input:focus{outline:2px solid var(--greenbd);border-color:var(--greenbd)}
+  .btn{width:100%;border:none;border-radius:12px;padding:13px;font:inherit;font-size:15px;font-weight:800;color:#fff;background:var(--green);cursor:pointer;margin-top:16px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.grey{background:#8a938c}
+  .err{display:none;background:var(--redbg);border:1px solid #e7a9a3;color:var(--red);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-top:12px}
+  .ok{display:none;background:var(--greenbg);border:1px solid var(--greenbd);color:var(--green);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-top:12px}
+  .who{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .who .av{width:38px;height:38px;border-radius:50%;background:#dfeadf;color:var(--green);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .who small{color:var(--ink3);font-size:11.5px}
+  .who .out{margin-left:auto;font-size:11.5px;color:var(--ink3);background:none;border:none;cursor:pointer;text-decoration:underline;font-family:inherit}
+  .clock{text-align:center;margin:10px 0 6px}
+  .clock .t{font-size:44px;font-weight:800;font-variant-numeric:tabular-nums}
+  .clock .d{font-size:12px;color:var(--ink3)}
+  .win{text-align:center;font-size:12.5px;font-weight:700;margin-bottom:10px}
+  .win.open{color:var(--green)} .win.shut{color:var(--red)}
+  .dev{font-size:12px;border-radius:10px;padding:9px 12px;margin-top:12px;line-height:1.5}
+  .dev.pend{background:var(--amberbg);border:1px solid #e8c99a;color:var(--amber)}
+  .dev.ok{background:var(--greenbg);border:1px solid var(--greenbd);color:var(--green)}
+  .big{text-align:center;font-size:52px;margin:6px 0}
+  .hist{margin-top:18px;border-top:1px dashed var(--line);padding-top:12px}
+  .hist h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin:0 0 8px}
+  .hist .row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink2);padding:3px 0}
+  .hist .row b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- ── LOGIN ─────────────────────────────────────────── -->
+  <div id="v-login">
+    <h1>Mentor clock-in</h1>
+    <p class="sub">Sign in with your mentor account. This page is for mentors only.</p>
+    <label>Email</label>
+    <input id="email" type="email" autocomplete="username">
+    <label>Password</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <button class="btn" id="loginbtn" onclick="doLogin()">Sign in</button>
+    <div class="err" id="loginerr"></div>
+  </div>
+
+  <!-- ── CLOCK-IN ──────────────────────────────────────── -->
+  <div id="v-main" class="hide">
+    <div class="who">
+      <div class="av" id="av">?</div>
+      <div><div style="font-weight:800" id="mname">—</div><small>Mentor</small></div>
+      <button class="out" onclick="doLogout()">sign out</button>
+    </div>
+
+    <div class="clock"><div class="t" id="jst">--:--</div><div class="d" id="jstd">Asia/Tokyo</div></div>
+    <div class="win" id="win"></div>
+
+    <div id="statusbox"></div>
+
+    <button class="btn" id="clockbtn" onclick="doClockIn()">Clock in</button>
+    <div class="err" id="mainerr"></div>
+    <div class="ok" id="mainok"></div>
+
+    <div class="dev pend hide" id="devpend">🕓 <b>This laptop is waiting for admin approval.</b><br>Ask the admin to approve it in the console, then reload this page.</div>
+    <div class="dev ok hide" id="devok">💻 This laptop is registered ✓</div>
+
+    <div class="hist"><h3>Last 14 days</h3><div id="hist">—</div></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://hjchyqafkpbryzlqhpxc.supabase.co'
+// Mentor-facing page — anon key only (same as the planner pages). All writes go
+// through the SECURITY DEFINER RPCs; RLS limits reads to the mentor's own rows.
+const SUPABASE_ANON_KEY = 'sb_publishable_EQBMG6WS1qd1F9jMNrog1g_gU1n9grr'
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+// Display-only window (the REAL gate is jj_mentor_clock_in on the server).
+const WIN_OPEN_MIN = 9*60 + 15, WIN_CLOSE_MIN = 9*60 + 30
+const WIN_LABEL = '09:15–09:30'
+
+let mentor = null          // { id, name, email }
+let deviceApproved = false
+
+// ── Device key: one long random secret per laptop/browser ──────────────
+function deviceKey(){
+  let k = null
+  try { k = localStorage.getItem('jj_mentor_device_key') } catch(e){}
+  if (!k) {
+    const a = new Uint8Array(24); crypto.getRandomValues(a)
+    k = Array.from(a, b => b.toString(16).padStart(2,'0')).join('')
+    try { localStorage.setItem('jj_mentor_device_key', k) } catch(e){}
+  }
+  return k
+}
+
+// ── JST clock (display) ────────────────────────────────────────────────
+function jstParts(){
+  const p = new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',second:'2-digit',weekday:'short',day:'numeric',month:'short',hour12:false}).formatToParts(new Date())
+  const g = t => (p.find(x=>x.type===t)||{}).value || ''
+  return { h:+g('hour'), m:+g('minute'), hm:`${g('hour')}:${g('minute')}`, d:`${g('weekday')} ${g('day')} ${g('month')} · Asia/Tokyo` }
+}
+function tickClock(){
+  if (document.getElementById('v-main').classList.contains('hide')) return
+  const t = jstParts()
+  document.getElementById('jst').textContent = t.hm
+  document.getElementById('jstd').textContent = t.d
+  const min = t.h*60 + t.m
+  const open = min >= WIN_OPEN_MIN && min <= WIN_CLOSE_MIN
+  const w = document.getElementById('win')
+  w.textContent = open ? `✓ Window open · ${WIN_LABEL}` : `✗ Outside window · ${WIN_LABEL}`
+  w.className = 'win ' + (open ? 'open' : 'shut')
+}
+setInterval(tickClock, 1000)
+
+function show(id, msg){ const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block' }
+function hide(id){ document.getElementById(id).style.display = 'none' }
+
+// ── LOGIN ──────────────────────────────────────────────────────────────
+async function doLogin(){
+  const email = document.getElementById('email').value.trim()
+  const password = document.getElementById('password').value
+  if (!email || !password) { show('loginerr','Enter your email and password.'); return }
+  const btn = document.getElementById('loginbtn')
+  btn.disabled = true; hide('loginerr')
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password })
+    if (error || !data?.session) { show('loginerr','Invalid email or password.'); btn.disabled = false; return }
+    const ok = await enterMain()
+    if (!ok) {
+      // Signed in but not a mentor — this page is mentors-only.
+      try { await sb.auth.signOut() } catch(e){}
+      show('loginerr','Invalid email or password.')
+    }
+  } catch (e) {
+    show('loginerr','Network problem — try again.')
+  }
+  btn.disabled = false
+}
+
+async function doLogout(){
+  try { await sb.auth.signOut() } catch(e){}
+  location.reload()
+}
+
+// ── MAIN (after auth): load mentor row, register device, load state ────
+async function enterMain(){
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) return false
+  const { data: m } = await sb.from('mentors').select('id,name,email,active').eq('id', user.id).maybeSingle()
+  if (!m || !m.active) return false
+  mentor = m
+
+  document.getElementById('v-login').classList.add('hide')
+  document.getElementById('v-main').classList.remove('hide')
+  document.getElementById('mname').textContent = m.name
+  document.getElementById('av').textContent = (m.name||'?').slice(0,2)
+  tickClock()
+
+  // Register/refresh this laptop (harmless if already registered) and read
+  // back its approval state.
+  const key = deviceKey()
+  let approved = false
+  try {
+    const label = m.name + ' laptop · ' + (navigator.platform || 'unknown')
+    const { data: reg } = await sb.rpc('jj_mentor_register_device', { p_device_key: key, p_label: label })
+    if (reg && reg.ok) approved = !!reg.approved
+  } catch (e) {}
+  if (!approved) {
+    // RPC may be older than the page or the insert raced — re-check by reading.
+    try {
+      const { data: dv } = await sb.from('mentor_devices').select('approved').eq('device_key', key).maybeSingle()
+      approved = !!(dv && dv.approved)
+    } catch (e) {}
+  }
+  deviceApproved = approved
+  document.getElementById(approved ? 'devok' : 'devpend').classList.remove('hide')
+  document.getElementById(approved ? 'devpend' : 'devok').classList.add('hide')
+  document.getElementById('clockbtn').disabled = !approved
+
+  await refreshToday()
+  await loadHistory()
+  return true
+}
+
+// Today's state: already clocked in?
+async function refreshToday(){
+  const box = document.getElementById('statusbox')
+  try {
+    const today = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
+    const { data } = await sb.from('mentor_attendance').select('clock_in_at').eq('work_date', today).maybeSingle()
+    if (data) {
+      const t = new Date(data.clock_in_at).toLocaleTimeString('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'})
+      box.innerHTML = `<div class="big">✅</div><div style="text-align:center;font-weight:800;color:var(--green)">Clocked in today at ${t} JST</div>`
+      document.getElementById('clockbtn').disabled = true
+    } else {
+      box.innerHTML = ''
+    }
+  } catch (e) { box.innerHTML = '' }
+}
+
+const REASONS = {
+  not_authenticated : 'Session expired — sign in again.',
+  not_mentor        : 'This account is not a mentor.',
+  device_not_registered : 'This laptop is not approved yet — ask the admin to approve it, then reload.',
+  too_early         : `Too early. Clock-in opens at ${WIN_LABEL.split('–')[0]} JST.`,
+  too_late          : `The ${WIN_LABEL} window has closed for today.`,
+  already_clocked_in: 'Already clocked in today.',
+  bad_device_key    : 'Device problem — reload the page and try again.'
+}
+
+async function doClockIn(){
+  const btn = document.getElementById('clockbtn')
+  btn.disabled = true; hide('mainerr'); hide('mainok')
+  try {
+    const { data, error } = await sb.rpc('jj_mentor_clock_in', { p_device_key: deviceKey() })
+    if (error) { show('mainerr', 'Could not clock in: ' + (error.message || 'server error')); btn.disabled = false; return }
+    if (data && data.ok) {
+      show('mainok', '✅ Clocked in — recorded on the server.')
+      await refreshToday(); await loadHistory()
+    } else {
+      const reason = data && data.reason
+      show('mainerr', REASONS[reason] || ('Refused: ' + (reason || 'unknown')))
+      if (reason === 'already_clocked_in') { await refreshToday(); await loadHistory() }
+      else btn.disabled = !deviceApproved
+    }
+  } catch (e) {
+    show('mainerr','Network problem — try again.')
+    btn.disabled = false
+  }
+}
+
+async function loadHistory(){
+  try {
+    const { data } = await sb.from('mentor_attendance')
+      .select('work_date, clock_in_at').order('work_date', { ascending:false }).limit(14)
+    const el = document.getElementById('hist')
+    if (!data || !data.length) { el.textContent = 'No clock-ins yet.'; return }
+    el.innerHTML = data.map(r => {
+      const t = new Date(r.clock_in_at).toLocaleTimeString('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'})
+      return `<div class="row"><span>${r.work_date}</span><b>${t} JST</b></div>`
+    }).join('')
+  } catch (e) {}
+}
+
+// Enter key submits the login form.
+document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+
+// Resume an existing session (mentor stays signed in on their laptop).
+;(async () => {
+  try {
+    const { data: { session } } = await sb.auth.getSession()
+    if (session) {
+      const ok = await enterMain()
+      if (!ok) { try { await sb.auth.signOut() } catch(e){} }
+    }
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>

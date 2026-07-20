@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mentor clock-in — registered laptop, 09:15–09:30 only (idea demo)</title>
+<style>
+  :root{--ink:#1A2E25;--ink2:#5a6b62;--ink3:#9aa39d;--line:#e6e0d4;--cream:#e7e1d3;--card:#fffdf8;
+    --green:#2C5F2D;--greenbg:#eef7ef;--greenbd:#9ccdaf;--amber:#b87333;--amberbg:#fdf3e3;
+    --red:#b3261e;--redbg:#fdecea;--blue:#2b5f7a;--bluebg:#e8f1f6;--gold:#C9A227}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:15px;margin:22px 0 10px;letter-spacing:.01em}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .verdict{display:flex;gap:14px;align-items:center;background:var(--greenbg);border:1.5px solid var(--greenbd);border-radius:14px;padding:14px 18px;margin-bottom:18px}
+  .verdict .badge{font-size:15px;font-weight:900;color:#fff;background:var(--green);border-radius:10px;padding:9px 14px;white-space:nowrap;text-align:center;line-height:1.2}
+  .verdict p{margin:0;font-size:13px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:880px){ .grid2{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card h3{margin:0 0 10px;font-size:13.5px}
+  .row{display:flex;gap:10px;align-items:flex-start;font-size:12.8px;color:var(--ink2);margin-bottom:9px;line-height:1.55}
+  .row .x{color:var(--red);font-weight:800} .row .k{color:var(--green);font-weight:800}
+  .row b{color:var(--ink)}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);background:#f7f3ea}
+  td{padding:9px 12px;border-bottom:1px solid #f1ecdf;font-size:12.6px}
+  tr:last-child td{border-bottom:none}
+  .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:10.5px;font-weight:800}
+  .pill.ok{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .pill.late{background:var(--amberbg);color:var(--amber);border:1px solid #e8c99a}
+  .pill.no{background:var(--redbg);color:var(--red);border:1px solid #e7a9a3}
+
+  /* laptop */
+  .stage{display:grid;grid-template-columns:minmax(0,480px) 1fr;gap:22px;align-items:start}
+  @media (max-width:880px){ .stage{grid-template-columns:1fr} }
+  .laptop{width:480px;max-width:100%;margin:0 auto}
+  .lid{background:#10201a;border-radius:16px 16px 0 0;padding:12px 12px 0;box-shadow:0 14px 30px rgba(20,40,30,.22)}
+  .screen{background:#f6f2e8;border-radius:7px 7px 0 0;height:392px;overflow:hidden;display:flex;flex-direction:column}
+  .base{height:15px;background:linear-gradient(#213a2f,#0d1712);border-radius:0 0 18px 18px;position:relative}
+  .base:before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:96px;height:7px;background:#0a120e;border-radius:0 0 9px 9px}
+  .chrome{height:34px;background:#fff;display:flex;align-items:center;gap:9px;padding:0 12px;border-bottom:1px solid #eee;flex:none}
+  .dots{display:flex;gap:5px} .dots i{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .addr{flex:1;background:#f1ece0;border-radius:8px;font-size:10.5px;color:var(--ink2);padding:4px 10px;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .sbody{flex:1;padding:20px 16px;display:flex;flex-direction:column;overflow:hidden;max-width:330px;width:100%;margin:0 auto}
+  .who{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .who .av{width:34px;height:34px;border-radius:50%;background:#dfeadf;color:var(--green);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .who small{color:var(--ink3);font-size:11px}
+  .clock{text-align:center;margin:6px 0 12px}
+  .clock .t{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  .clock .d{font-size:11.5px;margin-top:2px}
+  .win-open{color:var(--green);font-weight:700} .win-shut{color:var(--red);font-weight:700}
+  .bigbtn{width:100%;border:none;border-radius:14px;padding:15px;font:inherit;font-size:15px;font-weight:800;color:#fff;background:var(--green);cursor:pointer;margin-top:auto}
+  .bigbtn:disabled{opacity:.4;cursor:not-allowed;background:#8a938c}
+  .bigbtn.grey{background:#8a938c}
+  .note{font-size:11.5px;color:var(--ink2);text-align:center;margin-top:10px;line-height:1.5}
+  .mid{margin:auto;text-align:center}
+  .mid .big{font-size:60px;margin-bottom:6px}
+  .mid .h{font-size:19px;font-weight:800}
+  .mid.ok .h{color:var(--green)} .mid.bad .h{color:var(--red)}
+  .mid .s{font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.5}
+  .controls{display:flex;flex-direction:column;gap:12px}
+  .seg{display:inline-flex;background:#efe9db;border-radius:99px;padding:4px;gap:4px;flex-wrap:wrap}
+  .seg button{border:none;background:transparent;font:inherit;font-size:12px;font-weight:700;color:var(--ink2);padding:7px 12px;border-radius:99px;cursor:pointer}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .ctlcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .ctlcard .lbl{font-weight:800;font-size:13px;margin-bottom:8px}
+  .steps{font-size:12.5px;color:var(--ink2);line-height:1.7;margin:8px 0 0;padding-left:18px}
+  .steps li{margin-bottom:2px} .steps li.cur{color:var(--green);font-weight:800}
+  .foot{font-size:12px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.7}
+  .foot code{background:#f0ead8;border-radius:4px;padding:1px 6px;font-size:11.5px}
+  .tag{font-size:11px;color:var(--gold);font-weight:800}
+  .winbar{display:inline-block;background:var(--greenbg);border:1px solid var(--greenbd);color:var(--green);border-radius:8px;padding:2px 10px;font-weight:800;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Mentor clock-in — <span style="color:var(--green)">registered laptop</span>, only <span class="winbar">09:15–09:30</span> <span class="tag">IDEA DEMO · nothing built</span></h1>
+  <p class="lead">Three simple checks, all done on the <b>server</b>: (1) the account is a <b>mentor</b>, (2) it's the mentor's <b>registered laptop</b>, and (3) the time is <b>between 09:15 and 09:30</b>. No phone, no fingerprint, nothing to install. Click through the laptop below.</p>
+
+  <div class="verdict">
+    <div class="badge">FREE</div>
+    <p><b>No new cost.</b> A saved <b>device key</b> marks the registered laptop, and the time check runs on the server — both on tools you already pay for (Supabase + your Cloudflare Worker). Nothing extra to buy, nothing for the mentor to set up.</p>
+  </div>
+
+  <div class="grid2" style="margin-bottom:4px">
+    <div class="card" style="border-color:var(--greenbd);background:var(--greenbg)">
+      <h3 style="color:var(--green)">🧑‍🏫 Mentors — clock-in applies</h3>
+      <div class="row"><span class="k">✓</span><div>Only accounts flagged as a <b>mentor</b> get the clock-in screen (e.g. KIT, TIM, MIKE).</div></div>
+      <div class="row"><span class="k">✓</span><div>They clock in on <b>their own registered laptop</b>, in the 09:15–09:30 window.</div></div>
+    </div>
+    <div class="card">
+      <h3>🧭 Planners — nothing changes</h3>
+      <div class="row"><span class="x">—</span><div>All <b>247 planners</b> log in <b>exactly as today</b>. No clock-in at all.</div></div>
+      <div class="row"><span class="x">—</span><div>They never even see this — it's hidden unless the account is a mentor.</div></div>
+    </div>
+  </div>
+
+  <h2>What the checks stop</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>What it blocks</h3>
+      <div class="row"><span class="k">✓</span><div><b>Clocking in from home / another PC</b> — only the one registered laptop works.</div></div>
+      <div class="row"><span class="k">✓</span><div><b>Early or late clock-in</b> — before 09:15 or after 09:30 the server refuses. The laptop's own clock can't fool it.</div></div>
+      <div class="row"><span class="k">✓</span><div><b>Faking the time</b> — the time is read on the server (Asia/Tokyo), not the laptop.</div></div>
+    </div>
+    <div class="card">
+      <h3>Honest limit (fine for your case)</h3>
+      <div class="row"><span class="x">!</span><div>With no fingerprint step, <b>anyone sitting at that exact laptop</b> in the 09:15–09:30 window could click Clock in.</div></div>
+      <div class="row"><span class="k">✓</span><div>That's safe because <b>only this mentor uses this laptop</b> — which is what you told me. If you ever want it stricter, a fingerprint or selfie can be added later.</div></div>
+    </div>
+  </div>
+
+  <h2>Try the flow</h2>
+  <div class="stage">
+    <div class="laptop">
+      <div class="lid"><div class="screen">
+        <div class="chrome"><span class="dots"><i style="background:#f2685f"></i><i style="background:#f5bf4f"></i><i style="background:#62c554"></i></span><span class="addr">journeyjunctionplanner.com/mentor-clockin</span></div>
+        <div class="sbody" id="sbody"><!-- injected --></div>
+      </div></div>
+      <div class="base"></div>
+    </div>
+
+    <div class="controls">
+      <div class="ctlcard">
+        <div class="lbl">Which laptop is this?</div>
+        <div class="seg" id="whoseg">
+          <button class="on" data-who="mentor" onclick="setWho('mentor',this)">👤 Mentor's registered laptop</button>
+          <button data-who="friend" onclick="setWho('friend',this)">💻 Another PC (not registered)</button>
+        </div>
+      </div>
+      <div class="ctlcard">
+        <div class="lbl">What time is it now? (JST)</div>
+        <div class="seg" id="timeseg">
+          <button data-tp="early" onclick="setTime('early',this)">09:08 · too early</button>
+          <button class="on" data-tp="in" onclick="setTime('in',this)">09:22 · in window</button>
+          <button data-tp="late" onclick="setTime('late',this)">09:38 · too late</button>
+        </div>
+        <div class="note" style="text-align:left;margin-top:8px">Window is <b>09:15–09:30</b>. Only “in window” should let a clock-in through.</div>
+      </div>
+      <div class="ctlcard">
+        <div class="lbl">Flow</div>
+        <ol class="steps" id="steps">
+          <li data-s="reg">One-time: register this laptop (admin does it)</li>
+          <li data-s="home">At 09:15–09:30, click “Clock in”</li>
+          <li data-s="done">Clocked in — server stamps the exact time</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <h2>What you (admin) see — the time log</h2>
+  <table>
+    <thead><tr><th>Mentor</th><th>Brand</th><th>Clock in (JST)</th><th>Laptop</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>安 久遥</td><td>JJ</td><td>09:22</td><td>💻 registered</td><td><span class="pill ok">on time</span></td></tr>
+      <tr><td>Tim</td><td>JJ</td><td>09:26</td><td>💻 registered</td><td><span class="pill ok">on time</span></td></tr>
+      <tr><td>Mike</td><td>VBD</td><td>—</td><td>—</td><td><span class="pill late">missed window</span></td></tr>
+      <tr><td>Kenji</td><td>JJ</td><td>—</td><td>—</td><td><span class="pill no">absent</span></td></tr>
+    </tbody>
+  </table>
+  <p class="lead" style="margin-top:8px">Times are stamped by the <b>server</b> in Asia/Tokyo and the log is <b>append-only</b> — a mentor can see their record but can't edit their own times; only you can correct one. Miss the 09:15–09:30 window and there's simply no clock-in for that day.</p>
+
+  <div class="foot">
+    <b>Note:</b> this page is a <b>mock-up to explain the idea</b> — it is not wired to your database and nothing was added to the app. Building it for real = one small “mentor devices” table + a “clock-in” endpoint on your Cloudflare Worker that checks the device key and the <code>09:15–09:30</code> Tokyo time, writing to a <code>mentor_attendance</code> table.
+  </div>
+</div>
+
+<script>
+  var who = 'mentor';
+  var timepos = 'in';        // early | in | late
+  var registered = false;
+  var state = 'reg';         // reg | home | done | blocked
+  var blockReason = '';
+
+  function nowLabel(){ return timepos==='early' ? '09:08' : timepos==='late' ? '09:38' : '09:22'; }
+  function windowOpen(){ return timepos==='in'; }
+
+  function setWho(w, btn){
+    who = w;
+    document.querySelectorAll('#whoseg button').forEach(function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    reset();
+  }
+  function setTime(tp, btn){
+    timepos = tp;
+    document.querySelectorAll('#timeseg button').forEach(function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    if (state !== 'reg') { state = 'home'; render(); }   // stay on the clock screen
+  }
+  function reset(){
+    registered = (who === 'mentor');    // another PC was never registered
+    state = (who === 'friend') ? 'home' : 'reg';
+    blockReason = '';
+    render();
+  }
+
+  function markSteps(){
+    document.querySelectorAll('#steps li').forEach(function(li){
+      li.classList.toggle('cur', li.getAttribute('data-s') === state);
+    });
+  }
+
+  function render(){
+    markSteps();
+    var b = document.getElementById('sbody');
+    var name = who === 'friend' ? 'Another PC (not registered)' : '安 久遥';
+    var initials = who === 'friend' ? '?' : '安';
+    var whoLine = '<div class="who"><div class="av">'+initials+'</div><div><div style="font-weight:800">'+name+'</div><small>'+(who==='friend'?'unknown laptop':'Mentor · JJ · registered laptop')+'</small></div></div>';
+
+    if (state === 'reg'){
+      b.innerHTML = whoLine +
+        '<div class="mid"><div class="big">🛡️</div><div class="h" style="color:var(--green)">Register this laptop</div>'+
+        '<div class="s">One time only — the admin marks this laptop as the mentor\'s. A saved device key remembers it. No password popup, no fingerprint.</div></div>'+
+        '<button class="bigbtn" onclick="doRegister()">Register this laptop</button>';
+      return;
+    }
+    if (state === 'home'){
+      var open = windowOpen();
+      b.innerHTML = whoLine +
+        '<div class="clock"><div class="t">'+nowLabel()+'</div>'+
+        '<div class="d '+(open?'win-open':'win-shut')+'">'+(open?'✓ Window open · 09:15–09:30':'✗ Outside window · 09:15–09:30')+'</div></div>'+
+        (registered ? '' : '<div class="note" style="color:var(--red)">⚠ This laptop is not registered.</div>')+
+        '<button class="bigbtn" onclick="doClockIn()">Clock in</button>'+
+        '<div class="note">Works only on the registered laptop, only 09:15–09:30.</div>';
+      return;
+    }
+    if (state === 'done'){
+      b.innerHTML = whoLine +
+        '<div class="mid ok"><div class="big">✅</div><div class="h">Clocked in '+nowLabel()+' JST</div>'+
+        '<div class="s">Stamped by the server on his registered laptop. You can\'t edit this time.</div></div>'+
+        '<button class="bigbtn grey" onclick="reset()">Done</button>';
+      return;
+    }
+    if (state === 'blocked'){
+      b.innerHTML = whoLine +
+        '<div class="mid bad"><div class="big">🚫</div><div class="h">Cannot clock in</div>'+
+        '<div class="s" style="color:var(--red);font-weight:700">'+blockReason+'</div></div>'+
+        '<button class="bigbtn grey" onclick="reset()">Back</button>';
+      return;
+    }
+  }
+
+  function doRegister(){ registered = true; state = 'home'; render(); }
+
+  function doClockIn(){
+    if (!registered){
+      blockReason = 'This is not the registered laptop. Only the mentor\'s one laptop can clock in — home or another PC is refused.';
+      state = 'blocked'; render(); return;
+    }
+    if (!windowOpen()){
+      blockReason = (timepos==='early')
+        ? 'Too early. Clock-in opens at 09:15 — the server refuses before then.'
+        : 'The 09:15–09:30 window has closed. No clock-in for today; it shows as missed.';
+      state = 'blocked'; render(); return;
+    }
+    state = 'done'; render();
+  }
+
+  reset();
+</script>
+</body>
+</html>

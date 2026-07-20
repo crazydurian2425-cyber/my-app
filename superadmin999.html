@@ -925,6 +925,12 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       CS console
     </a>
 
+    <div class="nav-section">Mentors</div>
+    <button class="nav-item" onclick="showPage('mentor-clockin',this)">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5V8l2.5 1.5"/></svg>
+      Mentor clock-in
+    </button>
+
     <div class="nav-section">Travelers</div>
     <button class="nav-item" onclick="showPage('travelers',this)">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-2.761 2.686-5 6-5s6 2.239 6 5"/></svg>
@@ -1816,6 +1822,34 @@ body.theme-dark .admin-theme-toggle .moon{display:inline-block;}
       <div id="terms-assign-status" style="font-size:12px;color:var(--ink-3);margin-bottom:8px;"></div>
       <div id="terms-assign-list"></div>
     </div>
+  </div>
+
+  <!-- MENTOR CLOCK-IN (docs/schema/mentor-clockin.sql) -->
+  <div id="page-mentor-clockin" class="page">
+
+    <div class="card" style="max-width:920px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+        <div>
+          <div class="card-title">Mentor logins</div>
+          <div style="font-size:12px;color:var(--ink-3);margin-top:3px;max-width:640px;">Each mentor signs in at <a href="mentor.html" target="_blank" rel="noopener" style="color:var(--green);text-decoration:none;">/mentor.html</a> on their own laptop and clocks in <strong>09:15–09:30 JST</strong>, once per day. Mentors are separate accounts — not planners. Create the login, give the mentor the email + password, then approve their laptop below after their first sign-in.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="loadMentorClockin()">Reload</button>
+      </div>
+      <div id="mtr-accounts">Loading…</div>
+    </div>
+
+    <div class="card" style="max-width:920px;margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:4px;">Registered laptops</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:10px;">A laptop appears here (pending) after the mentor's first sign-in on it. <strong>Approve</strong> exactly the one laptop each mentor works on. Remove a laptop to block it — e.g. an old or unknown device.</div>
+      <div id="mtr-devices">Loading…</div>
+    </div>
+
+    <div class="card" style="max-width:920px;">
+      <div class="card-title" style="margin-bottom:4px;">Attendance — clock-ins (JST)</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-bottom:10px;">Stamped by the server (Asia/Tokyo). One clock-in per mentor per day; a missing name means they missed the 09:15–09:30 window that day.</div>
+      <div id="mtr-attendance">Loading…</div>
+    </div>
+
   </div>
 
 </main>
@@ -2841,7 +2875,7 @@ const pageNames = {
   'post-job':'Post job set','active-jobs':'Active sets','review':'Review itineraries','bonds':'Bond approvals',
   'approval-history':'Approval history',
   'payments':'Payments','weekly-salary':'Performance bonus','invoices':'Invoices','planners':'Manage planners','applications':'Planner applications',
-  'legal':'Terms editor','terms-assign':'Assign terms'
+  'legal':'Terms editor','terms-assign':'Assign terms','mentor-clockin':'Mentor clock-in'
 }
 
 let _plannersRefreshTimer = null
@@ -2874,6 +2908,154 @@ function showPage(id, btn) {
   if (id === 'support')      loadSupport()
   if (id === 'legal')         loadLegalEditor()
   if (id === 'terms-assign')  loadTermsAssignments()
+  if (id === 'mentor-clockin') loadMentorClockin()
+}
+
+// ── MENTOR CLOCK-IN (docs/schema/mentor-clockin.sql) ─────────────────────
+// The 5 clock-in mentors are the same 5 people as the onboarding-mentor tags.
+const CLOCKIN_MENTOR_NAMES = ['FCKING','TT','KIT','TIM','MIKE']
+
+function _mtrPassGen(){
+  // Readable one-time password the admin hands to the mentor (12 chars).
+  const abc = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
+  const a = new Uint32Array(12); crypto.getRandomValues(a)
+  return Array.from(a, x => abc[x % abc.length]).join('')
+}
+function _mtrJst(ts){
+  return new Date(ts).toLocaleTimeString('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit'})
+}
+
+async function loadMentorClockin(){
+  const accEl = document.getElementById('mtr-accounts')
+  const devEl = document.getElementById('mtr-devices')
+  const attEl = document.getElementById('mtr-attendance')
+  try {
+    const [mQ, dQ, aQ] = await Promise.all([
+      sb.from('mentors').select('id,name,email,active,created_at').order('name'),
+      sb.from('mentor_devices').select('id,mentor_id,label,approved,created_at,last_used_at,mentors(name)').order('created_at',{ascending:false}),
+      sb.from('mentor_attendance').select('work_date,clock_in_at,mentors(name)').order('clock_in_at',{ascending:false}).limit(100)
+    ])
+    if (mQ.error) {
+      const hint = /relation|not exist|schema/i.test(mQ.error.message||'')
+        ? 'Table missing — run docs/schema/mentor-clockin.sql in Supabase first.' : mQ.error.message
+      accEl.innerHTML = devEl.innerHTML = attEl.innerHTML =
+        `<div style="font-size:12.5px;color:#b3261e;">${escapeHtml(hint)}</div>`
+      return
+    }
+    const mentors = mQ.data || [], devices = dQ.data || [], att = aQ.data || []
+    renderMentorAccounts(accEl, mentors)
+    renderMentorDevices(devEl, devices)
+    renderMentorAttendance(attEl, att, mentors)
+  } catch (e) {
+    accEl.textContent = 'Load failed — reload the page.'
+  }
+}
+
+function renderMentorAccounts(el, mentors){
+  const have = {}; mentors.forEach(m => { have[(m.name||'').toUpperCase()] = m })
+  el.innerHTML = CLOCKIN_MENTOR_NAMES.map(n => {
+    const m = have[n]
+    if (m) {
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px dashed rgba(31,28,22,0.08);font-size:13px;">
+        <strong style="width:74px;">${escapeHtml(n)}</strong>
+        <span style="color:var(--ink-3);flex:1;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(m.email)}</span>
+        <span style="font-size:11px;font-weight:700;color:${m.active ? 'var(--green)' : '#b3261e'};">${m.active ? '● active' : '● disabled'}</span>
+      </div>`
+    }
+    const emailId = 'mtr-email-' + n, passId = 'mtr-pass-' + n
+    return `<div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px dashed rgba(31,28,22,0.08);font-size:13px;flex-wrap:wrap;">
+      <strong style="width:74px;">${escapeHtml(n)}</strong>
+      <input id="${emailId}" value="${n.toLowerCase()}.mentor@journeyjunctionplanner.com" autocomplete="off"
+        style="flex:1;min-width:200px;padding:7px 10px;border:1px solid var(--border-med,#cbbfa6);border-radius:8px;font-size:12.5px;font-family:'DM Sans',sans-serif;background:var(--surface,#fff);color:var(--ink);">
+      <input id="${passId}" value="${_mtrPassGen()}" autocomplete="off" spellcheck="false"
+        style="width:130px;padding:7px 10px;border:1px solid var(--border-med,#cbbfa6);border-radius:8px;font-size:12.5px;font-family:monospace;background:var(--surface,#fff);color:var(--ink);">
+      <button class="btn btn-primary btn-sm" onclick="createMentorLogin('${n}', this)">Create login</button>
+    </div>`
+  }).join('') + `<div style="font-size:11.5px;color:var(--ink-3);margin-top:8px;">The email doesn't need a real inbox — it's just the sign-in name. Copy the password BEFORE clicking Create and hand both to the mentor.</div>`
+}
+
+async function createMentorLogin(name, btn){
+  const email = (document.getElementById('mtr-email-'+name)?.value || '').trim()
+  const password = document.getElementById('mtr-pass-'+name)?.value || ''
+  if (!email || !email.includes('@')) { showToast('Enter a valid email'); return }
+  if (password.length < 8) { showToast('Password must be at least 8 characters'); return }
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '…'
+  try {
+    const resp = await fetch('/api/create-mentor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    })
+    const data = await resp.json().catch(() => ({}))
+    if (!resp.ok) { showToast('Create failed: ' + (data?.error || resp.status)); btn.disabled = false; btn.textContent = orig; return }
+    showToast(`${name} created · ${email} · pw: ${password}`)
+    try { auditLog('mentor.create', 'mentors', data.mentor_id || email, { name, email }) } catch (e) {}
+    loadMentorClockin()
+  } catch (e) {
+    showToast('Network error: ' + (e.message || 'unknown'))
+    btn.disabled = false; btn.textContent = orig
+  }
+}
+
+function renderMentorDevices(el, devices){
+  if (!devices.length) { el.innerHTML = '<div style="font-size:12.5px;color:var(--ink-3);">No laptops yet — they appear after a mentor\'s first sign-in on mentor.html.</div>'; return }
+  el.innerHTML = devices.map(d => {
+    const name = d.mentors?.name || '—'
+    const used = d.last_used_at ? ('last clock-in ' + new Date(d.last_used_at).toLocaleDateString('en-GB',{timeZone:'Asia/Tokyo',day:'numeric',month:'short'})) : 'never used'
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px dashed rgba(31,28,22,0.08);font-size:13px;flex-wrap:wrap;">
+      <strong style="width:74px;">${escapeHtml(name)}</strong>
+      <span style="flex:1;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;">${escapeHtml(d.label || 'laptop')} · added ${new Date(d.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} · ${used}</span>
+      ${d.approved
+        ? `<span style="font-size:11px;font-weight:700;color:var(--green);">✓ approved</span>`
+        : `<button class="btn btn-primary btn-sm" onclick="approveMentorDevice('${d.id}', this)">Approve</button>`}
+      <button class="btn btn-ghost btn-sm" onclick="removeMentorDevice('${d.id}','${escapeHtml(name)}', this)">Remove</button>
+    </div>`
+  }).join('')
+}
+
+async function approveMentorDevice(id, btn){
+  btn.disabled = true
+  const { error } = await sb.from('mentor_devices')
+    .update({ approved: true, approved_at: new Date().toISOString() }).eq('id', id)
+  if (error) { showToast('Approve failed: ' + error.message); btn.disabled = false; return }
+  showToast('Laptop approved — the mentor can clock in from it now')
+  try { auditLog('mentor.device_approve', 'mentor_devices', id, {}) } catch (e) {}
+  loadMentorClockin()
+}
+
+async function removeMentorDevice(id, name, btn){
+  if (!confirm(`Remove this laptop for ${name}? It will no longer be able to clock in.`)) return
+  btn.disabled = true
+  const { error } = await sb.from('mentor_devices').delete().eq('id', id)
+  if (error) { showToast('Remove failed: ' + error.message); btn.disabled = false; return }
+  showToast('Laptop removed')
+  try { auditLog('mentor.device_remove', 'mentor_devices', id, { mentor: name }) } catch (e) {}
+  loadMentorClockin()
+}
+
+function renderMentorAttendance(el, att, mentors){
+  const todayJst = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
+  const todayRows = att.filter(a => a.work_date === todayJst)
+  const inNames = new Set(todayRows.map(a => a.mentors?.name))
+  const activeMentors = mentors.filter(m => m.active)
+  const missing = activeMentors.filter(m => !inNames.has(m.name)).map(m => m.name)
+  const todayLine = activeMentors.length
+    ? `<div style="font-size:12.5px;margin-bottom:10px;"><strong>Today (${todayJst}):</strong>
+        ${todayRows.length ? todayRows.map(a => `<span style="color:var(--green);font-weight:700;margin-right:10px;">✓ ${escapeHtml(a.mentors?.name || '—')} ${_mtrJst(a.clock_in_at)}</span>`).join('') : '<span style="color:var(--ink-3);">no clock-ins yet</span>'}
+        ${missing.length ? `<span style="color:#b3261e;font-weight:700;">✗ ${missing.map(escapeHtml).join(', ')}</span>` : ''}
+      </div>` : ''
+  if (!att.length) { el.innerHTML = todayLine + '<div style="font-size:12.5px;color:var(--ink-3);">No clock-ins recorded yet.</div>'; return }
+  el.innerHTML = todayLine + `<table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 4px;color:var(--ink-3);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Date</th>
+      <th style="text-align:left;padding:6px 4px;color:var(--ink-3);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Mentor</th>
+      <th style="text-align:left;padding:6px 4px;color:var(--ink-3);font-size:11px;text-transform:uppercase;letter-spacing:.04em;">Clock in (JST)</th>
+    </tr></thead>
+    <tbody>${att.map(a => `<tr style="border-top:1px dashed rgba(31,28,22,0.08);">
+      <td style="padding:6px 4px;">${a.work_date}</td>
+      <td style="padding:6px 4px;font-weight:700;">${escapeHtml(a.mentors?.name || '—')}</td>
+      <td style="padding:6px 4px;font-variant-numeric:tabular-nums;">${_mtrJst(a.clock_in_at)}</td>
+    </tr>`).join('')}</tbody></table>`
 }
 
 function showPageByName(id) {

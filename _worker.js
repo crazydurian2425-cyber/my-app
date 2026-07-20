@@ -156,6 +156,11 @@ export default {
       return handleCreatePlanner(request, brand)
     }
 
+    // ── Create-mentor endpoint (admin only — mentor clock-in accounts) ──
+    if (url.pathname === '/api/create-mentor' && request.method === 'POST') {
+      return handleCreateMentor(request)
+    }
+
     // ── Employment-letter endpoints ──
     if (url.pathname === '/api/send-employment-letter' && request.method === 'POST') {
       return handleSendEmploymentLetter(request, url, brand)
@@ -452,6 +457,77 @@ async function handleCreatePlanner(request, brand) {
   return jsonResp(200, { ok: true, planner_id: userId, email })
 }
 
+// POST /api/create-mentor — admin-only mentor-account creation (clock-in system,
+// docs/schema/mentor-clockin.sql). Mentors are NOT planners: this creates the
+// auth user (email pre-confirmed) and inserts a matching row in `mentors` —
+// no planners row, so the planner app never sees these accounts.
+async function handleCreateMentor(request) {
+  const cred = checkAuth(request, null)
+  if (!cred || cred.user !== 'admin') return challenge()
+
+  if (!SUPABASE_SERVICE_KEY || SUPABASE_SERVICE_KEY.startsWith('PASTE_')) {
+    return jsonResp(500, { error: 'Supabase service-role key not configured in worker' })
+  }
+
+  let body
+  try { body = await request.json() } catch (_) {
+    return jsonResp(400, { error: 'Invalid JSON' })
+  }
+  const name  = String(body?.name || '').trim().toUpperCase()
+  const email = String(body?.email || '').trim().toLowerCase()
+  const password = String(body?.password || '')
+  if (!name || !email || !password) {
+    return jsonResp(400, { error: 'Missing required fields: name, email, password' })
+  }
+  if (password.length < 8) {
+    return jsonResp(400, { error: 'Password must be at least 8 characters' })
+  }
+
+  const sbHeaders = {
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json'
+  }
+
+  // Step 1 — create the auth user (email auto-confirmed, no verification mail)
+  const authResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: sbHeaders,
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name, role: 'mentor' }
+    })
+  })
+  const authJson = await authResp.json().catch(() => ({}))
+  if (!authResp.ok) {
+    return jsonResp(authResp.status, { error: authJson?.msg || authJson?.error_description || authJson?.message || 'Auth user creation failed' })
+  }
+  const userId = authJson?.id || authJson?.user?.id
+  if (!userId) {
+    return jsonResp(500, { error: 'No user ID returned from auth API' })
+  }
+
+  // Step 2 — insert the mentors row keyed by the auth user id.
+  const mentorResp = await fetch(`${SUPABASE_URL}/rest/v1/mentors`, {
+    method: 'POST',
+    headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+    body: JSON.stringify({ id: userId, name, email })
+  })
+  if (!mentorResp.ok) {
+    const errText = await mentorResp.text().catch(() => '')
+    // Best-effort cleanup: delete the orphan auth user so admin can retry
+    await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: sbHeaders
+    }).catch(() => {})
+    return jsonResp(mentorResp.status, { error: 'Mentor row insert failed (run docs/schema/mentor-clockin.sql?): ' + errText })
+  }
+
+  return jsonResp(200, { ok: true, mentor_id: userId, name, email })
+}
+
 // Authorize a Supabase proxy request. Allows:
 //   1. Same-origin requests whose Referer points at one of the protected
 //      pages — these can only originate from a browser tab that already
@@ -473,6 +549,9 @@ const PROXY_ALLOWED_TABLES = new Set([
   'wallet_ledger','chat_messages','typing_drafts',
   // Per-planner API usage console (/superapi999.html — docs/schema/api-usage-tracking.sql)
   'api_usage_daily',
+  // Mentor clock-in (superadmin panel: approve laptops, read the time log —
+  // docs/schema/mentor-clockin.sql)
+  'mentors','mentor_devices','mentor_attendance',
 ])
 const PROXY_ALLOWED_RPCS    = new Set(['postpone_all_travelers'])
 const PROXY_ALLOWED_BUCKETS = new Set(['chat-media', 'letter-ids'])
