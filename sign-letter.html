@@ -243,6 +243,26 @@ const token  = params.get('token')
 
 const $ = id => document.getElementById(id)
 
+// ── Tab default by viewing domain ───────────────────────────────────
+// The CONTRACT is always branded per-letter (below), but until a letter loads
+// there is no letter brand — so on an expired/invalid link the browser tab
+// would show Journey Junction on every domain. Default the tab (title +
+// favicon) from the viewing host; the letter's own brand overrides after load.
+const TAB_BRANDS = {
+  'itinerarydesignhub.com':   { name: 'Vacations by Design', icon: '/vbd-icon.png' },
+  'tripcompanionplanner.com': { name: 'Trip Companion',      icon: '/tc-icon.png' }
+}
+const LETTER_TAB_ICON = { jj: 'jjlogo.png', vbd: '/vbd-icon.png', tc: '/tc-icon.png' }
+function setTab(name, icon) {
+  document.title = '業務委託契約書 — ' + name
+  const ic = document.querySelector('link[rel="icon"]')
+  if (ic && icon) ic.href = icon
+}
+{
+  const _ht = TAB_BRANDS[(location.hostname || '').toLowerCase().replace(/^www\./, '')]
+  if (_ht) setTab(_ht.name, _ht.icon)
+}
+
 // ── Per-letter brand ────────────────────────────────────────────────
 // The contract renders the company that ISSUED it (letter.brand), NEVER the
 // viewing domain — so an existing Journey Junction contract can never be
@@ -633,7 +653,9 @@ async function boot() {
   // viewing domain. Missing brand (all pre-migration letters) → Journey Junction.
   const bname = LETTER_BRAND_NAME[letter.brand] || 'Journey Junction'
   applyLetterBrand(letter.brand)
-  document.title = document.title.split('Journey Junction').join(bname)
+  // Letter brand wins over the host-default tab — set absolutely, not by
+  // find-replace, so it is correct even if the host default already renamed it.
+  setTab(bname, LETTER_TAB_ICON[letter.brand] || LETTER_TAB_ICON.jj)
 
   // Fill the editable header fields — Japanese date format
   $('f-name').textContent  = letter.planner_name
