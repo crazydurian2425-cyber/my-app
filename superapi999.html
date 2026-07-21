@@ -233,8 +233,8 @@ function render(){
   const top        = rows.slice().sort((a,b)=>b.b.total-a.b.total)[0]
   // Both brands share one DB, so the table already combines JJ + VBD. Split the
   // total per brand for the "at a glance" line (unknown/deleted planners excluded).
-  const byBrand = { jj:0, vbd:0 }
-  rows.forEach(x => { if (x.p.brand==='vbd') byBrand.vbd+=x.b.total; else if (x.p.brand==='jj') byBrand.jj+=x.b.total })
+  const byBrand = { jj:0, vbd:0, tc:0 }
+  rows.forEach(x => { const bk = byBrand.hasOwnProperty(x.p.brand) ? x.p.brand : 'jj'; byBrand[bk]+=x.b.total })
 
   document.getElementById('kpis').innerHTML = `
     <div class="kpi today"><div class="n">${totalCalls.toLocaleString()}</div><div class="l">Total calls</div><div class="sub">${document.getElementById('rangelbl').textContent}</div></div>
@@ -263,7 +263,7 @@ function render(){
     (hot ? `<div style="margin-bottom:8px">🔴 <b>${escapeHtml(hot.p.name)}</b> — ${hot.b.total.toLocaleString()} calls, ~${Math.round(hot.b.total/avg)}× average. Worth checking their session for a loop.</div>` : `<div style="margin-bottom:8px">🟢 No planner is far above average — usage looks healthy.</div>`)
     + `<div style="margin-bottom:8px">📸 Photos are <b>${photoShare}%</b> of calls (first view per device; near-zero after).</div>`
     + `<div style="margin-bottom:8px">📊 ${active} active planner${active===1?'':'s'} · avg <b>${Math.round(avg)}</b> calls each ${document.getElementById('rangelbl').textContent}.</div>`
-    + `<div>🏷️ By brand — ${brandBadge('jj')} <b>${byBrand.jj.toLocaleString()}</b> · ${brandBadge('vbd')} <b>${byBrand.vbd.toLocaleString()}</b> calls ${document.getElementById('rangelbl').textContent}.</div>`
+    + `<div>🏷️ By brand — ${brandBadge('jj')} <b>${byBrand.jj.toLocaleString()}</b> · ${brandBadge('vbd')} <b>${byBrand.vbd.toLocaleString()}</b> · ${brandBadge('tc')} <b>${byBrand.tc.toLocaleString()}</b> calls ${document.getElementById('rangelbl').textContent}.</div>`
 
   // table
   rows = rows.filter(x => !q || (x.p.name+x.p.city).toLowerCase().includes(q))
@@ -290,6 +290,7 @@ function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&'
 function brandBadge(b){
   const base='display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:800;letter-spacing:.04em;vertical-align:middle;'
   if (b==='vbd') return `<span style="${base}background:#efe6fb;color:#6b4d9e;border:1px solid #d3c0ef;">VBD</span>`
+  if (b==='tc')  return `<span style="${base}background:#e6f0f5;color:#2C5F7C;border:1px solid #b5cfdd;">TC</span>`
   if (b==='jj')  return `<span style="${base}background:#e8f1f6;color:#2b5f7a;border:1px solid #bcd7e6;">JJ</span>`
   return ''
 }
