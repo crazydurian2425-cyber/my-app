@@ -76,6 +76,7 @@ const BRANDS = {
     supportEmail: 'hello@thevacationsbydesign.co.uk',
     siteUrl: 'https://itinerarydesignhub.com',
     icon: '/vbd-app-icon.svg',
+    favicon: '/vbd-icon.png',
     accent: '#3A5647',           // Sage Forest (primary)
     pop: '#EE6C3A',              // Poppy
     // Design-token overrides injected into <head> for this host — reskins every
@@ -98,6 +99,7 @@ const BRANDS = {
     supportEmail: 'hello@tripcompanion.co.uk',
     siteUrl: 'https://tripcompanionplanner.com',
     icon: '/tc-app-icon.svg',
+    favicon: '/tc-icon.png',
     // "Sister palette to Vacations by Design" per the brand pack — TC and VBD
     // deliberately share one colour family; the logo/wordmark is the difference.
     accent: '#3A5647',           // Sage Forest (primary)
@@ -255,6 +257,12 @@ function brandStaticHtml(html, brand, url) {
   // 1) Title — swap the JJ base name inside the existing <title>…</title>.
   html = html.replace(/<title>([\s\S]*?)<\/title>/i, (m, t) =>
     '<title>' + t.split('Journey Junction').join(brand.name) + '</title>')
+  // 1b) Favicon — browsers fetch it while parsing <head>, before the client-side
+  // skin can swap it, and the first icon fetched is what history/suggestion
+  // dropdowns keep. Serve the brand's icon in the raw HTML.
+  if (brand.favicon) {
+    html = html.replace(/(<link[^>]*rel="icon"[^>]*href=")[^"]*(")/gi, '$1' + brand.favicon + '$2')
+  }
   // 2) Social preview tags (the source pages ship none) — inject before </head>.
   const name = esc(brand.name)
   const desc = esc(brand.slogan || ('Design bespoke, lived-in Japan itineraries with ' + brand.name + '.'))
