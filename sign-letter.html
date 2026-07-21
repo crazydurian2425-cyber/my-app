@@ -315,9 +315,19 @@ const VBD_EMPLOYMENT_BODY_HTML = `
   <p style="margin-top:14px;">以下に両当事者が署名することにより、上記の内容を確認・理解し、本契約の条件および甲の利用規約に同意したものとみなされます。</p>
 `
 
-// JJ→VBD substitutions for a VBD letter. Module-level so they can ALSO be applied
-// to the admin-typed guarantee / final-confirmation body, which boot() injects
-// AFTER applyLetterBrand() has already walked the DOM (see brandCustomBody).
+// ── Trip Companion's contract ───────────────────────────────────────
+// TC uses the SAME agreement as Vacations by Design — only the company name and
+// the job title differ, so it is derived from VBD's text rather than duplicated
+// (edit VBD's body above and both brands stay in sync automatically). The other
+// company facts (number / address / director / email) are not in this body —
+// they live in the letter's company block and are handled by the reps below.
+const TC_EMPLOYMENT_BODY_HTML = VBD_EMPLOYMENT_BODY_HTML
+  .split('VACATIONS BY DESIGN LTD').join('TRIP COMPANION LTD')
+  .split('旅程デザイナー').join('旅行デザイナー')
+
+// Module-level so the reps can ALSO be applied to the admin-typed guarantee /
+// final-confirmation body, which boot() injects AFTER applyLetterBrand() has
+// already walked the DOM (see brandCustomBody).
 const NB = String.fromCharCode(160)
 
 // ── Per-brand letter registry ───────────────────────────────────────
@@ -348,8 +358,7 @@ const LETTER_BRANDS = {
     logo: '/tc-app-icon.svg',
     wordmark: 'Trip <em>Companion</em>',
     mailDomain: 'tripcompanion.co.uk',
-    // No bodyHtml → Trip Companion letters use the Journey Junction contract
-    // text with the substitutions below applied.
+    bodyHtml: TC_EMPLOYMENT_BODY_HTML,   // same agreement as VBD, TC's name/title
     reps: [
       ['JOURNEY JUNCTION LTD', 'TRIP COMPANION LTD'],
       ['Journey Junction', 'Trip Companion'],
