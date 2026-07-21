@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bug audit — see each one</title>
+<style>
+  :root{ --paper:#fbf7ef; --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#8a5a0b; --amberbg:#fdf3e2; --amberbd:#e9d6ab; --line:#ece5d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:15px/1.5 'DM Sans',system-ui,Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:680px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .lead{color:var(--ink2);margin:0 0 18px;font-size:13.5px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .card h2{font-size:16px;margin:0 0 2px}
+  .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;border-radius:5px;padding:2px 7px;margin-right:6px;vertical-align:middle}
+  .tag.crit{background:#fde3e0;color:#8c1d16}
+  .tag.high{background:#fde7d6;color:#8a5a0b}
+  .plain{color:var(--ink2);font-size:13px;margin:6px 0 12px}
+  .sim{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px}
+  .btn{padding:9px 13px;border-radius:9px;border:1px solid var(--line);font-weight:700;cursor:pointer;font-size:13px;background:#fff}
+  .btn.do{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn.warn{background:#fff;color:var(--red);border-color:var(--redbd)}
+  .btn.ghost{background:#fff;color:var(--ink2)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .read{font-variant-numeric:tabular-nums;font-weight:800;font-size:20px}
+  .read.bad{color:var(--red)} .read.ok{color:var(--green)}
+  .verdict{margin-top:8px;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:8px}
+  .verdict.bad{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .verdict.ok{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .verdict.info{background:var(--amberbg);color:var(--amber);border:1px solid var(--amberbd)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:560px){.two{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff}
+  .panel .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)}
+  .log{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#1e1b16;color:#d7e7d9;border-radius:8px;padding:10px;margin-top:8px;white-space:pre-wrap;min-height:20px}
+  input.note{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+  .small{font-size:11.5px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The bugs, as live demos</h1>
+  <p class="lead">Each box re‑creates one bug so you can see it happen. This is a mock page — your real app is untouched. Click the buttons.</p>
+
+  <!-- 1 -->
+  <div class="card">
+    <h2><span class="tag crit">CRITICAL</span>Bug #1 · "Mark paid" credits the wallet every time you click</h2>
+    <p class="plain">When an admin marks a ¥10,000 bill as paid, it adds ¥10,000 to the planner's wallet — but it never checks "did I already pay this?". So clicking twice pays ¥20,000. Real, withdrawable money.</p>
+    <div class="sim">
+      <div class="row"><button class="btn do" onclick="b1()">✓ Mark bill ¥10,000 paid</button><button class="btn ghost" onclick="b1r()">reset</button></div>
+      <div>Wallet credited: <span class="read bad" id="b1w">¥0</span> <span class="small" id="b1n"></span></div>
+      <div class="verdict bad" id="b1v">Should ALWAYS be ¥10,000, no matter how many clicks.</div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card">
+    <h2><span class="tag crit">CRITICAL</span>Bug #2 · ¥150,000 weekly bonus can pay twice (fast double‑click)</h2>
+    <p class="plain">It checks "already paid this week?" then pays — but the check and the payment aren't locked together. Click it twice quickly (within 1 second) and both clicks see "not paid yet" → it pays ¥300,000.</p>
+    <div class="sim">
+      <div class="row"><button class="btn do" onclick="b2()">💴 Pay ¥150,000 weekly bonus</button><button class="btn ghost" onclick="b2r()">reset</button></div>
+      <div>Paid out: <span class="read bad" id="b2w">¥0</span></div>
+      <div class="verdict info" id="b2v">Click it TWICE fast (within 1s) to see the double‑pay. One click = correct ¥150,000.</div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card">
+    <h2><span class="tag high">HIGH</span>Bug #3 · The welcome note gets wiped (and can leak between plans)</h2>
+    <p class="plain">When you open a plan, the note box loads EMPTY (it only fills in if you visit the Review tab). But autosave saves whatever's in the box. So if you edit anything without opening Review, the empty box overwrites your saved note with nothing.</p>
+    <div class="sim">
+      <div class="two">
+        <div class="panel"><div class="lbl">Saved note in database</div><div id="b3db" style="font-weight:700;margin-top:4px;color:var(--green)">"Welcome to Japan, enjoy! 🌸"</div></div>
+        <div class="panel"><div class="lbl">Note box on screen (on open)</div><input class="note" id="b3box" placeholder="(empty — not loaded)"></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn warn" onclick="b3edit()">✏️ Edit a Day‑1 stop (fires autosave)</button><button class="btn ghost" onclick="b3r()">reset</button></div>
+      <div class="verdict bad" id="b3v">Your saved note is still safe… for now.</div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card">
+    <h2><span class="tag high">HIGH</span>Bug #4 · The brief shows a commission the wallet won't actually pay</h2>
+    <p class="plain">If a plan's payout wasn't set in the backend, the planner's BRIEF still shows ¥7,300 (a default by trip length) — but the WALLET pays ¥0 (it has no default). So the planner sees one number and earns another.</p>
+    <div class="sim">
+      <div class="row"><span class="small">Backend "planner payout":</span>
+        <button class="btn ghost" id="b4set" onclick="b4toggle()">— not set —</button></div>
+      <div class="two" style="margin-top:8px">
+        <div class="panel"><div class="lbl">Brief (planner sees)</div><div class="read" id="b4brief">¥7,300</div></div>
+        <div class="panel"><div class="lbl">Wallet (planner earns)</div><div class="read" id="b4wallet">¥0</div></div>
+      </div>
+      <div class="verdict bad" id="b4v">Mismatch — shows ¥7,300, pays ¥0.</div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card">
+    <h2><span class="tag high">HIGH</span>Bug #5 · "Reassign / start fresh" silently fails if the planner added photos</h2>
+    <p class="plain">To reset a plan it deletes the stops — but it forgets to delete the stops' PHOTOS first. The database refuses to delete a stop that still has a photo, so the whole reset aborts and the old plan stays.</p>
+    <div class="sim">
+      <div class="row"><button class="btn warn" onclick="b5()">♻️ Reassign planner (start fresh)</button><button class="btn ghost" onclick="b5r()">reset</button></div>
+      <div class="log" id="b5log">Plan has: 3 stops · 2 photos. Click reassign…</div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="card">
+    <h2><span class="tag high">HIGH</span>Bug #6 · A submitted plan can show "empty" when it isn't</h2>
+    <p class="plain">The admin review screen loads the plan's stops with no error‑check. If that load hiccups, it shows "No activities logged" — even though the stops ARE in the database. The reviewer can't tell "failed to load" from "planner submitted nothing."</p>
+    <div class="sim">
+      <div class="row"><button class="btn do" onclick="b6(true)">Open review (load OK)</button><button class="btn warn" onclick="b6(false)">Open review (load hiccup)</button></div>
+      <div class="panel" style="margin-top:8px"><div class="lbl">Database actually has</div><div style="font-weight:700">5 activities across Day 1–2</div></div>
+      <div class="panel" style="margin-top:8px"><div class="lbl">Review screen shows</div><div class="read" id="b6show" style="font-size:15px">—</div></div>
+      <div class="verdict info" id="b6v">Click both buttons to compare.</div>
+    </div>
+  </div>
+
+  <p class="small">These 6 are the ones you've personally bumped into or that move money. The audit listed ~11 more (mostly medium/low). Tell me which to fix and I'll do them one at a time — nothing here changes your app.</p>
+</div>
+
+<script>
+// 1 — double credit
+let b1c=0;
+function b1(){ b1c++; document.getElementById('b1w').textContent='¥'+(b1c*10000).toLocaleString(); document.getElementById('b1n').textContent='('+b1c+' click'+(b1c>1?'s':'')+')';
+  document.getElementById('b1v').textContent = b1c>1 ? '🐞 BUG: paid '+b1c+'× = ¥'+(b1c*10000).toLocaleString()+' for ONE ¥10,000 bill.' : 'Should ALWAYS be ¥10,000, no matter how many clicks.'; }
+function b1r(){ b1c=0; document.getElementById('b1w').textContent='¥0'; document.getElementById('b1n').textContent=''; document.getElementById('b1v').textContent='Should ALWAYS be ¥10,000, no matter how many clicks.'; }
+
+// 2 — race double bonus
+let b2paid=0, b2recorded=false, b2t=null;
+function b2(){
+  if(b2recorded){ document.getElementById('b2v').textContent='✓ Already recorded as paid — further clicks blocked (this is the part that works AFTER the write lands).'; return; }
+  b2paid+=150000; document.getElementById('b2w').textContent='¥'+b2paid.toLocaleString();
+  // the "DB write" only 'records' it after 1s — clicks within that window race through
+  clearTimeout(b2t); b2t=setTimeout(()=>{ b2recorded=true; }, 1000);
+  document.getElementById('b2v').textContent = b2paid>150000
+    ? '🐞 BUG: paid ¥'+b2paid.toLocaleString()+' — the 2nd click slipped through before the 1st was recorded.'
+    : 'Paid once. Now click again FAST (within 1s) to race it.';
+}
+function b2r(){ b2paid=0; b2recorded=false; clearTimeout(b2t); document.getElementById('b2w').textContent='¥0'; document.getElementById('b2v').textContent='Click it TWICE fast (within 1s) to see the double‑pay. One click = correct ¥150,000.'; }
+
+// 3 — note wipe
+function b3edit(){
+  const box=document.getElementById('b3box').value;
+  document.getElementById('b3db').textContent = box ? '"'+box+'"' : '"" (empty)';
+  document.getElementById('b3db').style.color = box ? 'var(--green)' : 'var(--red)';
+  document.getElementById('b3v').className='verdict bad';
+  document.getElementById('b3v').textContent = box
+    ? '(You typed something, so it saved that.) Now reset, DON\'T type, and click edit → watch the note get wiped.'
+    : '🐞 BUG: autosave wrote the empty box over your saved note. "Welcome to Japan" is GONE.';
+}
+function b3r(){ document.getElementById('b3box').value=''; document.getElementById('b3db').textContent='"Welcome to Japan, enjoy! 🌸"'; document.getElementById('b3db').style.color='var(--green)'; document.getElementById('b3v').textContent='Your saved note is still safe… for now.'; }
+
+// 4 — brief vs wallet
+let b4hasPayout=false;
+function b4toggle(){
+  b4hasPayout=!b4hasPayout;
+  document.getElementById('b4set').textContent = b4hasPayout ? '¥20,000 (set)' : '— not set —';
+  document.getElementById('b4brief').textContent = b4hasPayout ? '¥20,000' : '¥7,300';
+  document.getElementById('b4wallet').textContent = b4hasPayout ? '¥20,000' : '¥0';
+  const v=document.getElementById('b4v');
+  if(b4hasPayout){ v.className='verdict ok'; v.textContent='✓ When payout IS set, brief = wallet. They agree.'; }
+  else { v.className='verdict bad'; v.textContent='🐞 BUG: payout not set → brief shows ¥7,300 but wallet pays ¥0.'; }
+}
+
+// 5 — reassign abort
+function b5(){
+  const log=document.getElementById('b5log');
+  log.textContent='';
+  const lines=[
+    '→ delete itinerary_items (the 3 stops)…',
+    '✗ DATABASE REFUSED: stop #2 still has 2 photos (RESTRICT).',
+    '→ delete plan…',
+    '✗ blocked (stops still exist).',
+    '🐞 Reassign ABORTED. Old plan + photos still there. "Start fresh" did nothing.'
+  ];
+  let i=0; (function step(){ if(i<lines.length){ log.textContent += (i?'\n':'')+lines[i++]; setTimeout(step,520);} })();
+}
+function b5r(){ document.getElementById('b5log').textContent='Plan has: 3 stops · 2 photos. Click reassign…'; }
+
+// 6 — empty review
+function b6(ok){
+  document.getElementById('b6show').textContent = ok ? '5 activities ✓' : 'No activities logged ✗';
+  document.getElementById('b6show').className = 'read ' + (ok?'ok':'bad');
+  const v=document.getElementById('b6v');
+  if(ok){ v.className='verdict ok'; v.textContent='✓ Loaded fine — shows the 5 real activities.'; }
+  else { v.className='verdict bad'; v.textContent='🐞 BUG: the load hiccuped, so it shows "empty" — but the DB has 5. No error tells the reviewer it failed.'; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — the potential RISKS of the fix</title>
+<style>
+  :root{
+    --bg:#F4F2EC; --ink:#1d211f; --ink-2:#5a5f5b; --ink-3:#8a8f8a; --border:rgba(0,0,0,.12);
+    --green:#1a7a5e; --green-bg:#e8f5f0; --red:#B3452F; --red-bg:#FBEAE5; --amber:#BA7517; --amber-bg:#FBF1DE; --blue:#28457a; --blue-bg:#eef4ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);padding:26px 20px 70px;line-height:1.5;}
+  h1{font-size:22px;margin-bottom:6px;}
+  .sub{font-size:14px;color:var(--ink-2);max-width:960px;margin-bottom:16px;}
+  .sub b{color:var(--ink);}
+
+  /* direction meter */
+  .meter{max-width:960px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:22px;}
+  .meter h2{font-size:14px;margin-bottom:12px;}
+  .scale{display:flex;align-items:stretch;border-radius:10px;overflow:hidden;border:1px solid var(--border);font-size:12.5px;font-weight:600;}
+  .scale .zone{padding:12px 14px;flex:1;}
+  .zone.loss{background:var(--red-bg);color:var(--red);}
+  .zone.mid{background:#faf8f2;color:var(--ink-3);text-align:center;flex:0 0 90px;display:flex;align-items:center;justify-content:center;}
+  .zone.stale{background:var(--green-bg);color:var(--green);text-align:right;}
+  .scale small{display:block;font-weight:400;color:var(--ink-3);margin-top:3px;}
+  .meter-note{font-size:13px;color:var(--ink-2);margin-top:12px;}
+  .meter-note b{color:var(--ink);}
+
+  .grid{display:flex;flex-direction:column;gap:18px;max-width:960px;}
+  .risk{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.05);}
+  .risk-h{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:#faf9f5;}
+  .risk-h .num{width:26px;height:26px;border-radius:99px;background:var(--amber);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;}
+  .risk-h .t{font-size:15px;font-weight:700;}
+  .risk-h .sev{margin-left:auto;font-size:11px;font-weight:700;padding:4px 11px;border-radius:99px;background:var(--green-bg);color:var(--green);}
+  .risk-body{padding:16px 18px;}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;}
+  .stagebox{flex:1 1 300px;border:1px solid var(--border);border-radius:10px;padding:12px;background:#fcfbf8;}
+  .stagebox .lab{font-size:11px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .stops{display:flex;flex-direction:column;gap:5px;}
+  .stop{font-size:12px;padding:6px 10px;border-radius:6px;background:#f1f3f1;border:1px solid var(--border);transition:all .35s;display:flex;justify-content:space-between;align-items:center;}
+  .stop.ghost{background:repeating-linear-gradient(45deg,#eef7f2,#eef7f2 6px,#e2efe8 6px,#e2efe8 12px);color:var(--green);border-color:var(--green);border-style:dashed;}
+  .stop .tag{font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;}
+  .stop.ghost .tag{background:var(--green);color:#fff;}
+  .narr{font-size:13px;color:var(--ink-2);margin-top:12px;min-height:20px;font-weight:600;}
+  .btn{margin-top:12px;border:none;background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:8px 18px;border-radius:99px;cursor:pointer;}
+  .btn:active{transform:scale(.97);}
+  .mitig{margin-top:14px;font-size:12.5px;color:var(--ink-2);background:var(--blue-bg);border:1px solid rgba(40,69,122,.2);border-radius:8px;padding:10px 13px;}
+  .mitig b{color:var(--blue);}
+
+  .foot{max-width:960px;margin-top:24px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:13.5px;color:var(--ink-2);}
+  .foot b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<h1>⚠️ Demo — the potential RISKS of the fix (and why they're all recoverable)</h1>
+<p class="sub">
+  The fix only ever <b>prevents a delete</b> — it never adds one and never changes what's saved. That means <b>every</b> way it could misbehave points in ONE direction:
+  an <b>extra stop that shouldn't be there</b> (easy to remove) — never a missing one. Below are the 3 realistic risks. Press ▶ on each.
+</p>
+
+<div class="meter">
+  <h2>Which way can things go wrong?</h2>
+  <div class="scale">
+    <div class="zone loss">⬅ DATA LOSS — a stop vanishes<small>catastrophic · what happens TODAY · 1–3 hrs of work gone</small></div>
+    <div class="zone mid">the fix moves<br>risk this way ➡</div>
+    <div class="zone stale">a stale extra stop lingers ➡<small>minor · worst case of the FIX · delete it in 1 tap</small></div>
+  </div>
+  <div class="meter-note"><b>Key point:</b> today's bug lives on the red side (things disappear). The fix can, at worst, land on the green side (something harmless stays). It can never move a risk back to red.</div>
+</div>
+
+<div class="grid">
+
+  <!-- RISK 1 -->
+  <div class="risk">
+    <div class="risk-h"><span class="num">1</span><span class="t">A deleted stop reappears</span><span class="sev">worst case: 1-tap fix</span></div>
+    <div class="risk-body">
+      <p style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">The planner deletes one stop from a day. If the guard is a touch too cautious, that stop might not get removed from the database and could show up again on reopen.</p>
+      <div class="row">
+        <div class="stagebox">
+          <div class="lab">Day 1 after the planner deletes "Lunch"</div>
+          <div class="stops" id="r1-stops"></div>
+          <div class="narr" id="r1-narr"></div>
+          <button class="btn" onclick="r1()">▶ Play</button>
+        </div>
+      </div>
+      <div class="mitig"><b>How I prevent even this:</b> a partial delete (removing SOME stops but leaving others) still has items on screen for that day, so the normal save handles it exactly as today. This risk only appears in a corner case — and even then it's a leftover stop, not a lost one.</div>
+    </div>
+  </div>
+
+  <!-- RISK 2 -->
+  <div class="risk">
+    <div class="risk-h"><span class="num">2</span><span class="t">Removing a WHOLE day leaves it lingering</span><span class="sev">worst case: use Reset / re-remove</span></div>
+    <div class="risk-body">
+      <p style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">This is the one real edge case. If a planner genuinely deletes an entire day, the screen legitimately shows zero stops for it — which looks <i>identical</i> to the dangerous "day flickered blank" glitch. The guard, protecting data, keeps the day → so a deliberately-removed day could stay.</p>
+      <div class="row">
+        <div class="stagebox">
+          <div class="lab">Planner removes all of Day 2 on purpose</div>
+          <div class="stops" id="r2-stops"></div>
+          <div class="narr" id="r2-narr"></div>
+          <button class="btn" onclick="r2()">▶ Play</button>
+        </div>
+      </div>
+      <div class="mitig"><b>How I close it cleanly:</b> a real "remove day" goes through its OWN explicit button that clears that day's rows directly (the same way the Reset button works) — so the autosave never has to guess. Handled that way, even this edge case disappears. This is exactly why I want the audit's findings before coding it.</div>
+    </div>
+  </div>
+
+  <!-- RISK 3 -->
+  <div class="risk">
+    <div class="risk-h"><span class="num">3</span><span class="t">A duplicate stop isn't auto-cleaned</span><span class="sev">worst case: cosmetic</span></div>
+    <div class="risk-body">
+      <p style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Today's "delete everything else" step also quietly cleans up duplicate rows left by a failed earlier save. A more careful guard might let a duplicate linger, so a stop could appear twice until the next full save.</p>
+      <div class="row">
+        <div class="stagebox">
+          <div class="lab">Day 1 (a duplicate "Museum" slipped in earlier)</div>
+          <div class="stops" id="r3-stops"></div>
+          <div class="narr" id="r3-narr"></div>
+          <button class="btn" onclick="r3()">▶ Play</button>
+        </div>
+      </div>
+      <div class="mitig"><b>How I prevent it:</b> de-dup can be done by matching stop identity (not by "delete all others"), so duplicates are still cleaned without ever risking a real stop. Cosmetic at worst, and self-heals on the next complete save.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="foot">
+  <b>Bottom line on risk:</b> the fix touches only the delete logic in autosave + submit. It does <b>not</b> touch the Google API, the API usage tracking, the route cache, when autosave fires, or how your edits are saved. Its only possible downside is a <b>harmless extra stop</b> that's one tap to remove — the exact opposite of the catastrophic data loss you have now. Risk 2 (removing a whole day) is the one I'll wire carefully via an explicit "remove day" action, which is why I'm waiting for the full audit before writing code.
+</div>
+
+<script>
+  const $=id=>document.getElementById(id)
+  const wait=ms=>new Promise(r=>setTimeout(r,ms))
+  function stop(el,txt,ghost){ const d=document.createElement('div'); d.className='stop'+(ghost?' ghost':''); d.innerHTML='<span>'+txt+'</span>'+(ghost?'<span class="tag">stale — 1 tap to remove</span>':''); el.appendChild(d); return d }
+
+  function r1init(){ const e=$('r1-stops'); e.innerHTML=''; ['Arrival taxi','Hotel check-in','Museum','Cafe'].forEach(s=>stop(e,s)); $('r1-narr').textContent='' }
+  async function r1(){ r1init(); await wait(300)
+    $('r1-narr').textContent='Planner deleted "Lunch". The 4 remaining stops are on screen, so the save proceeds normally…'
+    await wait(1500)
+    $('r1-narr').innerHTML='✓ Normal case: 4 stops saved, "Lunch" correctly gone. <b style="color:var(--green)">No issue at all here.</b>'
+    await wait(1200)
+    $('r1-narr').innerHTML='Only in a rare corner case would a deleted stop linger like this — a <b style="color:var(--green)">stale extra</b>, never a loss:'
+    stop($('r1-stops'),'Lunch (came back)',true)
+  }
+
+  function r2init(){ const e=$('r2-stops'); e.innerHTML=''; stop(e,'Day 2 — 8 stops'); $('r2-narr').textContent='' }
+  async function r2(){ r2init(); await wait(300)
+    $('r2-narr').textContent='Planner removes all of Day 2 on purpose → screen shows 0 stops for Day 2…'
+    $('r2-stops').innerHTML=''; stop($('r2-stops'),'Day 2 — (empty on screen)')
+    await wait(1600)
+    $('r2-narr').innerHTML='The guard can\'t tell this apart from a glitch, so to protect data it KEEPS Day 2:'
+    $('r2-stops').innerHTML=''; stop($('r2-stops'),'Day 2 — 8 stops',true)
+    await wait(1400)
+    $('r2-narr').innerHTML='⚠ Worst case: a day the planner meant to delete lingers. <b style="color:var(--amber)">Fixed cleanly by a dedicated "remove day" button.</b> Still no data lost.'
+  }
+
+  function r3init(){ const e=$('r3-stops'); e.innerHTML=''; ['Museum','Museum (duplicate)','Ramen','Park'].forEach((s,i)=>stop(e,s)); $('r3-narr').textContent='' }
+  async function r3(){ r3init(); await wait(300)
+    $('r3-narr').textContent='A duplicate "Museum" exists from an earlier failed save…'
+    await wait(1400)
+    $('r3-narr').innerHTML='A too-cautious guard might leave the duplicate until the next full save:'
+    const kids=$('r3-stops').children; kids[1].classList.add('ghost'); kids[1].querySelector('span').textContent='Museum (duplicate)'; kids[1].innerHTML='<span>Museum (duplicate)</span><span class="tag">stale — auto-clears next save</span>'
+    await wait(1400)
+    $('r3-narr').innerHTML='<b style="color:var(--green)">Cosmetic only</b> — and avoidable by de-duping on stop identity instead of "delete all others".'
+  }
+
+  r1init(); r2init(); r3init()
+</script>
+</body>
+</html>

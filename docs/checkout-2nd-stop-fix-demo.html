@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotel check-out as 2nd stop — chain fix (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --line:#e6e0d4; --hotel:#eef3ee; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .case{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .case h2{font-size:13px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;margin:5px 0;font-size:13px;background:#faf8f3}
+  .row.hotel{background:var(--hotel);border-color:var(--greenbd)}
+  .row.co{background:#fbf3e2;border-color:#e3c98f}
+  .row .clk{font-weight:800;font-variant-numeric:tabular-nums;min-width:52px}
+  .row .t{flex:1}
+  .row .stay{font-size:11px;color:var(--ink2);background:#f0ece2;border-radius:6px;padding:2px 7px}
+  .tag{font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px}
+  .tag.bad{background:var(--redbg);color:var(--red)} .tag.good{background:var(--greenbg);color:var(--green)}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:620px){.split{grid-template-columns:1fr}}
+  .col h3{font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
+  .col.now h3{color:var(--red)} .col.fix h3{color:var(--green)}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:8px;line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hotel check‑out timing — first stop vs. 2nd stop</h1>
+  <p class="lead">Day 3 departure day. The fix: early 8:45 default only when check‑out is the FIRST stop.</p>
+
+  <!-- Case 1: first stop -->
+  <div class="case">
+    <h2>✓ Case 1 — check‑out is the FIRST stop (works today, stays the same)</h2>
+    <div class="row hotel"><span class="clk">8:30</span><span class="t">🏨 朝食・Morning at the hotel</span></div>
+    <div class="row co"><span class="clk">8:45</span><span class="t">🚪 Hotel check‑out</span><span class="tag good">early checkout ✓</span></div>
+    <div style="font-size:11.5px;color:var(--ink3);margin-top:6px">No stop before it → keep the early 8:45 default. Correct.</div>
+  </div>
+
+  <!-- Case 2: 2nd stop -->
+  <div class="case">
+    <h2>Case 2 — check‑out is the 2nd stop (the bug)</h2>
+    <div class="split">
+      <div class="col now">
+        <h3>✕ Now (bug)</h3>
+        <div class="row hotel"><span class="clk">8:30</span><span class="t">🏨 朝食</span></div>
+        <div class="row"><span class="clk">8:45</span><span class="t">📸 Activity (hotel)</span><span class="stay">45 min</span></div>
+        <div class="row co"><span class="clk">8:45</span><span class="t">🚪 Hotel check‑out</span><span class="tag bad">overlaps!</span></div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:6px">Forced to the early 8:45 default → lands on top of the activity.</div>
+      </div>
+      <div class="col fix">
+        <h3>✓ Fixed</h3>
+        <div class="row hotel"><span class="clk">8:30</span><span class="t">🏨 朝食</span></div>
+        <div class="row"><span class="clk">8:45</span><span class="t">📸 Activity (hotel)</span><span class="stay">45 min</span></div>
+        <div class="row co"><span class="clk">9:30</span><span class="t">🚪 Hotel check‑out</span><span class="tag good">8:45 + 45 ✓</span></div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:6px">A stop comes before it → chain after it like a normal stop.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>The one change:</b> the early 8:45 default is applied <b>only when the check‑out is the first real stop</b> of the day. If any real stop already comes before it, the check‑out is left to the normal time‑chain (previous start + stay), exactly like a non‑hotel stop. <br><br>
+    <b>Nothing else changes:</b> first‑stop early checkout still works; check‑in untouched; non‑hotel stops untouched. It only stops the check‑out from forcing 8:45 when it shouldn't.
+  </div>
+</div>
+</body>
+</html>

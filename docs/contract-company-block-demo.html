@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>契約書 — 法人情報 追加デモ</title>
+<link href="https://fonts.googleapis.com/css2?family=Georgia&family=Noto+Sans+JP:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#faf9f6; --paper:#ffffff; --ink:#1a1a18; --ink-2:#3a3a36; --ink-3:#7a7a74;
+  --green:#1a7a5e; --green-d:#0f5240; --amber:#b87333; --border:rgba(0,0,0,0.08); --border-med:rgba(0,0,0,0.18);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans','Helvetica Neue',Arial,sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;padding:34px 18px;line-height:1.7;}
+.wrap{max-width:720px;margin:0 auto;}
+.demo-banner{max-width:720px;margin:0 auto 16px;background:#fff;border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--ink-2);}
+.demo-banner b{color:var(--amber);}
+.card{background:var(--paper);border:1px solid var(--border);border-radius:14px;padding:34px 38px;box-shadow:0 4px 20px -8px rgba(0,0,0,0.10);}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.brand-dot{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-style:italic;}
+.brand-name{font-family:Georgia,serif;font-size:22px;color:var(--ink);}
+.brand-name em{color:var(--green);font-style:italic;}
+.title{font-family:Georgia,serif;font-size:24px;color:var(--ink);margin-bottom:6px;}
+.subtitle{font-size:13px;color:var(--ink-3);margin-bottom:22px;border-bottom:1px solid var(--border);padding-bottom:16px;}
+h3{font-family:Georgia,serif;font-size:17px;color:var(--ink);margin:20px 0 9px;font-weight:600;}
+p{color:var(--ink-2);font-size:14px;margin-bottom:9px;}
+.party-box{background:rgba(26,122,94,0.04);border:1px solid rgba(26,122,94,0.20);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+.field-row{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:9px 0;border-bottom:1px dashed var(--border);font-size:14px;}
+.field-row:last-child{border-bottom:none;}
+.field-label{color:var(--ink-3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:0.04em;}
+.field-val{color:var(--ink);font-weight:600;}
+.party-tag{font-size:11px;font-weight:700;color:var(--green-d);background:rgba(26,122,94,0.10);border-radius:5px;padding:2px 8px;display:inline-block;margin-bottom:10px;letter-spacing:.04em;}
+/* highlight for the NEW parts */
+.is-new{position:relative;border-left:4px solid var(--amber);}
+.new-pill{position:absolute;top:-10px;right:14px;background:var(--amber);color:#fff;font-size:10.5px;font-weight:700;border-radius:20px;padding:2px 10px;letter-spacing:.03em;}
+.sig-section{margin-top:28px;border-top:2px solid var(--ink);padding-top:22px;}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:6px;}
+@media(max-width:560px){.sig-grid{grid-template-columns:1fr;}.field-row{grid-template-columns:1fr;gap:2px;}}
+.sig-pane{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fff;}
+.sig-pane h4{font-family:Georgia,serif;font-size:13.5px;color:var(--ink-3);margin-bottom:8px;font-weight:600;letter-spacing:.03em;}
+.sig-name{font-weight:700;font-size:14px;margin-bottom:2px;}
+.sig-sub{font-size:12px;color:var(--ink-3);}
+.sig-line-co{margin-top:16px;font-family:'Brush Script MT','Segoe Script',cursive;font-size:26px;color:#1a2e6e;border-bottom:1px solid var(--border-med);padding-bottom:4px;}
+.sig-canvas-fake{margin-top:12px;height:70px;border:1px dashed var(--border-med);border-radius:8px;background:repeating-linear-gradient(45deg,#fbfbfa,#fbfbfa 8px,#f4f4f1 8px,#f4f4f1 16px);display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:12px;}
+.note{font-size:12px;color:var(--ink-3);margin-top:6px;}
+ul{padding-left:20px;margin-bottom:9px;}
+li{color:var(--ink-2);font-size:14px;margin-bottom:6px;}
+.letter-block{padding:20px 24px;background:var(--cream);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="demo-banner">
+  <b>DEMO — nothing changed yet.</b> The <b>amber‑marked</b> blocks are what gets added. Everything else is your existing contract.
+</div>
+<div class="wrap">
+  <div class="card">
+    <div class="brand">
+      <div class="brand-dot">J</div>
+      <div class="brand-name">Journey<em>Junction</em></div>
+    </div>
+
+    <div class="title">業務委託契約書</div>
+    <div class="subtitle">以下の内容をご確認のうえ、ご署名ください。</div>
+
+    <!-- ▼▼ NEW: company (委託者) block ▼▼ -->
+    <div class="party-box is-new">
+      <span class="new-pill">＋ 追加：委託者（会社）情報</span>
+      <span class="party-tag">委託者（甲）</span>
+      <div class="field-row"><div class="field-label">会社名</div><div class="field-val">JOURNEY JUNCTION LTD</div></div>
+      <div class="field-row"><div class="field-label">登記番号</div><div class="field-val">15791277 <span style="color:var(--ink-3);font-weight:500;">（英国 Companies House 登録）</span></div></div>
+      <div class="field-row"><div class="field-label">登記住所</div><div class="field-val">Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom</div></div>
+      <div class="field-row"><div class="field-label">代表者</div><div class="field-val">Midhun Peter（Director）</div></div>
+      <div class="field-row"><div class="field-label">設立日</div><div class="field-val">2024年6月20日</div></div>
+      <div class="field-row"><div class="field-label">連絡先</div><div class="field-val">hello@thejourneyjunction.co.uk</div></div>
+    </div>
+    <!-- ▲▲ END NEW ▲▲ -->
+
+    <!-- existing planner block, now tagged 乙 -->
+    <div class="party-box">
+      <span class="party-tag">受託者（乙）</span>
+      <div class="field-row"><div class="field-label">プランナー氏名</div><div class="field-val">sad</div></div>
+      <div class="field-row"><div class="field-label">契約開始日</div><div class="field-val">2026年6月24日</div></div>
+      <div class="field-row"><div class="field-label">本日の日付</div><div class="field-val">2026年6月24日</div></div>
+    </div>
+
+    <div class="letter-block">
+      <p>本書は、上記に記載の契約開始日より、<strong>委託者（甲）JOURNEY JUNCTION LTD</strong> と <strong>受託者（乙）</strong> との間で、訪日旅行プランナーとして業務委託契約を締結することを確認するものです。</p>
+      <h3>業務内容および報酬</h3>
+      <ul>
+        <li>Journey Junctionの依頼に基づき、旅行者向けにカスタマイズされた旅程を作成していただきます。</li>
+        <li>報酬は<strong>プランごとの成果報酬制</strong>とし、各案件について定められた報酬額に従ってお支払いします。固定の報酬はありません。</li>
+        <li style="color:var(--ink-3);">…（中略：ボーナス・お支払い方法などの既存条項）…</li>
+      </ul>
+      <h3>契約条件</h3>
+      <ul>
+        <li>本契約は業務委託契約であり、雇用契約ではありません。</li>
+        <li style="color:var(--ink-3);">…（中略：稼働時間・解約・守秘などの既存条項）…</li>
+      </ul>
+      <p style="margin-top:12px;">以下に両当事者が署名することにより、上記の内容を確認・理解し、本契約の条件に同意したものとみなされます。</p>
+    </div>
+
+    <!-- ▼▼ signature section — now TWO parties ▼▼ -->
+    <div class="sig-section">
+      <h3 style="margin-top:0;">署名</h3>
+      <div class="sig-grid">
+
+        <!-- NEW: company signatory -->
+        <div class="sig-pane is-new">
+          <span class="new-pill">＋ 追加</span>
+          <h4>委託者（甲）</h4>
+          <div class="sig-name">JOURNEY JUNCTION LTD</div>
+          <div class="sig-sub">代表者：Midhun Peter（Director）</div>
+          <div class="sig-line-co">Midhun&nbsp;Peter</div>
+          <div class="note">会社側はあらかじめ署名済み（全プランナー共通）。</div>
+        </div>
+
+        <!-- existing planner signature -->
+        <div class="sig-pane">
+          <h4>受託者（乙）</h4>
+          <div class="sig-name">プランナー氏名：sad</div>
+          <div class="sig-sub">下の枠内にご署名ください。</div>
+          <div class="sig-canvas-fake">✍️ 署名キャンバス（既存）</div>
+          <div class="note">日付：2026年6月24日</div>
+        </div>
+
+      </div>
+    </div>
+    <!-- ▲▲ END signature ▲▲ -->
+
+    <div style="text-align:center;color:var(--ink-3);font-size:11px;margin-top:20px;">Journey Junction · JOURNEY JUNCTION LTD · hello@thejourneyjunction.co.uk</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dates always match the brief — the fix (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.65 system-ui,'DM Sans','Noto Sans JP',Arial,sans-serif;color:var(--ink);padding:22px 18px}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  h2{font-size:16px;margin:24px 0 8px;display:flex;gap:9px;align-items:center}
+  h2 .n{flex-shrink:0;width:25px;height:25px;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  h2.fix .n{background:var(--green)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:700px){.cols{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:12px;background:#faf7f0;padding:12px}
+  .card h4{margin:0 0 8px;font-size:11.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+  .fld{display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-radius:8px;font-size:13px;margin-bottom:6px;background:#fff;border:1px solid var(--line)}
+  .fld:last-child{margin-bottom:0}
+  .fld .k{color:var(--ink3);font-size:11.5px}
+  .fld .v{font-weight:700;text-align:right}
+  .fld.good{border-color:var(--greenbd);background:var(--greenbg)} .fld.good .v{color:var(--green)}
+  .fld.bad{border-color:var(--redbd);background:var(--redbg)} .fld.bad .v{color:var(--red)}
+  .fld.ro{opacity:.85} .fld .ro-tag{font-size:9px;background:#eee;color:#777;border-radius:5px;padding:1px 6px;margin-left:6px}
+  .flow{font-size:12.5px;line-height:1.7;margin-top:8px}
+  .flow .step{padding:6px 0;border-bottom:1px dashed var(--line)}
+  .flow .step:last-child{border-bottom:none}
+  .flow .old{color:var(--red);font-weight:700}
+  .flow .new{color:var(--green);font-weight:700}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  button{font:inherit;font-size:13px;font-weight:700;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  button:hover{background:#faf8f3}
+  button.bad{background:var(--red);color:#fff;border-color:var(--red)}
+  button.good{background:var(--green);color:#fff;border-color:var(--green)}
+  button.ghost{border-style:dashed;color:var(--ink3)}
+  .status{font-size:12.5px;font-weight:600;margin-top:8px;min-height:18px}
+  .status.bad{color:var(--red)} .status.good{color:var(--green)}
+  code{background:#f1ece0;border-radius:4px;padding:1px 5px;font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:#f7f3ea}
+  td.ok{color:var(--green);font-weight:700}
+  .callout{border-radius:11px;padding:12px 15px;font-size:13px;margin-top:10px;line-height:1.7}
+  .callout.blue{background:var(--bluebg);border:1px solid #bcd4e2}
+  .callout.green{background:var(--greenbg);border:1px solid var(--greenbd)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The fix: itinerary dates always match the traveler brief</h1>
+  <p class="lead">What was wrong, the one-line root, and proof it can't carry forward anymore. All live in production.</p>
+
+  <!-- 1 THE ROOT -->
+  <h2><span class="n">1</span>The root — the load trusted the stored value over the brief</h2>
+  <div class="panel">
+    <p style="margin:0 0 8px;font-size:13.5px">The dates are <b>read-only</b> (the planner can't type them). On opening a plan, the form did this:</p>
+    <div class="flow">
+      <div class="step">① Set dates from the <b>traveler brief</b> → 8/6 ✓ <span style="color:var(--green3,#2C5F2D)">(correct)</span></div>
+      <div class="step">② <span class="old">Then OVERWRITE with the stored plan value → 8/8</span> — if the row carried a previous plan's date, it won here. ✗</div>
+      <div class="step">③ End date computed from that stale 8/8 too. ✗</div>
+    </div>
+    <div class="callout blue"><b>The one line that caused it:</b> <code>if (plan.start_date) setItinDate('itin-start', plan.start_date)</code> — a read-only field should never be sourced from a stored per-plan value, only from the brief.</div>
+  </div>
+
+  <!-- 2 BEFORE / AFTER interactive -->
+  <h2><span class="n">2</span>Before vs after — try it</h2>
+  <div class="panel">
+    <p style="margin:0 0 6px;font-size:13.5px">This plan's row is corrupted: traveler = Osaka (arrival 8/6), but a stored start_date of 8/8 left over from a Hiroshima plan. Open it each way:</p>
+    <div class="btns">
+      <button class="bad" onclick="openPlan(false)">📂 Open — OLD code</button>
+      <button class="good" onclick="openPlan(true)">📂 Open — WITH the fix</button>
+      <button class="ghost" onclick="resetSim()">reset</button>
+    </div>
+    <div class="cols">
+      <div>
+        <div class="card">
+          <h4>依頼内容 (brief · from traveler row)</h4>
+          <div class="fld good"><span class="k">目的地</span><span class="v">大阪</span></div>
+          <div class="fld good"><span class="k">到着</span><span class="v">8月6日</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h4>1日目 (itinerary · what the form shows)</h4>
+          <div class="fld ro" id="f-title"><span class="k">タイトル <span class="ro-tag">planner types</span></span><span class="v" id="v-title">—</span></div>
+          <div class="fld ro" id="f-start"><span class="k">開始日 <span class="ro-tag">read-only</span></span><span class="v" id="v-start">—</span></div>
+          <div class="fld ro" id="f-end"><span class="k">終了日 <span class="ro-tag">read-only</span></span><span class="v" id="v-end">—</span></div>
+        </div>
+        <div class="status" id="st"></div>
+      </div>
+    </div>
+    <div class="callout green"><b>After the fix</b> the dates are taken straight from the brief every time — the stored 8/8 is simply never read. So the itinerary date always equals the brief date (8/6), and no other plan's date can ever appear.</div>
+  </div>
+
+  <!-- 3 WHAT CHANGED -->
+  <h2 class="fix"><span class="n">✓</span>What changed (2 commits, live)</h2>
+  <div class="panel">
+    <table>
+      <tr><th>Change</th><th>Effect</th></tr>
+      <tr><td>Dates <b>always</b> derived from <code>traveler.arrival_date + duration</code>; stored <code>plan.start_date</code> no longer read for display</td><td class="ok">dates always match the brief, can't carry forward</td></tr>
+      <tr><td>Chip weekday calc (<code>_currentTripStartDate</code>) prefers the traveler date too</td><td class="ok">opening-hours/closed-day checks use the right date</td></tr>
+      <tr><td>Wipe now also clears start/end (+ message) [prior commit]</td><td class="ok">Reset gives a truly fresh plan</td></tr>
+      <tr><td>Plan-level save gated during form rebuild [prior commit]</td><td class="ok">a save can't stamp the old plan's title/dates onto the new one</td></tr>
+    </table>
+    <div class="callout blue">
+      <b>Deliberately NOT changed:</b> the 30-second reassignment auto-wipe timing — firing it harder could wipe a planner's active work (data loss), which you told me to avoid. The date-derivation fix makes the dates correct regardless of that timing.<br><br>
+      <b>Audit result:</b> no data loss, no autosave regression — it's a display/derivation change; autosave self-corrects the stored value; snapshots still honored.
+    </div>
+  </div>
+
+  <div class="callout green">
+    <b>For 寺口さん:</b> DATES self-heal the moment he reopens the plan (shows 8/6, no action needed). The leftover TITLE "広島旅行" is his own typed text, so one tap of ↺ Reset clears it and he builds clean.
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+function set(el, txt, cls){ const f=$(el); f.classList.remove('good','bad'); if(cls)f.classList.add(cls); f.querySelector('.v').textContent=txt }
+function resetSim(){ set('f-title','—'); set('f-start','—'); set('f-end','—'); $('st').textContent='' }
+function openPlan(fixed){
+  // corrupted row: traveler=Osaka 8/6, but stored plan.start_date=8/8, itin_title=広島旅行
+  // title is planner content either way (still shows until Reset)
+  set('f-title','2泊3日広島旅行','bad')
+  if(fixed){
+    set('f-start','8月6日','good'); set('f-end','8月8日','good')
+    $('st').className='status good'
+    $('st').textContent='✓ Dates taken from the brief (8/6). Matches 依頼内容. Stored 8/8 ignored. (Title still needs Reset — it\'s typed content.)'
+  } else {
+    set('f-start','8月8日','bad'); set('f-end','8月10日','bad')
+    $('st').className='status bad'
+    $('st').textContent='✕ Stored 8/8 overrode the brief\'s 8/6 → itinerary dates disagree with the brief. The reported bug.'
+  }
+}
+resetSim()
+</script>
+</body>
+</html>

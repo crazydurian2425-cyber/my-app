@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Premium-bond explainer — demo (Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; --amber:#c17d2a; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI','Noto Sans JP',sans-serif;line-height:1.65;padding:0 0 60px}
+  .wrap{max-width:820px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,#b07d2a,#946823);color:#fff;padding:24px 0;margin-bottom:22px}
+  header.top h1{margin:0 0 4px;font-size:21px}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  h2{font-size:13.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gold);margin:30px 0 10px}
+  .toggle{display:inline-flex;border:1px solid var(--bd);border-radius:99px;overflow:hidden;margin:6px 0 14px}
+  .toggle button{border:0;background:#fff;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
+  .toggle button.on{background:var(--green);color:#fff}
+  /* bond banner mock (matches the real orange banner) */
+  .banner{display:flex;gap:13px;background:linear-gradient(135deg,rgba(193,125,42,.10),rgba(193,125,42,.04));border:1px solid rgba(193,125,42,.30);border-radius:14px;padding:15px 17px;margin-bottom:8px}
+  .banner .ico{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:#b07d2a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px}
+  .banner .ttl{font-weight:700;color:#7a521a;margin-bottom:5px;font-size:14.5px}
+  .banner .txt{font-size:13px;color:#6b4e22}
+  .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);margin:14px 0 5px}
+  .stale{opacity:.6}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-top:6px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);font-size:12.5px;vertical-align:top}
+  th{background:#f6efe0;color:var(--gold);font-size:11px;text-transform:uppercase}
+  tr:last-child td{border-bottom:0}
+  .qbox{background:#fff7e8;border:1px solid #e7cf9a;border-radius:12px;padding:14px 16px;margin-top:10px}
+  .qbox b{color:#8a5a14}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:10px 13px;margin:10px 0}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">DEMO ONLY · nothing changed</span>
+  <h1>Premium-bond explainer — reword</h1>
+  <p>Your new Japanese, plus an English rewritten to match the same meaning. Toggle to compare.</p>
+</div></header>
+
+<div class="wrap">
+  <div class="toggle">
+    <button id="b-ja" class="on" onclick="setLang('ja')">日本語</button>
+    <button id="b-en" onclick="setLang('en')">English</button>
+  </div>
+
+  <div class="lbl">▼ NEW (proposed) — the planner-facing banner</div>
+  <div class="banner">
+    <div class="ico">🚩</div>
+    <div><div class="ttl" id="n-ttl"></div><div class="txt" id="n-txt"></div></div>
+  </div>
+
+  <div class="lbl">▲ CURRENT (for comparison)</div>
+  <div class="banner stale">
+    <div class="ico">🚩</div>
+    <div><div class="ttl" id="c-ttl"></div><div class="txt" id="c-txt"></div></div>
+  </div>
+
+  <h2>English ↔ Japanese — same meaning?</h2>
+  <p class="note">The new English is written to mirror your new Japanese sentence-by-sentence — note the shift from “trip/旅行” to <b>assignment / 案件</b>, and the softer “may become non-refundable / 返金対象外となる場合があります” instead of “forfeited / 没収”.</p>
+  <table>
+    <tr><th>新 日本語</th><th>New English (matched)</th></tr>
+    <tr><td>プレミアム案件（返金可能な保証金あり）</td><td>Premium assignment — refundable bond required</td></tr>
+    <tr><td>この案件は、旅行者の航空券や日程がすでに確定しており、宿泊・体験・移動などを含む重要度の高いプレミアム案件です。</td><td>This is a high-priority premium assignment — the traveler's flights and dates are already locked in, covering the accommodation, experiences, and transport you'll arrange.</td></tr>
+    <tr><td>責任ある対応を確認するため、開始前に返金可能な保証金のお手続きが必要です。</td><td>To confirm a committed, responsible approach, a refundable bond is required before you begin.</td></tr>
+    <tr><td>期限内に案件を完了し、内容確認・承認が完了した場合、保証金は全額返金され、あわせて報酬も支払われます。</td><td>Complete the assignment by the deadline and pass review and approval, and the bond is refunded in full — and your reward is paid alongside it.</td></tr>
+    <tr><td>期限超過、未対応、未納品、または不完全な納品が確認された場合は、案件保護のため、保証金が返金対象外となる場合があります。</td><td>If the deadline is exceeded, or the work is left unhandled, undelivered, or incomplete, the bond may become non-refundable to protect the assignment.</td></tr>
+  </table>
+
+  <h2>Everywhere bond text appears — what I'd change vs ask you</h2>
+  <table>
+    <tr><th>Where</th><th>What</th><th>Plan</th></tr>
+    <tr><td><b>Planner banner</b><br>dashboard <code>deposit.title/text</code> (+ inline twin)</td><td>The banner you screenshotted</td><td><b>✅ change to the new text</b> (EN + JA)</td></tr>
+    <tr><td><b>Bond-pay modal</b><br>dashboard <code>bond.title/body1/body2</code></td><td>A separate, longer explainer shown when the planner actually pays the bond (「返金可能な保証金について…」)</td><td>⚠️ similar but separate — align to the new wording too? <b>your call</b></td></tr>
+    <tr><td><b>Admin · set creation</b><br>superadmin <code>~2251</code></td><td>"Requires planner commitment bond / Premium trip with high-spend bookings"</td><td>admin-facing label — leave? (your call)</td></tr>
+    <tr><td><b>Admin · CS note</b><br>superadmin <code>~1311</code></td><td>"Miss deadline → bond forfeited…"</td><td>admin-facing — leave? (your call)</td></tr>
+    <tr><td><b>Support FAQ</b><br>support <code>sup.faq.a2</code></td><td>FAQ answer about premium bookings + bond</td><td>different (FAQ) — align/leave? (your call)</td></tr>
+  </table>
+
+  <div class="qbox">
+    <p><b>Confirm before I build it:</b></p>
+    <p>1) Apply the new wording to the <b>planner banner</b> (EN + JA + the inline twin)? <i>(this is your main ask)</i></p>
+    <p>2) Also align the <b>bond-pay modal</b> (<code>bond.*</code>) to match? (yes / leave)</p>
+    <p>3) Touch the <b>admin labels + support FAQ</b> too, or leave those? (they're admin/FAQ context)</p>
+    <p>4) In the banner, keep the body as <b>one paragraph</b> (current style) or break it into the <b>4 separate lines</b> you wrote? (line breaks need a tiny CSS tweak)</p>
+  </div>
+</div>
+
+<script>
+const D = {
+  ja: {
+    ntt: 'プレミアム案件（返金可能な保証金あり）',
+    ntx: 'この案件は、旅行者の航空券や日程がすでに確定しており、宿泊・体験・移動などを含む重要度の高いプレミアム案件です。責任ある対応を確認するため、開始前に返金可能な保証金のお手続きが必要です。期限内に案件を完了し、内容確認・承認が完了した場合、保証金は全額返金され、あわせて報酬も支払われます。期限超過、未対応、未納品、または不完全な納品が確認された場合は、案件保護のため、保証金が返金対象外となる場合があります。',
+    ctt: 'プレミアム旅行 — 返金可能な保証金が必要です。',
+    ctx: 'この旅行者はすでに旅にかなりの費用を投じています。フライトと日程は確定済みで、あなたが手配するホテルや体験のためにプレミアムな予算が用意されています。このプランを引き受けるには、返金可能な保証金があなたの支払いから保留されます。期日どおりに納品し、旅程が承認されれば、保証金は全額返還され、さらに高い報酬が上乗せされます。納期遅延または未納品の場合、旅行者がすでに負担した費用を保護するため、保証金は没収されます。'
+  },
+  en: {
+    ntt: 'Premium assignment — refundable bond required.',
+    ntx: "This is a high-priority premium assignment — the traveler's flights and dates are already locked in, covering the accommodation, experiences, and transport you'll arrange. To confirm a committed, responsible approach, a refundable bond is required before you begin. Complete the assignment by the deadline and pass review and approval, and the bond is refunded in full — and your reward is paid alongside it. If the deadline is exceeded, or the work is left unhandled, undelivered, or incomplete, the bond may become non-refundable to protect the assignment.",
+    ctt: 'Premium trip. Refundable bond required.',
+    ctx: "This traveler has made a significant up-front commitment. Their flights and travel dates are fixed, and they've allocated a premium budget for the hotels and experiences you'll arrange on their behalf. To accept this plan, a refundable bond is held from your payout. If you deliver on time and the itinerary is approved, the bond is returned in full along with your higher commission. If you miss the deadline or fail to deliver, the bond is forfeited to protect the traveler from losing their fixed travel costs."
+  }
+};
+function setLang(x){
+  document.getElementById('b-ja').classList.toggle('on', x==='ja');
+  document.getElementById('b-en').classList.toggle('on', x==='en');
+  const s = D[x];
+  document.getElementById('n-ttl').textContent = s.ntt;
+  document.getElementById('n-txt').textContent = s.ntx;
+  document.getElementById('c-ttl').textContent = s.ctt;
+  document.getElementById('c-txt').textContent = s.ctx;
+}
+setLang('ja');
+</script>
+</body>
+</html>

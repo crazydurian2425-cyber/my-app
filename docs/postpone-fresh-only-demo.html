@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postpone fresh trips only — opened/submitted/approved stay frozen (demo)</title>
+<style>
+  :root{ --ink:#1f2a37; --ink2:#5a6b62; --ink3:#8a97a6; --line:#e6e0d4; --paper:#fffdf8;
+         --move:#137a4f; --movebg:#e9f7ef; --movebd:#9ccdaf;
+         --keep:#2b5f7a; --keepbg:#e8f1f6; --keepbd:#a9cbdd;
+         --warn:#b87333; --warnbg:#fdf3e3; --warnbd:#e3c98f; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#efeae0;font:14px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px;margin-top:6px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid #f0ebe0;vertical-align:top}
+  th{background:#f6f1e7;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink3)}
+  tr:last-child td{border-bottom:none}
+  .keeprow{background:var(--keepbg)} .moverow{background:var(--movebg)}
+  .move{color:var(--move);font-weight:700} .keep{color:var(--keep);font-weight:700}
+  .arrow{color:var(--ink3)}
+  .pill{font-size:10px;font-weight:700;border-radius:20px;padding:1px 8px;white-space:nowrap}
+  .pill.keep{background:#dbe9f1;color:var(--keep)} .pill.move{background:#d6efe0;color:var(--move)}
+  .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:20px 0 6px;color:var(--ink)}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:12px;line-height:1.65}
+  .note b{color:var(--ink)}
+  .ok{background:#eef8f1;border:1px solid var(--movebd);color:#185c3c}
+  .warn{background:var(--warnbg);border:1px solid var(--warnbd);color:#7a4a14}
+  code{background:#f0ebe0;border-radius:4px;padding:1px 5px;font-size:11.5px}
+  .verdict{display:inline-block;font-weight:800;font-size:12px;letter-spacing:.04em;color:#fff;background:var(--move);border-radius:6px;padding:3px 10px;text-transform:uppercase}
+  ul{margin:6px 0 0;padding-left:20px} li{margin:3px 0}
+  .check{font-size:13px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 4px;margin-top:6px}
+  .check div{padding:7px 12px;border-bottom:1px solid #f3eee3} .check div:last-child{border-bottom:none}
+  .yes{color:var(--move);font-weight:700} .tag{font-size:10px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Postpone +4.5 months — fresh trips only · opened / submitted / approved stay frozen</h1>
+  <p class="lead">
+    <span class="verdict">Risk: low</span>&nbsp; Demo only — <b>nothing was changed</b>. Shift = fixed <b>+137 days</b> (≈4.5 mo), reversible with <b>−137</b>.
+  </p>
+
+  <!-- Your 4 requirements, answered -->
+  <div class="lbl">Your four requirements — verified against the code</div>
+  <div class="check">
+    <div><span class="yes">✓ 1.</span> <b>Submitted &amp; approved</b> itineraries keep their date. <span class="tag">— their <code>arrival_date_snapshot</code>/<code>start_date</code> on the plan are left untouched; we don't write their rows at all.</span></div>
+    <div><span class="yes">✓ 2.</span> <b>Planner-opened</b> plans keep their date. <span class="tag">— "opened" = has <code>itinerary_items</code>, or a non-empty <code>itin_title</code>, or is submitted/approved/revision. Those trips are frozen whole.</span></div>
+    <div><span class="yes">✓ 3.</span> <b>No logic / function / transport / autosave / dashboard change.</b> <span class="tag">— we modify <i>data dates only</i>. No code changes. Frozen plans get zero writes; transport reads <code>plan.start_date</code>/snapshot, not the raw date.</span></div>
+    <div><span class="yes">✓ 4.</span> <b>Reversible.</b> <span class="tag">— a fixed +137-day shift is undone by −137 on the same rows (capture the shifted IDs at apply time). Caveats below.</span></div>
+  </div>
+
+  <!-- Per-trip behaviour -->
+  <div class="lbl">What happens to each trip</div>
+  <table>
+    <thead>
+      <tr><th>Trip (person)</th><th>Units &amp; plan state</th><th>Decision</th><th>arrival_date</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      <tr class="keeprow">
+        <td><b>佐藤 — Tokyo→Osaka</b><br><span class="tag">2 units, 1 person</span></td>
+        <td>Unit 1: <b>submitted</b><br>Unit 2: fresh</td>
+        <td>ANY unit worked → <b>freeze whole trip</b></td>
+        <td>2026‑07‑15 / 07‑18 <span class="arrow">→ unchanged</span></td>
+        <td><span class="pill keep">KEEP — frozen</span></td>
+      </tr>
+      <tr class="keeprow">
+        <td><b>田中 — Kyoto</b><br><span class="tag">1 unit</span></td>
+        <td><b>approved</b></td>
+        <td>approved → freeze</td>
+        <td>2026‑07‑20 <span class="arrow">→ unchanged</span></td>
+        <td><span class="pill keep">KEEP — frozen</span></td>
+      </tr>
+      <tr class="keeprow">
+        <td><b>鈴木 — Nara</b><br><span class="tag">1 unit</span></td>
+        <td>opened: 3 <code>itinerary_items</code> built</td>
+        <td>has items → freeze</td>
+        <td>2026‑07‑22 <span class="arrow">→ unchanged</span></td>
+        <td><span class="pill keep">KEEP — frozen</span></td>
+      </tr>
+      <tr class="moverow">
+        <td><b>渡辺 — Sapporo→Otaru</b><br><span class="tag">2 units, 1 person</span></td>
+        <td>Unit 1: fresh<br>Unit 2: fresh</td>
+        <td>ALL units fresh → shift trip</td>
+        <td><span class="arrow">2026‑07‑25 / 07‑27</span> → <span class="move">2026‑12‑09 / 12‑11</span></td>
+        <td><span class="pill move">SHIFT +137d</span></td>
+      </tr>
+      <tr class="moverow">
+        <td><b>山本 — Fukuoka</b><br><span class="tag">unassigned</span></td>
+        <td>no plan row</td>
+        <td>nothing built → shift</td>
+        <td><span class="arrow">2026‑08‑01</span> → <span class="move">2026‑12‑16</span></td>
+        <td><span class="pill move">SHIFT +137d</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="lbl">The "fresh trip" rule (per person, not per unit)</div>
+  <div class="note">
+    A trip shifts only when <b>every</b> unit of that <code>person_id</code> is fresh. A unit is <b>worked</b> (and freezes the whole trip) when its plan has
+    <code>submitted_at</code>, or <code>status in (submitted, approved, revision, completed)</code>, or <code>coalesce(itin_title,'') &lt;&gt; ''</code>, or <b>any <code>itinerary_items</code> row</b>.
+    Per-unit shifting is forbidden: a person's units share one <code>meta.trip_start_date</code> and are date-chained (leg 2 arrives the day leg 1 departs), so a whole-trip shift keeps the chain intact while a partial shift would break it.
+  </div>
+
+  <div class="lbl">Why frozen plans truly don't change (point 1, 2, 3)</div>
+  <div class="note ok">
+    <ul>
+      <li><b>Display</b> — every planner view overlays <code>plans.arrival_date_snapshot</code> on top of the live traveler date before showing it. We leave that snapshot alone → the shown date can't move.</li>
+      <li><b>We write nothing</b> on a frozen trip — not the traveler row, not <code>meta</code>, not the plan. Zero writes = zero behaviour change.</li>
+      <li><b>Transport</b> reads <code>plan.start_date</code> / the snapshot (<code>window._currentTripStartDate</code>), not the raw traveler date — untouched, so no re-fetch is triggered for frozen plans.</li>
+      <li><b>Itinerary slots</b> are stored by <code>day_number</code>; dates render live. <b>Times</b>, durations, autosave, and all dashboard functions are <b>code</b> — this change touches none of them, only date <i>values</i> on the fresh rows.</li>
+      <li><b>Planner set deadline</b> (<code>set_assignments.deadline</code> / <code>sets.deadline</code>) is a different field — never touched.</li>
+    </ul>
+  </div>
+
+  <div class="lbl">Revert (point 4)</div>
+  <div class="note">
+    The shift is a <b>fixed +137 days</b> on a known set of rows, so the inverse is <b>−137 days</b> on those same rows — clean and exact.
+    Two honest caveats: <b>(a)</b> it is <b>not idempotent</b>, so the apply step records the shifted <code>traveler_id</code>/<code>plan_id</code> list and the revert targets exactly those;
+    <b>(b)</b> if a planner <i>opens and builds on</i> a shifted-fresh plan before you revert, −137 would pull that plan's date back under them — so revert promptly, or exclude any plan that became "worked" after the shift.
+  </div>
+
+  <div class="lbl">The one real risk — targeting, not logic</div>
+  <div class="note warn">
+    Nothing about the engine is risky; the only care is <b>selecting the right rows</b> and moving the date in <b>all its places together</b> for a shifted trip — the traveler's <code>arrival_date</code> + the three <code>meta</code> dates (<code>trip_start_date</code>, <code>trip_end_date</code>, <code>unit_departure_date</code>) + that plan's <code>arrival_date_snapshot</code> / <code>start_date</code> / <code>end_date</code>. So: run the read-only <b>SELECT preview</b> first (it lists every trip as KEEP or SHIFT), eyeball it, back up, then apply once in a single transaction.
+  </div>
+</div>
+</body>
+</html>

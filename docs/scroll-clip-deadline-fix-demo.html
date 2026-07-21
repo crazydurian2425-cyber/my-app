@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Today's 3 fixes — before / after (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --amber:#b87333; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  h2{font-size:16px;margin:30px 0 4px;display:flex;align-items:center;gap:8px}
+  h2 .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;align-items:center;justify-content:center;font-weight:800}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 10px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:700px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .panel h3{margin:0 0 2px;font-size:13px;display:flex;align-items:center;gap:7px}
+  .tag{font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:99px}
+  .tag.bad{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .tag.good{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .cap{font-size:11px;color:var(--ink3);margin:0 0 10px}
+
+  /* fake modal scroller */
+  .scroller{height:240px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:#faf7f0;position:relative}
+  .slot{background:#fff;border:1px solid var(--line);border-radius:9px;margin:9px;padding:10px 12px;font-size:12.5px}
+  .slot b{font-size:12.5px}
+  .slot .sub{color:var(--ink3);font-size:11px;margin-top:2px}
+  .renderflash{position:sticky;top:6px;margin-left:9px;display:inline-block;font-size:10px;font-weight:700;background:var(--redbg);color:var(--red);border:1px solid var(--redbd);padding:2px 8px;border-radius:99px;opacity:0;transition:opacity .15s}
+  .renderflash.on{opacity:1}
+  .verdict{margin-top:9px;font-size:12px;font-weight:600;min-height:18px}
+  .verdict.bad{color:var(--red)} .verdict.good{color:var(--green)}
+
+  /* clip demo */
+  .daybody{position:relative}
+  .daybody.clipped{max-height:280px;overflow:hidden}
+  .clipline{position:absolute;left:0;right:0;bottom:0;border-top:2px dashed var(--red);background:linear-gradient(rgba(253,236,234,0),rgba(253,236,234,.95));height:56px;display:flex;align-items:flex-end;justify-content:center;font-size:11px;color:var(--red);font-weight:700;padding-bottom:4px}
+  .sumcard{background:#fdf7ea;border:1px solid #ecd9ae;border-radius:9px;margin:9px;padding:10px 12px;font-size:12px}
+  .addbtn{display:block;margin:9px auto 12px;padding:8px 16px;border:1px dashed var(--greenbd);color:var(--green);background:transparent;border-radius:9px;font:inherit;font-size:12px;font-weight:600}
+
+  /* deadline demo */
+  .dlrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  .dlrow input[type=range]{flex:1;min-width:240px;accent-color:var(--green)}
+  .dltime{font-weight:800;font-variant-numeric:tabular-nums;min-width:150px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:12.5px}
+  .chip b{font-variant-numeric:tabular-nums}
+  .chip .lbl{font-weight:700}
+  .chip.red .lbl{color:var(--red)}
+  .chip .ext{font-size:10.5px;font-weight:700;background:var(--redbg);color:var(--red);border:1px solid var(--redbd);border-radius:7px;padding:2px 7px}
+  .note{font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Today's 3 fixes — feel the before / after</h1>
+  <p class="lead">All three are live in production. Each section below reproduces the real mechanism — try them.</p>
+
+  <!-- ── 1. SCROLL FIGHTING ─────────────────────────────────────────── -->
+  <h2><span class="n">1</span> The scroll that fought back（スクロールが戻される）</h2>
+  <p class="lead">The editor re-renders constantly (route results arriving, times re-snapping). After every pass it "restored" the scroll position — yanking the planner back. <b>Try to scroll both boxes down.</b> A red flash = a re-render pass just happened.</p>
+  <div class="cols">
+    <div class="panel">
+      <h3><span class="tag bad">✕ BEFORE</span> restore always wins</h3>
+      <p class="cap">Scroll down… each render pass snaps you back to where you were.</p>
+      <div class="scroller" id="scrollBad"><span class="renderflash" id="flashBad">re-render → scroll restored</span></div>
+      <div class="verdict bad" id="verdictBad"></div>
+    </div>
+    <div class="panel">
+      <h3><span class="tag good">✓ AFTER</span> humans win, layout jumps still fixed</h3>
+      <p class="cap">Same re-renders — but the restore stands down while you're scrolling.</p>
+      <div class="scroller" id="scrollGood"><span class="renderflash" id="flashGood">re-render → restore stood down</span></div>
+      <div class="verdict good" id="verdictGood"></div>
+    </div>
+  </div>
+
+  <!-- ── 2. HEIGHT CLIP ────────────────────────────────────────────── -->
+  <h2><span class="n">2</span> The invisible ceiling（重い日の下が切れる）</h2>
+  <p class="lead">Day sections have an expand/collapse animation with a maximum height. A heavy day (Plan 5 · Day 3: 7 stops) grew <b>taller than the maximum</b> — everything below it was clipped out of existence. Scrolling could never reach it, on any device.</p>
+  <div class="cols">
+    <div class="panel">
+      <h3><span class="tag bad">✕ BEFORE</span> max-height:9999px + overflow:hidden</h3>
+      <p class="cap">Scroll to the bottom — the summary is cut mid-card, the add button simply doesn't exist.</p>
+      <div class="scroller"><div class="daybody clipped" id="dayBad"><div class="clipline">— clipped here: below this line nothing renders —</div></div></div>
+    </div>
+    <div class="panel">
+      <h3><span class="tag good">✓ AFTER</span> ceiling raised far beyond any real day</h3>
+      <p class="cap">Same content — bottom fully reachable: full summary + add button.</p>
+      <div class="scroller"><div class="daybody" id="dayGood"></div></div>
+    </div>
+  </div>
+
+  <!-- ── 3. DEADLINE CHIP ──────────────────────────────────────────── -->
+  <h2><span class="n">3</span> The deadline that lied（期限当日の朝9時に「1日遅延」）</h2>
+  <p class="lead">Deadline = <b>July 8</b>, valid until 23:59 (the submit lock agrees, CS says so too). Drag through time and watch both chips. The old chip parsed the date as 09:00 Japan time and rounded any lateness up to a full day.</p>
+  <div class="panel">
+    <div class="dlrow">
+      <span>🕐 <span class="dltime" id="dlTime"></span></span>
+      <input type="range" id="dlSlider" min="0" max="96" value="30" oninput="renderDl()">
+    </div>
+    <div class="dlrow">
+      <div class="chip" id="chipBad"><span style="font-size:10px;font-weight:800;color:var(--red)">BEFORE</span> 期限 <b>2026年7月8日</b> <span class="lbl" id="chipBadLbl"></span><span class="ext" id="chipBadExt" style="display:none">延長をリクエスト</span></div>
+      <div class="chip" id="chipGood"><span style="font-size:10px;font-weight:800;color:var(--green)">AFTER</span> 期限 <b>2026年7月8日</b> <span class="lbl" id="chipGoodLbl"></span><span class="ext" id="chipGoodExt" style="display:none">延長をリクエスト</span></div>
+    </div>
+    <div class="cap" id="dlCap"></div>
+  </div>
+
+  <div class="note">
+    <b>Why the planner's reports were so confusing:</b> bugs 1 and 2 were stacked — fixing the scroll-fighting (morning deploy) wasn't enough, because on her heavy Day 3 the bottom content additionally didn't exist (bug 2, afternoon deploy). Bug 3 made the same planner think she was already late while CS told her 23:59 was fine. All three: display-layer only — locks, saving, data were always correct.
+  </div>
+</div>
+
+<script>
+// ── 1. scroll fighting ──────────────────────────────────────────────────
+function fillSlots(el, n, withSummary){
+  const stops=['清水寺','伏見稲荷','錦市場','鴨川','南禅寺','哲学の道','祇園'],mode=['🚕 GOタクシー','🚇 公共交通機関','🚶 徒歩']
+  let h=''
+  for(let i=0;i<n;i++){h+=`<div class="slot"><b>${(9+i)}:${i%2?'30':'00'} · ${stops[i%stops.length]}</b><div class="sub">${mode[i%3]} · 12 min · ¥1,200</div></div>`}
+  if(withSummary){h+=`<div class="sumcard"><b>📊 3日目の概要 · 自動計算</b><br>立ち寄り先 7 · 活動時間 11時間40分 · 徒歩 0.8 km · 概算支出 ¥64,582/人</div><button class="addbtn">＋ アクティビティを追加</button>`}
+  el.insertAdjacentHTML('beforeend',h)
+}
+const sBad=document.getElementById('scrollBad'),sGood=document.getElementById('scrollGood')
+fillSlots(sBad,10);fillSlots(sGood,10)
+let userScrollAt=0,progUntil=0
+sGood.addEventListener('scroll',()=>{if(Date.now()>progUntil)userScrollAt=Date.now()},{passive:true})
+let savedBad=0,savedGood=0
+setInterval(()=>{savedBad=sBad.scrollTop;savedGood=sGood.scrollTop},1500)   // "save before re-render"
+setInterval(()=>{
+  // simulated re-render finishing → restore pass
+  flash('flashBad');flash('flashGood')
+  sBad.scrollTop=savedBad                                                    // BEFORE: always restores
+  if(Date.now()-userScrollAt>=800){progUntil=Date.now()+80;sGood.scrollTop=savedGood} // AFTER: humans win
+  verdicts()
+},1900)
+function flash(id){const f=document.getElementById(id);f.classList.add('on');setTimeout(()=>f.classList.remove('on'),450)}
+function verdicts(){
+  document.getElementById('verdictBad').textContent = sBad.scrollTop<40?'⟲ …and you\'re back at the top':''
+  document.getElementById('verdictGood').textContent = sGood.scrollTop>40?'✓ your position survived the re-render':''
+}
+// ── 2. clip ─────────────────────────────────────────────────────────────
+fillSlots(document.getElementById('dayBad'),7,true)
+fillSlots(document.getElementById('dayGood'),7,true)
+// ── 3. deadline ─────────────────────────────────────────────────────────
+function pad(n){return String(n).padStart(2,'0')}
+function renderDl(){
+  const h=+document.getElementById('dlSlider').value        // hours from Jul 6 00:00 JST
+  const base=new Date(2026,6,6,0,0,0)                        // Jul 6 00:00 local
+  const t=new Date(base.getTime()+h*3600000)
+  const days=['日','月','火','水','木','金','土']
+  document.getElementById('dlTime').textContent=`7月${t.getDate()}日(${days[t.getDay()]}) ${pad(t.getHours())}:${pad(t.getMinutes())}`
+  // BEFORE: deadline moment = Jul 8 09:00 JST (UTC-midnight parse), ceil
+  const oldDl=new Date(2026,6,8,9,0,0)
+  const oldMs=oldDl-t
+  let oldLbl,oldRed=false
+  if(oldMs<0){oldLbl=`· ${Math.ceil(-oldMs/86400000)}日遅延`;oldRed=true}
+  else if(oldMs<=86400000){oldLbl=`· 残り${Math.ceil(oldMs/3600000)}時間`;oldRed=true}
+  else oldLbl=`· 残り${Math.ceil(oldMs/86400000)}日`
+  // AFTER: cutoff = Jul 9 00:00 local
+  const cut=new Date(2026,6,9,0,0,0)
+  const ms=cut-t
+  let newLbl,newRed=false
+  if(ms<=0){newLbl=`· ${Math.floor(-ms/86400000)+1}日遅延`;newRed=true}
+  else if(ms<=86400000){newLbl=`· 残り${Math.ceil(ms/3600000)}時間`;newRed=true}
+  else newLbl=`· 残り${Math.ceil(ms/86400000)}日`
+  setChip('chipBad','chipBadLbl','chipBadExt',oldLbl,oldRed)
+  setChip('chipGood','chipGoodLbl','chipGoodExt',newLbl,newRed)
+  const capEl=document.getElementById('dlCap')
+  if(t>=new Date(2026,6,8,9,0)&&t<new Date(2026,6,9,0,0))
+    capEl.textContent='← This window is the bug: still July 8 (valid until 23:59), but the old chip already says 1日遅延. The planner panicked here.'
+  else capEl.textContent=''
+}
+function setChip(cid,lid,eid,lbl,red){
+  document.getElementById(lid).textContent=lbl
+  document.getElementById(cid).classList.toggle('red',red)
+  document.getElementById(eid).style.display=red?'inline-block':'none'
+}
+renderDl()
+</script>
+</body>
+</html>

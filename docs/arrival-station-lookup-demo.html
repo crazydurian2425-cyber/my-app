@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>到着地点の解決 — method-aware fix demo</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --line:#e6e0d4; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .banner{background:#fff;border:1px solid var(--line);border-left:4px solid #b87333;border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:18px}
+  .banner b{color:#b87333}
+  .case{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .ctx{font-size:12.5px;color:var(--ink2);margin-bottom:10px}
+  .ctx b{color:var(--ink)}
+  .ctx .tag{display:inline-block;background:#eef3ee;border:1px solid var(--greenbd);border-radius:6px;padding:1px 7px;margin-right:6px;font-size:11.5px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:600px){.two{grid-template-columns:1fr}}
+  .col{border-radius:9px;padding:10px 12px;font-size:12.5px}
+  .col.cur{background:var(--redbg);border:1px solid var(--redbd)}
+  .col.fix{background:var(--greenbg);border:1px solid var(--greenbd)}
+  .col h4{margin:0 0 6px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+  .col.cur h4{color:var(--red)} .col.fix h4{color:var(--green)}
+  .q{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:rgba(0,0,0,.05);border-radius:4px;padding:1px 5px}
+  .res{margin-top:6px;font-weight:600}
+  .ok{color:var(--green)} .bad{color:var(--red)}
+  .rule{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;font-size:12.5px;color:var(--ink2);line-height:1.6}
+  .rule b{color:var(--ink)}
+  code{background:#efe7d6;border-radius:4px;padding:1px 5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>到着地点の解決 — 交通手段で判定（現行 → 修正案）</h1>
+  <p class="lead">The lookup already knows the arrival <b>method</b> and <b>from</b> — it just doesn't use them. The fix biases the query by method.</p>
+
+  <div class="banner"><b>DEMO — nothing changed.</b> Only the <b>rail</b> case changes (adds "Station" so it resolves to the station, not the city). Flight & car are unchanged.</div>
+
+  <!-- Case 1: rail -->
+  <div class="case">
+    <div class="ctx"><b>① 鉄道で到着（姫路の例）</b> &nbsp; <span class="tag">method: Shinkansen</span><span class="tag">from: Kyoto</span><span class="tag">location: Himeji</span></div>
+    <div class="two">
+      <div class="col cur"><h4>✕ 現行</h4>query: <span class="q">"Himeji, &lt;city&gt;"</span><div class="res bad">→ 姫路市（市の中心・駅から1.7km）</div><div style="margin-top:4px">徒歩23分（誤り）</div></div>
+      <div class="col fix"><h4>✓ 修正案</h4>method=rail → append Station<br>query: <span class="q">"Himeji Station"</span><div class="res ok">→ 姫路駅（ホテル隣接）</div><div style="margin-top:4px">徒歩2〜3分（正しい）</div></div>
+    </div>
+  </div>
+
+  <!-- Case 2: flight -->
+  <div class="case">
+    <div class="ctx"><b>② 飛行機で到着</b> &nbsp; <span class="tag">method: Flight</span><span class="tag">from: Guadalajara</span><span class="tag">location: KIX</span></div>
+    <div class="two">
+      <div class="col fix"><h4>✓ 現行</h4>IATA → Airport<br>query: <span class="q">"KIX Airport"</span><div class="res ok">→ 関西国際空港</div></div>
+      <div class="col fix"><h4>✓ 修正案（変更なし）</h4>method=flight → Airport<br>query: <span class="q">"KIX Airport"</span><div class="res ok">→ 関西国際空港</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-top:8px">Flight already resolves correctly — the fix does NOT touch it (and never appends "Station").</div>
+  </div>
+
+  <!-- Case 3: car -->
+  <div class="case">
+    <div class="ctx"><b>③ 車・タクシーで到着</b> &nbsp; <span class="tag">method: Car</span><span class="tag">from: 近隣の街</span><span class="tag">location: Himeji</span></div>
+    <div class="two">
+      <div class="col cur"><h4>≈ 現行</h4>query: <span class="q">"Himeji, &lt;city&gt;"</span><div class="res">→ 姫路市</div></div>
+      <div class="col fix"><h4>✓ 修正案</h4>method≠rail → <b>do NOT</b> force a station<br>query: <span class="q">"Himeji, &lt;city&gt;"</span><div class="res">→ 姫路市（駅を誤って指定しない）</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);margin-top:8px">Car has no "station" — forcing 姫路駅 would be wrong. The fix only adds "Station" when the method is rail.</div>
+  </div>
+
+  <div class="rule">
+    <b>The rule (method‑aware):</b><br>
+    • <b>Flight</b> / IATA code → <code>"… Airport"</code> &nbsp;(unchanged)<br>
+    • <b>Rail</b> (train / shinkansen / 新幹線 / JR / metro) → append <code>"Station"</code> so it resolves to the station, not the city — unless the name already says Station/駅<br>
+    • <b>Car / bus / other</b> → leave as‑is (never force a station)<br>
+    The arrival <b>from</b> (previous unit) stays as supporting context — an inter‑city rail leg from Kyoto confirms it's the station, not the city centroid.
+  </div>
+</div>
+</body>
+</html>

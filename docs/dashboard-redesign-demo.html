@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planner Dashboard — redesign demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f1eee7; --panel:#fbf9f4; --card:#ffffff;
+    --ink-1:#1c1b18; --ink-2:#57534b; --ink-3:#928d82;
+    --green:#1a7a5e; --green-d:#0f5240; --gold:#b08a3e; --gold-d:#8a6a1e;
+    --rule:rgba(0,0,0,0.07);
+    --serif:'DM Serif Display',Georgia,serif;
+    --sans:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font-family:var(--sans);color:var(--ink-1);}
+  .demo-tag{position:fixed;top:12px;right:14px;z-index:20;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#6f6a5e;background:#fff;border:1px solid var(--rule);border-radius:99px;padding:6px 13px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
+  .app{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+
+  /* ── Sidebar ── */
+  .side{background:var(--panel);border-right:1px solid var(--rule);padding:20px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;}
+  .brand{display:flex;align-items:center;gap:9px;padding:4px 6px 14px;}
+  .brand .logo{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#3f7d68,#0f5240);display:grid;place-items:center;color:#fff;font-family:var(--serif);}
+  .brand .name{font-family:var(--serif);font-size:18px;letter-spacing:-.3px;}
+  .brand .name em{color:var(--green);font-style:italic;}
+  .nav-label{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:14px 10px 4px;}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;color:var(--ink-2);font-size:13.5px;font-weight:500;cursor:pointer;}
+  .nav-item svg{width:17px;height:17px;color:var(--ink-3);}
+  .nav-item:hover{background:rgba(0,0,0,0.03);}
+  .nav-item.active{background:rgba(26,122,94,0.10);color:var(--green-d);font-weight:600;}
+  .nav-item.active svg{color:var(--green);}
+  .side-foot{margin-top:auto;border-top:1px solid var(--rule);padding-top:12px;display:flex;align-items:center;gap:10px;}
+  .side-foot .av{width:32px;height:32px;border-radius:50%;background:#cdd6cf;display:grid;place-items:center;color:var(--green-d);font-weight:600;font-size:13px;}
+  .side-foot .nm{font-size:13px;font-weight:600;}
+  .side-foot .sub{font-size:11px;color:var(--ink-3);}
+
+  /* ── Main ── */
+  .main{padding:0 0 40px;}
+  .hero{background:linear-gradient(110deg,#15392e 0%,#1f5743 55%,#2c6b52 100%);color:#fff;padding:30px 36px 26px;position:relative;overflow:hidden;}
+  .hero::after{content:"";position:absolute;right:-40px;top:-30px;width:280px;height:280px;background:radial-gradient(circle at center,rgba(201,169,97,0.22),transparent 65%);}
+  .hero h1{font-family:var(--serif);font-weight:400;font-size:30px;margin:0;letter-spacing:-.4px;position:relative;z-index:1;}
+  .hero h1 em{color:#e7c98a;font-style:italic;}
+  .hero .stat-line{margin-top:6px;font-size:13.5px;color:rgba(255,255,255,.82);position:relative;z-index:1;}
+  .hero .stat-line b{color:#e7c98a;font-weight:600;}
+
+  .wrap{padding:22px 36px 0;}
+
+  /* KPI row */
+  .kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:14px;margin-bottom:22px;}
+  .kpi{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:15px 17px;}
+  .kpi.primary{background:linear-gradient(135deg,#1a7a5e,#0f5240);border:none;color:#fff;}
+  .kpi .k{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-3);}
+  .kpi.primary .k{color:rgba(255,255,255,.82);}
+  .kpi .k svg{width:14px;height:14px;}
+  .kpi .v{font-family:var(--serif);font-size:27px;line-height:1;margin-top:9px;}
+  .kpi .sub{font-size:11.5px;color:var(--ink-3);margin-top:6px;}
+  .kpi.primary .sub{color:rgba(255,255,255,.78);}
+
+  .cols{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;}
+
+  /* Active set card */
+  .panel-card{background:var(--panel);border:1px solid var(--rule);border-radius:16px;padding:22px 24px;}
+  .pc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:4px;}
+  .pc-title{font-family:var(--serif);font-size:22px;}
+  .pc-sub{font-size:12.5px;color:var(--ink-3);margin-top:2px;}
+  .deadline{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-2);background:#fff;border:1px solid var(--rule);border-radius:99px;padding:6px 12px;}
+  .deadline b{color:#b5462f;}
+  .deadline svg{width:14px;height:14px;color:var(--gold-d);}
+
+  .progress{display:flex;align-items:center;gap:10px;margin:14px 0 18px;}
+  .bar{flex:1;height:7px;border-radius:99px;background:rgba(0,0,0,0.07);overflow:hidden;}
+  .bar > i{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,#3f9d7d,#0f5240);}
+  .pct{font-size:12px;font-weight:600;color:var(--green-d);background:rgba(26,122,94,0.10);border-radius:99px;padding:3px 9px;}
+
+  /* Plan stepper */
+  .steps{display:flex;gap:10px;}
+  .step{flex:1;border:1px solid var(--rule);border-radius:12px;padding:12px 13px;background:#fff;position:relative;}
+  .step.done{background:rgba(26,122,94,0.05);}
+  .step.current{border-color:var(--gold);box-shadow:0 0 0 2px rgba(176,138,62,0.18);background:#fffdf6;}
+  .step.todo{background:rgba(0,0,0,0.015);border-style:dashed;opacity:.75;}
+  .step .n{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--ink-3);}
+  .step .dot{width:9px;height:9px;border-radius:50%;background:#cfcabd;}
+  .step.done .dot{background:var(--green);}
+  .step.current .dot{background:var(--gold);box-shadow:0 0 0 3px rgba(176,138,62,0.20);}
+  .step .ttl{font-size:13.5px;font-weight:600;margin-top:7px;}
+  .step .meta{font-size:11px;color:var(--ink-3);margin-top:2px;}
+  .step .tag{margin-top:9px;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;}
+  .step.done .tag{color:var(--green);}
+  .step.current .tag{color:var(--gold-d);}
+  .step.todo .tag{color:var(--ink-3);}
+
+  .pc-actions{display:flex;gap:10px;margin-top:18px;}
+  .btn{font-family:var(--sans);font-size:13.5px;font-weight:600;padding:12px 22px;border-radius:10px;cursor:pointer;border:1px solid var(--rule);}
+  .btn.primary{flex:1;background:var(--green-d);color:#fff;border-color:var(--green-d);display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+  .btn.ghost{background:#fff;color:var(--ink-2);}
+
+  /* Wallet */
+  .wallet .w-amt-card{background:linear-gradient(135deg,#1a7a5e,#0f5240);color:#fff;border-radius:14px;padding:18px 20px;box-shadow:0 10px 26px rgba(15,82,64,.22);}
+  .wallet .w-amt-card .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.82;display:flex;align-items:center;gap:7px;}
+  .wallet .w-amt-card .lbl svg{width:14px;height:14px;}
+  .wallet .w-amt-card .amt{font-family:var(--serif);font-size:34px;line-height:1;margin-top:9px;}
+  .wallet h3{font-family:var(--serif);font-size:19px;margin:0 0 2px;}
+  .wallet .w-sub{font-size:12px;color:var(--ink-3);margin-bottom:14px;}
+  .w-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--rule);font-size:13px;}
+  .w-row:last-of-type{border-bottom:none;}
+  .w-row .rk{color:var(--ink-2);}
+  .w-row .rv{font-weight:600;}
+  .w-note{display:flex;gap:9px;align-items:flex-start;background:rgba(176,138,62,0.08);border:1px solid rgba(176,138,62,0.2);border-radius:10px;padding:10px 12px;font-size:11.5px;color:var(--gold-d);line-height:1.5;margin-top:12px;}
+  .w-note svg{width:15px;height:15px;flex:none;margin-top:1px;}
+  .btn.wallet-cta{width:100%;margin-top:14px;background:var(--green-d);color:#fff;border-color:var(--green-d);display:flex;align-items:center;justify-content:center;gap:8px;}
+  svg{display:block}
+</style>
+</head>
+<body>
+  <div class="demo-tag">Dashboard redesign · demo (not live)</div>
+  <div class="app">
+
+    <!-- Sidebar -->
+    <aside class="side">
+      <div class="brand"><span class="logo">J</span><span class="name">Journey<em>Junction</em></span></div>
+      <div class="nav-label">Main</div>
+      <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>My sets</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/></svg>Wallet</div>
+      <div class="nav-label">Account</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>Profile</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.4 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4L5.1 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"/></svg>Settings</div>
+      <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Contact support</div>
+      <div class="side-foot"><span class="av">T</span><div><div class="nm">test</div><div class="sub">La Réunion</div></div></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="hero">
+        <h1>Good evening, <em>test</em></h1>
+        <div class="stat-line">Set <b>#001</b> is in progress — <b>3 plans</b> remaining. Next up: finish <b>Plan 3</b>.</div>
+      </div>
+
+      <div class="wrap">
+        <!-- KPIs -->
+        <div class="kpis">
+          <div class="kpi primary">
+            <div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="8" r="6"/><path d="M18.1 10.4A6 6 0 1 1 10.3 18.1"/></svg>Current earning</div>
+            <div class="v">€60</div><div class="sub">Unpaid · this set</div>
+          </div>
+          <div class="kpi">
+            <div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/></svg>Available</div>
+            <div class="v" style="color:var(--green-d)">€23,080</div><div class="sub">To withdraw</div>
+          </div>
+          <div class="kpi">
+            <div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 22h18"/><path d="M6 18V11M10 18V11M14 18V11M18 18V11"/><path d="m12 3 7 5H5z"/></svg>Plans left</div>
+            <div class="v">3</div><div class="sub">In this set</div>
+          </div>
+          <div class="kpi">
+            <div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 6 9 17l-5-5"/></svg>Sets done</div>
+            <div class="v">0</div><div class="sub">All time</div>
+          </div>
+        </div>
+
+        <div class="cols">
+          <!-- Active set -->
+          <div class="panel-card">
+            <div class="pc-head">
+              <div><div class="pc-title">Active set</div><div class="pc-sub">2 of 5 plans complete</div></div>
+              <div class="deadline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Deadline 13 Jun · <b>12 hr left</b></div>
+            </div>
+            <div class="progress"><div class="bar"><i></i></div><span class="pct">40%</span></div>
+
+            <div class="steps">
+              <div class="step done"><span class="n"><span class="dot"></span>Plan 1</span><div class="ttl">Couple · 2D1N</div><div class="meta">Saint-Malo</div><div class="tag">Done</div></div>
+              <div class="step done"><span class="n"><span class="dot"></span>Plan 2</span><div class="ttl">Couple · 2D1N</div><div class="meta">Strasbourg</div><div class="tag">Done</div></div>
+              <div class="step current"><span class="n"><span class="dot"></span>Plan 3</span><div class="ttl">Family · 3D2N</div><div class="meta">Lyon</div><div class="tag">In progress</div></div>
+              <div class="step todo"><span class="n"><span class="dot"></span>Plan 4</span><div class="ttl">To be assigned</div><div class="meta">&nbsp;</div><div class="tag">Pending</div></div>
+              <div class="step todo"><span class="n"><span class="dot"></span>Plan 5</span><div class="ttl">To be assigned</div><div class="meta">&nbsp;</div><div class="tag">Pending</div></div>
+            </div>
+
+            <div class="pc-actions">
+              <button class="btn primary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Continue Plan 3</button>
+              <button class="btn ghost">View all briefs</button>
+            </div>
+          </div>
+
+          <!-- Wallet -->
+          <div class="panel-card wallet">
+            <h3>Your wallet</h3>
+            <div class="w-sub">Commission earnings at a glance</div>
+            <div class="w-amt-card">
+              <div class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/></svg>Available to withdraw</div>
+              <div class="amt">€23,080</div>
+            </div>
+            <div class="w-row"><span class="rk">Awaiting approval</span><span class="rv">€0</span></div>
+            <div class="w-row"><span class="rk">Paid out · lifetime</span><span class="rv">€0</span></div>
+            <div class="w-row"><span class="rk">Last payout</span><span class="rv" style="color:var(--ink-3)">—</span></div>
+            <div class="w-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Payouts unlock once every plan in your active set is approved.</div>
+            <div class="w-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><b>€1,000 weekly bonus</b> — paid each rolling 7-day cycle when you finish ≥2 sets.</span></div>
+            <button class="btn wallet-cta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/></svg>Open wallet</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

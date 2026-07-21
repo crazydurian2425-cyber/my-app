@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotel-ending day — relax "too early" but keep an evening floor</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --amber:#b87333; --amberbg:#fbeede; --line:#e6e0d4; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:720px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .ctrl{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:16px}
+  .ctrl .lbl{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:8px}
+  .times{display:flex;gap:8px;flex-wrap:wrap}
+  .times button{padding:9px 14px;border:1px solid var(--line);border-radius:9px;background:#faf8f3;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+  .times button.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:600px){.two{grid-template-columns:1fr}}
+  .col{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .col h2{margin:0;padding:11px 14px;font-size:13px;background:#faf8f3;border-bottom:1px solid var(--line)}
+  .col .sub{font-size:11.5px;color:var(--ink3);font-weight:400;margin-top:2px}
+  .body{padding:14px}
+  .endtime{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-bottom:4px}
+  .ruletext{font-size:12px;color:var(--ink2);margin-bottom:12px}
+  .verdict{font-size:13px;font-weight:700;padding:10px 12px;border-radius:9px}
+  .verdict.pass{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .verdict.block{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.65}
+  .note b{color:var(--ink)}
+  .floor{display:inline-block;background:var(--amberbg);color:var(--amber);border:1px solid #e3c98f;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>"Too early" — relaxed for hotel‑ending days, with an evening floor</h1>
+  <p class="lead">Pick when the day ends. See how each day type judges it. The <span class="floor">evening floor = 6:00 pm</span> closes the loophole.</p>
+
+  <div class="ctrl">
+    <div class="lbl">Day ends at…</div>
+    <div class="times" id="times"></div>
+  </div>
+
+  <div class="two">
+    <div class="col">
+      <h2>🏨 Day ends AT the hotel <div class="sub">relaxed rule: just needs to reach the evening floor (6 pm)</div></h2>
+      <div class="body">
+        <div class="endtime" id="hEnd">—</div>
+        <div class="ruletext">Passes if it ends <b>6:00 pm or later</b> (early evening OK — dinner/onsen/rest).</div>
+        <div class="verdict" id="hV">—</div>
+      </div>
+    </div>
+    <div class="col">
+      <h2>⛩️ Day ends OUT in town <div class="sub">strict rule: unchanged (~9 pm ±15 min)</div></h2>
+      <div class="body">
+        <div class="endtime" id="tEnd">—</div>
+        <div class="ruletext">Passes only if it ends near <b>~9:00 pm</b> (the usual full‑day target).</div>
+        <div class="verdict" id="tV">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+const FLOOR = 18*60          // 6:00 pm — evening floor for hotel-ending days
+const STRICT = 20*60 + 45    // 8:45 pm — within 15 min of the ~9pm target
+const OPTS = [
+  { label:'2:00 pm', m: 14*60,        tag:'crammed / lazy' },
+  { label:'5:00 pm', m: 17*60,        tag:'still afternoon' },
+  { label:'6:45 pm', m: 18*60 + 45,   tag:'hotel dinner' },
+  { label:'9:00 pm', m: 21*60,        tag:'full day' },
+]
+let sel = 2
+function fmt(m){ const h=Math.floor(m/60), mm=m%60; const ap=h>=12?'pm':'am'; const h12=((h+11)%12)+1; return `${h12}:${String(mm).padStart(2,'0')} ${ap}` }
+
+function render(){
+  document.getElementById('times').innerHTML = OPTS.map((o,i)=>
+    `<button class="${i===sel?'on':''}" onclick="pick(${i})">${o.label}</button>`).join('')
+  const m = OPTS[sel].m
+  document.getElementById('hEnd').textContent = fmt(m)
+  document.getElementById('tEnd').textContent = fmt(m)
+
+  const hPass = m >= FLOOR
+  const tPass = m >= STRICT
+  const hv = document.getElementById('hV')
+  hv.className = 'verdict ' + (hPass?'pass':'block')
+  hv.textContent = hPass ? '✅ OK — ends in the evening at the hotel' : '❌ Too early — before the 6 pm floor'
+  const tv = document.getElementById('tV')
+  tv.className = 'verdict ' + (tPass?'pass':'block')
+  tv.textContent = tPass ? '✅ OK — close to the ~9 pm target' : '❌ Too early — add/extend a stop'
+
+  const n = document.getElementById('note')
+  if (sel === 2){ // 6:45 hotel dinner
+    n.innerHTML = '<b>The case the planner wants.</b> Dinner at the hotel ending 6:45 pm → the <b>hotel</b> day passes (it reached the evening floor). A normal day out would still want ~9 pm. This is the "enjoy the hotel food" ending you asked for.'
+  } else if (sel === 0){ // 2pm
+    n.innerHTML = '<b>Your loophole — closed.</b> A crammed day ending 2 pm with a token hotel stop is <b>still blocked</b> even for hotel‑ending days, because it never reached the 6 pm evening floor. So planners can\'t game it by dumping everything in the morning.'
+  } else if (sel === 1){ // 5pm
+    n.innerHTML = 'Ending 5 pm is still before the 6 pm floor → <b>blocked</b> for both. Not yet a real evening.'
+  } else {
+    n.innerHTML = 'Ending 9 pm passes both — a full evening either way.'
+  }
+}
+function pick(i){ sel=i; render() }
+render()
+</script>
+</body>
+</html>

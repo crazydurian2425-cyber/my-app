@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set deadline → overtime → forfeit → request new set</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --amber:#b87333; --amberbg:#fbeede; --line:#e6e0d4; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .go{padding:11px 16px;border-radius:10px;border:none;background:var(--ink);color:#fff;font-weight:700;cursor:pointer;font-size:14px;margin:4px 0 16px}
+  .go.reset{background:#fff;color:var(--ink2);border:1px solid var(--line);font-weight:600;margin-left:8px}
+  .tile{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;transition:border-color .4s}
+  .tile.over{border-color:var(--redbd)}
+  .tile-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fafaf7;transition:background .4s}
+  .tile.over .tile-head{background:var(--redbg)}
+  .tile-title{font-weight:700;font-size:15px}
+  .badge{margin-left:auto;font-size:11px;font-weight:700;border-radius:20px;padding:3px 11px;letter-spacing:.04em}
+  .badge.active{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .badge.over{background:var(--red);color:#fff}
+  .body{padding:14px 16px}
+  .line{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .line:last-child{border-bottom:none}
+  .line .lbl{color:var(--ink2)}
+  .line .val{font-weight:600;font-variant-numeric:tabular-nums}
+  .val.forfeit{color:var(--red);text-decoration:line-through}
+  .tag{font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;margin-left:6px}
+  .tag.lost{background:var(--redbg);color:var(--red);border:1px solid var(--redbd);text-decoration:none;display:inline-block}
+  .stuck{font-size:12px;color:var(--amber);background:var(--amberbg);border:1px solid #e3b878;border-radius:8px;padding:7px 10px;margin-top:10px}
+  .notice{margin-top:14px;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.55;display:none}
+  .notice.show{display:block}
+  .notice.req{background:var(--amberbg);border:1px solid #e3b878;color:#7a4a14}
+  .notice.req b{color:var(--amber)}
+  .payout{margin-top:16px;background:#fff;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.55}
+  .payout b{color:var(--green)}
+  .keep{font-size:12px;color:var(--ink3);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Set deadline → overtime → forfeit → request new set</h1>
+  <p class="lead">Press the button to fast‑forward to the deadline. Watch the set: it <b>stays visible</b>, flips to <b>OVERTIME</b>, and the earnings + bond are forfeited.</p>
+
+  <button class="go" id="btn" onclick="pass()">⏩ Deadline reached</button>
+  <button class="go reset" onclick="reset()">↺ reset</button>
+
+  <div class="tile" id="tile">
+    <div class="tile-head">
+      <span style="font-size:18px">📋</span>
+      <span class="tile-title">Set 3 · Premium · Tokyo</span>
+      <span class="badge active" id="badge">ACTIVE</span>
+    </div>
+    <div class="body">
+      <div class="line"><span class="lbl">Deadline</span><span class="val" id="deadline">in 2 days</span></div>
+      <div class="line"><span class="lbl">Progress</span><span class="val">3 / 5 plans</span></div>
+      <div class="line"><span class="lbl">This set's earnings</span><span class="val" id="earn">¥16,500</span></div>
+      <div class="line"><span class="lbl">Bond paid</span><span class="val" id="bond">¥12,000</span></div>
+      <div class="stuck">⚠️ Stuck on plan 4 — it's a premium plan and the planner can't pay the bond, so the set can't be completed.</div>
+      <div class="notice req" id="reqNotice">
+        <b>❗ No auto‑assign.</b> The set above stays here marked <b>OVERTIME</b> — it does not disappear. To get a fresh set, the planner must <b>come and request a new set from you</b>; nothing is assigned automatically.
+      </div>
+    </div>
+  </div>
+
+  <div class="payout">
+    💰 <b>Payout rule (always):</b> a planner can request a payout <b>once per set</b>, and <b>only after that set is completed and approved.</b> An overtime/forfeited set never becomes payable.
+    <div class="keep" id="keep">Right now Set 3 is active — payout isn't available until it's completed + approved.</div>
+  </div>
+</div>
+
+<script>
+function pass(){
+  document.getElementById('tile').classList.add('over')
+  const b = document.getElementById('badge'); b.className='badge over'; b.textContent='OVERTIME'
+  document.getElementById('deadline').innerHTML = 'passed <span class="tag lost">OVERTIME</span>'
+  const e = document.getElementById('earn'); e.classList.add('forfeit'); e.innerHTML = '¥16,500 <span class="tag lost">forfeited</span>'
+  const bo= document.getElementById('bond'); bo.classList.add('forfeit'); bo.innerHTML = '¥12,000 <span class="tag lost">forfeited</span>'
+  document.getElementById('reqNotice').classList.add('show')
+  document.getElementById('keep').textContent = 'Set 3 is now OVERTIME and forfeited — its earnings + bond are lost and it can never be paid out. A new set only comes by request.'
+}
+function reset(){
+  document.getElementById('tile').classList.remove('over')
+  const b = document.getElementById('badge'); b.className='badge active'; b.textContent='ACTIVE'
+  document.getElementById('deadline').textContent = 'in 2 days'
+  const e = document.getElementById('earn'); e.classList.remove('forfeit'); e.textContent = '¥16,500'
+  const bo= document.getElementById('bond'); bo.classList.remove('forfeit'); bo.textContent = '¥12,000'
+  document.getElementById('reqNotice').classList.remove('show')
+  document.getElementById('keep').textContent = 'Right now Set 3 is active — payout isn’t available until it’s completed + approved.'
+}
+</script>
+</body>
+</html>

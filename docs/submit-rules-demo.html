@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Submit rules v2 — demo (Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; --red:#c0392b; --amber:#c17d2a; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI','Noto Sans JP',sans-serif;line-height:1.5;padding:0 0 60px}
+  .wrap{max-width:800px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,#2c8079,#1f6f66);color:#fff;padding:24px 0;margin-bottom:22px}
+  header.top h1{margin:0 0 4px;font-size:21px}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  h2{font-size:14px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gold);margin:30px 0 12px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:top}
+  th{background:#f6efe0;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:0}
+  code{background:#f1ead9;border-radius:5px;padding:1px 5px;font-size:12.5px}
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .ba > div{border-radius:10px;padding:10px 12px;font-size:13px}
+  .before{background:#fbeeee;border:1px solid rgba(192,57,43,.25)}
+  .after{background:#eef6f0;border:1px solid rgba(44,128,121,.3)}
+  .before b{color:#a3321f}.after b{color:#1f6f66}
+  .toggle{display:inline-flex;border:1px solid var(--bd);border-radius:99px;overflow:hidden;margin-bottom:12px}
+  .toggle button{border:0;background:#fff;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
+  .toggle button.on{background:var(--green);color:#fff}
+  .warnbox{background:#fdf3ee;border:1px solid rgba(192,57,43,.28);border-left:4px solid var(--red);border-radius:12px;padding:13px 16px;margin-bottom:8px}
+  .warnbox h3{margin:0 0 4px;font-size:14px;color:#a3321f}
+  .warnbox ul{margin:0;padding-left:18px}
+  .warnbox li{font-size:13.5px;padding:3px 0}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:10px 13px;margin:10px 0}
+  .qbox{background:#fff7e8;border:1px solid #e7cf9a;border-radius:12px;padding:14px 16px;margin-top:8px}
+  .qbox b{color:#8a5a14}
+  .pill{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;margin-left:6px}
+  .pill-early{background:rgba(220,158,45,.18);color:#8a6b1a}
+  .pill-late{background:rgba(192,57,43,.14);color:#a3321f}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">DEMO ONLY · nothing in the live app changed</span>
+  <h1>Submit rules — v2 (wording + end-time gate)</h1>
+  <p>Two refinements on top of the per-day structure rule: (1) "at least N" wording, and (2) each day must end within ±15 min of its suggested end before submit.</p>
+</div></header>
+
+<div class="wrap">
+
+  <!-- 1 -->
+  <h2>1 · "At least" wording (your point)</h2>
+  <p class="note">Counts now read as a <b>minimum floor</b>, not a fixed target — so planners know 2 is the least, not the goal (full days recommend 2–3).</p>
+  <div class="ba">
+    <div class="before"><b>Before</b><br>Day 2 needs: 2 more attractions (0/2), 2 more meals (0/2)</div>
+    <div class="after"><b>After (EN)</b><br>Day 2 needs: at least 2 attractions (have 0), at least 2 meals (have 0)</div>
+  </div>
+  <div class="ba">
+    <div class="before"><b>Before</b><br>1日目（到着日）に追加が必要：見どころあと2件（0/2）…</div>
+    <div class="after"><b>After (JA)</b><br>2日目に必要：見どころ2件以上（現在0件）、食事2件以上（現在0件）</div>
+  </div>
+
+  <!-- 2 -->
+  <h2>2 · End-of-day timing gate (new)</h2>
+  <p class="note">Every plan already shows a <b>suggested end time</b> from the traveler's pace (early ≈ 9:00 pm · standard ≈ 10:30 pm · late ≈ 11:30 pm), and a <span class="pill pill-early">⚠ too early</span> / <span class="pill pill-late">⚠ too late</span> badge when the day's last stop is more than <b>15 min</b> off it. Now that same ±15 min check also <b>blocks submit</b>. Departure day uses its own cut-off: <code>departure time − airport buffer</code>.</p>
+  <table>
+    <tr><th>Day type</th><th>Suggested end</th><th>Submit allowed when…</th></tr>
+    <tr><td><b>Full day</b></td><td>from pace (≈ 9:00 / 10:30 / 11:30 pm)</td><td>last stop ends within ±15 min of it</td></tr>
+    <tr><td><b>Departure day</b></td><td>departure − airport buffer</td><td>last stop ends within ±15 min of it</td></tr>
+    <tr><td><b>Arrival day</b></td><td>from pace</td><td><i>see Q1 below — your call</i></td></tr>
+  </table>
+
+  <h2>3 · The warnings a planner sees</h2>
+  <div class="toggle">
+    <button id="b-en" class="on" onclick="setLang('en')">English</button>
+    <button id="b-ja" onclick="setLang('ja')">日本語</button>
+  </div>
+  <div class="warnbox">
+    <h3 id="w-h"></h3>
+    <ul id="w-l"></ul>
+  </div>
+  <p class="note" id="w-note"></p>
+
+  <!-- 4 -->
+  <h2>4 · Two things to confirm</h2>
+  <div class="qbox">
+    <p><b>Q1 — Arrival day (Day 1) timing:</b> the traveler lands mid-afternoon (~2 pm), so Day 1 is naturally short. Should the ±15 end-time rule apply to the arrival day too, or only to full days + departure day? (My lean: <b>skip arrival day's end-time</b> — only enforce its structure: 2 attractions + 1 meal + check-in.)</p>
+    <p><b>Q2 — Departure day, ending early:</b> some travelers have an early flight, so the planner physically can't fill the morning up to the cut-off. Do you want departure day to block <b>both</b> too-early and too-late, or <b>only too-late</b> (overshooting the leave-for-airport cut-off, which risks the flight)? (My lean: <b>only block too-late</b> on departure day — allow an early finish for early flights.)</p>
+  </div>
+
+  <p class="note">Reminder: this stacks on the structure rule. A day must have the right pieces (≥ attractions / meals / check-in) <b>and</b> end on time before it passes. Shown one day at a time (jumps + flashes that day), same as now.</p>
+</div>
+
+<script>
+const L = {
+  en: {
+    h: '⚠ Day 2 isn’t ready to submit',
+    l: [
+      'Day 2 needs: at least 2 attractions (have 0), at least 2 meals (have 0).',
+      'Day 2 ends too early — last stop ends 9:35 am, but the traveler’s pace suggests ~10:30 pm. Add/extend stops so the day ends within 15 min of 10:30 pm.',
+    ],
+    note: 'Departure-day example (too late): "Day 4 (departure): last stop ends 4:10 pm, past the 3:30 pm cut-off before leaving for the airport — trim so it ends within 15 min of 3:30 pm."'
+  },
+  ja: {
+    h: '⚠ 2日目はまだ提出できません',
+    l: [
+      '2日目に必要：見どころ2件以上（現在0件）、食事2件以上（現在0件）。',
+      '2日目の終了が早すぎます — 最後の立ち寄り先が午前9:35に終わりますが、旅行者のペースでは約22:30が目安です。立ち寄り先を追加・延長し、22:30の±15分以内に終わるようにしてください。',
+    ],
+    note: '出発日の例（遅すぎ）：「4日目（出発日）：最後の立ち寄り先が16:10に終わり、空港へ向かう締切15:30を過ぎています。15:30の±15分以内に収めてください。」'
+  }
+};
+function setLang(x){
+  document.getElementById('b-en').classList.toggle('on', x==='en');
+  document.getElementById('b-ja').classList.toggle('on', x==='ja');
+  const s = L[x];
+  document.getElementById('w-h').textContent = s.h;
+  document.getElementById('w-l').innerHTML = s.l.map(t=>`<li>${t}</li>`).join('');
+  document.getElementById('w-note').textContent = s.note;
+}
+setLang('en');
+</script>
+</body>
+</html>

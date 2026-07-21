@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>/superremark999 — mentor remark board (demo v2)</title>
+<style>
+  :root{
+    --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3;
+    --card:#fffdf8; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+    --amber:#b87333; --amberbg:#fdf3e3; --red:#b3261e; --redbg:#fdecea;
+    --blue:#2b5f7a; --bluebg:#e8f1f6; --purple:#6b4d9e; --purplebg:#f0eafa;
+    --gold:#C9A227;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.5 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:1360px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .lead b{color:var(--ink)}
+
+  .kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .kpi .n{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .l{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+  .kpi.risk .n{color:var(--red)} .kpi.act .n{color:var(--green)}
+  .kpi.letter .n{color:var(--blue)} .kpi.prob .n{color:var(--amber)} .kpi.money .n{color:var(--purple)}
+
+  .mtabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .mtab{font:inherit;font-size:13px;font-weight:700;padding:8px 16px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .mtab .c{font-weight:800;font-variant-numeric:tabular-nums;margin-left:6px;font-size:12px;color:var(--ink3)}
+  .mtab.on{background:var(--green);border-color:var(--green);color:#fff}
+  .mtab.on .c{color:#cfe6cf}
+
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .bar input,.bar select{font:inherit;font-size:13px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  .bar input{flex:1;min-width:180px}
+  .hint{font-size:11.5px;color:var(--ink3);margin-left:auto}
+
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);text-align:left;padding:10px 11px;border-bottom:1px solid var(--line);background:#f7f3ea}
+  tbody td{padding:10px 11px;border-bottom:1px solid #f1ecdf;vertical-align:middle}
+  tbody tr.main{cursor:pointer}
+  tbody tr.main:hover td{background:#faf7f0}
+  tbody tr.main.open td{background:var(--greenbg);border-bottom-color:transparent}
+  .pname{font-weight:700}
+  .pmail{font-size:11px;color:var(--ink3)}
+  .caret{display:inline-block;transition:transform .15s;color:var(--ink3);font-size:11px;margin-right:6px}
+  tr.main.open .caret{transform:rotate(90deg)}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+  .ch-line{background:#e6f9e8;color:#1a7a3c;border-color:#a8dcb2}
+  .ch-discord{background:#eceefe;color:#4a54c7;border-color:#c3c9f5}
+  .ch-acct{font-size:11px;color:var(--ink2);margin-top:3px}
+
+  /* inline editable selects in the row */
+  select.inline{font:inherit;font-size:11.5px;font-weight:800;border-radius:99px;padding:3px 22px 3px 10px;border:1px solid transparent;cursor:pointer;appearance:none;background:#f0ead8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='6'%3E%3Cpath d='M0 0l4 6 4-6z' fill='%239aa39d'/%3E%3C/svg%3E") no-repeat right 7px center;color:#6b5d2e}
+  select.inline:hover{border-color:#c9bd97}
+  select.inline.st-onboarding{background-color:var(--bluebg);color:var(--blue)}
+  select.inline.st-training{background-color:var(--amberbg);color:var(--amber)}
+  select.inline.st-active{background-color:var(--greenbg);color:var(--green)}
+  select.inline.st-slow{background-color:#f5f1e4;color:#8a7a34}
+  select.inline.st-at_risk{background-color:var(--redbg);color:var(--red)}
+  select.inline.st-ghosted{background-color:#efeae0;color:#7c736a}
+  select.inline.st-done{background-color:#e4efe9;color:#2f5d4c}
+
+  .lt{font-size:11.5px;font-weight:700;border-radius:99px;padding:3px 10px;display:inline-block;white-space:nowrap}
+  .lt-none{background:#efeae0;color:#7c736a}
+  .lt-sent{background:var(--bluebg);color:var(--blue)}
+  .lt-signed{background:var(--greenbg);color:var(--green)}
+  .ltsub{font-size:10.5px;color:var(--ink3);margin-top:3px}
+
+  .setcell b{font-variant-numeric:tabular-nums}
+  .dots{display:flex;gap:4px;margin-top:5px}
+  .dot{width:15px;height:8px;border-radius:4px;background:#ddd6c6}
+  .dot.ip{background:var(--amber)} .dot.sub{background:var(--blue)} .dot.rev{background:var(--red)}
+  .dot.ap{background:var(--green)} .dot.bp{background:var(--purple)} .dot.done{background:#1f4d38}
+  .setsub{font-size:11px;color:var(--ink3);margin-top:4px}
+  .ddl{font-size:10.5px;font-weight:700;margin-top:3px}
+  .ddl.ok{color:var(--green)} .ddl.soon{color:var(--amber)} .ddl.over{color:var(--red)}
+
+  .money{font-size:12px;font-variant-numeric:tabular-nums}
+  .money .due{color:var(--purple);font-weight:800}
+  .money .paid{color:var(--green)}
+  .money .sub{font-size:10.5px;color:var(--ink3);margin-top:2px}
+
+  .pb{font-size:11px;font-weight:800;border-radius:99px;padding:3px 9px;display:inline-block}
+  .pb-open{background:var(--redbg);color:var(--red)}
+  .pb-watch{background:var(--amberbg);color:var(--amber)}
+  .pb-clear{background:#eef3ee;color:#6d7d70}
+  .lastr{font-size:11px;color:var(--ink2);margin-top:4px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qbtn{background:#fff;border:1px solid var(--greenbd);color:var(--green);border-radius:8px;padding:4px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .qbtn:hover{background:var(--greenbg)}
+
+  /* expanded panel */
+  tr.detail td{background:#fbf9f2;border-bottom:2px solid var(--greenbd);padding:0}
+  .panel{display:grid;grid-template-columns:300px 1fr 1fr;gap:0}
+  .pcol{padding:14px 16px;border-right:1px dashed #e3dcc9}
+  .pcol:last-child{border-right:none}
+  .sl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:8px}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .fact{background:#f4efe2;border-radius:9px;padding:8px 10px}
+  .fact .fl{font-size:10px;color:var(--ink3)}
+  .fact .fv{font-weight:700;font-size:12.5px;margin-top:2px}
+  .fact .fv.green{color:var(--green)} .fact .fv.red{color:var(--red)} .fact .fv.purple{color:var(--purple)} .fact .fv.blue{color:var(--blue)}
+
+  .stchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .stchip{font:inherit;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .stchip:hover{border-color:var(--greenbd)}
+  .stchip.on{background:var(--green);border-color:var(--green);color:#fff}
+
+  .panel select,.panel input,.panel textarea{font:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;width:100%;color:var(--ink)}
+  .panel textarea{resize:vertical;min-height:52px}
+  .chrow{display:flex;gap:7px}
+  .chrow select{width:100px;flex:0 0 auto}
+
+  .prob{border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:9px;overflow:hidden}
+  .prob .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 11px;background:#faf7f0}
+  .prob .pt{font-weight:700;font-size:12.5px}
+  .prob .ph select{width:auto;font-size:11px;font-weight:700;padding:3px 7px}
+  .prob .steps{padding:7px 11px;max-height:130px;overflow-y:auto}
+  .step{display:flex;gap:8px;font-size:11.5px;padding:3px 0;border-bottom:1px dashed #f0ebdd}
+  .step:last-child{border-bottom:none}
+  .step .sw{color:var(--ink3);font-size:10px;white-space:nowrap;min-width:72px;padding-top:1px}
+  .prob .addstep{display:flex;gap:6px;padding:7px 11px;border-top:1px solid #f1ecdf}
+  .prob .addstep input{flex:1}
+  .prob .addstep button{flex:0 0 auto;background:#fff;border:1px solid var(--greenbd);color:var(--green);border-radius:8px;padding:0 11px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+
+  .remark{border:1px solid var(--line);border-radius:10px;padding:8px 11px;margin-bottom:7px;background:#fff}
+  .remark .rmeta{font-size:10px;color:var(--ink3);margin-bottom:3px;display:flex;justify-content:space-between;gap:8px}
+  .remark .rbody{font-size:12.5px;white-space:pre-wrap}
+  .rtag{font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 7px;text-transform:uppercase;letter-spacing:.04em}
+  .rtag.chase{background:var(--amberbg);color:var(--amber)}
+  .rtag.payment{background:var(--purplebg);color:var(--purple)}
+  .rtag.quality{background:var(--bluebg);color:var(--blue)}
+  .rtag.praise{background:var(--greenbg);color:var(--green)}
+  .rtag.general{background:#f0ead8;color:#6b5d2e}
+  .rlist{max-height:210px;overflow-y:auto;margin-bottom:8px}
+
+  .addbtn{background:var(--green);color:#fff;border:none;border-radius:9px;padding:8px 14px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+  .addbtn:hover{filter:brightness(1.08)}
+  .addbtn.ghost{background:#fff;color:var(--green);border:1px solid var(--greenbd)}
+  .savefeedback{font-size:11px;color:var(--green);margin-left:8px;opacity:0;transition:opacity .2s}
+  .savefeedback.show{opacity:1}
+
+  .note{font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.7}
+  .note b{color:var(--ink)}
+  .note code{background:#f0ead8;border-radius:4px;padding:1px 5px;font-size:11.5px}
+
+  /* quick remark popover */
+  .qpop{position:absolute;background:#fff;border:1px solid var(--greenbd);border-radius:12px;box-shadow:0 10px 28px rgba(26,46,37,.18);padding:10px;width:290px;z-index:60}
+  .qpop textarea{width:100%;font:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;min-height:54px;resize:vertical}
+  .qpop .row{display:flex;gap:6px;margin-top:7px;align-items:center}
+  .qpop select{font:inherit;font-size:11.5px;padding:5px 8px;border:1px solid var(--line);border-radius:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>journeyjunctionplanner.com<b style="color:var(--gold)">/superremark999</b> <span style="font-size:12px;color:var(--gold);font-weight:700">DEMO v2 — nothing is saved</span></h1>
+  <p class="lead"><b>What's new in v2:</b> ① change <b>status and mentor straight in the table row</b> (dropdowns — no panel needed), ② <b>📝 quick remark</b> button on every row with a tag (chase / payment / quality / praise), ③ click a row to expand a <b>full profile</b>: phone, joined date, Day-1 result, bank registered, on-time rate, revisions, bond paid, payout due, plan deadline — plus one-click status chips, problems progression and the whole remark log.</p>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="mtabs" id="mtabs"></div>
+
+  <div class="bar">
+    <input id="q" placeholder="Search name, email, phone, LINE/Discord handle…" oninput="render()">
+    <select id="fCh" onchange="render()"><option value="">All channel accounts</option></select>
+    <select id="fLt" onchange="render()">
+      <option value="">Letter: all</option>
+      <option value="none">Not sent yet</option>
+      <option value="sent">Sent — waiting signature</option>
+      <option value="signed">Signed ✓</option>
+    </select>
+    <select id="fSt" onchange="render()">
+      <option value="">All statuses</option>
+      <option value="onboarding">Onboarding</option>
+      <option value="training">Training (Day-1)</option>
+      <option value="active">Active</option>
+      <option value="slow">Slow</option>
+      <option value="at_risk">At risk</option>
+      <option value="ghosted">Ghosted</option>
+      <option value="done">Completed / paid out</option>
+    </select>
+    <label style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="fPb" onchange="render()" style="width:auto">Open problems only</label>
+    <span class="hint" id="count"></span>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:16%">Planner</th>
+      <th style="width:8%">Mentor</th>
+      <th style="width:11%">Channel</th>
+      <th style="width:10%">Letter</th>
+      <th style="width:10%">Status</th>
+      <th style="width:16%">Set · plans · deadline</th>
+      <th style="width:11%">Bond / payout</th>
+      <th style="width:18%">Problems · last remark</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <div class="note">
+    <b>Real build:</b> secret URL + admin login + server proxy, same as <code>superadmin999</code>.
+    <b>Auto from existing DB (mentor never types these):</b> mentor tag, letter sent/signed dates (<code>employment_letters</code>), set &amp; plan progress + deadlines, bond paid, payout due, bank registered, last login, joined date.
+    <b>Mentor edits (new tables/columns):</b> channel account, status, problems + progression steps, remarks with tags. Every remark/step records the author and timestamp automatically.
+  </div>
+</div>
+
+<div id="qpop" class="qpop" style="display:none">
+  <div style="font-size:11px;font-weight:800;color:var(--ink2);margin-bottom:6px" id="qpTitle"></div>
+  <textarea id="qpText" placeholder="Quick remark…"></textarea>
+  <div class="row">
+    <select id="qpTag">
+      <option value="general">General</option>
+      <option value="chase">Chase</option>
+      <option value="payment">Payment</option>
+      <option value="quality">Quality</option>
+      <option value="praise">Praise</option>
+    </select>
+    <button class="addbtn" style="flex:1" onclick="saveQuickRemark()">Add remark</button>
+    <button class="addbtn ghost" onclick="closeQpop()">✕</button>
+  </div>
+</div>
+
+<script>
+// ── Demo data — shapes mirror the real tables ────────────────────────────
+const MENTORS = ['FCKING','TT','KIT']
+const STATUS_LABEL = { onboarding:'Onboarding', training:'Training', active:'Active', slow:'Slow', at_risk:'At risk', ghosted:'Ghosted', done:'Done / paid' }
+const DOTCLS = { pending:'', in_progress:'ip', submitted:'sub', revision:'rev', approved:'ap', bond_pending:'bp', completed:'done' }
+const PSTATE_LABEL = { open:'Open', progress:'In progress', resolved:'Resolved' }
+
+function r(when, body, tag){ return { when, body, tag: tag||'general', author:'Mentor' } }
+function prob(title, state, steps){ return { title, state, steps } }
+function step(when, body){ return { when, body } }
+
+const planners = [
+  { id:1, name:'Aiko Matsuda', email:'aiko.m@example.com', phone:'080-1234-5678', joined:'Jun 28', mentor:'TT', ch:'LINE', acct:'@jj_line_01', status:'active',
+    letter:{state:'signed', sent:'Jun 30', signed:'Jul 1'},
+    set:'#002', plans:['completed','completed','in_progress','pending','pending'], deadline:{label:'Jul 7', days:2}, login:'2h ago',
+    day1:'Passed', bank:true, onTime:'100%', revisions:0, bondPaid:60000, payoutDue:0,
+    problems:[],
+    remarks:[ r('Jul 3 14:20','Plan 2 on time, quality good — no chasing needed.','praise') ] },
+
+  { id:2, name:'Kenji Watanabe', email:'kenji.w@example.com', phone:'090-2345-6789', joined:'Jun 24', mentor:'TT', ch:'LINE', acct:'@jj_line_01', status:'at_risk',
+    letter:{state:'signed', sent:'Jun 25', signed:'Jun 26'},
+    set:'#005', plans:['completed','revision','pending','pending','pending'], deadline:{label:'Jul 5', days:0}, login:'3d ago',
+    day1:'Passed', bank:true, onTime:'50%', revisions:2, bondPaid:30000, payoutDue:0,
+    problems:[
+      prob('Plan 2 revision overdue, not replying', 'open', [
+        step('Jul 3 15:00','Revision requested — deadline set Jul 5.'),
+        step('Jul 4 09:12','Chased on LINE twice. Read, no reply.'),
+        step('Jul 4 21:30','Final reminder sent. If silent by Jul 6 → reassign set.'),
+      ]),
+    ],
+    remarks:[ r('Jul 4 09:15','Read my LINE but no reply — watch closely.','chase'), r('Jun 26 10:00','Signed same day. Seems keen but flaky schedule.') ] },
+
+  { id:3, name:'Sara Lim', email:'sara.lim@example.com', phone:'070-3456-7890', joined:'Jul 2', mentor:'KIT', ch:'Discord', acct:'JJ-Mentor#02', status:'training',
+    letter:{state:'sent', sent:'Jul 3', signed:null},
+    set:'#—', plans:[], deadline:null, login:'1h ago',
+    day1:'In progress', bank:false, onTime:'—', revisions:0, bondPaid:0, payoutDue:0,
+    problems:[
+      prob('Letter sent 2 days ago, still unsigned', 'progress', [
+        step('Jul 3 12:00','Letter sent by email.'),
+        step('Jul 4 16:40','Wants to finish Day-1 sample first, will sign after.'),
+      ]),
+    ],
+    remarks:[ r('Jul 4 16:40','Good questions about hotel bookends during Day-1.','quality') ] },
+
+  { id:4, name:'Haruto Sato', email:'haruto.s@example.com', phone:'080-4567-8901', joined:'Jun 19', mentor:'FCKING', ch:'LINE', acct:'@jj_line_02', status:'active',
+    letter:{state:'signed', sent:'Jun 20', signed:'Jun 20'},
+    set:'#003', plans:['completed','completed','completed','bond_pending','pending'], deadline:{label:'Jul 8', days:3}, login:'25m ago',
+    day1:'Passed', bank:true, onTime:'100%', revisions:0, bondPaid:75000, payoutDue:0,
+    problems:[
+      prob('Hesitating on Plan 4 bond payment', 'progress', [
+        step('Jul 4 18:02','Plan 4 approved → bond stage. Sent PayPay instructions.'),
+        step('Jul 5 10:15','Asked why bond is needed — sent the bond explainer.'),
+      ]),
+    ],
+    remarks:[ r('Jul 5 10:20','Bond hesitation — keep tone friendly, he is our fastest.','payment'), r('Jul 1 11:30','Fast worker. Consider for luxury sets.','praise') ] },
+
+  { id:5, name:'Mei Tanaka', email:'mei.t@example.com', phone:'090-5678-9012', joined:'Jun 21', mentor:'KIT', ch:'Discord', acct:'JJ-Mentor#01', status:'slow',
+    letter:{state:'signed', sent:'Jun 22', signed:'Jun 24'},
+    set:'#004', plans:['completed','in_progress','pending','pending','pending'], deadline:{label:'Jul 6', days:1}, login:'2d ago',
+    day1:'Passed', bank:true, onTime:'75%', revisions:1, bondPaid:30000, payoutDue:0,
+    problems:[
+      prob('Pace too slow — day job conflict', 'resolved', [
+        step('Jul 1 19:00','Only 1 plan done in 5 days.'),
+        step('Jul 2 20:15','Talked on Discord — agreed new pace: 1 plan / 2 days.'),
+        step('Jul 4 08:00','Keeping the new pace so far. Resolved, keep watching.'),
+      ]),
+    ],
+    remarks:[ r('Jul 2 20:20','New pace agreed — check again Jul 6.','chase') ] },
+
+  { id:6, name:'Daichi Kobayashi', email:'daichi.k@example.com', phone:'070-6789-0123', joined:'Jun 17', mentor:'FCKING', ch:'LINE', acct:'@jj_line_02', status:'ghosted',
+    letter:{state:'sent', sent:'Jun 18', signed:null},
+    set:'#001', plans:['completed','pending','pending','pending','pending'], deadline:{label:'Jun 30', days:-5}, login:'9d ago',
+    day1:'Passed', bank:false, onTime:'25%', revisions:1, bondPaid:0, payoutDue:0,
+    problems:[
+      prob('Ghosted — never signed the letter', 'open', [
+        step('Jun 18 09:00','Letter sent.'),
+        step('Jun 24 10:00','Reminder 1 — read, no reply.'),
+        step('Jul 3 08:00','Final warning. Reassign set if silent by Jul 7.'),
+      ]),
+    ],
+    remarks:[ r('Jul 3 08:05','Prepare set #001 for reassignment on Jul 7.','chase') ] },
+
+  { id:7, name:'Yuna Park', email:'yuna.p@example.com', phone:'080-7890-1234', joined:'Jun 8', mentor:'TT', ch:'Discord', acct:'JJ-Mentor#02', status:'done',
+    letter:{state:'signed', sent:'Jun 10', signed:'Jun 10'},
+    set:'#006', plans:['completed','completed','completed','completed','completed'], deadline:null, login:'1d ago',
+    day1:'Passed', bank:true, onTime:'100%', revisions:0, bondPaid:105000, payoutDue:340000,
+    problems:[],
+    remarks:[ r('Jul 4 12:00','Set #006 fully approved. Payout ¥340,000 — flagged to admin.','payment') ] },
+
+  { id:8, name:'Riku Yamamoto', email:'riku.y@example.com', phone:'090-8901-2345', joined:'Jul 5', mentor:null, ch:'LINE', acct:'@jj_line_03', status:'onboarding',
+    letter:{state:'none', sent:null, signed:null},
+    set:'#—', plans:[], deadline:null, login:'just now',
+    day1:'Not started', bank:false, onTime:'—', revisions:0, bondPaid:0, payoutDue:0,
+    problems:[],
+    remarks:[] },
+]
+
+let openId = null      // expanded row
+let mentorTab = ''
+let qpopId = null      // quick-remark target
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function renderKpis(){
+  const active  = planners.filter(p=>p.status==='active').length
+  const risk    = planners.filter(p=>['at_risk','ghosted'].includes(p.status)).length
+  const signed  = planners.filter(p=>p.letter.state==='signed').length
+  const unsigned= planners.length - signed
+  const probs   = planners.reduce((n,p)=>n+p.problems.filter(x=>x.state!=='resolved').length,0)
+  const bond    = planners.reduce((n,p)=>n+p.bondPaid,0)
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="n">${planners.length}</div><div class="l">Planners</div></div>
+    <div class="kpi act"><div class="n">${active}</div><div class="l">Active</div></div>
+    <div class="kpi letter"><div class="n">${signed}</div><div class="l">Letter signed</div></div>
+    <div class="kpi"><div class="n">${unsigned}</div><div class="l">Not signed</div></div>
+    <div class="kpi prob"><div class="n">${probs}</div><div class="l">Open problems</div></div>
+    <div class="kpi risk"><div class="n">${risk}</div><div class="l">At risk / ghosted</div></div>
+    <div class="kpi money"><div class="n">¥${(bond/1000).toFixed(0)}k</div><div class="l">Bond held</div></div>`
+}
+
+function renderMentorTabs(){
+  const counts = m => planners.filter(p=>p.mentor===m).length
+  const un = planners.filter(p=>!p.mentor).length
+  document.getElementById('mtabs').innerHTML =
+    `<button class="mtab ${mentorTab===''?'on':''}" onclick="setMentorTab('')">All mentors<span class="c">${planners.length}</span></button>`
+    + MENTORS.map(m=>`<button class="mtab ${mentorTab===m?'on':''}" onclick="setMentorTab('${m}')">${m}<span class="c">${counts(m)}</span></button>`).join('')
+    + `<button class="mtab ${mentorTab==='__none__'?'on':''}" onclick="setMentorTab('__none__')">No mentor<span class="c">${un}</span></button>`
+}
+function setMentorTab(m){ mentorTab = m; render() }
+
+function fillChannelFilter(){
+  const sel = document.getElementById('fCh')
+  ;[...new Set(planners.map(p=>`${p.ch} · ${p.acct}`))].sort().forEach(a=>{
+    const o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o)
+  })
+}
+
+// ── cells ─────────────────────────────────────────────────────────────────
+function letterHtml(p){
+  const l = p.letter
+  if (l.state==='signed') return `<span class="lt lt-signed">✓ Signed</span><div class="ltsub">${l.sent} → ${l.signed}</div>`
+  if (l.state==='sent')   return `<span class="lt lt-sent">✉ Waiting</span><div class="ltsub">sent ${l.sent}</div>`
+  return `<span class="lt lt-none">Not sent</span>`
+}
+function deadlineHtml(p){
+  if (!p.deadline) return ''
+  const d = p.deadline
+  const cls = d.days<0?'over':d.days<=1?'soon':'ok'
+  const txt = d.days<0?`overdue ${-d.days}d`:d.days===0?'due today':`due ${d.label} (${d.days}d)`
+  return `<div class="ddl ${cls}">⏰ ${txt}</div>`
+}
+function moneyHtml(p){
+  const due = p.payoutDue ? `<div class="due">payout ¥${p.payoutDue.toLocaleString()}</div>` : ''
+  const paid = p.bondPaid ? `<div class="paid">bond ¥${p.bondPaid.toLocaleString()} held</div>` : '<div class="sub">no bond yet</div>'
+  return `<div class="money">${due}${paid}<div class="sub">bank ${p.bank?'✓ registered':'✗ missing'}</div></div>`
+}
+function probBadge(p){
+  const open = p.problems.filter(x=>x.state==='open').length
+  const prog = p.problems.filter(x=>x.state==='progress').length
+  if (open) return `<span class="pb pb-open">⚠ ${open} open</span>`
+  if (prog) return `<span class="pb pb-watch">◐ ${prog} in progress</span>`
+  return `<span class="pb pb-clear">No problems</span>`
+}
+
+// ── table ─────────────────────────────────────────────────────────────────
+function statusSelect(p, extra){
+  return `<select class="inline st-${p.status}" onclick="event.stopPropagation()" onchange="setStatus(${p.id}, this.value)" ${extra||''}>
+    ${Object.keys(STATUS_LABEL).map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${STATUS_LABEL[s]}</option>`).join('')}
+  </select>`
+}
+function mentorSelect(p){
+  return `<select class="inline" onclick="event.stopPropagation()" onchange="setMentor(${p.id}, this.value)">
+    <option value="" ${!p.mentor?'selected':''}>— none</option>
+    ${MENTORS.map(m=>`<option value="${m}" ${p.mentor===m?'selected':''}>${m}</option>`).join('')}
+  </select>`
+}
+
+function render(){
+  renderKpis(); renderMentorTabs(); closeQpop()
+  const q  = (document.getElementById('q').value||'').toLowerCase()
+  const fCh = document.getElementById('fCh').value
+  const fLt = document.getElementById('fLt').value
+  const fSt = document.getElementById('fSt').value
+  const fPb = document.getElementById('fPb').checked
+  const tbody = document.getElementById('rows')
+  tbody.innerHTML = ''
+  let shown = 0
+  planners.forEach(p=>{
+    if (mentorTab==='__none__' ? p.mentor : (mentorTab && p.mentor!==mentorTab)) return
+    if (q && !`${p.name} ${p.email} ${p.phone} ${p.acct}`.toLowerCase().includes(q)) return
+    if (fCh && `${p.ch} · ${p.acct}` !== fCh) return
+    if (fLt && p.letter.state !== fLt) return
+    if (fSt && p.status !== fSt) return
+    if (fPb && !p.problems.some(x=>x.state!=='resolved')) return
+    shown++
+    const curIdx = p.plans.findIndex(s=>s!=='completed')
+    const planNow = p.plans.length ? (curIdx===-1 ? 'All 5 done' : `Plan ${curIdx+1} · ${p.plans[curIdx].replace('_',' ')}`) : 'No set yet'
+    const dots = p.plans.length
+      ? `<div class="dots">${p.plans.map(s=>`<span class="dot ${DOTCLS[s]||''}" title="${s}"></span>`).join('')}</div><div class="setsub">${planNow}</div>${deadlineHtml(p)}`
+      : `<div class="setsub">— not assigned</div>`
+    const lastR = p.remarks[0] ? `<div class="lastr" title="${p.remarks[0].body.replace(/"/g,'&quot;')}">${p.remarks[0].when} · ${p.remarks[0].body}</div>` : ''
+    const tr = document.createElement('tr')
+    tr.className = 'main' + (p.id===openId?' open':'')
+    tr.innerHTML = `
+      <td><span class="caret">▶</span><span class="pname">${p.name}</span><div class="pmail" style="margin-left:17px">${p.email}<br>joined ${p.joined} · login ${p.login}</div></td>
+      <td>${mentorSelect(p)}</td>
+      <td><span class="chip ${p.ch==='LINE'?'ch-line':'ch-discord'}">${p.ch==='LINE'?'💬 LINE':'🎮 Discord'}</span><div class="ch-acct">${p.acct}</div></td>
+      <td>${letterHtml(p)}</td>
+      <td>${statusSelect(p)}</td>
+      <td class="setcell"><b>Set ${p.set}</b>${dots}</td>
+      <td>${moneyHtml(p)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:7px">${probBadge(p)}
+        <button class="qbtn" onclick="event.stopPropagation();openQpop(event, ${p.id})">📝 Remark</button></div>
+        ${lastR}
+      </td>`
+    tr.onclick = ()=>toggleRow(p.id)
+    tbody.appendChild(tr)
+    if (p.id===openId) tbody.appendChild(detailRow(p))
+  })
+  document.getElementById('count').textContent = `${shown} / ${planners.length} planners`
+}
+
+// ── expanded detail ───────────────────────────────────────────────────────
+function detailRow(p){
+  const tr = document.createElement('tr')
+  tr.className='detail'
+  const td = document.createElement('td')
+  td.colSpan = 8
+  td.innerHTML = `
+    <div class="panel">
+      <div class="pcol">
+        <div class="sl">Profile — auto from DB</div>
+        <div class="facts">
+          <div class="fact"><div class="fl">Phone</div><div class="fv">${p.phone}</div></div>
+          <div class="fact"><div class="fl">Joined</div><div class="fv">${p.joined}</div></div>
+          <div class="fact"><div class="fl">Day-1 sample</div><div class="fv ${p.day1==='Passed'?'green':''}">${p.day1}</div></div>
+          <div class="fact"><div class="fl">Bank details</div><div class="fv ${p.bank?'green':'red'}">${p.bank?'✓ Registered':'✗ Missing'}</div></div>
+          <div class="fact"><div class="fl">On-time rate</div><div class="fv">${p.onTime}</div></div>
+          <div class="fact"><div class="fl">Revisions</div><div class="fv ${p.revisions>1?'red':''}">${p.revisions}</div></div>
+          <div class="fact"><div class="fl">Bond held</div><div class="fv purple">¥${p.bondPaid.toLocaleString()}</div></div>
+          <div class="fact"><div class="fl">Payout due</div><div class="fv ${p.payoutDue?'purple':''}">${p.payoutDue?'¥'+p.payoutDue.toLocaleString():'—'}</div></div>
+          <div class="fact"><div class="fl">Letter sent</div><div class="fv blue">${p.letter.sent||'—'}</div></div>
+          <div class="fact"><div class="fl">Letter signed</div><div class="fv ${p.letter.signed?'green':''}">${p.letter.signed||'not yet'}</div></div>
+        </div>
+        <div class="sl" style="margin-top:12px">Channel account</div>
+        <div class="chrow">
+          <select id="dChType${p.id}" onclick="event.stopPropagation()"><option ${p.ch==='LINE'?'selected':''}>LINE</option><option ${p.ch==='Discord'?'selected':''}>Discord</option></select>
+          <input id="dChAcct${p.id}" value="${p.acct}" onclick="event.stopPropagation()">
+        </div>
+        <div style="margin-top:8px"><button class="addbtn" onclick="event.stopPropagation();saveChannel(${p.id})">Save channel</button><span class="savefeedback" id="chFb${p.id}">✓ saved</span></div>
+      </div>
+
+      <div class="pcol" onclick="event.stopPropagation()">
+        <div class="sl">Status — one click</div>
+        <div class="stchips">
+          ${Object.keys(STATUS_LABEL).map(s=>`<button class="stchip ${p.status===s?'on':''}" onclick="setStatus(${p.id},'${s}')">${STATUS_LABEL[s]}</button>`).join('')}
+        </div>
+        <div class="sl" style="margin-top:6px">Problems &amp; progression</div>
+        <div id="dProbs${p.id}">${problemsHtml(p)}</div>
+        <div class="chrow" style="margin-top:8px">
+          <input id="dNewProb${p.id}" placeholder="New problem…" style="flex:1">
+          <button class="addbtn ghost" style="flex:0 0 auto" onclick="addProblem(${p.id})">+ Problem</button>
+        </div>
+      </div>
+
+      <div class="pcol" onclick="event.stopPropagation()">
+        <div class="sl">Remarks — full log (${p.remarks.length})</div>
+        <div class="rlist" id="dRemarks${p.id}">${remarksHtml(p)}</div>
+        <textarea id="dRemark${p.id}" placeholder="Write a remark…"></textarea>
+        <div class="chrow" style="margin-top:7px">
+          <select id="dRTag${p.id}" style="width:110px;flex:0 0 auto">
+            <option value="general">General</option><option value="chase">Chase</option>
+            <option value="payment">Payment</option><option value="quality">Quality</option><option value="praise">Praise</option>
+          </select>
+          <button class="addbtn" style="flex:1" onclick="addRemark(${p.id})">Add remark</button>
+        </div>
+      </div>
+    </div>`
+  return tr
+}
+
+function problemsHtml(p){
+  if (!p.problems.length) return '<div class="pmail">No problems recorded. 🎉</div>'
+  return p.problems.map((pr,i)=>`
+    <div class="prob">
+      <div class="ph">
+        <span class="pt">${pr.title}</span>
+        <select onchange="setProbState(${p.id},${i},this.value)">
+          ${Object.keys(PSTATE_LABEL).map(s=>`<option value="${s}" ${pr.state===s?'selected':''}>${PSTATE_LABEL[s]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="steps">${pr.steps.map(s=>`<div class="step"><span class="sw">${s.when}</span><span>${s.body}</span></div>`).join('')}</div>
+      <div class="addstep">
+        <input id="stepInput${p.id}_${i}" placeholder="Add progress step…">
+        <button onclick="addStep(${p.id},${i})">Add</button>
+      </div>
+    </div>`).join('')
+}
+function remarksHtml(p){
+  if (!p.remarks.length) return '<div class="pmail" style="margin-bottom:6px">No remarks yet.</div>'
+  return p.remarks.map(x=>`<div class="remark"><div class="rmeta"><span><span class="rtag ${x.tag}">${x.tag}</span> ${x.author}</span><span>${x.when}</span></div><div class="rbody">${x.body}</div></div>`).join('')
+}
+
+// ── actions ───────────────────────────────────────────────────────────────
+function toggleRow(id){ openId = (openId===id?null:id); render() }
+function byId(id){ return planners.find(x=>x.id===id) }
+function nowLabel(){
+  const n = new Date()
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][n.getMonth()]} ${n.getDate()} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`
+}
+function setStatus(id, v){
+  const p = byId(id); if (!p) return
+  const old = p.status
+  p.status = v
+  if (old!==v) p.remarks.unshift(r(nowLabel(), `Status changed: ${STATUS_LABEL[old]} → ${STATUS_LABEL[v]}`))
+  render()
+}
+function setMentor(id, v){
+  const p = byId(id); if (!p) return
+  const old = p.mentor
+  p.mentor = v || null
+  if (old!==p.mentor) p.remarks.unshift(r(nowLabel(), `Mentor changed: ${old||'none'} → ${p.mentor||'none'}`))
+  render()
+}
+function saveChannel(id){
+  const p = byId(id); if (!p) return
+  p.ch = document.getElementById('dChType'+id).value
+  p.acct = document.getElementById('dChAcct'+id).value || p.acct
+  const fb = document.getElementById('chFb'+id); fb.classList.add('show'); setTimeout(()=>{ render() }, 600)
+}
+function setProbState(id, i, v){
+  const p = byId(id); if (!p) return
+  p.problems[i].state = v
+  p.problems[i].steps.push(step(nowLabel(), `Status → ${PSTATE_LABEL[v]}`))
+  render()
+}
+function addStep(id, i){
+  const p = byId(id); if (!p) return
+  const inp = document.getElementById(`stepInput${id}_${i}`)
+  const t = inp.value.trim(); if (!t) return
+  p.problems[i].steps.push(step(nowLabel(), t))
+  if (p.problems[i].state==='open') p.problems[i].state='progress'
+  render()
+}
+function addProblem(id){
+  const p = byId(id); if (!p) return
+  const inp = document.getElementById('dNewProb'+id)
+  const t = inp.value.trim(); if (!t) return
+  p.problems.unshift(prob(t, 'open', [step(nowLabel(), 'Problem opened.')]))
+  render()
+}
+function addRemark(id){
+  const p = byId(id); if (!p) return
+  const t = document.getElementById('dRemark'+id).value.trim(); if (!t) return
+  p.remarks.unshift(r(nowLabel(), t, document.getElementById('dRTag'+id).value))
+  render()
+}
+
+// ── quick remark popover ──────────────────────────────────────────────────
+function openQpop(ev, id){
+  qpopId = id
+  const p = byId(id)
+  const pop = document.getElementById('qpop')
+  document.getElementById('qpTitle').textContent = `Quick remark — ${p.name}`
+  document.getElementById('qpText').value = ''
+  pop.style.display = 'block'
+  const x = Math.min(ev.clientX, window.innerWidth - 310)
+  pop.style.left = (x + window.scrollX - 140) + 'px'
+  pop.style.top = (ev.clientY + window.scrollY + 14) + 'px'
+  document.getElementById('qpText').focus()
+}
+function closeQpop(){ qpopId=null; document.getElementById('qpop').style.display='none' }
+function saveQuickRemark(){
+  const p = byId(qpopId); if (!p) return closeQpop()
+  const t = document.getElementById('qpText').value.trim(); if (!t) return
+  p.remarks.unshift(r(nowLabel(), t, document.getElementById('qpTag').value))
+  closeQpop(); render()
+}
+document.addEventListener('click', e=>{
+  const pop = document.getElementById('qpop')
+  if (pop.style.display==='block' && !pop.contains(e.target) && !e.target.classList.contains('qbtn')) closeQpop()
+})
+
+fillChannelFilter()
+render()
+</script>
+</body>
+</html>

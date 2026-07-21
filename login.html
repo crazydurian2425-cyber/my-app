@@ -955,12 +955,19 @@ async function login() {
   // journeyjunctionplanner.com) is signed out and pointed to the right site.
   // Unknown hosts (workers.dev preview, localhost) count as JJ. Missing brand
   // (pre-migration rows) = JJ.
-  const _hostBrand = (location.hostname || '').toLowerCase().replace(/^www\./, '') === 'itinerarydesignhub.com' ? 'vbd' : 'jj'
-  const _plannerBrand = planner.brand === 'vbd' ? 'vbd' : 'jj'
+  // Brand registry — add one line per brand domain. Anything unlisted is JJ.
+  const _BRAND_SITES = {
+    jj:  { host: 'journeyjunctionplanner.com', name: 'Journey Junction' },
+    vbd: { host: 'itinerarydesignhub.com',     name: 'Vacations by Design' },
+    tc:  { host: 'tripcompanionplanner.com',   name: 'Trip Companion' }
+  }
+  const _thisHost = (location.hostname || '').toLowerCase().replace(/^www\./, '')
+  const _hostBrand = Object.keys(_BRAND_SITES).find(k => _BRAND_SITES[k].host === _thisHost) || 'jj'
+  const _plannerBrand = _BRAND_SITES[planner.brand] ? planner.brand : 'jj'
   if (_plannerBrand !== _hostBrand) {
     try { await sb.auth.signOut() } catch (_) {}
-    const _dest     = _plannerBrand === 'vbd' ? 'https://itinerarydesignhub.com/login' : 'https://journeyjunctionplanner.com/login'
-    const _destName = _plannerBrand === 'vbd' ? 'Vacations by Design' : 'Journey Junction'
+    const _dest     = 'https://' + _BRAND_SITES[_plannerBrand].host + '/login'
+    const _destName = _BRAND_SITES[_plannerBrand].name
     const _box = document.getElementById('err'), _msgEl = document.getElementById('err-msg')
     _msgEl.removeAttribute('data-i18n')
     // data-brand-keep: this message must name the OTHER brand + link to its

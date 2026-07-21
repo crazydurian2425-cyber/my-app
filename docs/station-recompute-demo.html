@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>到着・出発の駅 再計算 — demo</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#86c79a;
+         --line:#e6e0d4; --red:#b3261e; --redbg:#fdecea; --amber:#b87333; --leg:#eaf0f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.5 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:660px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .go{padding:11px 16px;border-radius:10px;border:none;background:var(--green);color:#fff;font-weight:700;cursor:pointer;font-size:14px;margin-bottom:14px}
+  .day{font-size:11px;font-weight:700;color:var(--green);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;margin:5px 0;background:#fff;font-size:13px;transition:background .4s,border-color .4s}
+  .row .ic{width:22px;text-align:center;flex-shrink:0}
+  .row.leg{background:var(--leg);color:#2a4a6b}
+  .row.venue{background:#fff}
+  .row.anchor{background:#f6f3ec;color:var(--ink2)}
+  .row .dist{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+  .row.changed{background:var(--greenbg);border-color:var(--greenbd)}
+  .row.changed .dist{color:var(--green)}
+  .tag{font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;margin-left:8px}
+  .tag.keep{background:#eee;color:#777}
+  .tag.fix{background:var(--green);color:#fff}
+  .bad{color:var(--red);font-weight:700}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;line-height:1.6}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>到着・出発の駅 再計算（既存プランを開いたとき）</h1>
+  <p class="lead">Press "Open plan." Only the two <b>station legs</b> recompute to 姫路駅 — every venue & other leg is untouched.</p>
+  <button class="go" onclick="openPlan()">📂 Open plan (with the fix)</button>
+
+  <div class="day">Day 1 · 到着</div>
+  <div id="d1"></div>
+  <div class="day">Day 2 · 出発</div>
+  <div id="d2"></div>
+
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+// rows: type venue|leg|anchor ; some legs are "station legs" that recompute
+const D1 = [
+  { ic:'🚄', type:'anchor', label:'14:30 新幹線 到着', from:'Himeji', toStation:'姫路駅' },
+  { ic:'🚶', type:'leg', station:true, label:'徒歩  <from> → ホテルモントレ姫路',
+    fromCity:'Himeji', distCity:'1.7 km · 23 min', distStn:'0.2 km · 3 min' },
+  { ic:'🏨', type:'venue', label:'14:35 ホテルチェックイン', dist:'' },
+  { ic:'⛩️', type:'venue', label:'好古園（観光）', dist:'1 h 30' },
+  { ic:'🍽️', type:'venue', label:'あなご料理（夕食）', dist:'1 h' },
+];
+const D2 = [
+  { ic:'🎮', type:'venue', label:'Game Center Mappy', dist:'45 min' },
+  { ic:'🚕', type:'leg', station:true, label:'GO Taxi  Game Center Mappy → <to>',
+    toCity:'Himeji', distCity:'7.7 km · ¥3,529', distStn:'2.1 km · ¥1,180' },
+  { ic:'🚄', type:'anchor', label:'13:20 新幹線 Hiroshima へ', from:'Himeji', toStation:'姫路駅' },
+];
+let opened = false;
+
+function render(){
+  const draw = (arr) => arr.map((r,i)=>{
+    let label = r.label, dist = r.dist || '';
+    if (r.type==='anchor'){ label = label.replace('Himeji', opened ? r.toStation : 'Himeji') }
+    if (r.station){
+      const place = opened ? '姫路駅' : (r.fromCity||r.toCity)
+      label = label.replace('<from>', place).replace('<to>', place)
+      dist  = opened ? r.distStn : `<span class="bad">${r.distCity}</span>`
+    }
+    const cls = r.type + (r.station && opened ? ' changed' : '')
+    const tag = r.station ? (opened ? '<span class="tag fix">recomputed</span>' : '')
+              : (r.type==='venue' && opened ? '<span class="tag keep">unchanged</span>' : '')
+    return `<div class="row ${cls}"><span class="ic">${r.ic}</span><span>${label}${tag}</span><span class="dist">${dist}</span></div>`
+  }).join('')
+  document.getElementById('d1').innerHTML = draw(D1)
+  document.getElementById('d2').innerHTML = draw(D2)
+  document.getElementById('note').innerHTML = opened
+    ? '<b>✓ Done.</b> The arrival walk and the departure taxi recomputed from <b>姫路駅</b> (3 min / 2.1 km). The hotel, 好古園, the dinner, and every other stop &amp; time are <b>exactly the same</b> — only the two station legs changed, and the corrected legs auto-save. Nothing else on the plan is touched.'
+    : 'Saved state: the arrival walk shows <b>1.7 km / 23 min</b> and the departure taxi <b>7.7 km</b> — both measured from the city centroid (姫路市). Press "Open plan."'
+}
+function openPlan(){ opened = true; render() }
+render()
+</script>
+</body>
+</html>

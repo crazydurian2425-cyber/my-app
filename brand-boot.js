@@ -65,6 +65,42 @@
         ['Director: Midhun Peter', 'Director: Charalambos Andrew Kyrillou'],
         ['Midhun Peter', 'Charalambos Andrew Kyrillou']
       ]
+    },
+    tc: {
+      key: 'tc',
+      name: 'Trip Companion',
+      icon: '/tc-app-icon.png',
+      favicon: '/tc-icon.png',
+      wordmarkLead: 'Trip',
+      wordmarkAccent: 'Companion',
+      // Sister palette to VBD — the brand pack states the two share one family
+      // look, so the tokens are intentionally identical.
+      tokens: {
+        '--green': '#3A5647',
+        '--green-dark': '#2E4639',
+        '--green-d': '#2E4639',
+        '--green-mid': '#7FA187',
+        '--green-light': '#E9EFEA',
+        '--brand-accent': '#3A5647',
+        '--brand-pop': '#EE6C3A'
+      },
+      replace: [
+        ['JOURNEY JUNCTION', 'TRIP COMPANION'],
+        ['Journey Junction', 'Trip Companion'],
+        ['JourneyJunction', 'Trip Companion'],
+        ['訪日旅行プランナー', '旅行デザイナー'],
+        ['hello@thejourneyjunction.co.uk', 'hello@tripcompanion.co.uk'],
+        ['journeyjunctionplanner.com', 'tripcompanionplanner.com']
+      ],
+      replaceLegal: [
+        ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '43 Peronne Road, Hilsea, Portsmouth, England, PO3 5LD'],
+        ['Flat 2, 64 Heathmere Drive, Birmingham, B37 5EU, United Kingdom', '43 Peronne Road, Hilsea, Portsmouth, England, PO3 5LD'],
+        ['15791277', '16308288'],
+        ['20 June 2024', '11 March 2025'],
+        ['2024年6月20日', '2025年3月11日'],
+        ['Director: Midhun Peter', 'Director: Bivin Francis'],
+        ['Midhun Peter', 'Bivin Francis']
+      ]
     }
   };
 
@@ -75,7 +111,13 @@
   //   • Public pages (login / apply / legal …) → the viewing domain, so a NEW
   //     applicant sees the brand of the site they're on. (Do NOT read a stale
   //     cached planner brand here.)
-  function hostBrandKey() { return HOST === 'itinerarydesignhub.com' ? 'vbd' : 'jj'; }
+  // hostname → brand key. Add a line here for each new brand domain; anything
+  // unlisted (workers.dev preview, localhost, JJ itself) stays Journey Junction.
+  var HOSTS = {
+    'itinerarydesignhub.com': 'vbd',
+    'tripcompanionplanner.com': 'tc'
+  };
+  function hostBrandKey() { return HOSTS[HOST] || 'jj'; }
   var key = null;
   try {
     if (/(^|\/)dashboard/i.test(location.pathname)) {

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Final confirmation letter — sign + ID upload (demo)</title>
+<style>
+  :root{--ink:#1A2E25;--ink2:#5a6b62;--ink3:#9aa39d;--line:#e6e0d4;--cream:#e7e1d3;--card:#fffdf8;
+    --green:#2C5F2D;--greenbg:#eef7ef;--greenbd:#9ccdaf;--amber:#b87333;--amberbg:#fdf3e3;
+    --red:#b3261e;--redbg:#fdecea;--blue:#2b5f7a;--bluebg:#e8f1f6;--gold:#C9A227}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .lead b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  @media (max-width:920px){ .grid{grid-template-columns:1fr} }
+  .col{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .col h2{font-size:14px;margin:0;padding:12px 16px;border-bottom:1px solid var(--line);background:#f7f3ea;display:flex;align-items:center;gap:8px}
+  .col h2 .tag{font-size:10px;font-weight:800;color:#fff;background:var(--green);border-radius:99px;padding:2px 9px;text-transform:uppercase;letter-spacing:.04em}
+  .col h2 .tag.plan{background:var(--blue)}
+  .body{padding:16px}
+  label.fl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);display:block;margin:0 0 5px}
+  input[type=text],input[type=date],input[type=email],textarea{width:100%;font:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  textarea{resize:vertical;line-height:1.6}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:12px}
+  .seg button{flex:1;padding:9px 6px;border:none;background:#fff;color:#8a8678;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .seg button.on{background:var(--green);color:#fff}
+  .fg{margin-bottom:12px}
+  .hint{font-size:11px;color:var(--ink3);margin-top:5px}
+  .btn{background:var(--green);color:#fff;border:none;border-radius:9px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.ghost{background:#fff;color:var(--green);border:1px solid var(--greenbd)}
+  .btn.dark{background:var(--ink)}
+
+  /* letter preview (planner side) */
+  .letter{border:1px solid var(--line);border-radius:10px;background:#fffdfa;padding:16px 18px;margin-bottom:14px}
+  .letter .lt-title{font-size:15px;font-weight:800;text-align:center;margin-bottom:4px}
+  .letter .lt-sub{font-size:11px;color:var(--ink3);text-align:center;margin-bottom:12px}
+  .letter .lt-body{font-size:12.5px;line-height:1.7;white-space:pre-wrap;color:#2a3a32}
+  .sig-wrap{position:relative;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  canvas#sig{display:block;width:100%;height:150px;cursor:crosshair;touch-action:none}
+  .sig-clear{position:absolute;top:6px;right:8px;font-size:11px;color:var(--ink3);background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 8px;cursor:pointer}
+
+  .drop{border:1.5px dashed var(--greenbd);border-radius:10px;background:var(--greenbg);padding:16px;text-align:center;cursor:pointer;color:var(--green);font-weight:700;font-size:12.5px}
+  .drop:hover{background:#e4f1e6}
+  .idprev{margin-top:10px;display:none}
+  .idprev img{max-width:100%;border-radius:9px;border:1px solid var(--line)}
+  .idprev .meta{font-size:11px;color:var(--ink2);margin-top:5px;display:flex;justify-content:space-between;align-items:center}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--ink2);margin:12px 0}
+  .chk input{margin-top:2px}
+
+  .signed{background:var(--greenbg);border:1px solid var(--greenbd);border-radius:10px;padding:14px 16px;text-align:center;display:none}
+  .signed h3{margin:0 0 8px;color:var(--green);font-size:15px}
+  .signed .row{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+  .signed .card{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px;width:150px}
+  .signed .card .cap{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+  .signed .card img{max-width:100%;border-radius:6px;display:block}
+
+  .note{font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.75}
+  .note b{color:var(--ink)} .note code{background:#f0ead8;border-radius:4px;padding:1px 6px;font-size:11.5px}
+  .risk{display:inline-block;font-weight:900;color:#fff;background:var(--green);border-radius:8px;padding:4px 12px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Final confirmation letter — sign + ID card upload <span style="font-size:12px;color:var(--gold);font-weight:800">DEMO · nothing saved</span></h1>
+  <p class="lead">A <b>third letter type</b> alongside Engagement and Guarantee. Left = what <b>you</b> see in the admin (editable body, exactly like the guarantee letter). Right = what the <b>planner</b> receives: reads the letter, signs, uploads their identity card, and sends it back. Try it — draw a signature and pick any image as the "ID".</p>
+
+  <div class="grid">
+    <!-- ADMIN SIDE -->
+    <div class="col">
+      <h2><span class="tag">Admin — superadmin999</span> Send final confirmation letter</h2>
+      <div class="body">
+        <div class="fg">
+          <label class="fl">Letter type</label>
+          <div class="seg">
+            <button>📜 Engagement</button>
+            <button>🔏 Guarantee</button>
+            <button class="on">✅ Final confirmation</button>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Planner name (snapshot at send)</label>
+          <input type="text" value="山西久美子">
+        </div>
+        <div class="fg">
+          <label class="fl">Confirmation date（確認日）</label>
+          <input type="date" value="2026-07-13">
+        </div>
+        <div class="fg">
+          <label class="fl">Letter body — editable every send</label>
+          <textarea id="admBody" rows="10" oninput="syncBody()">当社は、下記のプランナーが Journey Junction の訪日旅行プランナーとして最終確認を完了したことを確認します。
+
+1. 本人は、登録した氏名・連絡先・本人確認書類の内容がすべて正確であることを確認します。
+2. 本人は、当社の品質基準および業務規約を理解し、これに同意します。
+3. 本人確認書類（身分証明書）の画像を添付のうえ、本確認書に署名します。
+
+本確認書に署名し、身分証明書を添付することで、上記のすべてに同意したものとみなされます。</textarea>
+          <div class="hint">Prefilled with a default template — change it any time before sending. Each letter stores its own copy. The planner sees exactly this text.</div>
+        </div>
+        <div class="fg">
+          <label class="fl">Send to email</label>
+          <input type="email" value="kunkunmaron@yahoo.co.jp">
+          <div class="hint">Goes to this address with a unique signing link (same as your other letters).</div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn ghost">Cancel</button>
+          <button class="btn dark" onclick="document.getElementById('planner').scrollIntoView({behavior:'smooth'})">Send letter →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLANNER SIDE -->
+    <div class="col" id="planner">
+      <h2><span class="tag plan">Planner — signing link</span> Final confirmation</h2>
+      <div class="body">
+        <div id="signForm">
+          <div class="letter">
+            <div class="lt-title">最終確認書</div>
+            <div class="lt-sub">Final Confirmation · Journey Junction</div>
+            <div class="lt-body" id="plnBody"></div>
+          </div>
+
+          <div class="fg">
+            <label class="fl">1 · Your signature</label>
+            <div class="sig-wrap">
+              <canvas id="sig"></canvas>
+              <button class="sig-clear" onclick="clearSig()">clear</button>
+            </div>
+          </div>
+
+          <div class="fg">
+            <label class="fl">2 · Upload your identity card</label>
+            <div class="drop" id="drop" onclick="idInput.click()">📷 Tap to take a photo or choose an image<br><span style="font-weight:400;font-size:11px">Passport, residence card, or driver's license</span></div>
+            <input type="file" id="idInput" accept="image/*" capture="environment" style="display:none" onchange="pickId(event)">
+            <div class="idprev" id="idPrev">
+              <img id="idImg" alt="ID preview">
+              <div class="meta"><span id="idName"></span><button class="btn ghost" style="padding:4px 10px;font-size:11px" onclick="clearId()">Remove</button></div>
+            </div>
+          </div>
+
+          <label class="chk"><input type="checkbox" id="confirm" onchange="refresh()"> I confirm the identity document is mine and the information in this letter is accurate.</label>
+
+          <button class="btn" id="submitBtn" disabled onclick="doSign()">Sign &amp; send confirmation</button>
+          <div class="hint" id="why">Draw your signature, upload your ID, and tick the box to enable.</div>
+        </div>
+
+        <div class="signed" id="signed">
+          <h3>✓ Confirmation received</h3>
+          <div style="font-size:12.5px;color:var(--ink2)">Signed and identity document submitted. In the real flow this is emailed to you and marked <b>Signed</b> in the admin, with the ID viewable only by you.</div>
+          <div class="row">
+            <div class="card"><div class="cap">Signature</div><img id="outSig"></div>
+            <div class="card"><div class="cap">Identity card</div><img id="outId"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 style="font-size:15px;margin:24px 0 4px">3 · The email the planner receives</h2>
+  <p class="lead" style="margin-bottom:12px">Same branded template as your other letters, but the wording switches to <b>最終確認書 (Final Confirmation Letter)</b> — heading, button, subject line and the English note all change automatically for this type.</p>
+  <div style="max-width:480px;margin:0 auto 4px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;font-family:-apple-system,'Segoe UI','DM Sans',Arial,sans-serif">
+    <div style="padding:28px 34px 6px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div style="width:30px;height:30px;border-radius:50%;background:#1a7a5e;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">J</div>
+        <div style="font-family:Georgia,serif;font-size:21px;color:#1a1a18">Journey<span style="color:#1a7a5e;font-style:italic">Junction</span></div>
+      </div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(176,138,62,.35),transparent);margin-top:16px"></div>
+    </div>
+    <div style="padding:20px 34px 4px">
+      <h1 style="margin:0 0 12px;font-family:Georgia,serif;font-size:23px;font-weight:400;color:#1a1a18"><em style="font-style:italic;color:#1a7a5e">最終確認書</em>のご確認およびご署名のお願い</h1>
+      <p style="margin:0 0 13px;font-size:14px;line-height:1.6;color:#5a554c">biibiilabs 様</p>
+      <p style="margin:0 0 13px;font-size:14px;line-height:1.6;color:#5a554c">このたび、Journey Junctionより最終確認書を発行いたしました。内容をご確認のうえ、ご本人確認書類（身分証明書）の添付とご署名をお願いいたします。</p>
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#5a554c">下記のボタンより最終確認書をご確認のうえ、ご署名をお願いいたします。このリンクはご本人様専用となっておりますので、第三者への共有はお控えください。</p>
+    </div>
+    <div style="text-align:center;padding:2px 0 16px"><span style="display:inline-block;background:#1a7a5e;color:#fff;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:500">最終確認書を確認・署名する →</span></div>
+    <div style="padding:0 34px 6px"><p style="margin:0;font-size:12px;line-height:1.6;color:#8c8678">ボタンが動作しない場合は、以下のリンクをコピーしてブラウザに貼り付けてください：<br><span style="color:#1a7a5e;word-break:break-all">https://journeyjunctionplanner.com/sign-letter?token=28b63f9e02f64ca7b09fba0c6b4d9b95</span></p></div>
+    <div style="padding:16px 34px 24px"><div style="height:1px;background:rgba(0,0,0,.06);margin-bottom:13px"></div><p style="margin:0;font-size:12px;line-height:1.55;color:#8c8678"><strong style="color:#7a7a74">English</strong> — Journey Junction has issued your Final Confirmation Letter. Please review it, attach your identity document, and sign using the button above. This link is personal to you. Please do not share it with anyone else.</p></div>
+    <div style="background:#faf7ef;padding:16px 34px;border-top:1px solid rgba(0,0,0,.05)"><p style="margin:0;font-size:11px;color:#8c8678">Journey Junction Ltd · Birmingham, United Kingdom · Company No. 15791277</p></div>
+  </div>
+  <p class="lead" style="text-align:center;margin:8px 0 0"><b>Subject:</b> Journey Junction — 最終確認書のご確認およびご署名のお願い</p>
+
+  <div class="note">
+    <b>Risk of building this for real: <span class="risk">LOW</span></b> — it's additive and reuses the guarantee-letter machinery.
+    <b>Reuses what exists:</b> the <code>employment_letters</code> table + <code>letter_type</code>/<code>custom_body</code> columns, the tokenized signing link, the signature canvas, and the admin send-modal. Engagement &amp; Guarantee letters are untouched.
+    <b>Net-new, small:</b> ① a third <code>letter_type='final_confirmation'</code>; ② a <b>private</b> storage bucket for ID photos (never public — viewable only via your admin proxy, like <code>chat-media</code>); ③ two columns <code>id_image_url</code> + <code>id_uploaded_at</code>; ④ the file-upload block on the sign page; ⑤ a "view ID" link in the admin's signed view; ⑥ a third email-copy branch so the email shows <b>最終確認書</b> (heading, button, subject, English note) — shown above.
+    <b>Privacy note:</b> an identity card is sensitive personal data, so it goes to the private bucket and is shown to admins through short-lived signed URLs — I'll wire it that way. When you say go, I'll do the migration + worker + page changes and, as always, show it before anything ships.
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id)
+// mirror admin body into planner letter
+function syncBody(){ $('plnBody').textContent = $('admBody').value }
+syncBody()
+
+// ── signature pad ─────────────────────────────────────────────
+const canvas = $('sig'), ctx = canvas.getContext('2d')
+let drawing = false, hasInk = false
+function sizeCanvas(){
+  const dpr = window.devicePixelRatio || 1
+  const rect = canvas.getBoundingClientRect()
+  canvas.width = rect.width * dpr; canvas.height = 150 * dpr
+  ctx.scale(dpr, dpr); ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.strokeStyle = '#1A2E25'
+}
+setTimeout(sizeCanvas, 30); window.addEventListener('resize', ()=>{ const d=hasInk?canvas.toDataURL():null; sizeCanvas(); })
+function pos(e){ const r = canvas.getBoundingClientRect(); const t = e.touches?e.touches[0]:e; return { x:t.clientX-r.left, y:t.clientY-r.top } }
+function start(e){ e.preventDefault(); drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y) }
+function move(e){ if(!drawing)return; e.preventDefault(); const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); hasInk=true; refresh() }
+function end(){ drawing=false }
+canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move); canvas.addEventListener('mouseup',end); canvas.addEventListener('mouseleave',end)
+canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',move,{passive:false}); canvas.addEventListener('touchend',end)
+function clearSig(){ ctx.clearRect(0,0,canvas.width,canvas.height); hasInk=false; refresh() }
+
+// ── ID upload ─────────────────────────────────────────────────
+const idInput = $('idInput'); let idData = null
+function pickId(e){
+  const f = e.target.files[0]; if(!f) return
+  const rd = new FileReader()
+  rd.onload = () => { idData = rd.result; $('idImg').src = idData; $('idName').textContent = f.name + ' · ' + Math.round(f.size/1024) + ' KB'; $('idPrev').style.display='block'; $('drop').style.display='none'; refresh() }
+  rd.readAsDataURL(f)
+}
+function clearId(){ idData=null; idInput.value=''; $('idPrev').style.display='none'; $('drop').style.display='block'; refresh() }
+
+// ── gate + submit ─────────────────────────────────────────────
+function refresh(){
+  const ok = hasInk && idData && $('confirm').checked
+  $('submitBtn').disabled = !ok
+  $('why').textContent = ok ? 'Ready to send.' :
+    (!hasInk?'Draw your signature. ':'') + (!idData?'Upload your ID. ':'') + (!$('confirm').checked?'Tick the box. ':'')
+}
+function doSign(){
+  $('outSig').src = canvas.toDataURL('image/png')
+  $('outId').src = idData
+  $('signForm').style.display='none'
+  $('signed').style.display='block'
+  $('signed').scrollIntoView({behavior:'smooth', block:'center'})
+}
+</script>
+</body>
+</html>

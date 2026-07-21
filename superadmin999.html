@@ -2819,9 +2819,19 @@ const APPROVAL_BRANDS = {
     logoImg: 'https://itinerarydesignhub.com/vbd-app-icon.png',
     wordmark: 'Vacations <span style="color:#3A5647;font-style:italic;">by Design</span>',
     footer: 'Vacations by Design Ltd · 9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR · Company No. 03039047'
+  },
+  tc: {
+    key: 'tc',
+    name: 'Trip Companion',
+    from: 'Trip Companion <hello@tripcompanion.co.uk>',
+    site: 'https://tripcompanionplanner.com',
+    accent: '#3A5647',
+    logoImg: 'https://tripcompanionplanner.com/tc-app-icon.png',
+    wordmark: 'Trip <span style="color:#3A5647;font-style:italic;">Companion</span>',
+    footer: 'Trip Companion Ltd · 43 Peronne Road, Hilsea, Portsmouth, England, PO3 5LD · Company No. 16308288'
   }
 }
-function approvalBrand(bk){ return APPROVAL_BRANDS[bk === 'vbd' ? 'vbd' : 'jj'] }
+function approvalBrand(bk){ return APPROVAL_BRANDS[bk] || APPROVAL_BRANDS.jj }
 // Applicant's brand for the currently-open welcome-email modal (set on open).
 let _welcomeBrand = 'jj'
 
@@ -9076,15 +9086,19 @@ function filterApps(status, btn){
 // Small pill marking which brand a planner / applicant belongs to (jj / vbd).
 // Uses fixed inline colours (not brand tokens) so it reads the same on every
 // console: green = Journey Junction, poppy = Vacations by Design.
+// One entry per brand. TC gets a blue pill because its palette is deliberately
+// the same sage/poppy as VBD — the badge must stay distinguishable at a glance.
+const BRAND_BADGES = {
+  jj:  { label: 'JJ',  title: 'Journey Junction — applied via journeyjunctionplanner.com',
+         css: 'background:rgba(26,122,94,0.10);border:1px solid rgba(26,122,94,0.32);color:#1A6F53;' },
+  vbd: { label: 'VBD', title: 'Vacations by Design — applied via itinerarydesignhub.com',
+         css: 'background:rgba(238,108,58,0.12);border:1px solid rgba(238,108,58,0.40);color:#B24A1C;' },
+  tc:  { label: 'TC',  title: 'Trip Companion — applied via tripcompanionplanner.com',
+         css: 'background:rgba(44,95,124,0.12);border:1px solid rgba(44,95,124,0.40);color:#2C5F7C;' }
+}
 function brandBadge(b) {
-  const vbd = b === 'vbd'
-  const label = vbd ? 'VBD' : 'JJ'
-  const title = vbd ? 'Vacations by Design — applied via itinerarydesignhub.com'
-                    : 'Journey Junction — applied via journeyjunctionplanner.com'
-  const css = vbd
-    ? 'background:rgba(238,108,58,0.12);border:1px solid rgba(238,108,58,0.40);color:#B24A1C;'
-    : 'background:rgba(26,122,94,0.10);border:1px solid rgba(26,122,94,0.32);color:#1A6F53;'
-  return `<span title="${title}" style="display:inline-flex;align-items:center;margin-left:6px;padding:1px 7px;border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;font-family:'DM Sans',sans-serif;${css}">${label}</span>`
+  const B = BRAND_BADGES[b] || BRAND_BADGES.jj
+  return `<span title="${B.title}" style="display:inline-flex;align-items:center;margin-left:6px;padding:1px 7px;border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;font-family:'DM Sans',sans-serif;${B.css}">${B.label}</span>`
 }
 
 function renderApps(){
@@ -9291,7 +9305,7 @@ async function sendApprovalEmailAuto(app){
     console.warn('Resend API key not set — falling back to manual email')
     return false
   }
-  const _bk = app.brand === 'vbd' ? 'vbd' : 'jj'
+  const _bk = APPROVAL_BRANDS[app.brand] ? app.brand : 'jj'
   const B = approvalBrand(_bk)
   const loginUrl = buildPlannerLoginUrl(_bk)
   const firstName = (app.name || '').split(' ')[0] || 'プランナー'
@@ -9349,7 +9363,7 @@ function buildPlannerLoginUrl(bk){
 function openApprovalEmail(id){
   const app = _allApps.find(x => x.id === id)
   if (!app) return
-  _welcomeBrand = app.brand === 'vbd' ? 'vbd' : 'jj'   // brand the applicant applied under
+  _welcomeBrand = APPROVAL_BRANDS[app.brand] ? app.brand : 'jj'   // brand the applicant applied under
   const B = approvalBrand(_welcomeBrand)
   const loginUrl = buildPlannerLoginUrl(_welcomeBrand)
   document.getElementById('welcome-to').textContent = app.email

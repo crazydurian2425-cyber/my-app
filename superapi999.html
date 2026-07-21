@@ -183,7 +183,7 @@ async function load(){
     RAW = usage || []
     if (e2) console.warn('planners lookup failed — rows will show ids', e2)
     PLANNERS = {}
-    ;(plist || []).forEach(p => { PLANNERS[p.id] = { name: p.name || '—', city: p.city || '', brand: (p.brand === 'vbd' ? 'vbd' : 'jj') } })
+    ;(plist || []).forEach(p => { PLANNERS[p.id] = { name: p.name || '—', city: p.city || '', brand: (p.brand || 'jj') } })
     render()
     document.getElementById('updated').textContent = 'updated ' + new Date().toLocaleTimeString()
   } catch (e) {

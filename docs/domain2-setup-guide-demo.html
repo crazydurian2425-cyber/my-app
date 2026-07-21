@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domain 2 setup — NameSilo → Cloudflare → live, click by click</title>
+<style>
+  :root{ --ink:#1f2a37; --ink2:#5a6b62; --ink3:#8a97a6; --line:#e6e0d4; --paper:#fffdf8;
+         --green:#137a4f; --greenbg:#e9f7ef; --greenbd:#9ccdaf;
+         --blue:#2b5f7a; --bluebg:#e8f1f6;
+         --warn:#b87333; --warnbg:#fdf3e3; --warnbd:#e3c98f;
+         --red:#b0392e; --redbg:#fbeeec; --redbd:#e5b5af; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#efeae0;font:15px/1.7 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:24px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px}
+  h2{font-size:17px;margin:34px 0 4px;display:flex;align-items:center;gap:10px}
+  h2 .badge{background:var(--green);color:#fff;border-radius:8px;font-size:12px;padding:2px 10px;letter-spacing:.03em;white-space:nowrap}
+  h2 .badge.you{background:var(--blue)}
+  h2 .badge.claude{background:#7a4fb0}
+  .sub{color:var(--ink2);font-size:13px}
+  .lead{color:var(--ink2);font-size:14px;margin:0 0 18px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:10px}
+  .step{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed #eee5d5}
+  .step:last-child{border-bottom:none}
+  .step input[type=checkbox]{width:20px;height:20px;margin-top:3px;accent-color:var(--green);flex-shrink:0;cursor:pointer}
+  .step .txt{flex:1}
+  .where{display:inline-block;background:var(--bluebg);color:var(--blue);font-weight:700;font-size:11px;border-radius:6px;padding:1px 8px;margin-right:6px;text-transform:uppercase;letter-spacing:.03em}
+  .click{display:inline-block;background:#eee;border:1px solid #ddd;border-radius:6px;padding:0 7px;font-size:12.5px;font-weight:600;white-space:nowrap}
+  code{background:#f0ebe0;border-radius:4px;padding:1px 6px;font-size:13px;word-break:break-all}
+  .note{font-size:13px;border-radius:10px;padding:12px 15px;margin-top:10px;line-height:1.65}
+  .ok{background:var(--greenbg);border:1px solid var(--greenbd);color:#185c3c}
+  .warn{background:var(--warnbg);border:1px solid var(--warnbd);color:#7a4a14}
+  .danger{background:var(--redbg);border:1px solid var(--redbd);color:#7c241c}
+  .ok b,.warn b,.danger b{color:inherit}
+  .order{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+  .order .o{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:8px 13px;font-size:13px;font-weight:600}
+  .order .o small{display:block;font-weight:400;color:var(--ink3);font-size:11px}
+  .order .arrow{align-self:center;color:var(--ink3);font-weight:700}
+  .progress{position:sticky;top:0;background:#efeae0ee;backdrop-filter:blur(4px);padding:10px 0;z-index:5;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .bar{height:10px;background:#e2dbca;border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0%;background:var(--green);border-radius:99px;transition:width .3s}
+  .bar-label{font-size:12px;color:var(--ink2);margin-top:4px}
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px;margin-top:8px}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #f0ebe0;vertical-align:top}
+  th{background:#f6f1e7;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink3)}
+  tr:last-child td{border-bottom:none}
+  .fill{background:#fff;border:1.5px dashed #c9bfa8;border-radius:6px;padding:1px 8px;color:#a09272;font-size:12.5px;display:inline-block;min-width:160px}
+  ul{margin:6px 0 0;padding-left:20px} li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏷️ Domain 2 goes live — click-by-click (NameSilo → Cloudflare)</h1>
+  <p class="lead">Your situation: you already own the domain at <b>NameSilo</b>, and your site runs on <b>Cloudflare</b>. Follow the parts in order, tick as you go (ticks are saved). If anything looks different from what's written — <b>screenshot it and ask Claude</b>, don't guess.</p>
+
+  <div class="order">
+    <span class="o">1️⃣ Move domain to Cloudflare<small>you · ~15 min + waiting</small></span><span class="arrow">→</span>
+    <span class="o">2️⃣ Attach to your site<small>you · 2 min</small></span><span class="arrow">→</span>
+    <span class="o">3️⃣ Resend email setup<small>you · 10 min</small></span><span class="arrow">→</span>
+    <span class="o">4️⃣ Google key<small>you · 5 min</small></span><span class="arrow">→</span>
+    <span class="o">5️⃣ Branding code<small>Claude · builds for you</small></span><span class="arrow">→</span>
+    <span class="o">6️⃣ Test<small>together · 15 min</small></span>
+  </div>
+  <div class="note ok"><b>Do PART 1 first — everything else depends on it.</b> Part 5 (Claude's code) can happen at any time in parallel — send the 4 ingredients whenever you're ready.</div>
+
+  <div class="progress"><div class="bar"><i id="fill"></i></div><div class="bar-label" id="lbl">0 steps done</div></div>
+
+  <!-- ══════════════ PART 1 ══════════════ -->
+  <h2><span class="badge you">PART 1 · YOU</span> Move the domain into Cloudflare <span class="sub">· ~15 min + waiting time</span></h2>
+  <div class="card">
+    <div class="step"><input type="checkbox" id="a1"><div class="txt"><span class="where">Where</span> <a href="https://dash.cloudflare.com" target="_blank">dash.cloudflare.com</a> → log in → on the home page press <span class="click">＋ Add a domain</span> (sometimes shown as "Add site").</div></div>
+    <div class="step"><input type="checkbox" id="a2"><div class="txt">Type your domain (just the name, e.g. <code>mycompany.com</code> — no https, no www) → <span class="click">Continue</span>.</div></div>
+    <div class="step"><input type="checkbox" id="a3"><div class="txt">Choose the <b>Free</b> plan (bottom of the list) → <span class="click">Continue</span>. Cloudflare scans existing DNS — just press <span class="click">Continue</span> again on the records page.</div></div>
+    <div class="step"><input type="checkbox" id="a4"><div class="txt">Cloudflare now shows <b>2 nameservers</b>, like:<br><code>alba.ns.cloudflare.com</code> and <code>rudy.ns.cloudflare.com</code> (yours will differ).<br><b>Copy both into your notepad.</b> Keep this tab open.</div></div>
+    <div class="step"><input type="checkbox" id="a5"><div class="txt"><span class="where">Where</span> New tab → <a href="https://www.namesilo.com" target="_blank">namesilo.com</a> → log in → top-right menu <span class="click">Manage My Domains</span>.</div></div>
+    <div class="step"><input type="checkbox" id="a6"><div class="txt">Find your domain in the list → tick its <b>checkbox</b> → in the icons/actions row press <span class="click">Change Nameservers</span> (globe icon). </div></div>
+    <div class="step"><input type="checkbox" id="a7"><div class="txt">You'll see NameSilo's defaults (like <code>NS1.DNSOWL.COM</code>, <code>NS2…</code>, <code>NS3…</code>). <b>Delete/clear ALL of them.</b> Into the first two boxes paste the 2 Cloudflare nameservers from your notepad → <span class="click">Submit</span> / <span class="click">Change Nameservers</span>.</div></div>
+    <div class="step"><input type="checkbox" id="a8"><div class="txt">Back in the Cloudflare tab press <span class="click">Continue</span> / <span class="click">Check nameservers now</span>. Now <b>wait</b> — usually 10–30 minutes, sometimes up to 24 h. Cloudflare emails you when the domain shows <b>✅ Active</b> on your dashboard home. <b>Do not continue to Part 2 until it says Active.</b></div></div>
+  </div>
+
+  <!-- ══════════════ PART 2 ══════════════ -->
+  <h2><span class="badge you">PART 2 · YOU</span> Attach the domain to your site <span class="sub">· 2 min</span></h2>
+  <div class="card">
+    <div class="step"><input type="checkbox" id="b1"><div class="txt"><span class="where">Where</span> dash.cloudflare.com → left menu <span class="click">Workers &amp; Pages</span> → click your app <code>my-app</code>.</div></div>
+    <div class="step"><input type="checkbox" id="b2"><div class="txt"><span class="click">Settings</span> tab → <span class="click">Domains &amp; Routes</span> → <span class="click">＋ Add</span> → choose <span class="click">Custom domain</span> → type your domain (e.g. <code>mycompany.com</code>) → <span class="click">Add domain</span>.</div></div>
+    <div class="step"><input type="checkbox" id="b3"><div class="txt">Optional but recommended: press <span class="click">＋ Add</span> again → Custom domain → <code>www.mycompany.com</code> (so the www version works too).</div></div>
+    <div class="step"><input type="checkbox" id="b4"><div class="txt"><b>Test:</b> wait ~5 min, then open <code>https://your-domain</code> in the browser. You should see <b>your current platform login page</b> (still Journey Junction branding — that's correct for now; the new branding comes in Part 5). Your old domain keeps working, nothing changed there.</div></div>
+  </div>
+
+  <!-- ══════════════ PART 3 ══════════════ -->
+  <h2><span class="badge you">PART 3 · YOU</span> Let Resend send email as domain 2 <span class="sub">· 10 min + short wait</span></h2>
+  <div class="card">
+    <div class="step"><input type="checkbox" id="c1"><div class="txt"><span class="where">Where</span> <a href="https://resend.com" target="_blank">resend.com</a> → log in (same account as now) → left menu <span class="click">Domains</span> → <span class="click">＋ Add Domain</span> → type your domain → <span class="click">Add</span>.</div></div>
+    <div class="step"><input type="checkbox" id="c2"><div class="txt">Resend now shows a small table of <b>DNS records</b> (TXT and CNAME/MX types, names like <code>resend._domainkey</code>). Keep this tab open.</div></div>
+    <div class="step"><input type="checkbox" id="c3"><div class="txt"><span class="where">Where</span> Other tab: dash.cloudflare.com → click your <b>new domain</b> → left menu <span class="click">DNS</span> → <span class="click">Records</span> → <span class="click">＋ Add record</span>. Copy each Resend record over: same <b>Type</b>, same <b>Name</b>, same <b>Value</b>. ⚠️ If a record shows an orange cloud 🟠, click it to make it <b>gray ("DNS only")</b> — email records must not be proxied.</div></div>
+    <div class="step"><input type="checkbox" id="c4"><div class="txt">Back in the Resend tab → press <span class="click">Verify DNS Records</span>. Wait until the domain shows <b>✅ Verified</b> (minutes usually). From this moment Resend is allowed to send from <code>anything@your-domain</code>.</div></div>
+  </div>
+
+  <!-- ══════════════ PART 4 ══════════════ -->
+  <h2><span class="badge you">PART 4 · YOU</span> Google key — allow the new domain <span class="sub">· 5 min</span></h2>
+  <div class="card">
+    <div class="step"><input type="checkbox" id="d1"><div class="txt"><span class="where">Where</span> <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → top-left ☰ menu → <span class="click">APIs &amp; Services</span> → <span class="click">Credentials</span>.</div></div>
+    <div class="step"><input type="checkbox" id="d2"><div class="txt">Under "API Keys" click your key (the one the platform uses) → under <b>Application restrictions / Website restrictions</b> press <span class="click">ADD</span> → enter <code>https://your-domain/*</code> → and once more for <code>https://www.your-domain/*</code> → <span class="click">Save</span>.</div></div>
+    <div class="step"><input type="checkbox" id="d3"><div class="txt">Why: without this, on domain 2 the place search and routes <b>silently fail</b> (empty suggestions). Takes ~5 min to take effect after saving.</div></div>
+  </div>
+
+  <!-- ══════════════ PART 5 ══════════════ -->
+  <h2><span class="badge claude">PART 5 · CLAUDE</span> The branding code <span class="sub">· send the ingredients, Claude builds</span></h2>
+  <div class="card">
+    <div class="step"><input type="checkbox" id="e1"><div class="txt">Send Claude these <b>4 ingredients</b> in the chat:</div></div>
+    <table>
+      <thead><tr><th>#</th><th>Ingredient</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>The domain name</td><td><span class="fill">mycompany.com</span></td></tr>
+        <tr><td>2</td><td>Company 2 name (EN + JA if letters need Japanese)</td><td><span class="fill">Sakura Travel / サクラトラベル</span></td></tr>
+        <tr><td>3</td><td>Sender email address</td><td><span class="fill">no-reply@mycompany.com</span></td></tr>
+        <tr><td>4</td><td>Logo (image file in the project folder, or a text-logo style) — favicon can be generated from it</td><td><span class="fill">logo2.png</span></td></tr>
+      </tbody>
+    </table>
+    <div class="step" style="margin-top:8px"><input type="checkbox" id="e2"><div class="txt">Claude changes the code in THIS same project: the 3 hardcoded email senders in <code>_worker.js</code> become per-domain, letter templates take Company 2's name, and every page swaps logo/favicon/title when opened on domain 2. Domain 1 stays pixel-identical.</div></div>
+    <div class="step"><input type="checkbox" id="e3"><div class="txt">You look at the changes in VS Code → commit → <b>push to main</b>. Cloudflare auto-deploys (never run wrangler). Both domains update in ~1 min.</div></div>
+  </div>
+
+  <!-- ══════════════ PART 6 ══════════════ -->
+  <h2><span class="badge">PART 6 · TOGETHER</span> Final test <span class="sub">· 15 min</span></h2>
+  <div class="card">
+    <div class="step"><input type="checkbox" id="f1"><div class="txt"><b>On domain 2:</b> open it → new logo + new favicon + Company 2 name everywhere.</div></div>
+    <div class="step"><input type="checkbox" id="f2"><div class="txt"><b>On domain 2:</b> login page → <span class="click">Forgot password</span> → the email arrives <b>from Company 2's address</b>, and its link points to domain 2.</div></div>
+    <div class="step"><input type="checkbox" id="f3"><div class="txt"><b>On domain 2:</b> admin → generate an employment letter → letter says <b>Company 2</b>, and the letter email comes from Company 2's address.</div></div>
+    <div class="step"><input type="checkbox" id="f4"><div class="txt"><b>On domain 1:</b> open it → everything IDENTICAL to before: Journey Junction logo, emails from <code>hello@thejourneyjunction.co.uk</code>. 🎉 Done.</div></div>
+  </div>
+
+  <div class="note warn" style="margin-top:20px">
+    <b>Remember:</b> both domains are ONE platform with ONE database. Same planner accounts work on both; same travelers, same chats. Only the "clothes" differ: logo, favicon, company name, email sender, letter company. Text stored in the database (terms editor content, CS quick replies) is shared between both — tell Claude if any of it mentions the company name and needs per-domain wording.
+  </div>
+
+  <div class="note danger">
+    <b>If ANY screen doesn't match these steps</b> (different button names, an error, a warning box) — stop, screenshot it, show Claude. Every step here is additive: nothing in this guide can break domain 1.
+  </div>
+</div>
+<script>
+  const boxes = [...document.querySelectorAll('input[type=checkbox]')];
+  const KEY = 'jj_domain2_guide_v1';
+  try { (JSON.parse(localStorage.getItem(KEY)||'[]')).forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; }); } catch(e){}
+  function update(){
+    const done = boxes.filter(b=>b.checked);
+    document.getElementById('fill').style.width = Math.round(done.length/boxes.length*100)+'%';
+    document.getElementById('lbl').textContent = done.length+' / '+boxes.length+' steps done';
+    try { localStorage.setItem(KEY, JSON.stringify(done.map(b=>b.id))); } catch(e){}
+  }
+  boxes.forEach(b=>b.addEventListener('change', update));
+  update();
+</script>
+</body>
+</html>

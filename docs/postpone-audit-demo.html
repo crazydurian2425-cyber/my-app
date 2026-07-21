@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Full audit — postpone fresh trips +137d (verdict: safe to run)</title>
+<style>
+  :root{ --ink:#1f2a37; --ink2:#5a6b62; --ink3:#8a97a6; --line:#e6e0d4; --paper:#fffdf8;
+         --move:#137a4f; --movebg:#e9f7ef; --movebd:#9ccdaf;
+         --keep:#2b5f7a; --keepbg:#e8f1f6;
+         --warn:#b87333; --warnbg:#fdf3e3; --warnbd:#e3c98f;
+         --bad:#b0392e; --badbg:#fbeeec; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#efeae0;font:14px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .verdict{display:inline-block;font-weight:800;font-size:12px;letter-spacing:.04em;color:#fff;background:var(--move);border-radius:6px;padding:3px 10px;text-transform:uppercase}
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px;margin-top:6px}
+  th,td{padding:8px 11px;text-align:left;border-bottom:1px solid #f0ebe0;vertical-align:top}
+  th{background:#f6f1e7;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink3)}
+  tr:last-child td{border-bottom:none}
+  .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:20px 0 6px;color:var(--ink)}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:12px;line-height:1.65}
+  .note b{color:var(--ink)}
+  .ok{background:#eef8f1;border:1px solid var(--movebd);color:#185c3c}
+  .warn{background:var(--warnbg);border:1px solid var(--warnbd);color:#7a4a14}
+  code{background:#f0ebe0;border-radius:4px;padding:1px 5px;font-size:11.5px}
+  .sev{font-size:10px;font-weight:800;border-radius:20px;padding:1px 8px;white-space:nowrap;text-transform:uppercase}
+  .sev.blocker{background:var(--badbg);color:var(--bad)}
+  .sev.minor{background:var(--warnbg);color:var(--warn)}
+  .sev.info{background:var(--keepbg);color:var(--keep)}
+  .fx{color:var(--move);font-weight:700;white-space:nowrap}
+  .pass{color:var(--move);font-weight:800}
+  ul{margin:6px 0 0;padding-left:20px} li{margin:3px 0}
+  .steps{counter-reset:s;margin-top:6px}
+  .steps div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px 10px 44px;margin-top:8px;position:relative;font-size:12.5px;color:var(--ink2)}
+  .steps div::before{counter-increment:s;content:counter(s);position:absolute;left:13px;top:9px;width:21px;height:21px;border-radius:50%;background:var(--move);color:#fff;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center}
+  .steps b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Full audit — postpone fresh trips +137 days</h1>
+  <p class="lead">
+    <span class="verdict">Verdict: safe — low risk</span>&nbsp;
+    Two independent audits (adversarial SQL review + full app sweep of every stored date) + fixes applied.
+    <b>Nothing has been run against the database.</b>
+  </p>
+
+  <div class="lbl">Your 4 guarantees — audit result</div>
+  <table>
+    <thead><tr><th>Guarantee</th><th>Audit finding</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>1. Submitted &amp; approved plans keep their date</b></td>
+        <td>Every planner view overlays <code>plans.arrival_date_snapshot</code> before showing a date (4 display paths verified). Worked trips get <b>zero writes</b>.</td>
+        <td class="pass">✓ HOLDS</td>
+      </tr>
+      <tr>
+        <td><b>2. Planner-opened plans keep their date</b></td>
+        <td>"Worked" = status <code>in_progress / bond_pending / submitted / approved / revision / completed</code>, or any <code>itinerary_items</code>, or a non-empty title, or <code>submitted_at</code>. One worked unit freezes the <b>whole trip</b>, so the sibling "trip context" panel (which reads live dates) also stays consistent.</td>
+        <td class="pass">✓ HOLDS</td>
+      </tr>
+      <tr>
+        <td><b>3. Only date values change — no logic / transport / autosave impact</b></td>
+        <td>Full sweep of every stored date in the app: itinerary slots are <code>day_number</code>-based (no stored calendar dates), <code>stats_json</code> has no dates, <code>route_snapshot</code> only exists on worked (= frozen) plans, <code>jj_*</code> caches are date-<i>keyed</i> so shifted plans get a clean refetch, deadlines are computed from assignment day. Zero code changes.</td>
+        <td class="pass">✓ HOLDS</td>
+      </tr>
+      <tr>
+        <td><b>4. Reversible</b></td>
+        <td>Every shifted traveler is tagged <code>meta.date_shift_batch='fresh-137'</code>; REVERT (−137) targets exactly those rows, atomically, and admin meta edits preserve the tag. Not idempotent-by-accident: re-APPLY skips tagged trips.</td>
+        <td class="pass">✓ HOLDS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="lbl">Bugs the audit caught — all fixed in the script</div>
+  <table>
+    <thead><tr><th>#</th><th>Severity</th><th>Issue found</th><th>Fix applied</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td><td><span class="sev blocker">blocker</span></td>
+        <td>APPLY was two statements: if a planner autosaved in the millisecond between them, plans and travelers could shift out of lockstep — and the revert couldn't see it. Also, highlighting and running half the block could double-shift.</td>
+        <td class="fx">✔ APPLY is now ONE atomic statement (single snapshot, all-or-nothing; plans update consumes the exact list of travelers actually shifted)</td>
+      </tr>
+      <tr>
+        <td>2</td><td><span class="sev minor">minor</span></td>
+        <td>A malformed meta date (e.g. <code>2026/05/01</code> or <code>2026-13-45</code>) could abort APPLY or be silently skipped, leaving one row inconsistent.</td>
+        <td class="fx">✔ PRE-FLIGHT query P1 lists every malformed date up front (must be 0 rows before applying)</td>
+      </tr>
+      <tr>
+        <td>3</td><td><span class="sev minor">minor</span></td>
+        <td>Re-running APPLY after a new unit joined an already-shifted trip would shift that unit alone, breaking the trip's leg chain.</td>
+        <td class="fx">✔ Idempotency is now per-TRIP: any tagged unit freezes the whole trip on re-runs</td>
+      </tr>
+      <tr>
+        <td>4</td><td><span class="sev minor">minor</span></td>
+        <td>A traveler whose <code>meta</code> is not a JSON object (rare) would get its meta corrupted into an array — and become unrevertable.</td>
+        <td class="fx">✔ <code>jsonb_typeof</code> guard added in APPLY and REVERT</td>
+      </tr>
+      <tr>
+        <td>5</td><td><span class="sev minor">minor</span></td>
+        <td>PREVIEW could crash on a non-numeric <code>meta.unit_order</code>, tempting a blind apply.</td>
+        <td class="fx">✔ Numeric-guarded cast in the ORDER BY</td>
+      </tr>
+      <tr>
+        <td>6</td><td><span class="sev minor">minor</span></td>
+        <td>Legacy column <code>travelers.departure_date</code> (never read or written by any app code) would have gone stale if any old row had it set.</td>
+        <td class="fx">✔ Now shifted (and reverted) alongside <code>arrival_date</code></td>
+      </tr>
+      <tr>
+        <td>7</td><td><span class="sev info">check</span></td>
+        <td>One <code>person_id</code> split across two <code>seed_batch</code> values would count as two trips and could desync.</td>
+        <td class="fx">✔ PRE-FLIGHT query P2 detects it (must be 0 rows)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="lbl">What the audit confirmed as sound (no change needed)</div>
+  <div class="note ok">
+    <ul>
+      <li><b>NULL handling</b> — travelers with no meta, no arrival date, or no plans are all safe; NULL fields stay NULL.</li>
+      <li><b>Preview = apply</b> — identical rules; if a plan becomes "worked" between your preview and the apply, apply re-checks and keeps it frozen (fails safe).</li>
+      <li><b>Revert symmetry</b> — every field shifts back exactly; a second revert is a no-op; the tag survives admin traveler edits.</li>
+      <li><b>Whole-block paste is all-or-nothing</b> — an error anywhere rolls back everything; no partial state is reachable.</li>
+      <li><b>Deadlines &amp; wallets</b> — <code>set_assignments.deadline</code>, <code>sets.deadline</code>, payouts, bonds: not touched, not derived from trip dates.</li>
+    </ul>
+  </div>
+
+  <div class="lbl">One thing to know (by design, not a bug)</div>
+  <div class="note warn">
+    Because assignment itself sets plan #1 of a set to <code>in_progress</code> (or <code>bond_pending</code>), <b>the first traveler of every assigned set freezes even if the planner never typed anything</b> — and travelers #2+ of that set shift. That's exactly "the planner's current plan doesn't move"; just be aware it means <i>every assigned set keeps at least its first trip date</i>. Unassigned travelers all shift.
+  </div>
+
+  <div class="lbl">Run order (Supabase → SQL editor, one block at a time)</div>
+  <div class="steps">
+    <div><b>PRE-FLIGHT</b> — read-only. P1 (malformed dates) and P2 (split trips) must both return <b>0 rows</b>.</div>
+    <div><b>PREVIEW</b> — read-only. Every traveler listed as <code>SHIFT +137</code> / <code>KEEP (worked)</code> / <code>ALREADY SHIFTED</code>. Eyeball it.</div>
+    <div><b>APPLY</b> — the single statement, run <b>once</b>. All-or-nothing.</div>
+    <div><b>VERIFY</b> — V1 count · V2 spot-check · V3 <code>worked_but_tagged = 0</code> · V4 <code>half_shifted_trips = 0</code>.</div>
+    <div><b>REVERT</b> — only if needed: uncomment the <code>/* */</code> block, run once. Pulls back exactly the tagged rows.</div>
+  </div>
+
+  <div class="note" style="margin-top:16px">
+    File: <code>docs/schema/postpone-fresh-trips-only.sql</code> · Shift = fixed <b>+137 days</b> (≈4.5 months), undo = <b>−137</b> · Audited 2026‑07‑16 · Demo only — the database has not been touched.
+  </div>
+</div>
+</body>
+</html>

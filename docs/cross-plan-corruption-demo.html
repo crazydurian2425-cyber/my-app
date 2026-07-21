@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brief=Osaka / Itinerary=Hiroshima — the corrupted-row bug (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.65 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px 18px}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  h2{font-size:16px;margin:24px 0 8px;display:flex;gap:9px;align-items:center}
+  h2 .n{flex-shrink:0;width:25px;height:25px;border-radius:50%;background:var(--red);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  h2.fix .n{background:var(--green)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  .rowbox{border:2px solid var(--line);border-radius:12px;background:#faf7f0;padding:12px;margin-top:8px}
+  .rowbox h4{margin:0 0 8px;font-size:12px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+  .fld{display:flex;justify-content:space-between;gap:10px;padding:6px 9px;border-radius:7px;font-size:13px;margin-bottom:5px;background:#fff;border:1px solid var(--line)}
+  .fld:last-child{margin-bottom:0}
+  .fld .k{color:var(--ink3);font-size:11.5px}
+  .fld .v{font-weight:700;text-align:right}
+  .fld.osaka{border-color:var(--greenbd);background:var(--greenbg)}
+  .fld.osaka .v{color:var(--green)}
+  .fld.hiro{border-color:var(--redbd);background:var(--redbg)}
+  .fld.hiro .v{color:var(--red)}
+  .fld.blank .v{color:var(--ink3);font-style:italic;font-weight:400}
+  .tabs{display:flex;gap:8px;margin:10px 0 4px}
+  .tab{flex:1;text-align:center;padding:8px;border-radius:9px;font-size:12.5px;font-weight:700;border:1px solid var(--line);background:#fff}
+  .tab.osaka{border-color:var(--greenbd);background:var(--greenbg);color:var(--green)}
+  .tab.hiro{border-color:var(--redbd);background:var(--redbg);color:var(--red)}
+  .arrow{text-align:center;color:var(--ink3);font-size:11px;margin:4px 0}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  button{font:inherit;font-size:13px;font-weight:700;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  button:hover{background:#faf8f3}
+  button.admin{background:var(--blue);color:#fff;border-color:var(--blue)}
+  button.reset{background:var(--green);color:#fff;border-color:var(--green)}
+  button.ghost{border-style:dashed;color:var(--ink3)}
+  .status{font-size:12.5px;font-weight:600;margin-top:8px;min-height:18px}
+  .status.bad{color:var(--red)} .status.good{color:var(--green)} .status.warn{color:var(--amber)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:#f7f3ea}
+  td.hole{color:var(--red);font-weight:700}
+  td.ok{color:var(--green);font-weight:700}
+  code{background:#f1ece0;border-radius:4px;padding:1px 5px;font-size:12px}
+  .callout{border-radius:11px;padding:12px 15px;font-size:13px;margin-top:10px;line-height:1.7}
+  .callout.blue{background:var(--bluebg);border:1px solid #bcd4e2}
+  .callout.green{background:var(--greenbg);border:1px solid var(--greenbd)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Why the brief says Osaka but the itinerary says Hiroshima</h1>
+  <p class="lead">15-agent audit result, shown visually. It's one corrupted database row — not a display glitch, not the planner's fault.</p>
+
+  <!-- 1 THE SYMPTOM -->
+  <h2><span class="n">1</span>The symptom — one row, two truths</h2>
+  <div class="panel">
+    <p style="margin:0 0 6px;font-size:13.5px">Both tabs read the <b>same plan row</b> — just different columns. That's why they can disagree only if the row itself is mixed.</p>
+    <div class="tabs">
+      <div class="tab osaka">依頼内容 (brief) → reads <code>plan.travelers</code></div>
+      <div class="tab hiro">1日目 (itinerary) → reads <code>plan.itin_title / dates / items</code></div>
+    </div>
+    <div class="rowbox">
+      <h4>The plan row in the database (corrupted)</h4>
+      <div class="fld osaka"><span class="k">traveler_id → 大阪 (person 0020, arrival 8/6)</span><span class="v">✓ shown in brief</span></div>
+      <div class="fld hiro"><span class="k">itin_title</span><span class="v">2泊3日広島旅行</span></div>
+      <div class="fld hiro"><span class="k">start_date / end_date</span><span class="v">8/8 – 8/10</span></div>
+      <div class="fld hiro"><span class="k">itinerary_items (Day 1…)</span><span class="v">Hiroshima stops</span></div>
+    </div>
+    <div class="callout blue"><b>Ruled out:</b> stale screen data (the form fully clears + reloads on open) and autosave writing to the wrong plan (well-guarded). The row genuinely holds mixed data.</div>
+  </div>
+
+  <!-- 2 HOW IT GOT CORRUPTED -->
+  <h2><span class="n">2</span>How the row got mixed — the "start fresh" wipe has two holes</h2>
+  <div class="panel">
+    <p style="margin:0 0 6px;font-size:13.5px">When a set is reassigned, <code>_wipePlanToFresh</code> should scrub the old plan off the row. Press the buttons to see the two holes.</p>
+    <div class="btns">
+      <button class="admin" onclick="reassign()">🔁 Reassign this row to the Osaka traveler</button>
+      <button onclick="wipe(false)">🧹 Run the wipe — TODAY (has holes)</button>
+      <button class="reset" onclick="wipe(true)">🧹 Run the wipe — WITH the fix</button>
+      <button class="ghost" onclick="resetSim()">reset</button>
+    </div>
+    <div class="rowbox" id="simRow"></div>
+    <div class="status" id="simStatus"></div>
+    <table style="margin-top:12px">
+      <tr><th>Field</th><th>Wipe clears it today?</th></tr>
+      <tr><td>itin_title</td><td class="ok">yes</td></tr>
+      <tr><td>hotel_*, tips, personal message</td><td class="ok">yes</td></tr>
+      <tr><td><b>start_date / end_date</b></td><td class="hole">NO — missing from the list (hole #1)</td></tr>
+      <tr><td><b>Day-1 items + title</b> (if wipe skipped)</td><td class="hole">NO — the wipe is skipped if the plan was edited &gt;30s after reassign (hole #2)</td></tr>
+    </table>
+  </div>
+
+  <!-- 3 THE FIX -->
+  <h2 class="fix"><span class="n">✓</span>The fix</h2>
+  <div class="panel">
+    <div class="callout green">
+      <b>A — stop it happening again:</b><br>
+      • Add <code>start_date</code> / <code>end_date</code> to the wipe (finish the list) — closes hole #1.<br>
+      • Make the reassignment wipe fire reliably instead of on the flaky 30-second timer — closes hole #2.<br>
+      • Pin the plan-level + hotel writes to a captured id (the two secondary bleed-vectors the audit found).<br><br>
+      <b>B — clean up his row now:</b> after A ships, he presses <b>↺ Reset</b> on the plan → truly fresh (Osaka brief, blank itinerary). Or a one-row SQL clears it immediately.
+    </div>
+    <div class="btns">
+      <button class="reset" onclick="showFixed()">▶ Show the row after the fixed Reset</button>
+      <button class="ghost" onclick="resetSim2()">reset</button>
+    </div>
+    <div class="rowbox" id="fixRow"></div>
+    <div class="status" id="fixStatus"></div>
+  </div>
+
+  <div class="callout blue">
+    <b>In one line:</b> a reassignment left Hiroshima data on a row now pointing at the Osaka traveler, because the "fresh start" eraser (1) never wiped the dates and (2) can skip entirely. Fixing the eraser stops it recurring; Reset (or a small SQL) cleans this one. Deeper follow-up: a dropped database uniqueness rule lets duplicate plan rows exist — worth addressing separately.
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+function drawRow(el, r){
+  el.innerHTML = `<h4>The plan row</h4>
+    <div class="fld osaka"><span class="k">traveler_id</span><span class="v">${r.traveler}</span></div>
+    <div class="fld ${r.title==='(blank)'?'blank':(r.titleBad?'hiro':'osaka')}"><span class="k">itin_title</span><span class="v">${r.title}</span></div>
+    <div class="fld ${r.dates==='(blank)'?'blank':(r.datesBad?'hiro':'osaka')}"><span class="k">start / end</span><span class="v">${r.dates}</span></div>
+    <div class="fld ${r.items==='(none)'?'blank':(r.itemsBad?'hiro':'osaka')}"><span class="k">itinerary_items</span><span class="v">${r.items}</span></div>`
+}
+let sim
+function resetSim(){ sim={traveler:'大阪 person 0020', title:'2泊3日広島旅行', titleBad:true, dates:'8/8 – 8/10', datesBad:true, items:'Hiroshima Day 1', itemsBad:true}; drawRow($('simRow'),sim); $('simStatus').textContent='This is the corrupted row: Osaka traveler + Hiroshima itinerary.' ; $('simStatus').className='status bad' }
+function reassign(){ sim.traveler='大阪 person 0020'; drawRow($('simRow'),sim); $('simStatus').className='status warn'; $('simStatus').textContent='Row now points at the Osaka traveler — but the old Hiroshima itinerary is still attached. The wipe must scrub it…' }
+function wipe(withFix){
+  sim.title='(blank)'; sim.titleBad=false
+  if(withFix){
+    sim.dates='(blank)'; sim.datesBad=false; sim.items='(none)'; sim.itemsBad=false
+    drawRow($('simRow'),sim); $('simStatus').className='status good'
+    $('simStatus').textContent='✓ WITH FIX: title, dates AND items all cleared. Truly fresh Osaka plan.'
+  } else {
+    // hole #1: dates survive; hole #2: if skipped, items+title survive (show dates hole)
+    drawRow($('simRow'),sim); $('simStatus').className='status bad'
+    $('simStatus').textContent='✕ TODAY: title cleared, but 8/8–8/10 dates + Hiroshima items SURVIVE (holes #1/#2). Still corrupted.'
+  }
+}
+function resetSim2(){ $('fixRow').innerHTML=''; $('fixStatus').textContent='' }
+function showFixed(){
+  drawRow($('fixRow'), {traveler:'大阪 person 0020', title:'(blank)', dates:'(blank)', items:'(none)'})
+  $('fixStatus').className='status good'
+  $('fixStatus').textContent='✓ After the fixed Reset: correct Osaka brief, blank itinerary. He builds it clean and submits.'
+}
+resetSim(); resetSim2()
+</script>
+</body>
+</html>

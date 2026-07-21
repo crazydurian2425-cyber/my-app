@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postpone fresh trips +137 days — live preview (demo, nothing applied)</title>
+<style>
+  :root{--ink:#1A2E25;--ink2:#5a6b62;--ink3:#9aa39d;--line:#e6e0d4;--cream:#e7e1d3;--card:#fffdf8;
+    --green:#2C5F2D;--greenbg:#eef7ef;--greenbd:#9ccdaf;--amber:#b87333;--amberbg:#fdf3e3;
+    --red:#b3261e;--redbg:#fdecea;--blue:#2b5f7a;--bluebg:#e8f1f6;--purple:#6b4d9e;--gold:#C9A227}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:1150px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .verdict{display:flex;gap:14px;align-items:center;background:var(--greenbg);border:1.5px solid var(--greenbd);border-radius:14px;padding:14px 18px;margin-bottom:16px}
+  .verdict .badge{font-size:20px;font-weight:900;color:#fff;background:var(--green);border-radius:10px;padding:8px 16px;white-space:nowrap}
+  .verdict p{margin:0;font-size:13px;color:var(--ink)}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .kpi .n{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums}
+  .kpi .l{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+  .kpi.g .n{color:var(--green)} .kpi.b .n{color:var(--blue)} .kpi.a .n{color:var(--amber)}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+  @media (max-width:900px){ .cards{grid-template-columns:1fr} .kpis{grid-template-columns:repeat(2,1fr)} }
+  .cardx{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:12.5px;color:var(--ink2);line-height:1.7}
+  .cardx b{color:var(--ink)} .cardx .tick{color:var(--green);font-weight:800}
+  .cardx ol{margin:6px 0 0;padding-left:20px}
+  .cardx li{margin-bottom:7px}
+  .tabs{display:flex;gap:8px;margin:14px 0 10px}
+  .tab{font:inherit;font-size:13px;font-weight:700;padding:8px 16px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .tab.on{background:var(--green);border-color:var(--green);color:#fff}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);background:#f7f3ea}
+  tbody td{padding:8px 12px;border-bottom:1px solid #f1ecdf;font-size:12.5px}
+  tbody tr:last-child td{border-bottom:none}
+  .old{color:var(--ink3);text-decoration:line-through}
+  .new{color:var(--green);font-weight:800}
+  .frozen{color:var(--blue);font-weight:700}
+  .note{font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:14px;line-height:1.75}
+  .note b{color:var(--ink)} .note code{background:#f0ead8;border-radius:4px;padding:1px 6px;font-size:11.5px}
+  .warn{background:var(--amberbg);border-color:#e8c99a}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Postpone fresh trips <b style="color:var(--gold)">+137 days (~4.5 months)</b> <span style="font-size:12px;color:var(--gold);font-weight:800">LIVE PREVIEW · NOTHING APPLIED</span></h1>
+  <p class="lead">This preview was computed <b>read-only from your live database</b> (Jul 6). It is exactly what <code>docs/schema/postpone-fresh-trips-only.sql</code> would do. No date has been changed yet.</p>
+
+  <div class="verdict">
+    <div class="badge">RISK: LOW</div>
+    <p><b>Pure data update — zero code changes.</b> Only traveler dates (and the matching frozen-date copies on their still-pending plans) move. Every plan any planner has opened, submitted, or had approved is in the KEEP bucket — <b>zero writes touch it</b>. Fully revertible (−137 on exactly the tagged rows).</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n">133</div><div class="l">Travelers total</div></div>
+    <div class="kpi g"><div class="n">68</div><div class="l">Shift +137d (38 trips)</div></div>
+    <div class="kpi b"><div class="n">65</div><div class="l">Keep — worked (22 trips)</div></div>
+    <div class="kpi a"><div class="n">29</div><div class="l">Plan rows re-dated (all pending)</div></div>
+    <div class="kpi"><div class="n">0</div><div class="l">Opened/submitted plans touched</div></div>
+  </div>
+
+  <div class="cards">
+    <div class="cardx">
+      <b>Your four conditions — how each is guaranteed:</b>
+      <ol>
+        <li><span class="tick">✓</span> <b>Submitted / approved itineraries keep their dates.</b> Any plan with <code>submitted_at</code> set or status submitted / approved / revision / bond_pending / completed freezes its whole trip — the UPDATE never selects those rows. Live check: the 29 plan rows that would move are <b>all status <code>pending</code></b>.</li>
+        <li><span class="tick">✓</span> <b>Opened plans keep their dates.</b> A plan counts as opened if it is in_progress, has a title, or has even one itinerary item — any of those freezes the trip too.</li>
+        <li><span class="tick">✓</span> <b>No logic / transport / autosave changes.</b> One SQL UPDATE on data — no code deploy. Transport is never stored; it recomputes from the plan's own dates, so frozen plans don't re-fetch, and a shifted fresh plan simply fetches for its new date when first opened (the correct behaviour). Set deadlines (<code>sets.deadline</code>, <code>set_assignments.deadline</code>) are untouched — planners' work dates don't move.</li>
+        <li><span class="tick">✓</span> <b>Revertible.</b> Every shifted traveler is tagged <code>date_shift_batch='fresh-137'</code>. The REVERT block moves exactly those rows back −137 and removes the tag. One caveat in the next card.</li>
+      </ol>
+    </div>
+    <div class="cardx">
+      <b>What the live preview found:</b>
+      <ol>
+        <li><b>65 travelers stay frozen</b> — every Japan trip currently being worked (Tokyo, Kyoto, Osaka, Hakone, Himeji, Hiroshima…). Not one byte written to them.</li>
+        <li><b>68 travelers shift</b> — <b>46 France leftovers</b> from the old seed (Paris, Nice, Reims…) plus <b>22 fresh Japan travelers</b> nobody has opened yet (July–Aug arrivals → Nov–Dec).</li>
+        <li>Multi-unit trips move <b>as a whole</b> (every unit +137), so leg-chaining and durations stay intact.</li>
+        <li>Re-running APPLY is safe — already-tagged rows are skipped (no double shift).</li>
+      </ol>
+      <b>The one revert caveat:</b> if a planner opens a shifted plan and builds an itinerary on the NEW dates, and you revert afterwards, that plan's dates snap back −137 while its built itinerary stays. So: revert promptly if at all, or accept the shifted dates once real work starts on them.
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="show('shift',this)">SHIFT +137 (68)</button>
+    <button class="tab" onclick="show('keep',this)">KEEP — frozen (65)</button>
+  </div>
+  <table>
+    <thead><tr><th style="width:30%">Traveler</th><th style="width:18%">Destination</th><th style="width:10%">Duration</th><th style="width:42%">Arrival date</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <div class="note warn">
+    <b>Decide on the France leftovers.</b> 46 of the 68 shifting travelers are old France-seed trips that were never worked. Shifting them is harmless — but if you'd rather delete or ignore them, say so and the SQL can exclude them (shift only the 22 fresh Japan travelers).
+  </div>
+  <div class="note">
+    <b>To apply for real (when you say go):</b> open <code>docs/schema/postpone-fresh-trips-only.sql</code> in the Supabase SQL editor → run the PREVIEW block and eyeball it → run APPLY (one transaction) → run VERIFY (expects 68 tagged travelers, 0 worked-but-tagged) → REVERT block is at the bottom if ever needed. I have not run anything.
+  </div>
+</div>
+<script>
+const DATA = {"shift": [{"name": "Maximilian Vogt", "dest": "Saint-Émilion", "dur": "4D3N", "old": "2026-07-02", "new": "2026-11-16"}, {"name": "Robert & Eleanor Sinclair", "dest": "Reims", "dur": "5D4N", "old": "2026-07-03", "new": "2026-11-17"}, {"name": "Helios Capital — Executive Retreat", "dest": "Paris", "dur": "7D6N", "old": "2026-07-10", "new": "2026-11-24"}, {"name": "Rajesh & Priya Kapoor", "dest": "Loire Valley", "dur": "6D5N", "old": "2026-07-12", "new": "2026-11-26"}, {"name": "James & Charlotte Whitmore", "dest": "Paris", "dur": "4D3N", "old": "2026-07-15", "new": "2026-11-29"}, {"name": "Sofía Romero", "dest": "Saint-Malo", "dur": "3D2N", "old": "2026-07-11", "new": "2026-11-25"}, {"name": "Sofía Romero", "dest": "Mont-Saint-Michel", "dur": "2D1N", "old": "2026-07-13", "new": "2026-11-27"}, {"name": "Sofía Romero", "dest": "Paris", "dur": "3D2N", "old": "2026-07-14", "new": "2026-11-28"}, {"name": "Emily & James Carter", "dest": "Paris", "dur": "3D2N", "old": "2026-07-15", "new": "2026-11-29"}, {"name": "Emily & James Carter", "dest": "Bordeaux", "dur": "3D2N", "old": "2026-07-17", "new": "2026-12-01"}, {"name": "Lukas Müller", "dest": "Paris", "dur": "3D2N", "old": "2026-07-22", "new": "2026-12-06"}, {"name": "Lukas Müller", "dest": "Strasbourg", "dur": "2D1N", "old": "2026-07-24", "new": "2026-12-08"}, {"name": "Wei Lin & Marcus Tan", "dest": "Paris", "dur": "3D2N", "old": "2026-07-03", "new": "2026-11-17"}, {"name": "Wei Lin & Marcus Tan", "dest": "Nice", "dur": "3D2N", "old": "2026-07-05", "new": "2026-11-19"}, {"name": "Wei Lin & Marcus Tan", "dest": "Cannes", "dur": "2D1N", "old": "2026-07-07", "new": "2026-11-21"}, {"name": "Olivia & Mark Thompson", "dest": "Paris", "dur": "3D2N", "old": "2026-07-12", "new": "2026-11-26"}, {"name": "Olivia & Mark Thompson", "dest": "Avignon", "dur": "3D2N", "old": "2026-07-14", "new": "2026-11-28"}, {"name": "Ji-hye Park", "dest": "Paris", "dur": "3D2N", "old": "2026-07-19", "new": "2026-12-03"}, {"name": "Ji-hye Park", "dest": "Lyon", "dur": "2D1N", "old": "2026-07-21", "new": "2026-12-05"}, {"name": "Camila & Diego Vargas", "dest": "Paris", "dur": "3D2N", "old": "2026-07-24", "new": "2026-12-08"}, {"name": "Camila & Diego Vargas", "dest": "Reims", "dur": "2D1N", "old": "2026-07-26", "new": "2026-12-10"}, {"name": "Eduardo & Beatriz Silva", "dest": "Bordeaux", "dur": "3D2N", "old": "2026-07-29", "new": "2026-12-13"}, {"name": "Eduardo & Beatriz Silva", "dest": "Lyon", "dur": "3D2N", "old": "2026-07-31", "new": "2026-12-15"}, {"name": "Anna Kowalski", "dest": "Lyon", "dur": "3D2N", "old": "2026-07-05", "new": "2026-11-19"}, {"name": "Anna Kowalski", "dest": "Annecy", "dur": "2D1N", "old": "2026-07-07", "new": "2026-11-21"}, {"name": "Rachel & David Cohen", "dest": "Paris", "dur": "3D2N", "old": "2026-07-10", "new": "2026-11-24"}, {"name": "Rachel & David Cohen", "dest": "Marseille", "dur": "2D1N", "old": "2026-07-12", "new": "2026-11-26"}, {"name": "Rachel & David Cohen", "dest": "Avignon", "dur": "2D1N", "old": "2026-07-13", "new": "2026-11-27"}, {"name": "Maria Eduarda Santos", "dest": "Nice", "dur": "3D2N", "old": "2026-07-18", "new": "2026-12-02"}, {"name": "Maria Eduarda Santos", "dest": "Marseille", "dur": "2D1N", "old": "2026-07-20", "new": "2026-12-04"}, {"name": "Klaas & Marieke Janssen", "dest": "Strasbourg", "dur": "2D1N", "old": "2026-07-23", "new": "2026-12-07"}, {"name": "Klaas & Marieke Janssen", "dest": "Reims", "dur": "2D1N", "old": "2026-07-24", "new": "2026-12-08"}, {"name": "Liam O'Connor", "dest": "Paris", "dur": "3D2N", "old": "2026-07-27", "new": "2026-12-11"}, {"name": "Liam O'Connor", "dest": "Saint-Malo", "dur": "2D1N", "old": "2026-07-29", "new": "2026-12-13"}, {"name": "Liam O'Connor", "dest": "Mont-Saint-Michel", "dur": "2D1N", "old": "2026-07-30", "new": "2026-12-14"}, {"name": "Isabella & Marco Rossi", "dest": "Nice", "dur": "3D2N", "old": "2026-07-03", "new": "2026-11-17"}, {"name": "Isabella & Marco Rossi", "dest": "Marseille", "dur": "3D2N", "old": "2026-07-05", "new": "2026-11-19"}, {"name": "Sara Lindberg", "dest": "Paris", "dur": "3D2N", "old": "2026-07-09", "new": "2026-11-23"}, {"name": "Sara Lindberg", "dest": "Nantes", "dur": "2D1N", "old": "2026-07-11", "new": "2026-11-25"}, {"name": "Joaquín & Valentina Reyes", "dest": "Paris", "dur": "3D2N", "old": "2026-07-14", "new": "2026-11-28"}, {"name": "Joaquín & Valentina Reyes", "dest": "Avignon", "dur": "3D2N", "old": "2026-07-16", "new": "2026-11-30"}, {"name": "Lukas Brandt", "dest": "Sapporo", "dur": "3D2N", "old": "2026-08-05", "new": "2026-12-20"}, {"name": "Lukas Brandt", "dest": "Otaru", "dur": "2D1N", "old": "2026-08-07", "new": "2026-12-22"}, {"name": "Lukas Brandt", "dest": "Niseko", "dur": "3D2N", "old": "2026-08-08", "new": "2026-12-23"}, {"name": "Bram van der Heijden", "dest": "Sapporo", "dur": "3D2N", "old": "2026-08-02", "new": "2026-12-17"}, {"name": "Bram van der Heijden", "dest": "Otaru", "dur": "2D1N", "old": "2026-08-04", "new": "2026-12-19"}, {"name": "Bram van der Heijden", "dest": "Niseko", "dur": "3D2N", "old": "2026-08-05", "new": "2026-12-20"}, {"name": "Kanya Sirisopha", "dest": "Fukuoka", "dur": "3D2N", "old": "2026-08-05", "new": "2026-12-20"}, {"name": "Kanya Sirisopha", "dest": "Beppu", "dur": "2D1N", "old": "2026-08-07", "new": "2026-12-22"}, {"name": "Kanya Sirisopha", "dest": "Yufuin", "dur": "2D1N", "old": "2026-08-08", "new": "2026-12-23"}, {"name": "Kanya Sirisopha", "dest": "Nagasaki", "dur": "3D2N", "old": "2026-08-09", "new": "2026-12-24"}, {"name": "Ramon Bautista", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-03", "new": "2026-12-18"}, {"name": "Ramon Bautista", "dest": "Nikko", "dur": "2D1N", "old": "2026-08-05", "new": "2026-12-20"}, {"name": "Ramon Bautista", "dest": "Hakone", "dur": "2D1N", "old": "2026-08-06", "new": "2026-12-21"}, {"name": "Ramon Bautista", "dest": "Kyoto", "dur": "3D2N", "old": "2026-08-07", "new": "2026-12-22"}, {"name": "Müller & Friends Party", "dest": "Annecy", "dur": "6D5N", "old": "2026-07-05", "new": "2026-11-19"}, {"name": "The Harrington Family", "dest": "Paris", "dur": "6D5N", "old": "2026-07-22", "new": "2026-12-06"}, {"name": "Olivia & James Thompson", "dest": "Kyoto", "dur": "", "old": "2026-08-08", "new": "2026-12-23"}, {"name": "Sophie & Lucas Müller", "dest": "Kyoto", "dur": "6D5N", "old": "2026-08-01", "new": "2026-12-16"}, {"name": "Sterling family", "dest": "Niseko", "dur": "6D5N", "old": "2026-08-07", "new": "2026-12-22"}, {"name": "Isabella & Matteo Romano", "dest": "Hakone", "dur": "", "old": "2026-08-10", "new": "2026-12-25"}, {"name": "Aisha & Khalid Al-Maktoum", "dest": "Kyoto", "dur": "7D6N", "old": "2026-08-03", "new": "2026-12-18"}, {"name": "Zhang family", "dest": "Tokyo", "dur": "7D6N", "old": "2026-08-10", "new": "2026-12-25"}, {"name": "Wei & Mei Chen", "dest": "Aix-en-Provence", "dur": "5D4N", "old": "2026-07-10", "new": "2026-11-24"}, {"name": "Olivia Bennett", "dest": "Saint-Tropez", "dur": "4D3N", "old": "2026-07-20", "new": "2026-12-04"}, {"name": "The Anderson Party", "dest": "Paris", "dur": "7D6N", "old": "2026-07-28", "new": "2026-12-12"}, {"name": "Lorenzo & Sofia Bianchi", "dest": "Cannes", "dur": "5D4N", "old": "2026-07-18", "new": "2026-12-02"}, {"name": "Khalid & Aisha Al-Nahyan", "dest": "Nice", "dur": "7D6N", "old": "2026-07-15", "new": "2026-11-29"}], "keep": [{"name": "Beatriz Fonseca", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-03"}, {"name": "Beatriz Fonseca", "dest": "Nikko", "dur": "2D1N", "old": "2026-08-05"}, {"name": "Beatriz Fonseca", "dest": "Hakone", "dur": "2D1N", "old": "2026-08-06"}, {"name": "Beatriz Fonseca", "dest": "Kyoto", "dur": "3D2N", "old": "2026-08-07"}, {"name": "Henrik Lundgren", "dest": "Sapporo", "dur": "3D2N", "old": "2026-08-01"}, {"name": "Henrik Lundgren", "dest": "Furano", "dur": "2D1N", "old": "2026-08-03"}, {"name": "Henrik Lundgren", "dest": "Hakodate", "dur": "3D2N", "old": "2026-08-04"}, {"name": "Sneha Iyer", "dest": "Osaka", "dur": "3D2N", "old": "2026-08-05"}, {"name": "Sneha Iyer", "dest": "Himeji", "dur": "2D1N", "old": "2026-08-07"}, {"name": "Sneha Iyer", "dest": "Hiroshima", "dur": "3D2N", "old": "2026-08-08"}, {"name": "Sneha Iyer", "dest": "Miyajima", "dur": "2D1N", "old": "2026-08-10"}, {"name": "Declan Forsythe", "dest": "Fukuoka", "dur": "3D2N", "old": "2026-08-04"}, {"name": "Declan Forsythe", "dest": "Beppu", "dur": "2D1N", "old": "2026-08-06"}, {"name": "Declan Forsythe", "dest": "Yufuin", "dur": "2D1N", "old": "2026-08-07"}, {"name": "Declan Forsythe", "dest": "Nagasaki", "dur": "3D2N", "old": "2026-08-08"}, {"name": "Fatima Al-Mansoori", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-06"}, {"name": "Fatima Al-Mansoori", "dest": "Kawaguchiko", "dur": "2D1N", "old": "2026-08-08"}, {"name": "Fatima Al-Mansoori", "dest": "Kyoto", "dur": "3D2N", "old": "2026-08-09"}, {"name": "Seo-yeon Han", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-02"}, {"name": "Seo-yeon Han", "dest": "Nikko", "dur": "2D1N", "old": "2026-08-04"}, {"name": "Seo-yeon Han", "dest": "Hakone", "dur": "2D1N", "old": "2026-08-05"}, {"name": "Seo-yeon Han", "dest": "Kyoto", "dur": "3D2N", "old": "2026-08-06"}, {"name": "Eleanor Whitfield", "dest": "Osaka", "dur": "3D2N", "old": "2026-08-01"}, {"name": "Eleanor Whitfield", "dest": "Himeji", "dur": "2D1N", "old": "2026-08-03"}, {"name": "Eleanor Whitfield", "dest": "Hiroshima", "dur": "3D2N", "old": "2026-08-04"}, {"name": "Eleanor Whitfield", "dest": "Miyajima", "dur": "2D1N", "old": "2026-08-06"}, {"name": "Danielle Foster", "dest": "Osaka", "dur": "3D2N", "old": "2026-08-06"}, {"name": "Danielle Foster", "dest": "Takayama", "dur": "3D2N", "old": "2026-08-08"}, {"name": "Danielle Foster", "dest": "Shirakawa-go", "dur": "2D1N", "old": "2026-08-10"}, {"name": "Danielle Foster", "dest": "Kanazawa", "dur": "3D2N", "old": "2026-08-11"}, {"name": "Camille Tremblay", "dest": "Fukuoka", "dur": "3D2N", "old": "2026-08-09"}, {"name": "Camille Tremblay", "dest": "Beppu", "dur": "2D1N", "old": "2026-08-11"}, {"name": "Camille Tremblay", "dest": "Yufuin", "dur": "2D1N", "old": "2026-08-12"}, {"name": "Camille Tremblay", "dest": "Nagasaki", "dur": "3D2N", "old": "2026-08-13"}, {"name": "Lorenzo Ferretti", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-08"}, {"name": "Lorenzo Ferretti", "dest": "Kawaguchiko", "dur": "2D1N", "old": "2026-08-10"}, {"name": "Lorenzo Ferretti", "dest": "Kyoto", "dur": "3D2N", "old": "2026-08-11"}, {"name": "Lorenzo Ferretti", "dest": "Osaka", "dur": "2D1N", "old": "2026-08-13"}, {"name": "Wei Jie Tan", "dest": "Sapporo", "dur": "3D2N", "old": "2026-08-02"}, {"name": "Wei Jie Tan", "dest": "Otaru", "dur": "2D1N", "old": "2026-08-04"}, {"name": "Wei Jie Tan", "dest": "Niseko", "dur": "3D2N", "old": "2026-08-05"}, {"name": "Álvaro Serrano", "dest": "Osaka", "dur": "3D2N", "old": "2026-08-05"}, {"name": "Álvaro Serrano", "dest": "Himeji", "dur": "2D1N", "old": "2026-08-07"}, {"name": "Álvaro Serrano", "dest": "Hiroshima", "dur": "3D2N", "old": "2026-08-08"}, {"name": "Álvaro Serrano", "dest": "Miyajima", "dur": "2D1N", "old": "2026-08-10"}, {"name": "Mariana Ríos Beltrán", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-01"}, {"name": "Mariana Ríos Beltrán", "dest": "Hakone", "dur": "2D1N", "old": "2026-08-03"}, {"name": "Mariana Ríos Beltrán", "dest": "Kyoto", "dur": "3D2N", "old": "2026-08-04"}, {"name": "Mariana Ríos Beltrán", "dest": "Osaka", "dur": "2D1N", "old": "2026-08-06"}, {"name": "Tania Hargreaves", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-08"}, {"name": "Tania Hargreaves", "dest": "Kawaguchiko", "dur": "2D1N", "old": "2026-08-10"}, {"name": "Tania Hargreaves", "dest": "Kyoto", "dur": "3D2N", "old": "2026-08-11"}, {"name": "Astrid Lindqvist", "dest": "Sapporo", "dur": "3D2N", "old": "2026-08-01"}, {"name": "Astrid Lindqvist", "dest": "Otaru", "dur": "2D1N", "old": "2026-08-03"}, {"name": "Astrid Lindqvist", "dest": "Niseko", "dur": "3D2N", "old": "2026-08-04"}, {"name": "Thandiwe Khumalo", "dest": "Osaka", "dur": "3D2N", "old": "2026-08-06"}, {"name": "Thandiwe Khumalo", "dest": "Himeji", "dur": "2D1N", "old": "2026-08-08"}, {"name": "Thandiwe Khumalo", "dest": "Hiroshima", "dur": "3D2N", "old": "2026-08-09"}, {"name": "Thandiwe Khumalo", "dest": "Miyajima", "dur": "2D1N", "old": "2026-08-11"}, {"name": "Charlotte Bennett", "dest": "Kyoto", "dur": "4D3N", "old": "2026-08-01"}, {"name": "Daniel & Grace Park", "dest": "Tokyo", "dur": "3D2N", "old": "2026-08-13"}, {"name": "Arjun & Priya Mehta", "dest": "Hakone", "dur": "5D4N", "old": "2026-08-02"}, {"name": "Chen Wei", "dest": "Kanazawa", "dur": "", "old": "2026-08-05"}, {"name": "Al-Rashid family", "dest": "Okinawa", "dur": "5D4N", "old": "2026-08-11"}, {"name": "Wong family-office group", "dest": "Tokyo", "dur": "6D5N", "old": "2026-08-04"}]}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function show(which, btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); btn.classList.add('on')
+  const tb = document.getElementById('rows'); tb.innerHTML=''
+  DATA[which].forEach(r=>{
+    const tr = document.createElement('tr')
+    const date = which==='shift'
+      ? '<span class="old">'+esc(r.old)+'</span> &nbsp;&rarr;&nbsp; <span class="new">'+esc(r.new)+'</span>'
+      : '<span class="frozen">'+esc(r.old)+' — unchanged</span>'
+    tr.innerHTML = '<td>'+esc(r.name)+'</td><td>'+esc(r.dest)+'</td><td>'+esc(r.dur||'')+'</td><td>'+date+'</td>'
+    tb.appendChild(tr)
+  })
+}
+show('shift', document.querySelector('.tab'))
+</script>
+</body>
+</html>

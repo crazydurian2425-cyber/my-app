@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS console — chat switch speed demo</title>
+<style>
+  :root{ --ink:#e8eef0; --ink2:#9fb0b3; --ink3:#6b7d80; --bg:#0f1717; --panel:#16201f; --line:#243230;
+         --green:#2fae7a; --greenbg:#152a22; --red:#e06a5f; --redbg:#2a1818; --me:#1f6f55; --them:#1c2826; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .pickers{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .pickers button{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;gap:8px;align-items:center}
+  .pickers button:hover{border-color:var(--green)}
+  .pickers .tag{font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;background:#33403d;color:var(--ink2)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.two{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;height:420px}
+  .ptitle{padding:9px 13px;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+  .panel.now .ptitle{background:var(--redbg);color:var(--red)}
+  .panel.prop .ptitle{background:var(--greenbg);color:var(--green)}
+  .chead{padding:11px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .av{width:30px;height:30px;border-radius:50%;background:#2b3a38;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink2)}
+  .cname{font-weight:600;font-size:14px}
+  .body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .msg{max-width:78%;padding:8px 11px;border-radius:12px;font-size:13px}
+  .msg.them{background:var(--them);align-self:flex-start;border-bottom-left-radius:3px}
+  .msg.me{background:var(--me);align-self:flex-end;border-bottom-right-radius:3px;color:#eafff5}
+  .status{padding:7px 14px;font-size:11.5px;border-top:1px solid var(--line);color:var(--ink3);min-height:30px}
+  .status.wait{color:#d9a441} .status.done{color:var(--green)} .status.stale{color:var(--red)} .status.fast{color:var(--green);font-weight:700}
+  .skel{height:34px;border-radius:12px;background:linear-gradient(90deg,#1c2826 25%,#243230 37%,#1c2826 63%);background-size:400% 100%;animation:sh 1.2s ease infinite}
+  .skel.short{width:55%} .skel.med{width:70%;align-self:flex-end} .skel.long{width:80%}
+  @keyframes sh{0%{background-position:100% 0}100%{background-position:-100% 0}}
+  .stalewrap{position:relative}
+  .staleband{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--red);background:rgba(42,24,24,.35);pointer-events:none}
+  .note{font-size:12.5px;color:var(--ink2);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CS console — switching between planner chats</h1>
+  <p class="lead">Click a planner. <b>Left = now</b> (old chat lingers while it downloads). <b>Right = proposed</b> (clears instantly + loads; a chat you've opened before is instant).</p>
+
+  <div class="pickers" id="pickers"></div>
+
+  <div class="two">
+    <div class="panel now">
+      <div class="ptitle">✕ Now</div>
+      <div class="chead"><div class="av" id="now-av">—</div><div class="cname" id="now-name">Pick a planner ↑</div></div>
+      <div class="body stalewrap" id="now-body"></div>
+      <div class="status" id="now-status"></div>
+    </div>
+    <div class="panel prop">
+      <div class="ptitle">✓ Proposed</div>
+      <div class="chead"><div class="av" id="prop-av">—</div><div class="cname" id="prop-name">Pick a planner ↑</div></div>
+      <div class="body" id="prop-body"></div>
+      <div class="status" id="prop-status"></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>What you're seeing:</b><br>
+    ✕ <b>Now</b> — the header changes instantly, but the <b>old planner's messages keep showing</b> until the new ones finish downloading (~1.2 s here). That's the "frozen on the previous chat" feeling.<br>
+    ✓ <b>Proposed</b> — clicking <b>clears the chat and shows a loading shimmer immediately</b>, so it feels responsive. And a chat you've <b>already opened is cached → instant</b> (click the same planner twice to see it).<br><br>
+    <b>Try this:</b> click 三木 → 森下 → 三木 again. On the second 三木, the right side is <b>instant</b> while the left still waits.
+  </div>
+</div>
+
+<script>
+const PLANNERS = [
+  { id:'miki', name:'三木未希', tag:'BOND', msgs:[
+    {from:'them', t:'保証金を振り込みました。'},
+    {from:'me',   t:'確認いたしました。ロックを解除しました。'},
+    {from:'them', t:'チェックインします。よろしくお願いします。'},
+  ]},
+  { id:'mori', name:'森下慈子', tag:'PAYOUT', msgs:[
+    {from:'them', t:'前回の出金について教えてください。'},
+    {from:'me',   t:'承知しました。確認のうえご案内いたします。'},
+  ]},
+  { id:'kato', name:'加藤創子', tag:'TRAINING', msgs:[
+    {from:'them', t:'研修の資料はどこにありますか？'},
+    {from:'me',   t:'お疲れさまです。リンクをお送りします。'},
+    {from:'them', t:'ありがとうございます！'},
+  ]},
+]
+const DELAY = 1200
+const cache = new Set()
+let nowT = null, propT = null
+let nowShowing = null  // which planner's msgs the NOW body currently shows
+
+const $ = id => document.getElementById(id)
+const initials = n => n.slice(0,1)
+function msgsHtml(p){ return p.msgs.map(m => `<div class="msg ${m.from}">${m.t}</div>`).join('') }
+
+function pick(id){
+  const p = PLANNERS.find(x => x.id === id)
+
+  // ── NOW: header switches, body keeps OLD messages until fetch resolves ──
+  $('now-av').textContent = initials(p.name)
+  $('now-name').textContent = p.name
+  const ns = $('now-status'); ns.className = 'status stale'
+  ns.textContent = nowShowing && nowShowing !== p.name
+    ? `⏳ downloading… still showing ${nowShowing}'s chat`
+    : '⏳ downloading messages…'
+  clearTimeout(nowT)
+  nowT = setTimeout(() => {
+    $('now-body').innerHTML = msgsHtml(p)
+    nowShowing = p.name
+    const s = $('now-status'); s.className = 'status done'; s.textContent = '✓ messages loaded (after ~1.2s)'
+  }, DELAY)
+
+  // ── PROPOSED: instant clear + loading, OR instant if cached ──
+  $('prop-av').textContent = initials(p.name)
+  $('prop-name').textContent = p.name
+  clearTimeout(propT)
+  if (cache.has(id)){
+    $('prop-body').innerHTML = msgsHtml(p)
+    const s = $('prop-status'); s.className = 'status fast'; s.textContent = '⚡ instant — served from cache'
+  } else {
+    $('prop-body').innerHTML = '<div class="skel short"></div><div class="skel med"></div><div class="skel long"></div>'
+    const s = $('prop-status'); s.className = 'status wait'; s.textContent = '⏳ loading… (old chat cleared instantly)'
+    propT = setTimeout(() => {
+      $('prop-body').innerHTML = msgsHtml(p)
+      cache.add(id)
+      const s2 = $('prop-status'); s2.className = 'status done'; s2.textContent = '✓ loaded & cached (next open = instant)'
+    }, DELAY)
+  }
+}
+
+$('pickers').innerHTML = PLANNERS.map(p =>
+  `<button onclick="pick('${p.id}')">${p.name} <span class="tag">${p.tag}</span></button>`).join('')
+</script>
+</body>
+</html>

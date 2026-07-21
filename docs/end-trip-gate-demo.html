@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>"Close each day" submit gate — demo (Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; --red:#c0392b; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI','Noto Sans JP',sans-serif;line-height:1.6;padding:0 0 60px}
+  .wrap{max-width:780px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,#2c8079,#1f6f66);color:#fff;padding:24px 0;margin-bottom:22px}
+  header.top h1{margin:0 0 4px;font-size:21px}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  h2{font-size:13.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gold);margin:28px 0 10px}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:10px 13px;margin:10px 0}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:top}
+  th{background:#f6efe0;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:0}
+  .btnpill{display:inline-block;border:1px solid #cdd8d2;background:#fff;border-radius:99px;padding:4px 12px;font-size:12.5px;font-weight:600;color:#33524a}
+  /* mini timeline before/after */
+  .tl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tl > div{border-radius:10px;padding:11px 13px;font-size:13px}
+  .bad{background:#fdf3ee;border:1px solid rgba(192,57,43,.28)}
+  .good{background:#eef6f0;border:1px solid rgba(44,128,121,.32)}
+  .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+  .bad .lbl{color:#a3321f}.good .lbl{color:#1f6f66}
+  .stp{padding:3px 0;font-size:12.5px}
+  .stp .t{color:var(--ink3);font-size:11px;margin-right:6px}
+  .ride{color:#7a8779}
+  .x{color:#a3321f;font-weight:700}.ok{color:#1f6f66;font-weight:700}
+  .toggle{display:inline-flex;border:1px solid var(--bd);border-radius:99px;overflow:hidden;margin:6px 0 14px}
+  .toggle button{border:0;background:#fff;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
+  .toggle button.on{background:var(--green);color:#fff}
+  .warnbox{background:#fdf3ee;border:1px solid rgba(192,57,43,.28);border-left:4px solid var(--red);border-radius:12px;padding:13px 16px}
+  .warnbox h3{margin:0 0 6px;font-size:14px;color:#a3321f}
+  .warnbox ul{margin:0;padding-left:18px}.warnbox li{font-size:13.5px;padding:3px 0}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">DEMO ONLY · not deployed</span>
+  <h1>New submit rule: every day must be “closed”</h1>
+  <p>A plan can't be submitted until each day ends with its ride out — the planner must press the end button so the day doesn't just stop at a venue.</p>
+</div></header>
+
+<div class="wrap">
+
+  <h2>1 · The rule</h2>
+  <table>
+    <tr><th>Day type</th><th>Must press</th><th>What it adds</th></tr>
+    <tr><td><b>Arrival + full days</b></td><td><span class="btnpill">🌙 1日を終える · ホテルに戻る</span></td><td>a transport leg back to the hotel</td></tr>
+    <tr><td><b>Departure day</b> (last)</td><td><span class="btnpill">✈️ 旅行を終える · {空港/駅}へ移動</span></td><td>the final ride to the airport / station</td></tr>
+  </table>
+  <p class="note"><b>How it's detected:</b> the day's <b>last item is a transport leg</b> (the closing ride). If the day ends on a stop (sightseeing / restaurant), the button wasn't pressed → blocked.</p>
+
+  <h2>2 · Before vs after (departure day example)</h2>
+  <div class="tl">
+    <div class="bad">
+      <div class="lbl">✗ Blocked — ends on a stop</div>
+      <div class="stp"><span class="t">8:30</span>Start · Hotel</div>
+      <div class="stp ride">↓ public transport · 13 min</div>
+      <div class="stp"><span class="t">8:45</span>東急歌舞伎町タワー</div>
+      <div class="stp ride">↓ walk · 8 min</div>
+      <div class="stp"><span class="t">11:00</span>新宿ウォール 456 <span class="x">← day just stops here</span></div>
+    </div>
+    <div class="good">
+      <div class="lbl">✓ OK — closed with the ride out</div>
+      <div class="stp"><span class="t">8:30</span>Start · Hotel</div>
+      <div class="stp ride">↓ public transport · 13 min</div>
+      <div class="stp"><span class="t">8:45</span>東急歌舞伎町タワー</div>
+      <div class="stp ride">↓ walk · 8 min</div>
+      <div class="stp"><span class="t">11:00</span>新宿ウォール 456</div>
+      <div class="stp ride">↓ public transport · 35 min <span class="ok">(End trip)</span></div>
+      <div class="stp"><span class="t">12:15</span>✈️ Departure · Haneda Airport</div>
+    </div>
+  </div>
+
+  <h2>3 · The warning a planner sees</h2>
+  <div class="toggle">
+    <button id="b-en" class="on" onclick="setLang('en')">English</button>
+    <button id="b-ja" onclick="setLang('ja')">日本語</button>
+  </div>
+  <div class="warnbox">
+    <h3 id="w-h"></h3>
+    <ul id="w-l"></ul>
+  </div>
+
+  <h2>4 · Where it fits</h2>
+  <p class="note">This is checked <b>per day</b>, in order, alongside the rules you already approved: <b>structure</b> (≥ attractions/meals/check-in) → <b>close the day</b> (this) → <b>±15 min end-time</b>. One issue shown at a time (jumps + flashes the day). Sub-accounts (Day-1-only training) are skipped, same as the others.</p>
+</div>
+
+<script>
+const L = {
+  en: {
+    h: '⚠ Two days aren’t closed yet',
+    l: [
+      'Day 1: tap “End day · back to hotel” to add the ride back before submitting.',
+      'Day 3 (departure day): tap “End trip · transport to the airport” to add the final ride before submitting.',
+    ]
+  },
+  ja: {
+    h: '⚠ まだ締めくくられていない日が2つあります',
+    l: [
+      '1日目：提出前に「1日を終える · ホテルに戻る」を押して、ホテルへ戻る移動を追加してください。',
+      '3日目（出発日）：提出前に「旅行を終える · 空港へ移動」を押して、最後の移動を追加してください。',
+    ]
+  }
+};
+function setLang(x){
+  document.getElementById('b-en').classList.toggle('on', x==='en');
+  document.getElementById('b-ja').classList.toggle('on', x==='ja');
+  const s = L[x];
+  document.getElementById('w-h').textContent = s.h;
+  document.getElementById('w-l').innerHTML = s.l.map(t=>`<li>${t}</li>`).join('');
+}
+setLang('en');
+</script>
+</body>
+</html>

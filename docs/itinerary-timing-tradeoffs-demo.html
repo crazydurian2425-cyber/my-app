@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — the 4 timing behaviours to know about</title>
+<style>
+  :root{
+    --cream:#F5F1E8;--paper:#FFFDF8;--ink:#1B1F1C;--ink-2:#4A524C;--ink-3:#8B908A;
+    --green:#5E7B6E;--green-d:#3E5448;--amber:#D4913D;--amber-d:#9A6410;--red:#C0552F;--blue:#3E6B84;
+    --rule:rgba(27,31,28,0.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,'Segoe UI',sans-serif;background:var(--cream);color:var(--ink);line-height:1.5;padding:26px;}
+  h1{font-size:21px;margin-bottom:4px;}
+  .sub{color:var(--ink-3);font-size:13px;margin-bottom:22px;max-width:900px;}
+  .sub code{background:#EFEADF;padding:1px 5px;border-radius:5px;font-size:12px;}
+  .card{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:18px 18px 20px;margin-bottom:18px;max-width:900px;}
+  .card h2{font-size:15px;display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;font-weight:700;flex:none;}
+  .card .why{font-size:12.5px;color:var(--ink-2);margin:6px 0 14px;}
+  .card .why b{color:var(--ink);}
+  .cols{display:grid;grid-template-columns:1fr 34px 1fr;gap:10px;align-items:stretch;}
+  @media(max-width:640px){.cols{grid-template-columns:1fr;}.arrow{display:none;}}
+  .col{border:1px solid var(--rule);border-radius:10px;padding:11px 12px;background:#fff;}
+  .col.before{border-color:rgba(212,145,61,.4);background:rgba(212,145,61,.05);}
+  .col.after{border-color:rgba(94,123,110,.4);background:rgba(94,123,110,.06);}
+  .col .tag{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:8px;}
+  .before .tag{color:var(--amber-d);} .after .tag{color:var(--green-d);}
+  .arrow{display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink-3);}
+  .row{display:flex;align-items:baseline;gap:9px;padding:5px 7px;border-radius:7px;font-size:12.5px;margin-bottom:3px;}
+  .row.anchor{background:#F1EEE6;font-style:italic;color:var(--ink-2);}
+  .row.transport{background:#F6F3EC;color:var(--ink-2);}
+  .row.hot{background:rgba(192,85,47,.09);}
+  .row.fix{background:rgba(94,123,110,.12);}
+  .t{font-variant-numeric:tabular-nums;font-weight:700;min-width:88px;}
+  .t.bad{color:var(--red);} .t.good{color:var(--green-d);}
+  .name{flex:1;}
+  .meta{font-size:10.5px;color:var(--ink-3);}
+  .verdict{margin-top:13px;font-size:12.5px;padding:10px 12px;border-radius:9px;background:rgba(62,107,132,.08);color:var(--blue);}
+  .verdict b{color:var(--ink);}
+  .knob{margin-top:12px;font-size:12px;color:var(--ink-2);}
+  .knob b{color:var(--ink);}
+  .legend{max-width:900px;font-size:12px;color:var(--ink-3);margin-top:6px;}
+  .want{margin-top:8px;font-size:12px;padding:8px 11px;border-radius:8px;background:rgba(94,123,110,.09);color:var(--green-d);border:1px solid rgba(94,123,110,.25);}
+  .save{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--green-d);background:rgba(94,123,110,.14);padding:2px 8px;border-radius:99px;margin-left:6px;}
+</style>
+</head>
+<body>
+  <h1>The 4 timing behaviours — clearly shown</h1>
+  <div class="sub">These are <b>consequences of the rules you asked for</b>, not bugs. The times below are computed by the <b>real</b> ported functions (<code>_suggestTransportStart</code> 5-min grid, <code>_snapUp30</code>, the day chain, the first-stop seed). Nothing here touches the live app. <span style="color:var(--amber-d)">Amber = before</span>, <span style="color:var(--green-d)">green = after the day refreshes</span>.</div>
+
+  <!-- 1 -->
+  <div class="card">
+    <h2><span class="num">1</span> Opening a plan re-cascades it — and saves the new times <span class="save">💾 auto-saved</span></h2>
+    <div class="why"><b>Why it exists:</b> the refresh runs on open, so the whole day snaps to the clean cascade — that's what makes “8:35” stick on reopen. <b>The catch:</b> any times you'd hand-set with gaps get overwritten the next time the plan opens.</div>
+    <div class="cols">
+      <div class="col before" id="c1a"><span class="tag">Saved (hand-timed, with gaps)</span></div>
+      <div class="arrow">→</div>
+      <div class="col after" id="c1b"><span class="tag">After you re-open (auto-cascaded + saved)</span></div>
+    </div>
+    <div class="verdict"><b>What you'll notice:</b> re-opening a plan can change its times to the tight auto-cascade. Great for consistency; means manual gaps don't persist.</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card">
+    <h2><span class="num">2</span> The chain owns every time — a custom venue time gets compacted</h2>
+    <div class="why"><b>Why it exists:</b> you asked for “auto-compute the whole itinerary with no gaps.” So each stop is pinned to <i>previous stop + stay</i>. <b>The catch:</b> if you pick a deliberate later time for a middle stop, the next refresh pulls it back.</div>
+    <div class="cols">
+      <div class="col before" id="c2a"><span class="tag">You pick 2:00 PM for the museum</span></div>
+      <div class="arrow">→</div>
+      <div class="col after" id="c2b"><span class="tag">After refresh (chain re-times it)</span></div>
+    </div>
+    <div class="verdict"><b>What you'll notice:</b> a custom middle-of-day time won't survive a refresh — the chain resets it to sit right after the stop above.</div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card">
+    <h2><span class="num">3</span> The first hotel stop is always pulled to 8:35</h2>
+    <div class="why"><b>Why it exists:</b> your rule — “if the first stop is at the hotel it starts at 8:35.” <b>The catch:</b> even a deliberately-late checkout (a lazy 10:30 morning) gets pulled up to 8:35.</div>
+    <div class="cols">
+      <div class="col before" id="c3a"><span class="tag">You set a lazy 10:30 checkout</span></div>
+      <div class="arrow">→</div>
+      <div class="col after" id="c3b"><span class="tag">After refresh (seeded to day-start)</span></div>
+    </div>
+    <div class="verdict"><b>What you'll notice:</b> there's currently no way to keep a later hotel checkout — it always anchors to 8:35 (wake 08:30 + 5). If you want later checkouts allowed, that's a small tweak.</div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card">
+    <h2><span class="num">4</span> One-time extra Google fetch for a transit leg on a 3-hour mark</h2>
+    <div class="why"><b>Why it happens:</b> the route cache buckets <b>transit</b> legs into 3-hour bands (9:00 / 12:00 / 15:00 …). Moving a departure from 9:00 to 8:50 (the 5-min fix) crosses a band, so the saved route key no longer matches → one fresh fetch, then it re-caches.</div>
+    <div class="cols">
+      <div class="col before" id="c4a"><span class="tag">Departure 9:00 → 8:50</span></div>
+      <div class="arrow">→</div>
+      <div class="col after" id="c4b"><span class="tag">Route-cache key</span></div>
+    </div>
+    <div class="verdict"><b>What you'll notice:</b> nothing visible — just a single extra API call for affected <b>transit</b> legs the first time. Taxi / walk / drive legs cache per-day, so they're never affected.</div>
+  </div>
+
+  <div class="want">✔ If behaviours <b>1</b> and <b>3</b> are exactly what you want, nothing to do. If you'd rather <b>keep manual times</b> (1) or <b>allow later hotel checkouts</b> (3), tell me and I'll make those opt-in.</div>
+
+<script>
+/* ---- real logic, ported faithfully ---- */
+function parseSlotTime(s){const m=String(s||'').match(/^(\d{1,2}):(\d{2})$/);if(!m)return null;return parseInt(m[1],10)*60+parseInt(m[2],10);}
+function minsToHHMM(mins){const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+function _snapUp30(hhmm){const p=String(hhmm||'09:00').split(':').map(Number);let t=Math.ceil(((p[0]||0)*60+(p[1]||0))/5)*5;if(t>23*60+45)t=23*60+45;return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');}
+function _wakeTimeForTiming(t){if(t==='early')return'07:00';if(t==='late')return'09:30';return'08:30';}
+function effStay(type,dur){let s=parseInt(dur||'0',10)||0;if(type==='accommodation')s=Math.max(s,30);else if(type==='meal')s=Math.max(s,30);else if(type==='hotel_checkin')s=Math.max(s,15);else if(type==='hotel_checkout')s=Math.max(s,15);if(s<=0)s=15;return s;}
+function suggestLeg(prevStart,prevType,prevDur){let t=parseSlotTime(prevStart)+effStay(prevType,prevDur);t=Math.ceil(t/5)*5;return minsToHHMM(Math.min(t,23*60+45));}
+// tiny faithful day chain: seed first hotel stop, then cascade legs=prev+stay, venues=arrival
+function cascade(day){
+  const out=day.map(s=>({...s}));
+  // seed first non-locked stop if it's a venue (at the hotel)
+  const first=out.find(s=>!s.locked);
+  if(first&&first.type!=='transport'){const wake=_wakeTimeForTiming('standard');first.time=_snapUp30(minsToHHMM(parseSlotTime(wake)+5));}
+  for(let i=1;i<out.length;i++){
+    const a=out[i-1],b=out[i];
+    if(a.locked||b.locked)continue;
+    if(b.type==='transport'&&a.type!=='transport'){ b.time=suggestLeg(a.time,a.type,a.dur); }
+    else if(a.type==='transport'){ const arr=parseSlotTime(a.time)+(a.mins||0); b.time=_snapUp30(minsToHHMM(arr)); }
+    else { const rel=parseSlotTime(a.time)+effStay(a.type,a.dur); b.time=_snapUp30(minsToHHMM(rel)); }
+  }
+  return out;
+}
+function disp(hhmm){if(!hhmm)return'—';const [h,m]=hhmm.split(':').map(Number);const ap=h<12?'am':'pm';const h12=((h+11)%12)+1;return h12+':'+String(m).padStart(2,'0')+' '+ap;}
+function legArr(s){return s.type==='transport'?disp(s.time)+' → '+disp(minsToHHMM(parseSlotTime(s.time)+(s.mins||0))):disp(s.time);}
+function paint(id,day,hotClass){
+  const host=document.getElementById(id);
+  day.forEach((s,i)=>{
+    const div=document.createElement('div');
+    let cls='row';if(s.locked)cls+=' anchor';if(s.type==='transport')cls+=' transport';if(s.hot)cls+=' '+(hotClass||'hot');
+    div.className=cls;
+    const time=s.type==='transport'?legArr(s):disp(s.time);
+    const tcls='t'+(s.hot?(hotClass==='fix'?' good':' bad'):'');
+    const stay=(s.dur&&s.type!=='transport'&&!s.locked)?' <span class="meta">· stay '+s.dur+'m</span>':'';
+    div.innerHTML='<span class="'+tcls+'">'+time+'</span><span class="name">'+s.name+stay+'</span>';
+    host.appendChild(div);
+  });
+}
+
+/* 1 — hand-timed with gaps  →  cascaded */
+const p1=[{locked:1,name:'🌅 Day start · Hotel (breakfast)',time:'08:30'},
+  {type:'hotel_checkout',name:'Hotel checkout',time:'09:20',dur:'15',hot:1},
+  {type:'transport',name:'🚕 Taxi → museum',time:'09:45',mins:10,hot:1},
+  {type:'activity',name:'Museum',time:'11:00',dur:'90',hot:1}];
+paint('c1a',p1);
+const p1b=cascade(p1).map(s=>({...s,hot:s.hot}));paint('c1b',p1b,'fix');
+
+/* 2 — custom 2:00 PM museum  →  compacted */
+const p2=[{locked:1,name:'🌅 Day start · Hotel',time:'08:30'},
+  {type:'hotel_checkout',name:'Hotel checkout',time:'08:35',dur:'15'},
+  {type:'transport',name:'🚕 Taxi → museum',time:'08:50',mins:10},
+  {type:'activity',name:'Museum (you picked 2:00 PM)',time:'14:00',dur:'90',hot:1}];
+paint('c2a',p2);
+const p2b=cascade(p2).map((s,i)=>({...s,hot:i===3}));paint('c2b',p2b,'fix');
+
+/* 3 — lazy 10:30 checkout  →  8:35 */
+const p3=[{locked:1,name:'🌅 Day start · Hotel',time:'08:30'},
+  {type:'hotel_checkout',name:'Hotel checkout (you set 10:30)',time:'10:30',dur:'15',hot:1}];
+paint('c3a',p3);
+const p3b=cascade(p3).map((s,i)=>({...s,hot:i===1}));paint('c3b',p3b,'fix');
+
+/* 4 — route-cache bucket */
+function bucket(mode,hhmm){const h=parseSlotTime(hhmm)/60|0;if(mode==='TRANSIT')return '2026-07-12 · band b'+(Math.floor(h/3)*3);return '2026-07-12 (per-day)';}
+const c4a=document.getElementById('c4a');
+c4a.innerHTML+='<div class="row transport"><span class="t">9:00 → 8:50</span><span class="name">🚆 Transit leg (checkout +5min shifts it)</span></div>'+
+  '<div class="row transport"><span class="t">9:00 → 8:50</span><span class="name">🚕 Taxi leg (same shift)</span></div>';
+const c4b=document.getElementById('c4b');
+c4b.innerHTML+='<div class="row hot"><span class="t bad" style="min-width:0">TRANSIT</span><span class="name" style="font-size:11.5px">'+bucket('TRANSIT','09:00')+' &nbsp;→&nbsp; '+bucket('TRANSIT','08:50')+' <span class="meta">key CHANGED → 1 re-fetch</span></span></div>'+
+  '<div class="row fix"><span class="t good" style="min-width:0">TAXI</span><span class="name" style="font-size:11.5px">'+bucket('DRIVE','09:00')+' &nbsp;=&nbsp; '+bucket('DRIVE','08:50')+' <span class="meta">key SAME → no fetch</span></span></div>';
+</script>
+</body>
+</html>

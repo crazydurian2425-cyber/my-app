@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — keep the screen still when the keyboard opens</title>
+<style>
+  :root{
+    --green:#1a7a5e; --green-mid:#2d9e7a; --bg:#F4F2EC; --ink:#1d211f; --ink-2:#5a5f5b; --ink-3:#8a8f8a;
+    --border:rgba(0,0,0,0.10); --red:#B3452F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Hiragino Sans','Yu Gothic',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:28px 18px 60px;}
+  h1{font-size:20px;margin-bottom:6px;}
+  .sub{font-size:13px;color:var(--ink-2);margin-bottom:22px;line-height:1.7;max-width:760px;}
+  .sub b{color:var(--ink);}
+  .row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;margin-bottom:30px;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .col-label{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .col-label.bad{color:var(--red);} .col-label.good{color:var(--green);}
+  .col-note{font-size:11.5px;color:var(--ink-3);max-width:300px;text-align:center;line-height:1.6;}
+
+  /* ── phone frame ── */
+  .phone{
+    width:300px;height:600px;border-radius:36px;background:#111;
+    padding:10px;box-shadow:0 18px 44px rgba(0,0,0,0.28);position:relative;flex-shrink:0;
+  }
+  .screen{
+    position:relative;width:100%;height:100%;border-radius:27px;overflow:hidden;background:#C9BFAE;
+  }
+  /* the whole "web page" — this is what iOS pans when it wants to reveal the input */
+  .page{
+    position:absolute;inset:0;
+    transition:transform .45s cubic-bezier(.3,.8,.3,1);
+  }
+  /* dashboard behind the sheet */
+  .dash{
+    position:absolute;inset:0;background:linear-gradient(180deg,#4a4238 0%,#6b5d4d 30%,#EFEBE2 30.1%);
+  }
+  .dash .hero-t{position:absolute;top:26px;left:18px;color:#fff;font-size:15px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.4);}
+  .dash .hero-s{position:absolute;top:50px;left:18px;color:rgba(255,255,255,.85);font-size:10px;font-style:italic;}
+  .dash .tile{position:absolute;top:34%;left:14px;width:120px;height:64px;border-radius:10px;background:#fff;border:1px solid var(--border);padding:8px;}
+  .dash .tile.t2{left:148px;}
+  .dash .tile .k{font-size:8.5px;color:#9a8f66;font-weight:700;}
+  .dash .tile .v{font-size:17px;font-family:Georgia,serif;margin-top:5px;}
+
+  /* wizard bottom sheet */
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;top:13%;
+    background:#FCFBF7;border-radius:18px 18px 0 0;
+    display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 -8px 30px rgba(0,0,0,0.25);
+    transition:top .45s cubic-bezier(.3,.8,.3,1);
+  }
+  .sheet-h{padding:12px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:#F5F3ED;}
+  .sheet-h .t{font-family:Georgia,serif;font-size:16px;}
+  .sheet-h .s{font-size:9.5px;color:var(--ink-3);margin-top:2px;}
+  .sheet-b{flex:1;overflow:hidden;position:relative;}
+  .sheet-scroll{
+    position:absolute;inset:0;padding:12px 14px;
+    transition:transform .45s cubic-bezier(.3,.8,.3,1);
+  }
+  .steps{display:flex;gap:6px;margin-bottom:10px;}
+  .step{font-size:9.5px;padding:4px 9px;border-radius:99px;border:1px solid var(--border);background:#fff;color:var(--ink-2);white-space:nowrap;}
+  .step.on{background:#7E9384;color:#fff;border-color:#7E9384;}
+  .slotcard{border:1.5px solid #B3452F55;border-top:3px solid #B3452F;border-radius:12px;background:#fff;padding:10px;}
+  .slot-top{display:flex;gap:6px;margin-bottom:9px;}
+  .chip{font-size:10px;border:1px solid var(--border);border-radius:99px;padding:5px 9px;background:#fff;}
+  .f{border:1px solid var(--border);border-radius:8px;background:#FAF7EF;padding:9px 10px;font-size:11px;color:#b0a894;margin-bottom:7px;}
+  .f.name{position:relative;}
+  .f.focused{border-color:#B3452F;box-shadow:0 0 0 2.5px rgba(179,69,47,0.12);background:#FDF9F2;}
+  .caret{display:none;width:1.5px;height:12px;background:#2b6cde;position:absolute;left:9px;top:8px;animation:blink 1s step-end infinite;}
+  .f.focused .caret{display:block;}
+  @keyframes blink{50%{opacity:0;}}
+  .f.typed{color:var(--ink);}
+  /* Google Places suggestions dropdown (appears while typing) */
+  .sugg{display:none;background:#fff;border:1px solid var(--border);border-radius:8px;margin:-3px 0 7px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,0.10);}
+  .sugg.on{display:block;}
+  .sg{padding:7px 9px;font-size:9.5px;border-bottom:1px solid var(--border);line-height:1.5;}
+  .sg:last-child{border-bottom:none;}
+  .sg span{color:var(--ink-3);font-size:8.5px;display:block;}
+  .hint-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+  .hint{font-size:8.5px;border:1px solid var(--border);border-radius:99px;padding:3px 7px;color:var(--ink-2);background:#fff;}
+  .photo{border:1.5px dashed var(--border);border-radius:9px;padding:12px;text-align:center;font-size:9.5px;color:var(--ink-3);margin-top:9px;background:#fff;}
+  .sheet-f{flex-shrink:0;display:flex;gap:8px;justify-content:flex-end;padding:10px 14px;border-top:1px solid var(--border);background:#FCFBF7;}
+  .btn{font-size:10.5px;padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:#fff;}
+  .btn.p{background:#5F7A6A;color:#fff;border-color:#5F7A6A;}
+
+  /* keyboard */
+  .kb{
+    position:absolute;left:0;right:0;bottom:-46%;height:44%;
+    background:#2b2b2e;border-radius:10px 10px 0 0;z-index:5;
+    transition:bottom .45s cubic-bezier(.3,.8,.3,1);
+    padding:16px 8px 8px;
+  }
+  .kb .krow{display:flex;gap:4px;justify-content:center;margin-bottom:5px;}
+  .kb .k{flex:0 0 24px;height:32px;border-radius:5px;background:#55555a;box-shadow:0 1px 0 #1a1a1c;}
+  .kb .k.wide{flex-basis:120px;}
+  .kb.up{bottom:0;}
+  /* safari url bubble that appears mid-screen when iOS pans */
+  .bubble{
+    position:absolute;left:50%;top:54%;transform:translateX(-50%);
+    background:#fff;border-radius:99px;padding:7px 16px;font-size:10.5px;color:#333;
+    box-shadow:0 4px 14px rgba(0,0,0,0.2);opacity:0;transition:opacity .3s ease .3s;z-index:6;white-space:nowrap;
+  }
+  .phone.playing .bubble.show-when-play{opacity:1;}
+
+  .controls{display:flex;gap:10px;margin-top:4px;}
+  .play{
+    font-size:12.5px;font-weight:700;padding:9px 18px;border-radius:99px;border:none;cursor:pointer;
+    background:var(--ink);color:#fff;
+  }
+  .play:active{transform:scale(0.97);}
+
+  .explain{max-width:780px;margin:0 auto;background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px 22px;}
+  .explain h2{font-size:15px;margin-bottom:10px;}
+  .explain ol{margin-left:20px;font-size:13px;line-height:1.9;color:var(--ink-2);}
+  .explain li b{color:var(--ink);}
+  .tag{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:2px 7px;margin-right:6px;vertical-align:1px;}
+  .tag.now{background:#f6e3de;color:var(--red);}
+  .tag.after{background:#e2f0ea;color:var(--green);}
+</style>
+</head>
+<body>
+
+<h1>📱 Demo — keep the screen still while typing</h1>
+<p class="sub">
+  Side-by-side of what happens on the phone when you <b>tap an input like Place name</b>. Left = <b>current behavior</b>
+  (the whole screen gets pushed up and the field jumps to the middle). Right = <b>proposed fix</b>
+  (the screen stays exactly where it is — only the keyboard slides up from the bottom).
+  Use the ▶ buttons to play the keyboard opening/closing. <b>Nothing is implemented yet — this is just to confirm the motion you want.</b>
+</p>
+
+<div class="row">
+
+  <!-- ── BEFORE ─────────────────────────────────────────── -->
+  <div class="col">
+    <div class="col-label bad">✕ Current — the whole screen jumps</div>
+    <div class="phone" id="ph-before">
+      <div class="screen">
+        <div class="page" id="before-page">
+          <div class="dash">
+            <div class="hero-t">田中さん、こんばんは</div>
+            <div class="hero-s">セット#003進行中 — 残り15件のプラン。</div>
+            <div class="tile"><div class="k">未払い報酬</div><div class="v">¥0</div></div>
+            <div class="tile t2"><div class="k">支払い済み</div><div class="v">¥17,100</div></div>
+          </div>
+          <div class="sheet" id="before-sheet">
+            <div class="sheet-h"><div class="t">プラン1 — 旅程</div><div class="s">一人旅・2泊3日</div></div>
+            <div class="sheet-b">
+              <div class="sheet-scroll" id="before-scroll">
+                <div class="steps"><span class="step">1 依頼内容</span><span class="step on">2 1日目</span><span class="step">3 2日目</span><span class="step">4 3日目</span></div>
+                <div class="slotcard">
+                  <div class="slot-top"><span class="chip">🕐 16:45</span><span class="chip">📸 アクティビティ ▾</span></div>
+                  <div class="f name" id="before-name">店名<span class="caret"></span></div>
+                  <div class="sugg" id="before-sugg">
+                    <div class="sg"><b>FamilyMart</b> 浅草雷門店<span>東京都台東区雷門2丁目…</span></div>
+                    <div class="sg"><b>FamilyMart</b> 上野駅前店<span>東京都台東区上野7丁目…</span></div>
+                  </div>
+                  <div class="f">住所</div>
+                  <div class="f" style="width:55%;">滞在時間 選択… ▾</div>
+                  <div class="hint-row"><span class="hint">⏰ おすすめの時間</span><span class="hint">📷 撮影スポット</span><span class="hint">⚠️ 避けるべき場合</span><span class="hint">💰 お得情報</span></div>
+                  <div class="photo">🖼️ 写真を追加 — ドラッグまたはクリック</div>
+                </div>
+              </div>
+            </div>
+            <div class="sheet-f"><span class="btn">← 戻る</span><span class="btn">下書きを保存</span><span class="btn p">次へ →</span></div>
+          </div>
+        </div>
+        <div class="bubble show-when-play">journeyjunctionplanner.com</div>
+        <div class="kb" id="before-kb">
+          <div class="krow"><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span></div>
+          <div class="krow"><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span></div>
+          <div class="krow"><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span></div>
+          <div class="krow"><span class="k"></span><span class="k wide"></span><span class="k"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="controls"><button class="play" onclick="playBefore()">▶ Search "family mart" (current)</button></div>
+    <div class="col-note">The whole page gets pushed up and the search box is <b>dragged to the middle of the screen</b>. The dashboard shows through behind the sheet and Safari's URL bubble pops up over the suggestions.</div>
+  </div>
+
+  <!-- ── AFTER ──────────────────────────────────────────── -->
+  <div class="col">
+    <div class="col-label good">✓ After fix — screen stays put, only the keyboard appears</div>
+    <div class="phone" id="ph-after">
+      <div class="screen">
+        <div class="page">
+          <div class="dash">
+            <div class="hero-t">田中さん、こんばんは</div>
+            <div class="hero-s">セット#003進行中 — 残り15件のプラン。</div>
+            <div class="tile"><div class="k">未払い報酬</div><div class="v">¥0</div></div>
+            <div class="tile t2"><div class="k">支払い済み</div><div class="v">¥17,100</div></div>
+          </div>
+          <div class="sheet" id="after-sheet">
+            <div class="sheet-h"><div class="t">プラン1 — 旅程</div><div class="s">一人旅・2泊3日</div></div>
+            <div class="sheet-b">
+              <div class="sheet-scroll" id="after-scroll">
+                <div class="steps"><span class="step">1 依頼内容</span><span class="step on">2 1日目</span><span class="step">3 2日目</span><span class="step">4 3日目</span></div>
+                <div class="slotcard">
+                  <div class="slot-top"><span class="chip">🕐 16:45</span><span class="chip">📸 アクティビティ ▾</span></div>
+                  <div class="f name" id="after-name">店名<span class="caret"></span></div>
+                  <div class="sugg" id="after-sugg">
+                    <div class="sg"><b>FamilyMart</b> 浅草雷門店<span>東京都台東区雷門2丁目…</span></div>
+                    <div class="sg"><b>FamilyMart</b> 上野駅前店<span>東京都台東区上野7丁目…</span></div>
+                  </div>
+                  <div class="f">住所</div>
+                  <div class="f" style="width:55%;">滞在時間 選択… ▾</div>
+                  <div class="hint-row"><span class="hint">⏰ おすすめの時間</span><span class="hint">📷 撮影スポット</span><span class="hint">⚠️ 避けるべき場合</span><span class="hint">💰 お得情報</span></div>
+                  <div class="photo">🖼️ 写真を追加 — ドラッグまたはクリック</div>
+                </div>
+              </div>
+            </div>
+            <div class="sheet-f" id="after-foot"><span class="btn">← 戻る</span><span class="btn">下書きを保存</span><span class="btn p">次へ →</span></div>
+          </div>
+        </div>
+        <div class="kb" id="after-kb">
+          <div class="krow"><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span></div>
+          <div class="krow"><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span></div>
+          <div class="krow"><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span><span class="k"></span></div>
+          <div class="krow"><span class="k"></span><span class="k wide"></span><span class="k"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="controls"><button class="play" onclick="playAfter()">▶ Search "family mart" (after fix)</button></div>
+    <div class="col-note">The search box <b>stays exactly where it was</b> — suggestions open right below it, the keyboard slides up from the bottom, nothing else moves. Only if a field would be <b>hidden under the keyboard</b> does the sheet content scroll — and only the minimum amount.</div>
+  </div>
+
+</div>
+
+<div class="explain">
+  <h2>🔧 What would change in the real page (implemented only after you approve)</h2>
+  <ol>
+    <li><span class="tag now">Now</span>When the keyboard opens, a handler <b>force-scrolls the focused field to the center of the screen</b> (added in the previous cursor fix) — AND iOS pushes the whole page up on its own. Two movements stacked = the jumpy mess.</li>
+    <li><span class="tag after">After</span><b>Remove the force-center scroll.</b> Instead, only when a field would actually be <b>hidden under the keyboard</b>, nudge the sheet's inner scroll the <b>minimum</b> amount ("nearest"). A field that's already visible → <b>nothing moves at all</b>.</li>
+    <li><span class="tag after">After</span><b>Pin the sheet's bottom edge to the top of the keyboard.</b> Right now the sheet stays anchored to the bottom of the screen (behind the keyboard), so iOS decides the input is hidden and yanks the whole page up. If the sheet always fits above the keyboard, iOS has no reason to move anything.</li>
+    <li>The earlier cursor-drift fix stays — with the screen no longer moving, the root cause of the drift disappears too.</li>
+  </ol>
+</div>
+
+<script>
+  function _setTyped(nameEl, suggEl, on){
+    if (on) {
+      nameEl.classList.add('focused','typed')
+      nameEl.innerHTML = 'family mart<span class="caret" style="display:block;left:auto;margin-left:2px;position:static;display:inline-block;vertical-align:-2px;"></span>'
+      suggEl.classList.add('on')
+    } else {
+      nameEl.classList.remove('focused','typed')
+      nameEl.innerHTML = '店名<span class="caret"></span>'
+      suggEl.classList.remove('on')
+    }
+  }
+  // ── BEFORE: page pans up + field force-centred ──
+  let beforeOn = false
+  function playBefore(){
+    const kb   = document.getElementById('before-kb')
+    const page = document.getElementById('before-page')
+    const scr  = document.getElementById('before-scroll')
+    const name = document.getElementById('before-name')
+    const sugg = document.getElementById('before-sugg')
+    const ph   = document.getElementById('ph-before')
+    beforeOn = !beforeOn
+    _setTyped(name, sugg, beforeOn)
+    if (beforeOn) {
+      kb.classList.add('up')
+      // iOS pans the whole page up…
+      page.style.transform = 'translateY(-96px)'
+      // …AND our old code scrolls the field to centre inside the sheet
+      scr.style.transform = 'translateY(-34px)'
+      ph.classList.add('playing')
+    } else {
+      kb.classList.remove('up')
+      page.style.transform = ''
+      scr.style.transform = ''
+      ph.classList.remove('playing')
+    }
+  }
+  // ── AFTER: nothing moves; sheet just ends above the keyboard ──
+  let afterOn = false
+  function playAfter(){
+    const kb    = document.getElementById('after-kb')
+    const sheet = document.getElementById('after-sheet')
+    const name  = document.getElementById('after-name')
+    const sugg  = document.getElementById('after-sugg')
+    afterOn = !afterOn
+    _setTyped(name, sugg, afterOn)
+    if (afterOn) {
+      kb.classList.add('up')
+      // sheet bottom now sits on top of the keyboard — content position unchanged
+      sheet.style.bottom = '44%'
+      sheet.style.transition = 'bottom .45s cubic-bezier(.3,.8,.3,1)'
+    } else {
+      kb.classList.remove('up')
+      sheet.style.bottom = ''
+    }
+  }
+</script>
+</body>
+</html>

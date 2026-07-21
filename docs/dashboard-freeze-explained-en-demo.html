@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why the dashboard freezes — full story, risks &amp; what each fix touches (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14.5px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:24px}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 6px}
+  .lead{color:var(--ink2);font-size:13.5px;margin:0 0 20px}
+  .scene{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:18px}
+  .scene h2{font-size:16.5px;margin:0 0 4px;display:flex;gap:10px;align-items:center}
+  .scene h2 .num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  .scene .sub{font-size:13px;color:var(--ink2);margin:0 0 14px}
+  .good{color:var(--green);font-weight:700}
+  .bad{color:var(--red);font-weight:700}
+  .mock{border:1px solid var(--line);border-radius:12px;background:#faf7f0;padding:12px;max-width:430px}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-bottom:8px;position:relative;transition:box-shadow .15s,border-color .15s}
+  .sec:last-child{margin-bottom:0}
+  .sec .t{font-size:11px;color:var(--ink3);letter-spacing:.03em}
+  .sec .v{font-weight:700;font-size:13.5px}
+  .sec.repaint{border-color:var(--red);box-shadow:0 0 0 3px var(--redbg)}
+  .sec.repaint::after{content:"↻ repainted";position:absolute;top:7px;right:9px;font-size:10px;font-weight:800;color:var(--red)}
+  .sec.repaint.ok{border-color:var(--green);box-shadow:0 0 0 3px var(--greenbg)}
+  .sec.repaint.ok::after{content:"↻ only this updated";color:var(--green)}
+  .askline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin:10px 0;min-height:20px}
+  .askline .dot{width:9px;height:9px;border-radius:50%;background:#cfc8b8}
+  .askline.busy .dot{background:var(--amber);animation:pulse .5s infinite alternate}
+  @keyframes pulse{to{opacity:.3}}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:700px){.row2{grid-template-columns:1fr}}
+  .half h3{font-size:13px;margin:0 0 8px;display:flex;gap:7px;align-items:center}
+  .pill{font-size:10px;font-weight:800;padding:2px 9px;border-radius:99px}
+  .pill.now{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .pill.fix{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .stats{font-size:12px;color:var(--ink2);margin-top:8px;min-height:18px}
+  .stats b{font-variant-numeric:tabular-nums}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+  button{font:inherit;font-size:13px;font-weight:700;padding:10px 15px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  button:hover{background:#faf8f3}
+  button.play{background:var(--green);color:#fff;border-color:var(--green)}
+  button.admin{background:var(--blue);color:#fff;border-color:var(--blue)}
+  button.stop{background:transparent;color:var(--ink3);border-style:dashed}
+  .story{background:var(--bluebg);border:1px solid #bcd4e2;border-radius:10px;padding:11px 14px;font-size:13px;margin-bottom:12px;line-height:1.65}
+  .verdict{font-size:13.5px;font-weight:700;margin-top:10px;min-height:20px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:top}
+  th{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:#f7f3ea}
+  .risk{font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+  .risk.vlow{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .risk.low{background:#eef4e2;color:#5d7a2c;border:1px solid #c3d69a}
+  .risk.med{background:var(--amberbg);color:var(--amber);border:1px solid #e5c184}
+  .never{background:var(--greenbg);border:1px solid var(--greenbd);border-radius:10px;padding:12px 15px;font-size:13px;margin-top:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Why the dashboard freezes — the full story, in 4 scenes</h1>
+  <p class="lead">Scene 1: why this system exists at all. Scene 2: what it does wrong today. Scene 3: proof the fix keeps the feature. Scene 4: every fix listed — why the old code exists, what the fix touches, what it can never touch, and the risk.</p>
+
+  <!-- SCENE 1 -->
+  <div class="scene">
+    <h2><span class="num">1</span>Why does the dashboard refresh itself at all?</h2>
+    <p class="sub">Because it's a <b>live status board</b>. When the admin approves a plan or confirms a bond, the planner must see it <b>without pressing F5</b>. Try it:</p>
+    <div class="row2">
+      <div class="half">
+        <div class="mock" id="mock1">
+          <div class="sec"><div class="t">PLANS</div><div class="v" id="m1-plans">Plan 4: waiting for review ⏳</div></div>
+          <div class="sec"><div class="t">WALLET</div><div class="v">¥340,000</div></div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button class="admin" onclick="scene1()">👨‍💼 Admin approves Plan 4</button>
+        </div>
+        <div class="verdict" id="v1"></div>
+      </div>
+      <div class="half">
+        <div class="story">Without this auto-refresh system, planners would stare at stale screens and message CS all day: <i>"has my plan been approved yet?"</i><br><br><b>→ So the system is NEEDED and stays.</b> The problem is not that it refreshes — it's <b>HOW</b> it refreshes. That's Scene 2.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2 -->
+  <div class="scene">
+    <h2><span class="num">2</span>How it refreshes today: rebuild <span class="bad">everything</span>, even when nothing changed</h2>
+    <p class="sub">Today, every check asks the server 13 questions <b>one at a time</b>, then repaints the <b>entire page</b> — even when the answer was "nothing new". This fires every 60 seconds, every 10 seconds while a bond is pending, and after every data event — sometimes starting a new rebuild before the last one finished. Each red flash below is a moment when a real planner's clicks and scrolling go dead. That is the freeze.</p>
+    <div class="btns">
+      <button class="play" onclick="startScene2()">▶︎ Play the bond-pending cycle (checks every 3s here)</button>
+      <button class="stop" onclick="stopScene2()">■ Stop</button>
+    </div>
+    <div class="row2">
+      <div class="half">
+        <h3><span class="pill now">TODAY</span> repaint all — change or not</h3>
+        <div class="askline" id="ask2a"><span class="dot"></span><span id="ask2at">idle…</span></div>
+        <div class="mock">
+          <div class="sec" id="s2a-set"><div class="t">ACTIVE SET</div><div class="v">Set #002 · 4/5 done</div></div>
+          <div class="sec" id="s2a-plans"><div class="t">PLANS</div><div class="v">Plan 5: in progress</div></div>
+          <div class="sec" id="s2a-wallet"><div class="t">WALLET</div><div class="v">¥340,000</div></div>
+        </div>
+        <div class="stats">server questions: <b id="q2a">0</b> · full repaints: <b id="r2a">0</b> · info that actually changed: <b>0</b></div>
+      </div>
+      <div class="half">
+        <h3><span class="pill fix">AFTER FIX</span> still checks — touches nothing if unchanged</h3>
+        <div class="askline" id="ask2b"><span class="dot"></span><span id="ask2bt">idle…</span></div>
+        <div class="mock">
+          <div class="sec" id="s2b-set"><div class="t">ACTIVE SET</div><div class="v">Set #002 · 4/5 done</div></div>
+          <div class="sec" id="s2b-plans"><div class="t">PLANS</div><div class="v">Plan 5: in progress</div></div>
+          <div class="sec" id="s2b-wallet"><div class="t">WALLET</div><div class="v">¥340,000</div></div>
+        </div>
+        <div class="stats">server questions: <b id="q2b">0</b> · full repaints: <b id="r2b">0</b> · info that actually changed: <b>0</b></div>
+      </div>
+    </div>
+    <div class="verdict">Left: <span class="bad">endless repainting of unchanged content</span> — the freeze. Right: <span class="good">the check still happens, the screen is left alone.</span></div>
+  </div>
+
+  <!-- SCENE 3 -->
+  <div class="scene">
+    <h2><span class="num">3</span>Proof: after the fix, real updates still arrive</h2>
+    <p class="sub">Press this while Scene 2 is playing —</p>
+    <div class="btns">
+      <button class="admin" onclick="scene3()">👨‍💼 Admin approves Plan 5</button>
+    </div>
+    <div class="verdict" id="v3"></div>
+  </div>
+
+  <!-- SCENE 4 -->
+  <div class="scene">
+    <h2><span class="num">4</span>Every fix listed — why the old code exists, what changes, the risk</h2>
+    <table>
+      <tr><th style="width:16%">Fix</th><th style="width:24%">Why the old code exists (its original purpose)</th><th style="width:22%">What the fix changes</th><th style="width:22%">Worst case if I get it wrong</th><th>Risk</th></tr>
+      <tr>
+        <td><b>1 · One rebuild at a time</b></td>
+        <td>The simplest way to "always be fresh" is: start a check whenever anything asks. Nobody imagined 6 asks per minute back then.</td>
+        <td>If a check is already running, queue ONE follow-up instead of starting another on top. Timing only.</td>
+        <td>An update appears 1–2 seconds later during a burst. Nothing can be lost — the follow-up always runs.</td>
+        <td><span class="risk vlow">VERY LOW</span><br><span style="font-size:10.5px;color:var(--ink3)">same pattern autosave already uses in production</span></td>
+      </tr>
+      <tr>
+        <td><b>2 · Repaint only if changed</b></td>
+        <td>"Always redraw" was the easiest guarantee of a correct screen. Cheap when the page was small.</td>
+        <td>Compare the new content with what's on screen; identical → skip. Different data always repaints.</td>
+        <td>Practically none — skip only happens when the result is byte-identical, so the screen cannot differ.</td>
+        <td><span class="risk vlow">VERY LOW</span><br><span style="font-size:10.5px;color:var(--ink3)">this code already exists &amp; runs on the demo grid</span></td>
+      </tr>
+      <tr>
+        <td><b>3 · Translate only the rebuilt part</b></td>
+        <td>One global "translate the whole page" function was easy to reuse — so it got called after every refresh.</td>
+        <td>Rebuilt section gets translated; the rest already is. Full pass still runs at page load and language switch.</td>
+        <td>One label shows English until the next refresh. Cosmetic, instantly visible in testing.</td>
+        <td><span class="risk low">LOW</span></td>
+      </tr>
+      <tr>
+        <td><b>4 · First-load queries together</b></td>
+        <td>Queries were added one by one over months; each new one copied the "await the previous" habit. No one designed the waterfall — it accumulated.</td>
+        <td>Independent questions asked together; dependent ones (assignment→set→plans) keep their order. First paint ~2s → &lt;1s.</td>
+        <td>A hidden dependency I misjudge → one section briefly empty/wrong until the next refresh corrects it. Own commit → instant revert.</td>
+        <td><span class="risk med">MEDIUM-LOW</span><br><span style="font-size:10.5px;color:var(--ink3)">highest of the five — ships last, alone</span></td>
+      </tr>
+      <tr>
+        <td><b>5 · Wallet events calm-down</b></td>
+        <td>Each live wallet event handler was written separately, each triggering its own full reload; a 3s fallback poll never learned to back off.</td>
+        <td>A burst of wallet events = one reload (final state is the same). Pointless 3s poll backs off. Two dead/duplicate queries deleted.</td>
+        <td>A wallet <i>display</i> figure lands ~1 second later during an admin burst. The amounts are computed identically.</td>
+        <td><span class="risk vlow">VERY LOW</span></td>
+      </tr>
+    </table>
+    <div class="never">
+      <b>What NONE of the five can ever touch:</b> autosave &amp; saving drafts · the itinerary editor and its time logic · submit rules · bond logic · payout / wallet <b>math</b> · Google API behavior. Two reasons: ① these fixes contain <b>no data writes</b> — they only schedule reads and skip repaints; ② the dashboard refresh machinery is <b>already switched off while the itinerary editor is open</b> — so during editing and autosaving, the code being changed isn't even running.
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+function flash(id, ok){ const el=$(id); el.classList.add('repaint'); if(ok)el.classList.add('ok'); setTimeout(()=>{el.classList.remove('repaint');el.classList.remove('ok')}, 900) }
+function scene1(){
+  $('v1').innerHTML='⚡ data changed on the server → dashboard noticed → '
+  setTimeout(()=>{ $('m1-plans').textContent='Plan 4: APPROVED ✅'
+    document.querySelectorAll('#mock1 .sec')[0].classList.add('repaint','ok')
+    setTimeout(()=>document.querySelectorAll('#mock1 .sec')[0].classList.remove('repaint','ok'),1200)
+    $('v1').innerHTML='⚡ Updated <b>without F5</b>. <span class="good">This is what the system is FOR — it stays.</span>'
+  }, 600)
+}
+let t2=null,q2a=0,r2a=0,q2b=0
+function tick(){
+  $('ask2a').classList.add('busy'); $('ask2at').textContent='asking the server… (13 questions, one at a time)'
+  let n=0
+  const iv=setInterval(()=>{ n++; q2a++; $('q2a').textContent=q2a
+    if(n>=13){ clearInterval(iv); $('ask2a').classList.remove('busy'); $('ask2at').textContent='→ nothing changed. Repaint everything anyway.'
+      ;['s2a-set','s2a-plans','s2a-wallet'].forEach(id=>flash(id,false)); r2a++; $('r2a').textContent=r2a }
+  }, 70)
+  $('ask2b').classList.add('busy'); $('ask2bt').textContent='asking the server… (batched together)'
+  q2b+=10; $('q2b').textContent=q2b
+  setTimeout(()=>{ $('ask2b').classList.remove('busy'); $('ask2bt').textContent='→ nothing changed. Leave the screen alone ✓' }, 500)
+}
+function startScene2(){ if(t2)return; tick(); t2=setInterval(tick, 3000) }
+function stopScene2(){ clearInterval(t2); t2=null; $('ask2at').textContent='idle…'; $('ask2bt').textContent='idle…' }
+function scene3(){
+  $('v3').innerHTML='⚡ real data change — both dashboards react:'
+  setTimeout(()=>{
+    $('s2a-plans').querySelector('.v').textContent='Plan 5: APPROVED ✅'
+    $('s2b-plans').querySelector('.v').textContent='Plan 5: APPROVED ✅'
+    flash('s2a-set',false); flash('s2a-plans',false); flash('s2a-wallet',false)
+    flash('s2b-plans',true)
+    $('v3').innerHTML='LEFT (today): <span class="bad">repaints all 3 sections</span> · RIGHT (after fix): <span class="good">updates only the PLANS section — same result, waste removed.</span>'
+  }, 600)
+}
+</script>
+</body>
+</html>

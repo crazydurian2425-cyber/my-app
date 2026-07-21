@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto-time demo — stops stay put, time auto-computes</title>
+<style>
+  :root{ --paper:#fbf7ef; --card:#fff; --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --greenbg:rgba(63,186,115,0.10); --greenbd:rgba(63,186,115,0.45);
+         --amber:#854f0b; --amberbg:#fbf1df; --line:#ece5d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 'DM Sans',system-ui,Arial,sans-serif;padding:24px}
+  .wrap{max-width:620px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--ink2);margin:0 0 18px;font-size:13.5px}
+  .rules{background:var(--amberbg);border:1px solid #e9d6b0;border-radius:12px;padding:12px 14px;font-size:13px;color:#6b4a13;margin-bottom:18px}
+  .rules b{color:#4a330d}
+  .day{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+  .anchor{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:10px;background:#f4efe5;border:1px dashed #d9cfbc;font-size:13.5px;color:var(--ink2)}
+  .anchor b{color:var(--ink)}
+  .leg{display:flex;align-items:center;gap:8px;padding:7px 13px;margin:6px 0 6px 18px;border-left:2px solid #e7ddca;font-size:12.5px;color:var(--ink2)}
+  .leg .lt{font-variant-numeric:tabular-nums}
+  .stop{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:6px 0;background:#fff;position:relative}
+  .stop.hotel{background:#f3f8f4;border-color:var(--greenbd)}
+  .stop .top{display:flex;align-items:center;gap:10px}
+  .time{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;color:var(--ink);
+        background:#f1ede3;border:1px solid #e3dccb;border-radius:8px;padding:4px 9px;cursor:not-allowed}
+  .time .lk{font-size:11px;opacity:.6}
+  .auto{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);background:#f6ead1;border:1px solid #e7d2a6;border-radius:5px;padding:2px 6px;font-weight:700}
+  .pin{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--green);background:var(--greenbg);border:1px solid var(--greenbd);border-radius:5px;padding:2px 6px;font-weight:700}
+  .name{flex:1;font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row2{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--ink2)}
+  select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid #d8d0c0;border-radius:8px;background:#fff;color:var(--ink)}
+  .x{margin-left:auto;border:none;background:none;color:#bbb;cursor:pointer;font-size:16px;line-height:1}
+  .x:hover{color:#e05}
+  .arrnote{font-size:11px;color:var(--ink3);margin-top:6px}
+  .addbtn{display:block;width:100%;margin-top:8px;padding:11px;border:1px dashed #cdbf9f;border-radius:10px;background:#fff;color:var(--amber);font-weight:600;cursor:pointer;font-size:13.5px}
+  .addbtn:hover{background:#fcf6ea}
+  .legend{font-size:12px;color:var(--ink2);margin-top:16px;line-height:1.7}
+  .legend code{background:#f1ede3;padding:1px 5px;border-radius:4px}
+  kbd{background:#eee;border:1px solid #ddd;border-radius:4px;padding:0 4px;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Auto‑time · stops stay where you put them</h1>
+  <p class="sub">Demo of the proposed behavior. The start time is <b>read‑only</b> (notice the 🔒) — it always auto‑computes. You only set the <b>order</b> (add buttons) and the <b>stay length</b> (dropdown).</p>
+
+  <div class="rules">
+    <b>Rules shown here:</b><br>
+    1 · Hotel check‑in is pinned <b>first</b> (luggage drop) — nothing can move above it.<br>
+    2 · A new activity always lands at the <b>bottom</b> and never jumps up.<br>
+    3 · Each start = previous finish + travel, <b>rounded UP to the nearest 5 min</b> (5:46 → 5:50, never 5:45).<br>
+    4 · Change a <b>stay</b> → only the times below shift. Order never changes.
+  </div>
+
+  <div class="day" id="day"></div>
+
+  <div class="legend">
+    <b>Try it:</b> change a “stay” dropdown and watch every time below recompute (still 5‑min rounded). Press <b>+ Add activity</b> — it appends at the bottom with an auto time. There is <b>no way to type a time</b>, so nothing can leapfrog the hotel check‑in.<br><br>
+    <code>start = roundUp5(prevFinish + travelMin)</code> &nbsp; where &nbsp; <code>roundUp5(m) = Math.ceil(m/5)*5</code>
+  </div>
+</div>
+
+<script>
+// ── fixed inputs (mirrors your screenshot) ─────────────────────────────
+const ARRIVAL_MIN = 14*60;        // 2:00pm flight arrival
+const DISEMBARK    = 10;          // 10 min to get off + to the taxi
+// each stop carries the travel minutes of the leg ABOVE it + an editable stay.
+let stops = [
+  { id:1, kind:'hotel', name:'Hotel check‑in · Hotel Tavinos Asakusa', travel:34, stay:30, pinned:true },
+  { id:2, kind:'act',   name:'Senso‑ji Temple',                          travel:12, stay:60 },
+  { id:3, kind:'act',   name:'Game Bar A‑Button',                        travel:18, stay:90 },
+];
+let nextId = 4;
+const SAMPLE = ['Nakamise Shopping Street','teamLab Planets','Akihabara Electric Town','Tokyo Skytree','Ueno Park','Kappabashi Street'];
+const TRAVELS = [15,12,20,9,16,11];
+
+const roundUp5 = m => Math.ceil(m/5)*5;
+function fmt(m){ m=((m%1440)+1440)%1440; let h=Math.floor(m/60), mm=m%60; const ap=h<12?'am':'pm'; let hh=h%12; if(hh===0)hh=12; return hh+':'+String(mm).padStart(2,'0')+' '+ap; }
+
+function render(){
+  const day = document.getElementById('day');
+  // arrival anchor
+  let html = `<div class="anchor">✈️ <span><b>Flight arrives · Haneda Airport</b> · ${fmt(ARRIVAL_MIN)} · day begins on arrival</span></div>`;
+  let cursor = ARRIVAL_MIN + DISEMBARK;   // "release" of the arrival = taxi departs
+  stops.forEach((s)=>{
+    const departs = cursor;
+    const arrivesRaw = cursor + s.travel;     // real arrival before rounding
+    const start = roundUp5(arrivesRaw);       // ← the 5-min round-UP rule
+    const finish = start + s.stay;
+    const modeIcon = s.kind==='hotel' ? '🚕 GO Taxi' : (s.travel<10?'🚶 Walk':'🚇 Metro');
+    // transport leg above the stop
+    html += `<div class="leg">${modeIcon} · <span class="lt">${fmt(departs)} → ${fmt(arrivesRaw)}</span> · ${s.travel} min</div>`;
+    // the stop card
+    const badge = s.pinned ? `<span class="pin">1st · luggage</span>` : `<span class="auto">auto</span>`;
+    const stayOpts = [15,30,45,60,90,120,180,240].map(v=>`<option value="${v}" ${v===s.stay?'selected':''}>${v<60?v+' min':(v/60)+(v%60?'.5':'')+' h'}</option>`).join('');
+    const delBtn = s.pinned ? '' : `<button class="x" title="remove" onclick="del(${s.id})">✕</button>`;
+    html += `
+      <div class="stop ${s.kind==='hotel'?'hotel':''}">
+        <div class="top">
+          <span class="time" title="auto-computed — you can't edit this">🔒<span>${fmt(start)}</span></span>
+          ${badge}
+          <span class="name">${s.kind==='hotel'?'🏨 ':'📍 '}${s.name}</span>
+          ${delBtn}
+        </div>
+        <div class="row2">
+          How long to stay
+          <select onchange="setStay(${s.id}, this.value)">${stayOpts}</select>
+          <span style="margin-left:auto;color:#9aa39d">finishes ${fmt(finish)}</span>
+        </div>
+        <div class="arrnote">arrives ${fmt(arrivesRaw)} → starts <b>${fmt(start)}</b> (rounded up to 5 min)</div>
+      </div>`;
+    cursor = finish;
+  });
+  // back-to-hotel + end
+  const back = cursor + 16;
+  html += `<div class="leg">🚕 GO Taxi · <span class="lt">${fmt(cursor)} → ${fmt(back)}</span> · 16 min</div>`;
+  html += `<div class="anchor">🌙 <span><b>Back at Hotel Tavinos Asakusa</b> · ${fmt(roundUp5(back))} · day ends</span></div>`;
+  html += `<button class="addbtn" onclick="add()">+ Add activity to this day</button>`;
+  day.innerHTML = html;
+}
+function setStay(id,v){ const s=stops.find(x=>x.id===id); if(s){ s.stay=parseInt(v,10); render(); } }
+function del(id){ stops=stops.filter(x=>x.id!==id); render(); }
+function add(){
+  const i=(nextId-4)%SAMPLE.length;
+  stops.push({ id:nextId++, kind:'act', name:SAMPLE[i]||'New activity', travel:TRAVELS[i]||15, stay:60 });
+  render();   // always appended at the BOTTOM — never jumps up
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bug audit — full demo</title>
+<style>
+  :root{ --paper:#fbf7ef; --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#8a5a0b; --amberbg:#fdf3e2; --amberbd:#e9d6ab; --line:#ece5d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:15px/1.5 'DM Sans',system-ui,Arial,sans-serif;color:var(--ink);padding:18px}
+  .wrap{max-width:700px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .lead{color:var(--ink2);margin:0 0 16px;font-size:13.5px}
+  .sev{font-size:13px;font-weight:800;letter-spacing:.04em;margin:22px 0 8px;text-transform:uppercase}
+  .sev.c{color:#8c1d16}.sev.h{color:#8a5a0b}.sev.m{color:#5a6b62}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:15px 17px;margin-bottom:13px}
+  .card h2{font-size:15px;margin:0 0 2px}
+  .plain{color:var(--ink2);font-size:12.5px;margin:5px 0 11px}
+  .sim{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .btn{padding:8px 12px;border-radius:8px;border:1px solid var(--line);font-weight:700;cursor:pointer;font-size:12.5px;background:#fff}
+  .btn.do{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn.warn{background:#fff;color:var(--red);border-color:var(--redbd)}
+  .btn.ghost{background:#fff;color:var(--ink2)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+  .read{font-variant-numeric:tabular-nums;font-weight:800;font-size:18px}
+  .read.bad{color:var(--red)} .read.ok{color:var(--green)}
+  .verdict{margin-top:8px;font-size:12px;font-weight:600;padding:7px 10px;border-radius:8px}
+  .verdict.bad{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .verdict.ok{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .verdict.info{background:var(--amberbg);color:var(--amber);border:1px solid var(--amberbd)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  @media(max-width:560px){.two{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--line);border-radius:9px;padding:9px;background:#fff}
+  .panel .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)}
+  .log{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;background:#1e1b16;color:#d7e7d9;border-radius:8px;padding:9px;margin-top:8px;white-space:pre-wrap;min-height:18px}
+  input.note,input.t{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;font:inherit}
+  input.t{width:90px}
+  .small{font-size:11px;color:var(--ink3)}
+  .txtlist{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 18px;font-size:12.5px;color:var(--ink2)}
+  .txtlist li{margin:3px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Every bug, as a live demo</h1>
+  <p class="lead">Click the buttons in each box to watch the bug happen. Mock page — your real app is untouched.</p>
+
+  <div class="sev c">🔴 Critical</div>
+
+  <div class="card"><h2>#1 · "Mark paid" credits the wallet every click</h2>
+    <p class="plain">A ¥10,000 bill, no "already paid?" check.</p>
+    <div class="sim"><div class="row"><button class="btn do" onclick="b1()">Mark ¥10,000 paid</button><button class="btn ghost" onclick="b1r()">reset</button></div>
+      Wallet: <span class="read bad" id="b1w">¥0</span> <span class="small" id="b1n"></span>
+      <div class="verdict bad" id="b1v">Should always be ¥10,000.</div></div></div>
+
+  <div class="card"><h2>#2 · ¥150,000 bonus pays twice on fast double‑click</h2>
+    <p class="plain">Checks "paid this week?" then pays — but not locked together. Click TWICE within 1 second.</p>
+    <div class="sim"><div class="row"><button class="btn do" onclick="b2()">Pay ¥150,000 bonus</button><button class="btn ghost" onclick="b2r()">reset</button></div>
+      Paid: <span class="read bad" id="b2w">¥0</span>
+      <div class="verdict info" id="b2v">Double‑click fast to race it.</div></div></div>
+
+  <div class="card"><h2>#3 · Admin proxy gated by a 6‑digit password in the page source</h2>
+    <p class="plain">The CS/admin tools send <code>168168</code> (visible in "View Source") to unlock full database access. Anyone who finds it has the keys.</p>
+    <div class="sim"><div class="row"><button class="btn warn" onclick="b3()">🔍 "View source" of the CS page</button></div>
+      <div class="log" id="b3log">click to reveal what's in the page…</div></div></div>
+
+  <div class="sev h">🟠 High</div>
+
+  <div class="card"><h2>#4 · Welcome note gets wiped</h2>
+    <p class="plain">Box loads empty on open; autosave saves the empty box over your note.</p>
+    <div class="sim"><div class="two"><div class="panel"><div class="lbl">Saved note (DB)</div><div id="b4db" style="font-weight:700;margin-top:3px;color:var(--green)">"Welcome to Japan! 🌸"</div></div>
+      <div class="panel"><div class="lbl">Box on open</div><input class="note" id="b4box" placeholder="(empty)"></div></div>
+      <div class="row" style="margin-top:9px"><button class="btn warn" onclick="b4()">Edit a stop (autosave)</button><button class="btn ghost" onclick="b4r()">reset</button></div>
+      <div class="verdict bad" id="b4v">Note still safe… click edit without typing.</div></div></div>
+
+  <div class="card"><h2>#5 · Brief shows commission the wallet won't pay</h2>
+    <p class="plain">When payout isn't set, brief uses a default rate; wallet pays ¥0.</p>
+    <div class="sim"><div class="row"><span class="small">Backend payout:</span><button class="btn ghost" id="b5set" onclick="b5()">— not set —</button></div>
+      <div class="two"><div class="panel"><div class="lbl">Brief shows</div><div class="read" id="b5b">¥7,300</div></div><div class="panel"><div class="lbl">Wallet pays</div><div class="read" id="b5w">¥0</div></div></div>
+      <div class="verdict bad" id="b5v">Shows ¥7,300, pays ¥0.</div></div></div>
+
+  <div class="card"><h2>#6 · Reassign "start fresh" silently fails (photos)</h2>
+    <p class="plain">Deletes stops before their photos → database refuses → reset aborts.</p>
+    <div class="sim"><div class="row"><button class="btn warn" onclick="b6()">Reassign (start fresh)</button><button class="btn ghost" onclick="b6r()">reset</button></div>
+      <div class="log" id="b6log">Plan: 3 stops · 2 photos. Click reassign…</div></div></div>
+
+  <div class="card"><h2>#7 · Departure cutoff computed two different ways</h2>
+    <p class="plain">Train 12:00, 30‑min buffer, 40‑min ride to the station. Drag when the last stop ends — the banner and the gate disagree.</p>
+    <div class="sim"><div class="row"><b id="b7t" style="min-width:74px">11:15 am</b><input type="range" id="b7" min="630" max="720" step="5" value="675" style="flex:1"></div>
+      <div class="two"><div class="panel"><div class="lbl">Banner cutoff (− buffer − ride)</div><div id="b7banner" style="font-weight:700">10:50 → ✗ too late</div></div>
+        <div class="panel"><div class="lbl">Gate cutoff (− buffer only)</div><div id="b7gate" style="font-weight:700">11:30 → ✓ on track</div></div></div>
+      <div class="verdict bad" id="b7v">They disagree — gate says OK while the traveler misses the train.</div></div></div>
+
+  <div class="card"><h2>#8 · Wallet double‑counts if a duplicate plan row exists</h2>
+    <p class="plain">The earnings page removes duplicates; the wallet doesn't.</p>
+    <div class="sim"><div class="row"><span class="small">Duplicate plan row in DB:</span><button class="btn ghost" id="b8t" onclick="b8()">no</button></div>
+      <div class="two"><div class="panel"><div class="lbl">Earnings page (deduped)</div><div class="read" id="b8e">¥7,300</div></div><div class="panel"><div class="lbl">Wallet (not deduped)</div><div class="read" id="b8w">¥7,300</div></div></div>
+      <div class="verdict ok" id="b8v">Agree — until a duplicate exists.</div></div></div>
+
+  <div class="card"><h2>#9 · Submitted plan shows "empty" when the load hiccups</h2>
+    <p class="plain">No error check — a failed load looks identical to a truly empty plan.</p>
+    <div class="sim"><div class="row"><button class="btn do" onclick="b9(1)">Load OK</button><button class="btn warn" onclick="b9(0)">Load hiccup</button></div>
+      <div class="panel" style="margin-top:8px"><div class="lbl">DB actually has</div><b>5 activities</b></div>
+      <div class="panel" style="margin-top:8px"><div class="lbl">Review screen shows</div><span class="read" id="b9s" style="font-size:14px">—</span></div>
+      <div class="verdict info" id="b9v">Click both to compare.</div></div></div>
+
+  <div class="sev m">🟡 Medium</div>
+
+  <div class="card"><h2>#11 · "Already at hotel" → can't submit (stuck)</h2>
+    <p class="plain">If the last stop IS the hotel, "End day" adds no ride — but the submit gate demands a ride.</p>
+    <div class="sim"><div class="row"><button class="btn do" onclick="b11a()">End day · back to hotel</button><button class="btn warn" onclick="b11s()">Submit</button><button class="btn ghost" onclick="b11r()">reset</button></div>
+      <div class="log" id="b11log">Last stop = the hotel. Try End day, then Submit…</div></div></div>
+
+  <div class="card"><h2>#12 · One partial withdrawal marks ALL sets paid</h2>
+    <p class="plain">You withdraw part of your wallet → every completed set flips to "paid".</p>
+    <div class="sim"><div class="row"><button class="btn warn" onclick="b12()">Withdraw ¥10,000 (partial)</button><button class="btn ghost" onclick="b12r()">reset</button></div>
+      <div id="b12sets" style="font-size:13px;margin-top:6px"></div>
+      <div class="verdict bad" id="b12v" style="display:none"></div></div></div>
+
+  <div class="card"><h2>#13 · A ¥0 commission override shows nonzero on Review</h2>
+    <p class="plain">Admin sets the override to exactly ¥0; Review ignores it (only honors &gt;0) but the wallet honors it.</p>
+    <div class="sim"><div class="two"><div class="panel"><div class="lbl">Review page shows</div><div class="read bad">¥7,300</div></div><div class="panel"><div class="lbl">Wallet pays</div><div class="read">¥0</div></div></div>
+      <div class="verdict bad">A deliberate ¥0 still shows ¥7,300 on Review.</div></div></div>
+
+  <div class="sev m" style="color:var(--ink3)">⚪ Not shown here (real, but technical / low impact)</div>
+  <div class="txtlist"><ul style="margin:0;padding-left:18px">
+    <li>#10 transport depart rounds to 15 min not 5 · #14 "Bonds held" ignores override · #15 dead ungated submit path · #16 ±15 gate skipped on unparseable time · #17 reassign demote swallows errors → orphans</li>
+    <li>Low/dead: <code>isNight</code> dead var · <code>resortSlots</code> unreachable · checkout duration floor missing · autosave "modal open" check broken · titleless stop dropped on save · <code>snap30</code> mis‑named</li>
+  </ul></div>
+
+  <p class="small" style="margin-top:14px">Tell me which to fix and I'll do them one at a time. This page changed nothing.</p>
+</div>
+
+<script>
+// 1
+let b1c=0; function b1(){b1c++;b1w.textContent='¥'+(b1c*10000).toLocaleString();b1n.textContent='('+b1c+'×)';b1v.textContent=b1c>1?'🐞 paid '+b1c+'× = ¥'+(b1c*10000).toLocaleString()+' for ONE bill.':'Should always be ¥10,000.';}
+function b1r(){b1c=0;b1w.textContent='¥0';b1n.textContent='';b1v.textContent='Should always be ¥10,000.';}
+// 2
+let b2p=0,b2rec=false,b2tm; function b2(){if(b2rec){b2v.textContent='✓ recorded — now blocked (works only AFTER the write lands).';return;}b2p+=150000;b2w.textContent='¥'+b2p.toLocaleString();clearTimeout(b2tm);b2tm=setTimeout(()=>b2rec=true,1000);b2v.textContent=b2p>150000?'🐞 paid ¥'+b2p.toLocaleString()+' — 2nd click slipped through.':'Paid once. Click again within 1s.';}
+function b2r(){b2p=0;b2rec=false;clearTimeout(b2tm);b2w.textContent='¥0';b2v.textContent='Double‑click fast to race it.';}
+// 3
+function b3(){b3log.textContent='';const L=['<script> … </scr'+'ipt>','  const CS_PASS = "168168";        // ← in the page','  headers["x-jj-proxy"] = CS_PASS;   // unlocks service-role DB','','🐞 Anyone who opens View Source sees 168168 → full DB read/write.'];let i=0;(function s(){if(i<L.length){b3log.textContent+=(i?'\n':'')+L[i++];setTimeout(s,420);}})();}
+// 4
+function b4(){const v=b4box.value;b4db.textContent=v?'"'+v+'"':'"" (empty)';b4db.style.color=v?'var(--green)':'var(--red)';b4v.className='verdict bad';b4v.textContent=v?'You typed, so it saved that. Reset + don\'t type to see the wipe.':'🐞 autosave wrote the empty box over your note. Gone.';}
+function b4r(){b4box.value='';b4db.textContent='"Welcome to Japan! 🌸"';b4db.style.color='var(--green)';b4v.textContent='Note still safe… click edit without typing.';}
+// 5
+let b5h=false;function b5(){b5h=!b5h;b5set.textContent=b5h?'¥20,000 (set)':'— not set —';b5b.textContent=b5h?'¥20,000':'¥7,300';b5w.textContent=b5h?'¥20,000':'¥0';b5v.className='verdict '+(b5h?'ok':'bad');b5v.textContent=b5h?'✓ when set, brief = wallet.':'🐞 brief ¥7,300, wallet ¥0.';}
+// 6
+function b6(){b6log.textContent='';const L=['→ delete stops…','✗ DB REFUSED: stop #2 still has 2 photos.','→ delete plan… ✗ blocked.','🐞 Reassign ABORTED — old plan + photos remain.'];let i=0;(function s(){if(i<L.length){b6log.textContent+=(i?'\n':'')+L[i++];setTimeout(s,480);}})();}
+function b6r(){b6log.textContent='Plan: 3 stops · 2 photos. Click reassign…';}
+// 7
+function b7f(m){let h=Math.floor(m/60),mm=m%60,ap=h<12?'am':'pm',hh=h%12||12;return hh+':'+String(mm).padStart(2,'0')+' '+ap;}
+function b7u(){const end=+b7.value,bannerCut=720-30-40,gateCut=720-30;b7t.textContent=b7f(end);
+  b7banner.textContent=b7f(bannerCut)+(end>bannerCut?' → ✗ too late':' → ✓ ok');b7banner.style.color=end>bannerCut?'var(--red)':'var(--green)';
+  b7gate.textContent=b7f(gateCut)+(end>gateCut?' → ✗ too late':' → ✓ on track');b7gate.style.color=end>gateCut?'var(--red)':'var(--green)';
+  const disagree=(end>bannerCut)!==(end>gateCut);b7v.className='verdict '+(disagree?'bad':'ok');b7v.textContent=disagree?'🐞 they DISAGREE — gate says OK while the traveler misses the train.':'(here they happen to agree — drag to ~11:15 to see them split)';}
+b7.addEventListener('input',b7u);
+// 8
+let b8d=false;function b8(){b8d=!b8d;b8t.textContent=b8d?'yes':'no';b8e.textContent='¥7,300';b8w.textContent=b8d?'¥14,600':'¥7,300';b8w.className='read'+(b8d?' bad':'');b8v.className='verdict '+(b8d?'bad':'ok');b8v.textContent=b8d?'🐞 wallet ¥14,600 vs earnings ¥7,300 — counted the duplicate.':'Agree — until a duplicate exists.';}
+// 9
+function b9(ok){b9s.textContent=ok?'5 activities ✓':'No activities logged ✗';b9s.className='read '+(ok?'ok':'bad');b9v.className='verdict '+(ok?'ok':'bad');b9v.textContent=ok?'✓ shows the 5 real activities.':'🐞 load hiccup → shows "empty" though DB has 5. No error.';}
+// 11
+let b11added=false;function b11a(){b11log.textContent='Last stop = the hotel.\n"Already at the hotel — no transport needed." (nothing added)';b11added=false;}
+function b11s(){b11log.textContent+='\n→ Submit… ✗ BLOCKED: "press End day · back to hotel" — but End day adds nothing.\n🐞 Stuck loop: can\'t add a ride, can\'t submit.';}
+function b11r(){b11log.textContent='Last stop = the hotel. Try End day, then Submit…';b11added=false;}
+// 12
+const b12data=()=>[{n:'Set #1',s:'awaiting payout'},{n:'Set #2',s:'awaiting payout'},{n:'Set #3',s:'awaiting payout'}];
+let b12s=b12data();
+function b12render(){b12sets.innerHTML=b12s.map(x=>`${x.n}: <b style="color:${x.s==='paid'?'var(--red)':'var(--ink2)'}">${x.s}</b>`).join(' &nbsp;·&nbsp; ');}
+function b12(){b12s.forEach(x=>x.s='paid');b12render();b12v.style.display='block';b12v.className='verdict bad';b12v.textContent='🐞 You withdrew ¥10,000, but ALL 3 sets are now "paid".';}
+function b12r(){b12s=b12data();b12render();b12v.style.display='none';}
+b12render();b7u();
+</script>
+</body>
+</html>

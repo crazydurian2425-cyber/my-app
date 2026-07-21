@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autosave wipe-guard — current vs proposed</title>
+<style>
+  :root{ --paper:#fbf7ef; --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --line:#ece5d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:15px/1.5 'DM Sans',system-ui,Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:680px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:var(--ink2);margin:0 0 16px;font-size:13.5px}
+  .scn{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .scn button{text-align:left;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font:inherit;font-size:13px}
+  .scn button.on{border-color:var(--green);box-shadow:0 0 0 2px rgba(63,186,115,.25);background:var(--greenbg)}
+  .scn .t{font-weight:700} .scn .d{color:var(--ink2);font-size:12px}
+  .state{background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:13px;margin-bottom:12px;display:flex;gap:18px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+  .state b{color:var(--ink)}
+  .go{padding:11px 16px;border-radius:10px;border:none;background:var(--green);color:#fff;font-weight:700;cursor:pointer;font-size:14px;margin-bottom:14px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.two{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fff}
+  .card h2{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
+  .card.cur h2{color:var(--red)} .card.pro h2{color:var(--green)}
+  .res{font-variant-numeric:tabular-nums;font-weight:800;font-size:18px}
+  .res.bad{color:var(--red)} .res.ok{color:var(--green)}
+  .verdict{margin-top:8px;font-size:12px;font-weight:600;padding:7px 9px;border-radius:8px}
+  .verdict.bad{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .verdict.ok{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .note{font-size:12px;color:var(--ink2);margin-top:14px;line-height:1.6;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Autosave wipe‑guard — current vs proposed</h1>
+  <p class="lead">Pick a situation, then fire an autosave. Watch what each version does to the stops saved in the database. Only ONE situation differs — that's the whole point.</p>
+
+  <div class="scn" id="scn"></div>
+
+  <div class="state" id="state"></div>
+  <button class="go" onclick="run()">▶ Autosave fires</button>
+
+  <div class="two">
+    <div class="card cur"><h2>✕ Current</h2>
+      <div>Stops in DB after: <span class="res" id="curRes">—</span></div>
+      <div class="verdict" id="curV" style="display:none"></div></div>
+    <div class="card pro"><h2>✓ Proposed</h2>
+      <div>Stops in DB after: <span class="res" id="proRes">—</span></div>
+      <div class="verdict" id="proV" style="display:none"></div></div>
+  </div>
+
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+// each scenario: db = stops in DB, form = stops in the open form, loaded = did the form successfully load/show stops this session
+const SC = [
+  { k:'normal',  t:'① Normal edit', d:'Plan opened fine (5 stops shown). Planner edits something.', db:5, form:5, loaded:true },
+  { k:'remove',  t:'② Planner deletes all stops', d:'Plan opened fine (5 stops), planner removes every stop on purpose.', db:5, form:0, loaded:true },
+  { k:'failload',t:'③ Stops FAILED to load', d:'Plan opened but the stops never rendered (load hiccup) — form is empty, DB still has 5.', db:5, form:0, loaded:false },
+  { k:'newempty',t:'④ Brand-new empty plan', d:'Fresh plan, nothing saved yet. Form empty, DB empty.', db:0, form:0, loaded:false },
+];
+let cur = SC[0];
+
+function renderScn(){
+  document.getElementById('scn').innerHTML = SC.map((s,i)=>
+    `<button class="${s.k===cur.k?'on':''}" onclick="pick(${i})"><div class="t">${s.t}</div><div class="d">${s.d}</div></button>`).join('');
+  document.getElementById('state').innerHTML =
+    `<span>Stops in DB: <b>${cur.db}</b></span><span>Stops in form: <b>${cur.form}</b></span><span>Form loaded stops this session: <b>${cur.loaded?'yes':'no'}</b></span>`;
+  ['curRes','proRes'].forEach(id=>{document.getElementById(id).textContent='—';document.getElementById(id).className='res';});
+  ['curV','proV'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('note').textContent='Now press "Autosave fires".';
+}
+function pick(i){ cur=SC[i]; renderScn(); }
+
+function run(){
+  // CURRENT: if the form produced 0 stops, it deletes everything (the only guard
+  // is "bail if slots are visible", which fails when form=0).
+  const curAfter = (cur.form === 0) ? 0 : cur.db;
+  // PROPOSED: same, EXCEPT bail (keep DB) when form=0 AND the form never loaded
+  // stops this session AND the DB still has stops — that's a failed load, not a
+  // real "planner emptied the day".
+  let proAfter;
+  if (cur.form === 0 && cur.db > 0 && !cur.loaded) proAfter = cur.db;   // BAIL — preserve
+  else proAfter = (cur.form === 0) ? 0 : cur.db;
+
+  const setRes = (id,vid,after,isWipeRisk)=>{
+    const lost = (after < cur.db);
+    const el=document.getElementById(id); el.textContent=after; el.className='res '+(lost?'bad':'ok');
+    const v=document.getElementById(vid); v.style.display='block';
+  };
+  setRes('curRes','curV',curAfter);
+  setRes('proRes','proV',proAfter);
+
+  // verdicts per scenario
+  const cV=document.getElementById('curV'), pV=document.getElementById('proV');
+  if (cur.k==='failload'){
+    cV.className='verdict bad'; cV.textContent='🐞 WIPED — 5 stops deleted because the form was empty (the bug you hit).';
+    pV.className='verdict ok';  pV.textContent='✓ KEPT — detected "empty form never loaded + DB has stops" → refused to wipe.';
+    document.getElementById('note').innerHTML='<b>This is the only situation that changes.</b> Current wipes your stops; Proposed keeps them. The personal note/title survive in both (different table) — which is exactly what you saw.';
+  } else if (cur.k==='remove'){
+    cV.className='verdict ok'; cV.textContent='✓ Saved empty — planner removed them on purpose.';
+    pV.className='verdict ok'; pV.textContent='✓ Saved empty — identical. The form DID load, so it allows the real delete.';
+    document.getElementById('note').textContent='Identical behaviour — a planner who genuinely empties a day still works. The fix does NOT block real deletes.';
+  } else if (cur.k==='normal'){
+    cV.className='verdict ok'; cV.textContent='✓ Saved 5 — normal save.';
+    pV.className='verdict ok'; pV.textContent='✓ Saved 5 — identical. Normal save path is untouched.';
+    document.getElementById('note').textContent='Identical — when there are stops, nothing about the autosave changes.';
+  } else {
+    cV.className='verdict ok'; cV.textContent='✓ Empty (nothing to lose).';
+    pV.className='verdict ok'; pV.textContent='✓ Empty — identical (DB had nothing).';
+    document.getElementById('note').textContent='Identical — a brand-new empty plan has nothing to protect.';
+  }
+}
+renderScn();
+</script>
+</body>
+</html>

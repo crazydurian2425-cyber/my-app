@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>End-day-at-hotel — submit gate fix</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --line:#ece5d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:15px/1.5 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:660px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:var(--ink2);margin:0 0 16px;font-size:13.5px}
+  .scn{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .scn button{text-align:left;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;font:inherit;font-size:13px}
+  .scn button.on{border-color:var(--green);box-shadow:0 0 0 2px rgba(63,186,115,.25);background:var(--greenbg)}
+  .scn .t{font-weight:700} .scn .d{color:var(--ink2);font-size:12px}
+  .day{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:12px}
+  .row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;margin:3px 0}
+  .row.venue{background:#f7f4ec} .row.hotel{background:#eef3ee;border:1px solid var(--greenbd)} .row.trans{background:#eaf0f6;color:#2a4a6b}
+  .row .ic{width:20px;text-align:center}
+  .row .lock{margin-left:auto;font-size:11px;color:var(--ink3)}
+  .go{padding:11px 16px;border-radius:10px;border:none;background:var(--green);color:#fff;font-weight:700;cursor:pointer;font-size:14px;margin-bottom:14px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.two{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:12px;padding:13px;background:#fff}
+  .card h2{font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em}
+  .card.cur h2{color:var(--red)} .card.fix h2{color:var(--green)}
+  .verdict{font-size:13px;font-weight:700;padding:8px 10px;border-radius:8px}
+  .verdict.block{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .verdict.pass{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .note{font-size:12px;color:var(--ink2);margin-top:14px;line-height:1.6;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>「1日を終える」提出ゲート — 現行 vs 修正案</h1>
+  <p class="lead">Pick a day shape, then press Submit. Watch the gate. Only the hotel‑ending day changes — the rest behave exactly as today.</p>
+
+  <div class="scn" id="scn"></div>
+  <div class="day" id="day"></div>
+  <button class="go" onclick="run()">▶ 提出する (Submit)</button>
+
+  <div class="two">
+    <div class="card cur"><h2>✕ 現行 (Current)</h2><div class="verdict" id="curV">—</div></div>
+    <div class="card fix"><h2>✓ 修正案 (Fixed)</h2><div class="verdict" id="fixV">—</div></div>
+  </div>
+  <div class="note" id="note"></div>
+</div>
+
+<script>
+// A day is a list of rows. lastReal = last non-locked row. The hotel coords are fixed.
+// Current gate PASS  = lastReal.type === 'transport'
+// Fixed   gate PASS  = lastReal.type === 'transport'  OR  lastReal endsAtHotel
+const SC = [
+  { k:'normal', t:'① 通常の日 (Normal day)', d:'最後はレストラン → 「1日を終える」でホテルへ戻る移動が入っている。',
+    rows:[
+      {ic:'🏨',cls:'hotel',label:'ホテルチェックイン',lock:true},
+      {ic:'⛩️',cls:'venue',label:'見どころ'},
+      {ic:'🍽️',cls:'venue',label:'レストラン（最後の立ち寄り）'},
+      {ic:'🚕',cls:'trans',label:'ホテルに戻る（移動）'},
+    ], lastType:'transport', endsAtHotel:false },
+
+  { k:'hotelend', t:'② ホテル満喫の日 (Relax-at-hotel)', d:'最後はホテル内の自由時間。「1日を終える」を押すと『すでにホテルにいます。移動不要』。',
+    rows:[
+      {ic:'🏨',cls:'hotel',label:'ホテルチェックイン',lock:true},
+      {ic:'♨️',cls:'venue',label:'温泉でひと息'},
+      {ic:'🏨',cls:'hotel',label:'ホテルで自由時間（最後の立ち寄り＝ホテル）'},
+    ], lastType:'freetime', endsAtHotel:true },
+
+  { k:'forgot', t:'③ 締め忘れ (Forgot to close)', d:'最後は観光スポット（ホテルではない）。ホテルへ戻る移動を入れていない。',
+    rows:[
+      {ic:'🏨',cls:'hotel',label:'ホテルチェックイン',lock:true},
+      {ic:'🍽️',cls:'venue',label:'レストラン'},
+      {ic:'🗼',cls:'venue',label:'観光スポット（最後の立ち寄り、移動なし）'},
+    ], lastType:'activity', endsAtHotel:false, isDep:false },
+
+  { k:'departure', t:'④ 出発日 (Departure day)', d:'最後がホテルの自由時間でも、出発日は空港・駅への移動が必須 → 対象外。',
+    rows:[
+      {ic:'🍽️',cls:'venue',label:'朝食'},
+      {ic:'🗼',cls:'venue',label:'最後の見どころ'},
+      {ic:'🏨',cls:'hotel',label:'ホテルで自由時間（最後＝ホテル）'},
+    ], lastType:'freetime', endsAtHotel:true, isDep:true },
+];
+let cur = SC[0];
+
+function render(){
+  document.getElementById('scn').innerHTML = SC.map((s,i)=>
+    `<button class="${s.k===cur.k?'on':''}" onclick="pick(${i})"><div class="t">${s.t}</div><div class="d">${s.d}</div></button>`).join('');
+  document.getElementById('day').innerHTML = cur.rows.map(r=>
+    `<div class="row ${r.cls}"><span class="ic">${r.ic}</span><span>${r.label}</span>${r.lock?'<span class="lock">🔒 固定</span>':''}</div>`).join('');
+  document.getElementById('curV').textContent='—'; document.getElementById('curV').className='verdict';
+  document.getElementById('fixV').textContent='—'; document.getElementById('fixV').className='verdict';
+  document.getElementById('note').textContent='「提出する」を押してください。';
+}
+function pick(i){ cur=SC[i]; render(); }
+
+function run(){
+  const curPass = (cur.lastType === 'transport');
+  // hotel exception applies to arrival + middle days only — NOT the departure day
+  const fixPass = (cur.lastType === 'transport') || (cur.endsAtHotel && !cur.isDep);
+
+  const set=(id,pass)=>{const e=document.getElementById(id);e.className='verdict '+(pass?'pass':'block');
+    e.textContent = pass ? '✓ 提出OK' : '✕ ブロック：「1日を終える・ホテルに戻る」を押してください';};
+  set('curV',curPass); set('fixV',fixPass);
+
+  const n=document.getElementById('note');
+  if (cur.k==='hotelend'){
+    n.innerHTML='<b>これが今回の問題。</b> 現行はホテルへ戻る移動を要求しますが、最後がホテルなので移動は追加できず（『移動不要』）、永遠に提出できません。修正案は「ホテルで終わる日」を正しく締めくくられたものと判定し、提出を通します。';
+  } else if (cur.k==='forgot'){
+    n.innerHTML='<b>ここが大事：</b> 締め忘れの日は<b>両方ともブロック</b>します。修正案はホテルで終わる日だけを通すので、本当にホテルへ戻る移動が必要な日はこれまで通り提出を止めます。';
+  } else if (cur.k==='departure'){
+    n.innerHTML='<b>出発日は対象外。</b> たとえ最後がホテルでも、旅行は「空港・駅へ移動」して終わるため、修正案でも<b>ブロックのまま</b>です（「旅行を終える」を押す必要があります）。ホテルで終われるのは到着日・中日だけ。';
+  } else {
+    n.innerHTML='<b>通常の日は完全に同じ。</b> ホテル以外で終わり、ホテルへ戻る移動がある日は、現行も修正案も提出OK。';
+  }
+}
+render();
+</script>
+</body>
+</html>

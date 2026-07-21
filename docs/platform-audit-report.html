@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform audit — A-Z findings (read-only)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14.5px/1.65 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:24px 18px}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .lede{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .kpi .big{font-size:15px;font-weight:800;margin-bottom:2px}
+  .kpi .sub{font-size:12px;color:var(--ink2)}
+  .kpi.ok{border-color:var(--greenbd);background:var(--greenbg)}
+  .kpi.warn{border-color:#e5c184;background:var(--amberbg)}
+  h2{font-size:16px;margin:26px 0 6px;display:flex;align-items:center;gap:9px}
+  h2 .ic{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;background:var(--ink);color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:6px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:#f7f3ea}
+  tr:last-child td{border-bottom:none}
+  .sev{font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+  .sev.fixed{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .sev.hi{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .sev.med{background:var(--amberbg);color:var(--amber);border:1px solid #e5c184}
+  .sev.low{background:#eef4e2;color:#5d7a2c;border:1px solid #c3d69a}
+  code{background:#f1ece0;border-radius:4px;padding:1px 5px;font-size:11.5px}
+  .note{font-size:12.5px;color:var(--ink2);background:var(--bluebg);border:1px solid #bcd4e2;border-radius:10px;padding:12px 15px;margin-top:14px;line-height:1.7}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Platform audit — full A-Z, read-only</h1>
+  <p class="lede">Audited directly against the code on 2026-07-09. Your three concerns: freeze/lag, Google API cost, overall smoothness. Nothing was changed.</p>
+
+  <div class="grid3">
+    <div class="kpi ok"><div class="big">Freeze — while using</div><div class="sub">✅ Fixed &amp; live (A+B). Dashboard no longer repaints unless data changed.</div></div>
+    <div class="kpi ok"><div class="big">Google API cost</div><div class="sub">✅ Minimal. Repeat traffic eliminated; residual is legitimate new work only.</div></div>
+    <div class="kpi warn"><div class="big">2 slow moments remain</div><div class="sub">⚠️ Dashboard first-open + heavy-plan editor open. Both have ready fixes (C, Stage 2).</div></div>
+  </div>
+
+  <h2><span class="ic">1</span>Freeze / lag</h2>
+  <table>
+    <tr><th>What</th><th>Status</th><th>Evidence / fix</th></tr>
+    <tr><td>Dashboard <b>while using</b> (the reported freeze)</td><td><span class="sev fixed">FIXED · LIVE</span></td><td>A+B: guard + skip-repaint. No repaint unless data changed.</td></tr>
+    <tr><td>Dashboard <b>first open</b> (2–6s "loading")</td><td><span class="sev med">OPEN</span></td><td><b>16 database queries run one-by-one</b> before first paint (<code>_initDashboardImpl</code>). Fix = <b>C</b> (run independent ones together → &lt;1s).</td></tr>
+    <tr><td>Editor <b>open on a heavy plan</b></td><td><span class="sev med">OPEN</span></td><td><code>fillItineraryItems</code> + <code>refreshDayDistances</code> per day + gap-fill loop (max 20/day) all synchronous. Fix = <b>Stage 2</b> (chunked render).</td></tr>
+    <tr><td>Editor <b>per edit</b></td><td><span class="sev low">MINOR</span></td><td><code>refreshDayDistances</code> called from 21 sites; each re-sorts+re-times+re-renders the whole day. Stage 2 coalesces these.</td></tr>
+    <tr><td>Page weight 1.4 MB single file</td><td><span class="sev low">STRUCTURAL</span></td><td>~1s parse on phones — bounded, not the storm. Optional future split.</td></tr>
+  </table>
+
+  <h2><span class="ic">2</span>Google API cost — residual</h2>
+  <table>
+    <tr><th>Call</th><th>Guard now</th><th>Residual</th></tr>
+    <tr><td>Routes (drive/walk/transit)</td><td>saved in plan + 30d cache + neg-cache + TRAFFIC_UNAWARE + 300/day cap</td><td><span class="sev fixed">≈0 repeat</span></td></tr>
+    <tr><td>Photos</td><td>CacheStorage, once per device ever</td><td><span class="sev fixed">≈0 repeat</span></td></tr>
+    <tr><td>Autocomplete / place details</td><td>450ms debounce · session-token · fires only while typing</td><td><span class="sev low">real work</span></td></tr>
+    <tr><td>Nearby (closed-venue alts)</td><td>50/day cap + 7-day cache</td><td><span class="sev low">enterprise fieldmask, but capped</span></td></tr>
+    <tr><td><b>Maps JS "Show route map"</b></td><td>script loaded once; a map instance is billed per render</td><td><span class="sev med">reducible — lazy-render on click only</span></td></tr>
+  </table>
+  <div class="note"><b>Verdict:</b> the big leak is gone. The one remaining reducible is the interactive route map (Dynamic Maps SKU bills per map shown). Cheapest next win = only build the map when the planner taps "ルート地図を表示", never eagerly. Plus your standing to-do: set <b>quota caps in Google Cloud Console</b> — the guarantee no future bug can spike the bill.</div>
+
+  <h2><span class="ic">3</span>Database traffic — the biggest remaining smoothness lever</h2>
+  <table>
+    <tr><th>Source</th><th>Now</th><th>Cheapest reduction</th></tr>
+    <tr><td>Dashboard poller</td><td>every 60s (10s in bond) → full re-init = <b>~16 queries</b></td><td><span class="sev med">HIGH</span> replace with a 1-query "anything changed since last time?" probe; only full-refresh on a hit</td></tr>
+    <tr><td>CS chat (panel open)</td><td>every 3s: full-thread <code>select(*)</code> + writes <code>unread=0</code> unconditionally</td><td><span class="sev low">fetch only newer messages; skip the redundant unread write</span></td></tr>
+    <tr><td>Autosave</td><td>every save deletes ALL rows then re-inserts ALL rows</td><td><span class="sev med">delta writes — and this is also a data-loss window (below)</span></td></tr>
+    <tr><td>Presence / suspension</td><td>60s heartbeats</td><td><span class="sev low">fine as-is</span></td></tr>
+  </table>
+
+  <h2><span class="ic">4</span>Latent bugs found (not yet fixed)</h2>
+  <table>
+    <tr><th>Bug</th><th>Severity</th><th>Detail</th></tr>
+    <tr><td>Data loss — stale tab / device overwrite</td><td><span class="sev hi">HIGH</span></td><td>Cross-device conflict guard is <code>return false</code> disabled; autosave last-write-wins. An old open tab can overwrite newer work. (Likely 寺口さん's lost Day 1.)</td></tr>
+    <tr><td>Data loss — submit delete-then-insert</td><td><span class="sev med">MED</span></td><td>Submit deletes all rows then inserts; a failed insert after delete loses the plan's rows if the planner reloads before retry.</td></tr>
+    <tr><td>Data loss — empty-title row drop</td><td><span class="sev med">MED</span></td><td>Any stop whose title is blank at save time is silently skipped → deleted next save. Hotel-name-lost cascade.</td></tr>
+    <tr><td>Shinkansen estimate too high</td><td><span class="sev low">LOW</span></td><td><code>0.5 min/km</code> ≈ 120 km/h; real shinkansen ~200+. Tokyo→Kyoto estimates ~4h vs real 2h15 (~1.8× over). Planner can override.</td></tr>
+    <tr><td>Transit fare capped ¥520</td><td><span class="sev low">LOW</span></td><td><code>Math.min(520,…)</code> — a 100 km transit leg shows ¥520 vs real ~¥3,600. Default only; editable.</td></tr>
+    <tr><td>6 seed rows wrong</td><td><span class="sev low">LOW</span></td><td>4 "ferry from Hiroshima Station" + 2 "shinkansen from Kawaguchiko". SQL ready.</td></tr>
+    <tr><td>A+B polish (3 minors)</td><td><span class="sev low">LOW</span></td><td>active-set-actions mixed writer; loadPendingPayments unmemoized + ungated; watchdog ownership token.</td></tr>
+  </table>
+
+  <div class="note">
+    <b>Bottom line for your 3 concerns:</b><br>
+    • <b>Freeze:</b> the reported one is fixed &amp; live. Two known slow moments remain (first-open, heavy-editor-open) — both have designed fixes ready (<b>C</b>, <b>Stage 2</b>).<br>
+    • <b>API cost:</b> minimal — repeat traffic eliminated. One reducible (route map) + your quota-cap to-do.<br>
+    • <b>Smoother:</b> the single biggest remaining win is the <b>poller diet</b> (60s full re-init → 1-query probe) — large DB-traffic cut, low risk.<br>
+    • <b>Not a smoothness issue but important:</b> the <b>3 data-loss vectors</b> are the highest-severity findings — worth a dedicated safety bundle.
+  </div>
+</div>
+</body>
+</html>

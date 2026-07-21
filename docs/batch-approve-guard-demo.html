@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — "Prevent recurrence" guard on Approve Batch</title>
+<style>
+  :root{
+    --green:#1a7a5e; --green-mid:#2d9e7a; --green-light:#e8f5f0;
+    --bg:#F4F2EC; --cream:#faf8f2; --ink:#1d211f; --ink-2:#5a5f5b; --ink-3:#8a8f8a;
+    --border:rgba(0,0,0,0.10); --amber:#BA7517; --amber-bg:#FBF1DE; --red:#B3452F; --red-bg:#FBEAE5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);padding:30px 22px 70px;line-height:1.5;}
+  h1{font-size:21px;margin-bottom:6px;}
+  .sub{font-size:13.5px;color:var(--ink-2);margin-bottom:8px;max-width:840px;}
+  .sub b{color:var(--ink);}
+  .real{font-size:12.5px;color:var(--green);background:var(--green-light);border:1px solid rgba(26,122,94,.25);border-radius:8px;padding:8px 12px;max-width:840px;margin-bottom:26px;}
+
+  .stage{max-width:640px;margin:0 auto 26px;background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,0.06);}
+  .stage-h{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .stage-h .t{font-size:14px;font-weight:700;}
+  .stage-h .badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;}
+  .b-amber{background:var(--amber-bg);color:var(--amber);}
+  .b-green{background:var(--green-light);color:var(--green);}
+
+  .plan{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border);font-size:13px;}
+  .plan:last-of-type{border-bottom:none;}
+  .plan .pn{font-size:11px;font-weight:700;color:var(--green);background:var(--green-light);border-radius:6px;padding:3px 9px;flex-shrink:0;}
+  .plan .nm{flex:1;color:var(--ink);}
+  .st{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
+  .st.approved{background:var(--green-light);color:var(--green);}
+  .st.submitted{background:var(--amber-bg);color:var(--amber);}
+
+  .foot{padding:14px 18px;display:flex;justify-content:flex-end;gap:10px;background:#fff;}
+  .btn{font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .btn.primary.disabled{background:#cfcdc6;border-color:#cfcdc6;color:#fff;cursor:not-allowed;}
+  .btn.green{background:var(--green);color:#fff;border-color:var(--green);}
+
+  .toast{margin:0 18px 16px;border-radius:10px;padding:12px 14px;font-size:12.5px;display:none;}
+  .toast.show{display:block;}
+  .toast.block{background:var(--red-bg);border:1px solid rgba(179,69,47,.3);color:#7a2a1b;}
+  .toast.ok{background:var(--green-light);border:1px solid rgba(26,122,94,.3);color:var(--green);}
+  .toast b{font-weight:700;}
+
+  .col2{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;}
+  .col2 .stage{flex:1 1 420px;max-width:520px;margin-bottom:0;}
+  .cap{text-align:center;font-size:13px;font-weight:700;margin-bottom:10px;}
+  .cap.bad{color:var(--red);} .cap.good{color:var(--green);}
+  .cap-wrap{flex:1 1 420px;max-width:520px;}
+  .note{font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px;padding:0 8px;}
+
+  .expl{max-width:840px;margin:34px auto 0;background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px 24px;}
+  .expl h2{font-size:15px;margin-bottom:12px;}
+  .expl ol{margin-left:20px;font-size:13.5px;line-height:1.95;color:var(--ink-2);}
+  .expl li b{color:var(--ink);}
+  code{background:#f0eee7;border-radius:4px;padding:1px 6px;font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<h1>🛡️ Demo — "Prevent recurrence" guard</h1>
+<p class="sub">
+  This shows what the guard <b>would</b> do — it is <b>NOT installed</b>. It only demonstrates the behavior so you can decide later.
+  The guard makes the <b>Approve Batch</b> button refuse to close a batch while any plan is still <b>submitted / unreviewed</b> —
+  the exact situation that stranded 花田玲子's Plan 5.
+</p>
+<div class="real">
+  ✓ Already done for real: 花田玲子's Plan 5 is now <b>approved</b> and her total went from ¥23,800 → <b>¥29,300</b>. This demo is only about stopping it happening again.
+</div>
+
+<div class="col2">
+
+  <!-- BEFORE -->
+  <div class="cap-wrap">
+    <div class="cap bad">✕ Now — batch closes with a straggler</div>
+    <div class="stage">
+      <div class="stage-h"><span class="t">Set #001 · 花田玲子</span><span class="badge b-amber">Awaiting payout</span></div>
+      <div class="plan"><span class="pn">Plan 1</span><span class="nm">Astrid Lindqvist</span><span class="st approved">approved</span></div>
+      <div class="plan"><span class="pn">Plan 2</span><span class="nm">Beatriz Fonseca</span><span class="st approved">approved</span></div>
+      <div class="plan"><span class="pn">Plan 3</span><span class="nm">Beatriz Fonseca</span><span class="st approved">approved</span></div>
+      <div class="plan"><span class="pn">Plan 4</span><span class="nm">Mariana Ríos Beltrán</span><span class="st approved">approved</span></div>
+      <div class="plan"><span class="pn">Plan 5</span><span class="nm">Eleanor Whitfield</span><span class="st submitted">submitted</span></div>
+      <div class="toast block" id="before-toast">
+        Batch approved. <b>Plan 5 was left in “submitted” and its ¥5,500 was excluded from payout.</b> Nobody noticed until the counts disagreed.
+      </div>
+      <div class="foot"><button class="btn primary" onclick="doBefore()">Approve Batch →</button></div>
+    </div>
+    <div class="note">The button doesn't care that Plan 5 is unreviewed — it just flips the assignment to <b>completed</b>.</div>
+  </div>
+
+  <!-- AFTER -->
+  <div class="cap-wrap">
+    <div class="cap good">✓ With guard — batch is blocked until all approved</div>
+    <div class="stage" id="after-stage">
+      <div class="stage-h"><span class="t">Set #001 · 花田玲子</span><span class="badge b-amber" id="after-badge">4 / 5 approved</span></div>
+      <div class="plan"><span class="pn">Plan 1</span><span class="nm">Astrid Lindqvist</span><span class="st approved">approved</span></div>
+      <div class="plan"><span class="pn">Plan 2</span><span class="nm">Beatriz Fonseca</span><span class="st approved">approved</span></div>
+      <div class="plan"><span class="pn">Plan 3</span><span class="nm">Beatriz Fonseca</span><span class="st approved">approved</span></div>
+      <div class="plan"><span class="pn">Plan 4</span><span class="nm">Mariana Ríos Beltrán</span><span class="st approved">approved</span></div>
+      <div class="plan" id="after-p5"><span class="pn">Plan 5</span><span class="nm">Eleanor Whitfield</span><span class="st submitted" id="after-p5-st">submitted</span></div>
+      <div class="toast block" id="after-toast-block">
+        🚫 <b>Can't approve the batch yet — Plan 5 is still awaiting review.</b> Review &amp; approve it first so its ¥5,500 is included in payout.
+      </div>
+      <div class="toast ok" id="after-toast-ok">
+        ✓ <b>All 5 plans approved.</b> Batch closed — full ¥29,300 is in the planner's wallet.
+      </div>
+      <div class="foot">
+        <button class="btn green" id="after-review" onclick="reviewP5()">Review Plan 5</button>
+        <button class="btn primary disabled" id="after-approve" onclick="doAfter()">Approve Batch →</button>
+      </div>
+    </div>
+    <div class="note">Try <b>Approve Batch</b> first — it's blocked. Click <b>Review Plan 5</b> to approve it, then the batch unlocks.</div>
+  </div>
+
+</div>
+
+<div class="expl">
+  <h2>🔧 What the guard actually changes (one function)</h2>
+  <ol>
+    <li>In <code>approveFullSet(setId, plannerId)</code>, before flipping the assignment to <code>completed</code>, count that planner's plans where <code>status</code> is not yet <code>approved</code>.</li>
+    <li>If any are still <b>submitted / in&nbsp;progress / pending</b>, <b>stop</b> and show: <i>"3 plans still need review — approve them before closing the batch."</i> The assignment stays open.</li>
+    <li>Only when <b>every</b> plan is <code>approved</code> does the button proceed and mark the batch <code>completed</code> / awaiting payout.</li>
+    <li>Net effect: a plan submitted <b>after</b> your last review pass (Plan 5's exact case) can never be silently dropped from a planner's pay again.</li>
+  </ol>
+</div>
+
+<script>
+  function doBefore(){
+    document.getElementById('before-toast').classList.add('show')
+  }
+
+  let p5approved = false
+  function refreshAfter(){
+    const approveBtn = document.getElementById('after-approve')
+    if (p5approved) {
+      approveBtn.classList.remove('disabled')
+      document.getElementById('after-badge').textContent = '5 / 5 approved'
+      document.getElementById('after-badge').className = 'badge b-green'
+    }
+  }
+  function doAfter(){
+    const block = document.getElementById('after-toast-block')
+    const ok = document.getElementById('after-toast-ok')
+    if (!p5approved){
+      block.classList.add('show'); ok.classList.remove('show')
+      return
+    }
+    block.classList.remove('show'); ok.classList.add('show')
+    document.getElementById('after-badge').textContent = 'Paid soon'
+  }
+  function reviewP5(){
+    p5approved = true
+    const st = document.getElementById('after-p5-st')
+    st.textContent = 'approved'; st.className = 'st approved'
+    document.getElementById('after-toast-block').classList.remove('show')
+    document.getElementById('after-review').style.display = 'none'
+    refreshAfter()
+  }
+</script>
+</body>
+</html>

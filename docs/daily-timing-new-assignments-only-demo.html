@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily-timing fix — new assignments only (demo · Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; --green-d:#1f6f66; --amber:#c17d2a; --red:#c0392b; --blue:#3b6ea5; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI',sans-serif;line-height:1.6;padding:0 0 70px}
+  .wrap{max-width:900px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:26px 0;margin-bottom:22px}
+  header.top .wrap{display:block}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  header.top h1{margin:0 0 6px;font-size:21px;line-height:1.3}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  h2{font-size:12.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:28px 0 12px}
+  p.lead{font-size:14px;color:var(--ink2);margin:0 0 14px}
+  ul.rule{list-style:none;padding:0;margin:8px 0}
+  ul.rule li{padding:7px 0 7px 26px;position:relative;font-size:13.5px}
+  ul.rule li::before{content:"✓";position:absolute;left:0;top:7px;color:var(--green-d);font-weight:800}
+  ul.rule li.no::before{content:"✕";color:var(--ink3)}
+  .briefbar{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:13px 16px;margin:6px 0 16px;font-size:13.5px}
+  .briefbar b{color:var(--ink)}
+  .want{color:var(--green-d);font-weight:700}
+  .bugv{color:var(--red);font-weight:700;text-decoration:line-through}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 18px}
+  .btn{border:0;border-radius:9px;padding:11px 18px;font-size:13.5px;font-weight:700;cursor:pointer}
+  .btn.apply{background:var(--green-d);color:#fff}
+  .btn.reset{background:#efe8da;color:var(--ink2)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:760px){.cards{grid-template-columns:1fr}}
+  .pc{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:15px;position:relative;transition:.2s}
+  .pc .who{font-size:13.5px;font-weight:700;margin:0 0 2px}
+  .pc .st{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:99px;padding:2px 9px;display:inline-block;margin-bottom:12px}
+  .st.built{background:#eef4ee;color:var(--green-d);border:1px solid rgba(44,128,121,.3)}
+  .st.building{background:#eaf1f8;color:var(--blue);border:1px solid rgba(59,110,165,.3)}
+  .st.next{background:#f7ead6;color:var(--amber);border:1px solid rgba(193,125,42,.35)}
+  .pc .lockrow{font-size:11.5px;color:var(--ink3);margin-bottom:12px;display:flex;align-items:center;gap:5px}
+  .timebox{border:1px dashed var(--bd);border-radius:10px;padding:11px;text-align:center;background:#faf7f0}
+  .timebox .lbl{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+  .timebox .big{font-size:26px;font-weight:800;letter-spacing:.5px;font-variant-numeric:tabular-nums;margin-top:2px}
+  .stamp{margin-top:11px;font-size:11.5px;font-weight:700;border-radius:8px;padding:7px 9px;text-align:center;min-height:34px;display:flex;align-items:center;justify-content:center}
+  .stamp.keep{background:#f1efe8;color:var(--ink3)}
+  .stamp.fix{background:#eaf3ef;color:var(--green-d);border:1px solid rgba(44,128,121,.3)}
+  .stamp.empty{background:transparent}
+  .pc.changed{border-color:var(--green);box-shadow:0 0 0 3px rgba(44,128,121,.12)}
+  .pulse{animation:pl .6s ease}
+  @keyframes pl{0%{background:#fff6df}100%{}}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:11px 14px;margin:18px 0}
+  .arrline{font-size:11.5px;color:var(--ink3);margin-top:8px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">Demo · behaviour proposal · nothing changed</span>
+  <h1>Fix the daily timing — but only for the next planner, never the built ones</h1>
+  <p>Existing and in-progress plans stay frozen. Only a fresh assignment picks up the corrected time.</p>
+</div></header>
+
+<div class="wrap">
+
+  <h2>The rule you asked for</h2>
+  <ul class="rule">
+    <li class="no"><b>Already built</b> plans (approved / submitted) — <b>untouched</b>. Keep their current start time.</li>
+    <li class="no"><b>In-progress</b> plans (a planner is building right now) — <b>untouched</b>. Their work is never re-timed.</li>
+    <li><b>Not-yet-assigned</b> plans — corrected, so the <b>next planner</b> assigned starts with the right time.</li>
+  </ul>
+
+  <div class="briefbar">
+    <b>Example:</b> this traveler requested <span class="want">Late · 09:30</span>,
+    but it was mis-registered as <span class="bugv">Standard · 08:30</span>. We want to correct it <b>only going forward</b>.
+  </div>
+
+  <h2>Try it — press “Apply fix”</h2>
+  <p class="lead">Watch the three planners. The built one and the building one don’t move. Only the next assignment flips to 09:30.</p>
+
+  <div class="controls">
+    <button class="btn apply" id="applyBtn">✅ Apply fix (new assignments only)</button>
+    <button class="btn reset" id="resetBtn" disabled>↺ Reset</button>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="note" id="verdict"></div>
+
+  <div class="note">
+    <b>Day 1 (arrival day) is exempt:</b> for every planner, the arrival day always starts at the arrival time — this fix only affects the Day 2+ wake time.<br>
+    <b>Note:</b> mock-up of the desired behaviour only — no app code or data was changed.
+  </div>
+
+</div>
+
+<script>
+  // Each planner-copy of the same traveller, in a different state.
+  var CARDS = [
+    { who:'Planner A',    stateClass:'built',    stateLbl:'Built · approved',   lock:'🔒 Done — leave untouched',       frozen:true,  start:'08:30' },
+    { who:'Planner B',    stateClass:'building', stateLbl:'Building now',        lock:'✏️ In progress — leave untouched', frozen:true,  start:'08:30' },
+    { who:'Next planner', stateClass:'next',     stateLbl:'Unassigned → new',    lock:'✨ To be assigned',                frozen:false, start:'08:30' },
+  ];
+  var CORRECT = '09:30';   // Late
+  var applied = false;
+
+  function render(pulse){
+    var host = document.getElementById('cards');
+    host.innerHTML = '';
+    CARDS.forEach(function(c){
+      var showTime = (applied && !c.frozen) ? CORRECT : c.start;
+      var changed  = applied && !c.frozen;
+      var stampCls, stampTxt;
+      if(!applied){ stampCls='empty'; stampTxt=''; }
+      else if(c.frozen){ stampCls='keep'; stampTxt='Unchanged ✓ existing work kept'; }
+      else { stampCls='fix'; stampTxt='✓ Corrected — Day 2+ starts 09:30'; }
+      var el = document.createElement('div');
+      el.className = 'pc' + (changed?' changed':'') + (changed&&pulse?' pulse':'');
+      el.innerHTML =
+        '<div class="who">'+c.who+'</div>'+
+        '<span class="st '+c.stateClass+'">'+c.stateLbl+'</span>'+
+        '<div class="lockrow">'+c.lock+'</div>'+
+        '<div class="timebox"><div class="lbl">Day 2+ start</div><div class="big">'+showTime+'</div></div>'+
+        '<div class="stamp '+stampCls+'">'+stampTxt+'</div>'+
+        '<div class="arrline">Day 1: starts at arrival time (exempt)</div>';
+      host.appendChild(el);
+    });
+    var v = document.getElementById('verdict');
+    v.innerHTML = applied
+      ? 'Result: the built and in-progress plans stay at <b>08:30</b>. Only the <b>next planner</b> starts at the correct <b>09:30</b>. No existing work changes.'
+      : 'Press “Apply fix” — the two existing plans don’t move; only the next assignment changes to 09:30.';
+  }
+
+  document.getElementById('applyBtn').addEventListener('click', function(){
+    applied = true; this.disabled = true; document.getElementById('resetBtn').disabled = false; render(true);
+  });
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    applied = false; this.disabled = true; document.getElementById('applyBtn').disabled = false; render(false);
+  });
+
+  render(false);
+</script>
+</body>
+</html>

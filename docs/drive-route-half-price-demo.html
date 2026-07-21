@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drive routes — same card, half the price (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .col h3{font-size:13px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .tag{font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:99px}
+  .tag.now{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .tag.prop{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+
+  /* mimic of the real transport slot card */
+  .slotcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .tmode{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:13.5px}
+  .tmode .time{color:var(--ink2);font-weight:500;font-size:12.5px}
+  .fromto{margin:8px 0 10px;font-size:13px;color:var(--ink2)}
+  .fromto b{color:var(--ink)}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .g{background:#f7f3ea;border-radius:9px;padding:8px 10px}
+  .g .l{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+  .g .v{font-weight:800;font-size:14px;margin-top:2px;font-variant-numeric:tabular-nums}
+  .g.diff .v{color:var(--amber)}
+  .price{margin-top:10px;border-top:1px dashed var(--line);padding-top:9px;font-size:12.5px;display:flex;justify-content:space-between}
+  .price b.now{color:var(--red)} .price b.prop{color:var(--green)}
+  .apibox{font-size:11px;background:#f1ede2;border-radius:8px;padding:7px 10px;margin-top:9px;color:var(--ink2);font-family:ui-monospace,Consolas,monospace}
+  .apibox s{color:var(--red)}
+  .apibox em{color:var(--green);font-style:normal;font-weight:700}
+
+  /* calculator */
+  .calc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+  .calc h3{margin:0 0 10px;font-size:14px}
+  .calc .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .calc input[type=range]{flex:1;min-width:200px;accent-color:var(--green)}
+  .calc .n{font-weight:800;font-variant-numeric:tabular-nums;min-width:120px}
+  .out{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+  .o{border-radius:11px;padding:12px;text-align:center}
+  .o .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .o .l{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
+  .o.now{background:var(--redbg)} .o.now .v{color:var(--red)}
+  .o.prop{background:var(--greenbg)} .o.prop .v{color:var(--green)}
+  .o.save{background:var(--amberbg)} .o.save .v{color:var(--amber)}
+
+  .facts{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .facts h3{margin:0 0 10px;font-size:14px}
+  .facts ul{margin:0;padding-left:0;list-style:none}
+  .facts li{padding:6px 0;border-bottom:1px solid #f1ecdf;font-size:13px}
+  .facts li:last-child{border-bottom:none}
+  .ok{color:var(--green);font-weight:800;margin-right:7px}
+  .chg{color:var(--amber);font-weight:800;margin-right:7px}
+  .note{font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:14px;line-height:1.7}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Drive routes — same card, half the price</h1>
+  <p class="lead">Google charges <b>two different prices for the SAME route question</b>, depending on one option in the request. Today every taxi/car leg asks the expensive way. The proposal changes ONE line — compare the two cards below: what the planner sees is the same.</p>
+
+  <div class="cols">
+    <div class="col">
+      <h3><span class="tag now">✕ NOW — “Advanced” call</span></h3>
+      <div class="slotcard">
+        <div class="tmode"><span>🚕 GO Taxi</span><span class="time">3:45 pm → 4:02 pm</span></div>
+        <div class="fromto"><b>Hotel Tavinos Asakusa</b> → <b>Senso-ji</b></div>
+        <div class="grid">
+          <div class="g"><div class="l">距離 Distance</div><div class="v">5.2 km</div></div>
+          <div class="g diff"><div class="l">所要時間 Duration</div><div class="v">17 min</div></div>
+          <div class="g"><div class="l">費用/人 Cost</div><div class="v">~¥2,547</div></div>
+        </div>
+        <div class="apibox">routingPreference: <s>"TRAFFIC_AWARE_OPTIMAL"</s><br>departureTime: "2026-08-05T15:45+09:00"</div>
+        <div class="price"><span>Google bills this call</span><b class="now">≈ RM0.047</b></div>
+      </div>
+    </div>
+    <div class="col">
+      <h3><span class="tag prop">✓ PROPOSED — “Basic” call</span></h3>
+      <div class="slotcard">
+        <div class="tmode"><span>🚕 GO Taxi</span><span class="time">3:45 pm → 4:00 pm</span></div>
+        <div class="fromto"><b>Hotel Tavinos Asakusa</b> → <b>Senso-ji</b></div>
+        <div class="grid">
+          <div class="g"><div class="l">距離 Distance</div><div class="v">5.2 km</div></div>
+          <div class="g diff"><div class="l">所要時間 Duration</div><div class="v">15 min</div></div>
+          <div class="g"><div class="l">費用/人 Cost</div><div class="v">~¥2,547</div></div>
+        </div>
+        <div class="apibox">routingPreference: <em>"TRAFFIC_UNAWARE"</em><br><em>(no departureTime for drive legs)</em></div>
+        <div class="price"><span>Google bills this call</span><b class="prop">≈ RM0.023</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="calc">
+    <h3>What it saves at your volume</h3>
+    <div class="row">
+      <span>Drive/taxi route calls per month:</span>
+      <input type="range" id="vol" min="1000" max="30000" step="500" value="8000" oninput="calc()">
+      <span class="n" id="volN">8,000 calls</span>
+    </div>
+    <div class="out">
+      <div class="o now"><div class="v" id="cNow">—</div><div class="l">Now (Advanced)</div></div>
+      <div class="o prop"><div class="v" id="cProp">—</div><div class="l">Proposed (Basic)</div></div>
+      <div class="o save"><div class="v" id="cSave">—</div><div class="l">Saved / month</div></div>
+    </div>
+  </div>
+
+  <div class="facts">
+    <h3>Does anything on the platform change?</h3>
+    <ul>
+      <li><span class="ok">SAME</span> Distance (km) — identical, same road</li>
+      <li><span class="ok">SAME</span> Cost/fare — computed from the km, so identical</li>
+      <li><span class="ok">SAME</span> Route map line, time-chain, autosave, snapshots, submit rules — all consume the result exactly as today</li>
+      <li><span class="ok">SAME</span> Transit &amp; walking legs — untouched (transit keeps its departure time for train schedules)</li>
+      <li><span class="chg">±few min</span> Drive <b>duration</b>: today = predicted traffic at that exact minute (17 min); proposed = Google's typical drive time (15 min). For trips booked weeks ahead, both are estimates — and the planner's exact-value override still beats both.</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <b>Why Google prices it this way:</b> the expensive option asks Google to simulate live/predicted traffic for one exact departure minute — valuable for a dispatch app sending a car <i>right now</i>, much less valuable for an itinerary happening in 3 weeks. The cheap option answers the same "how far, how long, which road" question with typical drive times. <b>The change is literally one line in the request</b> — nothing else in the platform moves.
+  </div>
+</div>
+
+<script>
+const RM_ADV = 0.047, RM_BASIC = 0.0235   // ≈ US$10 / US$5 per 1,000 at ~RM4.7
+function calc(){
+  const v = +document.getElementById('vol').value
+  document.getElementById('volN').textContent = v.toLocaleString() + ' calls'
+  const now = v*RM_ADV, prop = v*RM_BASIC
+  document.getElementById('cNow').textContent  = 'RM' + now.toFixed(0)
+  document.getElementById('cProp').textContent = 'RM' + prop.toFixed(0)
+  document.getElementById('cSave').textContent = '−RM' + (now-prop).toFixed(0)
+}
+calc()
+</script>
+</body>
+</html>

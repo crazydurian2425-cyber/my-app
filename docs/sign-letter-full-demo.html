@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>業務委託契約書 — 利用規約条項を追加した全文（デモ）</title>
+<style>
+  :root{ --ink:#1f2a37; --ink-2:#475569; --ink-3:#8a97a6; --green-d:#1a7a5e; --border:#e6e0d4; --border-med:#cbbfa6;
+         --add:#137a4f; --addbg:#e9f7ef; --addbd:#9ccdaf; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9e3d7;font:15px/1.85 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:24px}
+  .sheet{max-width:720px;margin:0 auto;background:#fffdf8;border:1px solid var(--border);border-radius:14px;padding:34px 40px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+  .demobar{max-width:720px;margin:0 auto 14px;font-size:12.5px;color:#7a4a14;background:#fdf3e3;border:1px solid #e3c98f;border-radius:10px;padding:10px 14px}
+  .title{font-family:Georgia,serif;font-size:25px;font-weight:700;text-align:center;margin-bottom:6px}
+  .subtitle{text-align:center;color:var(--ink-3);font-size:13px;margin-bottom:22px}
+  .party{background:rgba(26,122,94,0.04);border:1px solid rgba(26,122,94,0.20);border-radius:10px;padding:14px 18px;margin-bottom:16px}
+  .ptag{font-size:11px;font-weight:700;color:var(--green-d);background:rgba(26,122,94,0.10);border-radius:5px;padding:2px 8px;display:inline-block;margin-bottom:8px;letter-spacing:.04em}
+  .field-row{display:flex;gap:12px;font-size:13px;margin:3px 0}
+  .field-label{min-width:96px;color:var(--ink-3)}
+  .field-val{font-weight:600}
+  h3{font-family:Georgia,serif;font-size:17px;margin:22px 0 8px;border-bottom:1px solid var(--border);padding-bottom:5px}
+  h4{font-family:Georgia,serif;font-size:14.5px;margin:14px 0 6px}
+  p{font-size:13.5px;margin:8px 0}
+  ul{margin:6px 0;padding-left:20px} li{font-size:13.5px;margin:6px 0}
+  li.add{list-style:none;margin-left:-20px;background:var(--addbg);border:1px solid var(--addbd);border-radius:8px;padding:9px 12px;color:#0f5132}
+  .add-tag{display:inline-block;background:var(--add);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;margin-right:6px}
+  ins{background:#bfe9d2;text-decoration:none;border-radius:3px;padding:0 3px;font-weight:700}
+  a{color:#1a3fa0}
+  .sig-wrap{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:#fff;margin:18px 0}
+  .sig-name{font-family:'Brush Script MT','Segoe Script',cursive;font-size:26px;color:#1a2e6e;border-bottom:1px solid var(--border-med);padding-bottom:2px;margin-top:10px;width:fit-content;min-width:180px}
+  .confirm-row{display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13.5px}
+  .confirm-row input{width:17px;height:17px}
+  .btn{margin-top:14px;width:100%;padding:13px;font-size:15px;background:var(--green-d);color:#fff;border:none;border-radius:9px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="demobar">📄 <b>DEMO — full contract with the 利用規約 clause added in 3 places (green = additions).</b> Nothing in the live <code>sign-letter.html</code> has been changed yet.</div>
+
+<div class="sheet">
+  <div class="title">業務委託契約書</div>
+  <div class="subtitle">以下の内容をご確認のうえ、ご署名ください。</div>
+
+  <!-- 甲 -->
+  <div class="party">
+    <span class="ptag">委託者（甲）</span>
+    <div class="field-row"><div class="field-label">会社名</div><div class="field-val">JOURNEY JUNCTION LTD</div></div>
+    <div class="field-row"><div class="field-label">登記番号</div><div class="field-val">15791277 <span style="color:var(--ink-3);font-weight:500;">（英国 Companies House 登録）</span></div></div>
+    <div class="field-row"><div class="field-label">登記住所</div><div class="field-val">Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom</div></div>
+    <div class="field-row"><div class="field-label">代表者</div><div class="field-val">Midhun Peter（Director）</div></div>
+    <div class="field-row"><div class="field-label">設立日</div><div class="field-val">2024年6月20日</div></div>
+    <div class="field-row"><div class="field-label">連絡先</div><div class="field-val">hello@thejourneyjunction.co.uk</div></div>
+  </div>
+
+  <!-- 乙 -->
+  <div class="party">
+    <span class="ptag">受託者（乙）</span>
+    <div class="field-row"><div class="field-label">プランナー氏名</div><div class="field-val">三木 未希（例）</div></div>
+    <div class="field-row"><div class="field-label">契約開始日</div><div class="field-val">2026年6月22日（例）</div></div>
+    <div class="field-row"><div class="field-label">本日の日付</div><div class="field-val">2026年6月29日（例）</div></div>
+  </div>
+
+  <p>本書は、上記に記載の契約開始日より、<strong>委託者（甲）JOURNEY JUNCTION LTD</strong>と<strong>受託者（乙）</strong>との間で、訪日旅行プランナーとして業務委託契約を締結することを確認するものです。</p>
+
+  <h3>業務内容および報酬</h3>
+  <ul>
+    <li>Journey Junctionの依頼に基づき、旅行者向けにカスタマイズされた旅程を作成していただきます。</li>
+    <li>報酬は<strong>プランごとの成果報酬制</strong>とし、各案件について定められた報酬額に従ってお支払いします。固定の報酬はありません。</li>
+    <li>上記の成果報酬に加えて、7日間単位のサイクル内に<strong>2件以上のセット</strong>を完了し、承認された場合、サイクル終了時に<strong>条件達成ボーナスとして&nbsp;¥150,000</strong>がウォレットに反映されます。…</li>
+    <li>プランの承認後、報酬はご登録いただいたお支払い方法（PayPay、または日本国内の銀行振込）に従ってお支払いします。</li>
+  </ul>
+
+  <h3>契約条件</h3>
+  <h4>稼働状況および対応時間</h4>
+  <p>プランナーには、他にフルタイムで就業中の方、パートタイムの機会を探している方、または柔軟に対応可能な方が含まれます。</p>
+  <p>当社の公式対応時間は、午前10時から午後10時までとします。</p>
+  <p>当社による確認手続きを完了したプランナーは、当社の業務プラットフォームへ24時間アクセスすることができます。…</p>
+  <p>ただし、すべてのプランナーは、業務を開始する際および終了する際に、ダッシュボードを通じてサポートセンターへ通知する必要があります。…</p>
+  <ul>
+    <li>本契約は業務委託契約であり、雇用契約ではありません。プランナーは、個人事業主または独立した業務委託者として業務を行うものとします。</li>
+    <li>案件またはセットを引き受けるか否かは、ご自身の裁量で自由に決定いただけます。</li>
+    <li>所得税、社会保険料、その他必要となる手続きについては、適用される法令に従い、ご自身の責任において対応していただきます。</li>
+    <li>各当事者は、合理的な予告期間をもって、いつでも本契約を解除することができます。…</li>
+    <li>旅行者に関する情報は機密として取り扱い、旅程作成以外の目的に使用しないことに同意していただきます。</li>
+    <li class="add"><span class="add-tag">＋ 追加①</span>プランナーは、本契約に加えて、当社の<a href="#">利用規約</a>を確認し、その内容に同意するものとします。利用規約は本契約と一体のものとして適用されます。</li>
+  </ul>
+
+  <p style="margin-top:14px;">以下に両当事者が署名することにより、上記の内容を確認・理解し、本契約の条件<ins>および当社の利用規約</ins>に同意したものとみなされます。<span class="add-tag" style="margin-left:6px;">＋ 追加②</span></p>
+
+  <!-- Signatures -->
+  <div class="sig-wrap">
+    <div style="font-family:Georgia,serif;font-size:13.5px;color:var(--ink-3);font-weight:600;">委託者（甲）</div>
+    <div style="font-weight:700;font-size:14px;">JOURNEY JUNCTION LTD</div>
+    <div style="font-size:12px;color:var(--ink-3);">代表者：Midhun Peter（Director）</div>
+    <div class="sig-name">Midhun&nbsp;Peter</div>
+  </div>
+
+  <div class="sig-wrap">
+    <div style="font-family:Georgia,serif;font-size:13.5px;color:var(--ink-3);font-weight:600;margin-bottom:6px;">受託者（乙）署名</div>
+    <div style="height:70px;border:1px dashed var(--border-med);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:12px;">（ここに署名）</div>
+    <div class="confirm-row">
+      <input type="checkbox" disabled>
+      <span>上記の契約内容<ins>および利用規約</ins>を確認し、同意します。<span class="add-tag" style="margin-left:6px;">＋ 追加③</span></span>
+    </div>
+    <button class="btn">署名済み契約書を送信</button>
+  </div>
+</div>
+
+<div class="demobar" style="margin-top:14px;margin-bottom:0;">
+  ⚠️ The <a href="#">利用規約</a> link is a placeholder — it must point to a real, readable Terms‑of‑Service page/PDF before this goes live. Tell me the URL (or that one needs creating) and I'll wire all three in.
+</div>
+</body>
+</html>

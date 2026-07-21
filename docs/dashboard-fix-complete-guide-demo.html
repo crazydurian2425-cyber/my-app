@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard freeze — complete guide: why, what, how, risks (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15.5px/1.7 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:26px 20px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:23px;margin:0 0 6px}
+  .toc{font-size:13px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:22px}
+  .toc b{color:var(--ink)}
+  .ch{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 24px;margin-bottom:22px}
+  .ch h2{font-size:18px;margin:0 0 4px;display:flex;gap:11px;align-items:center}
+  .ch h2 .n{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+  .ch .sub{font-size:13.5px;color:var(--ink2);margin:0 0 16px}
+  .big{font-size:15px;line-height:1.75}
+  .big b{color:var(--ink)}
+  .callout{border-radius:12px;padding:13px 16px;font-size:14px;margin:12px 0;line-height:1.7}
+  .callout.blue{background:var(--bluebg);border:1px solid #bcd4e2}
+  .callout.green{background:var(--greenbg);border:1px solid var(--greenbd)}
+  .mock{border:1px solid var(--line);border-radius:13px;background:#faf7f0;padding:12px;max-width:440px}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 13px;margin-bottom:8px;position:relative;transition:box-shadow .12s,border-color .12s}
+  .sec:last-child{margin-bottom:0}
+  .sec .t{font-size:10.5px;color:var(--ink3);letter-spacing:.04em}
+  .sec .v{font-weight:700;font-size:14px}
+  .sec.rp{border-color:var(--red);box-shadow:0 0 0 3px var(--redbg)}
+  .sec.rp::after{content:"↻ repainted for nothing";position:absolute;top:9px;right:11px;font-size:10px;font-weight:800;color:var(--red)}
+  .sec.rp.real{border-color:var(--green);box-shadow:0 0 0 3px var(--greenbg)}
+  .sec.rp.real::after{content:"↻ real update";color:var(--green)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:740px){.row2{grid-template-columns:1fr}}
+  .half h3{font-size:13.5px;margin:0 0 8px}
+  .pill{font-size:10px;font-weight:800;padding:2px 9px;border-radius:99px;margin-right:6px}
+  .pill.now{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .pill.fix{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  button{font:inherit;font-size:14px;font-weight:700;padding:11px 17px;border:1px solid var(--line);border-radius:11px;background:#fff;cursor:pointer;margin:3px 6px 3px 0}
+  button:hover{background:#faf8f3}
+  button.green{background:var(--green);color:#fff;border-color:var(--green)}
+  button.blue{background:var(--blue);color:#fff;border-color:var(--blue)}
+  button.ghost{border-style:dashed;color:var(--ink3)}
+  .narr{font-size:13.5px;min-height:44px;margin-top:10px;padding:10px 13px;background:#f7f3ea;border-radius:10px}
+  .anchor{font-size:12.5px;color:var(--ink2);margin-top:10px}
+  .meter{display:inline-block;background:#f7f3ea;border-radius:9px;padding:6px 12px;font-size:12.5px;margin:8px 8px 0 0}
+  .meter b{font-variant-numeric:tabular-nums}
+  .type input{width:100%;max-width:440px;font:inherit;font-size:14px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;margin-top:9px}
+  .type input:read-only{background:var(--redbg);border-color:var(--redbd)}
+  .fixcard{border:1px solid var(--line);border-radius:14px;background:#fff;padding:16px 18px;margin:14px 0}
+  .fixcard h3{margin:0 0 10px;font-size:15.5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .risk{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .risk.vlow{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .risk.low{background:#eef4e2;color:#5d7a2c;border:1px solid #c3d69a}
+  .risk.med{background:var(--amberbg);color:var(--amber);border:1px solid #e5c184}
+  .qa{display:grid;grid-template-columns:190px 1fr;gap:6px 14px;font-size:13.5px}
+  .qa .q{color:var(--ink3);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:800;padding-top:2px}
+  .qa .a b{color:var(--ink)}
+  .bundle{font-size:11px;font-weight:800;color:#fff;background:var(--blue);border-radius:7px;padding:2px 8px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  th,td{border-bottom:1px solid var(--line);padding:9px 11px;text-align:left}
+  th{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:#f7f3ea}
+  td.safe{color:var(--green);font-weight:700}
+  td.chg{color:var(--ink3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The dashboard freeze — complete guide</h1>
+  <div class="toc"><b>What's inside:</b> ① why this system exists · ② what goes wrong today (try it) · ③ each fix: why the old code existed, how I fix it, can it cause a bug, risk · ④ what these fixes never touch · ⑤ see it work: no F5 needed · ⑥ your decision</div>
+
+  <!-- 1 WHY EXISTS -->
+  <div class="ch">
+    <h2><span class="n">1</span>Why does this system exist?</h2>
+    <p class="sub">You asked: "if we don't need it, why does it exist at first?" — Answer: <b>you DO need it.</b></p>
+    <div class="big">
+      The dashboard is a <b>live status board</b>. Planners keep it open all day. When something happens on your side —
+      <b>CS assigns a set · admin approves a plan · a bond is confirmed · a payout is marked paid</b> —
+      the planner must see it <b>without pressing F5</b>.<br><br>
+      So the page was built to keep itself up to date in two ways:<br>
+      ① <b>A timer</b> — it checks the server every 60 seconds (every 10 seconds while a bond is waiting).<br>
+      ② <b>A live wire</b> — the database pushes a signal to the page within about 0.4 seconds whenever this planner's data changes.
+    </div>
+    <div class="callout green"><b>This feature is needed and will NOT be removed.</b> The problem is not THAT it refreshes — it is HOW it refreshes. That's chapter 2.</div>
+  </div>
+
+  <!-- 2 WHAT GOES WRONG -->
+  <div class="ch">
+    <h2><span class="n">2</span>What goes wrong today — feel it yourself</h2>
+    <p class="sub">Press ▶ and then <b>type in the LEFT text box</b>. While each red flash runs, the left box refuses your keystrokes — that is the freeze. The right box (fixed behaviour) never blocks.</p>
+    <div>
+      <button class="green" onclick="startIdle()">▶ Start the refresh cycles</button>
+      <button class="ghost" onclick="stopIdle()">■ Stop</button>
+    </div>
+    <div class="row2" style="margin-top:12px">
+      <div class="half">
+        <h3><span class="pill now">TODAY</span>asks 13 questions per refresh cycle, one-by-one, then repaints ALL — even when nothing changed</h3>
+        <div class="mock">
+          <div class="sec" id="a-set"><div class="t">ACTIVE SET</div><div class="v">Set #001 · 2/5 done</div></div>
+          <div class="sec" id="a-plans"><div class="t">PLANS</div><div class="v" id="a-pv">Plan 3: in progress</div></div>
+          <div class="sec" id="a-wallet"><div class="t">WALLET</div><div class="v">¥11,000</div></div>
+        </div>
+        <div class="type"><input id="inA" placeholder="type here — keystrokes blocked during each flash"></div>
+        <div><span class="meter">frozen: <b id="fzA">0</b> ms</span><span class="meter">wasted refresh cycles: <b id="wrA">0</b></span></div>
+      </div>
+      <div class="half">
+        <h3><span class="pill fix">AFTER FIX</span>same checks — but if nothing changed, the screen is not touched</h3>
+        <div class="mock">
+          <div class="sec" id="b-set"><div class="t">ACTIVE SET</div><div class="v">Set #001 · 2/5 done</div></div>
+          <div class="sec" id="b-plans"><div class="t">PLANS</div><div class="v" id="b-pv">Plan 3: in progress</div></div>
+          <div class="sec" id="b-wallet"><div class="t">WALLET</div><div class="v">¥11,000</div></div>
+        </div>
+        <div class="type"><input id="inB" placeholder="type here — never blocked"></div>
+        <div><span class="meter">frozen: <b id="fzB">0</b> ms</span><span class="meter">wasted refresh cycles: <b id="wrB">0</b></span></div>
+      </div>
+    </div>
+    <div class="narr" id="narr2">Press ▶ to start.</div>
+    <div class="anchor">Every red flash is a moment when a real planner's clicks and scrolling <b>stop working</b>. This is exactly what 鳥井さん and the phone planner reported — on every browser they tried, because the behaviour is in the page's code, not in their devices.</div>
+  </div>
+
+  <!-- 3 THE FIXES -->
+  <div class="ch">
+    <h2><span class="n">3</span>The five fixes — why the old code existed, how I fix it, can it cause a bug</h2>
+    <p class="sub">Every card answers the same five questions. The A / B / C badge shows which of the three commits includes it.</p>
+
+    <div class="fixcard">
+      <h3>Fix 1 · One refresh at a time <span class="bundle">A</span> <span class="risk vlow">RISK: VERY LOW</span></h3>
+      <div class="qa">
+        <div class="q">Why old code exists</div><div class="a">The simplest correct rule when the app was young: "whenever anything asks, check the server." Nobody imagined 6 asks per minute, or asks arriving while a check is still running.</div>
+        <div class="q">The problem now</div><div class="a">Checks start on top of unfinished checks — double queries, double repaints, stacked freezes.</div>
+        <div class="q">How I fix it</div><div class="a">If a check is running, new requests wait, and <b>one</b> follow-up check runs right after. Nothing is skipped — only the piling-up stops.</div>
+        <div class="q">Can it cause a bug?</div><div class="a">Worst possible case: during a burst, an update shows <b>1–2 seconds later</b>. It can never be lost — the follow-up always runs. This exact guard pattern already runs in production inside your autosave.</div>
+        <div class="q">Touches / never touches</div><div class="a">Touches: refresh timing only. Never: what data is fetched, what is shown, anything saved.</div>
+      </div>
+    </div>
+
+    <div class="fixcard">
+      <h3>Fix 2 · Repaint only what changed <span class="bundle">B</span> <span class="risk vlow">RISK: VERY LOW</span></h3>
+      <div class="qa">
+        <div class="q">Why old code exists</div><div class="a">"Always redraw everything" was the easiest way to guarantee a correct screen. Cheap when the page was small — expensive now.</div>
+        <div class="q">The problem now</div><div class="a">The whole page is rebuilt even when the check found nothing new — the flashes and blocked clicks in chapter 2.</div>
+        <div class="q">How I fix it</div><div class="a">Before painting a section, compare with what's already on screen. Identical → skip. Different → paint, exactly as today.</div>
+        <div class="q">Can it cause a bug?</div><div class="a">Worst possible case: a section keeps showing its current content <b>until the next real change arrives</b>. It can never show <i>wrong</i> data, because the skip only happens when the new result is <b>100% identical to what is already on screen — the exact same text, character by character</b>. Good news: this code already exists and runs on your demo-set grid; it was simply never applied to the real one.</div>
+        <div class="q">Touches / never touches</div><div class="a">Touches: whether identical content is repainted. Never: what is displayed when data differs.</div>
+      </div>
+    </div>
+
+    <div class="fixcard">
+      <h3>Fix 3 · Translate only the rebuilt part <span class="bundle">B</span> <span class="risk low">RISK: LOW</span></h3>
+      <div class="qa">
+        <div class="q">Why old code exists</div><div class="a">One global "translate the whole page" function was convenient to reuse — so it got called after every refresh.</div>
+        <div class="q">The problem now</div><div class="a">After every refresh, the WHOLE page is re-translated — tens of thousands of text pieces — even when only one small card was rebuilt. Our audit measured this as the heaviest single step of every cycle.</div>
+        <div class="q">How I fix it</div><div class="a">Only the freshly rebuilt section gets translated (the rest is already translated). The full-page pass still runs where it belongs: at page load and on language switch.</div>
+        <div class="q">Can it cause a bug?</div><div class="a">Worst possible case: <b>one label somewhere shows English</b> instead of Japanese until the next refresh. Cosmetic, easy to spot in testing, zero data involvement.</div>
+        <div class="q">Touches / never touches</div><div class="a">Touches: how much of the page is re-translated per cycle. Never: the translations themselves, any data.</div>
+      </div>
+    </div>
+
+    <div class="fixcard">
+      <h3>Fix 4 · First-load questions together <span class="bundle">C</span> <span class="risk med">RISK: MEDIUM-LOW — highest of the five</span></h3>
+      <div class="qa">
+        <div class="q">Why old code exists</div><div class="a">Queries were added one at a time over months of development; each new one copied the habit "wait for the previous one". Nobody planned this "everyone waits in line" pattern — it just grew, one query at a time.</div>
+        <div class="q">The problem now</div><div class="a">~10 questions at first page open, each waiting in line = the 2–6 second frozen "loading" every time the dashboard opens. Worst on phone networks.</div>
+        <div class="q">How I fix it</div><div class="a">Questions that don't depend on each other are asked <b>together</b>. The dependent chain (assignment → set → plans) keeps its exact order.</div>
+        <div class="q">Can it cause a bug?</div><div class="a">This is the one real risk of the project: if I misjudge a hidden dependency, <b>one section could show empty or wrong data until the next refresh corrects it</b>. That's why it ships LAST, alone, in its own commit — one short command ("revert C") brings back today's behaviour in about 2 minutes.</div>
+        <div class="q">Touches / never touches</div><div class="a">Touches: the ORDER of independent read-questions. Never: the questions' content, their results, any writes.</div>
+      </div>
+    </div>
+
+    <div class="fixcard">
+      <h3>Fix 5 · Wallet events: one reload per burst <span class="bundle">A</span> <span class="risk vlow">RISK: VERY LOW</span></h3>
+      <div class="qa">
+        <div class="q">Why old code exists</div><div class="a">Each live wallet event handler was written separately, each triggering its own full reload (~7 questions); plus a backup check that runs every 3 seconds and never slows down, even when nothing is happening; plus two leftover queries that no longer do anything useful (remains of old code).</div>
+        <div class="q">The problem now</div><div class="a">One admin action can fire several wallet events in a row — each triggers its own full reload: 3–4 reloads for the same final number.</div>
+        <div class="q">How I fix it</div><div class="a">A burst of wallet events = <b>one</b> reload (the final number is the same either way). The every-3-seconds backup check now slows down when nothing is happening. Leftover queries deleted.</div>
+        <div class="q">Can it cause a bug?</div><div class="a">Worst possible case: during an admin burst, the wallet <b>display</b> updates ~1 second later. The amounts are computed by untouched code.</div>
+        <div class="q">Touches / never touches</div><div class="a">Touches: how often the wallet display reloads. Never: payout amounts, wallet math, payment logic.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 GUARANTEES -->
+  <div class="ch">
+    <h2><span class="n">4</span>What these fixes never touch — and why it cannot break</h2>
+    <table>
+      <tr><th>Platform function</th><th>Touched by these fixes?</th></tr>
+      <tr><td>Autosave &amp; saving drafts</td><td class="safe">NO — untouched</td></tr>
+      <tr><td>Itinerary editor, times, stop order</td><td class="safe">NO — untouched</td></tr>
+      <tr><td>Submit rules &amp; validation</td><td class="safe">NO — untouched</td></tr>
+      <tr><td>Bond logic</td><td class="safe">NO — untouched</td></tr>
+      <tr><td>Wallet / payout MATH</td><td class="safe">NO — untouched (only when the display refreshes)</td></tr>
+      <tr><td>Google API calls &amp; costs</td><td class="safe">NO — untouched</td></tr>
+      <tr><td>Live updates without F5</td><td class="safe">KEPT — shown in chapter 5, and re-tested on the real dashboard after each commit</td></tr>
+      <tr><td>Dashboard refresh scheduling &amp; repainting</td><td class="chg">YES — this is the only thing changed</td></tr>
+    </table>
+    <div class="callout blue" style="margin-top:14px"><b>Two structural reasons this is safe:</b><br>
+      ① These fixes contain <b>zero data writes</b> — they only schedule read-checks and skip repaints. Code that cannot write cannot corrupt or lose data.<br>
+      ② The dashboard refresh machinery is <b>already switched off while the itinerary editor is open</b> — so during editing and autosaving, the code being changed isn't even running.</div>
+    <div class="callout green"><b>Safety net:</b> three separate commits (A → B → C). Each one is: syntax-checked → reviewed a second time by a separate check that tries hard to find mistakes → deployed → verified live → tested on a real account before the next one ships. Any one can be undone with one phrase ("revert A") in about 2 minutes, without touching the others.</div>
+  </div>
+
+  <!-- 5 SEE IT WORK -->
+  <div class="ch">
+    <h2><span class="n">5</span>See it work: no F5, before AND after <span style="font-size:11px;color:var(--ink3);font-weight:500">(this page is a simulation of the real behaviour — the real thing is re-tested live after each commit)</span></h2>
+    <p class="sub">Your question: "when CS assigns a set, does the planner still see it without refreshing?" — press the button (works while chapter 2 is running, too):</p>
+    <button class="blue" onclick="assign()">👨‍💼 CS assigns a new set to this planner</button>
+    <div class="narr" id="narr5">…</div>
+  </div>
+
+  <!-- 6 DECISION -->
+  <div class="ch">
+    <h2><span class="n">6</span>Your decision</h2>
+    <table>
+      <tr><th>You approve</th><th>What goes live</th><th>What the planner feels</th></tr>
+      <tr><td><b>A</b></td><td>Fix 1 + Fix 5</td><td>fewer stutters, calmer background; flashes remain</td></tr>
+      <tr><td><b>A + B</b></td><td>+ Fix 2 + Fix 3</td><td><b>the freeze is gone</b> — the cure for 鳥井さん and the phone planner</td></tr>
+      <tr><td><b>A + B + C</b></td><td>+ Fix 4</td><td>+ dashboard opens in under ~1 second instead of 2–6</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+let t=null, fzA=0, wrA=0
+const FREEZE_MS=400
+function flash(id, real){const el=$(id);el.classList.add('rp');if(real)el.classList.add('real');setTimeout(()=>{el.classList.remove('rp');el.classList.remove('real')},900)}
+function cycle(){
+  // LEFT (today): repaint everything + block that side's input for FREEZE_MS
+  ;['a-set','a-plans','a-wallet'].forEach(x=>flash(x,false))
+  const inA=$('inA'); inA.readOnly=true
+  setTimeout(()=>{ inA.readOnly=false }, FREEZE_MS)
+  fzA+=FREEZE_MS; wrA++
+  $('fzA').textContent=fzA; $('wrA').textContent=wrA
+  // RIGHT (fixed): check ran, nothing changed, screen untouched
+  $('narr2').innerHTML='⏱ A check ran on both sides → answer: <b>nothing changed</b>. LEFT repainted everything anyway and blocked typing for '+FREEZE_MS+'ms (watch the input turn red). RIGHT left the screen alone — frozen: 0 ms.'
+}
+function startIdle(){ if(t)return; cycle(); t=setInterval(cycle, 2400) }
+function stopIdle(){ clearInterval(t); t=null; $('inA').readOnly=false }
+function assign(){
+  $('narr5').innerHTML='⚡ The database pushed the signal to this page (~0.4s)…'
+  setTimeout(()=>{
+    $('a-pv').textContent='Set #002 assigned · Plan 1 pending'
+    $('b-pv').textContent='Set #002 assigned · Plan 1 pending'
+    flash('a-set',false);flash('a-plans',true);flash('a-wallet',false)
+    flash('b-plans',true)
+    $('narr5').innerHTML='⚡ <b>The new set appeared on BOTH sides — no F5.</b> Today\'s code also repainted the unrelated sections (left). The fixed code updated only the plans card (right). <b>Live updates are kept at every fix level.</b>'
+  }, 700)
+}
+</script>
+</body>
+</html>

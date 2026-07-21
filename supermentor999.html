@@ -188,6 +188,7 @@
       <option value="">All brands</option>
       <option value="jj">Journey Junction only</option>
       <option value="vbd">Vacations by Design only</option>
+      <option value="tc">Trip Companion only</option>
     </select>
     <select id="fSet" onchange="render()"><option value="">All sets</option></select>
     <select id="fCh" onchange="render()"><option value="">All channel accounts</option></select>
@@ -280,15 +281,17 @@ function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'
 // JJ / VBD pill on each planner row — same look as the superadmin + CS consoles.
 // Mentors handle both brands in one list, so the badge is the only way to tell
 // which company a planner belongs to.
+const BRAND_BADGES = {
+  jj:  { label: 'JJ',  title: 'Journey Junction — signed up via journeyjunctionplanner.com',
+         css: 'background:rgba(26,122,94,0.10);border:1px solid rgba(26,122,94,0.32);color:#1A6F53;' },
+  vbd: { label: 'VBD', title: 'Vacations by Design — signed up via itinerarydesignhub.com',
+         css: 'background:rgba(238,108,58,0.12);border:1px solid rgba(238,108,58,0.40);color:#B24A1C;' },
+  tc:  { label: 'TC',  title: 'Trip Companion — signed up via tripcompanionplanner.com',
+         css: 'background:rgba(44,95,124,0.12);border:1px solid rgba(44,95,124,0.40);color:#2C5F7C;' }
+}
 function brandBadge(b) {
-  const vbd = b === 'vbd'
-  const label = vbd ? 'VBD' : 'JJ'
-  const title = vbd ? 'Vacations by Design — signed up via itinerarydesignhub.com'
-                    : 'Journey Junction — signed up via journeyjunctionplanner.com'
-  const css = vbd
-    ? 'background:rgba(238,108,58,0.12);border:1px solid rgba(238,108,58,0.40);color:#B24A1C;'
-    : 'background:rgba(26,122,94,0.10);border:1px solid rgba(26,122,94,0.32);color:#1A6F53;'
-  return `<span title="${title}" style="display:inline-flex;align-items:center;margin-left:6px;padding:1px 7px;border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;font-family:'DM Sans',sans-serif;${css}">${label}</span>`
+  const B = BRAND_BADGES[b] || BRAND_BADGES.jj
+  return `<span title="${B.title}" style="display:inline-flex;align-items:center;margin-left:6px;padding:1px 7px;border-radius:6px;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:700;font-family:'DM Sans',sans-serif;${B.css}">${B.label}</span>`
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'), 2600) }
 function fmtDT(iso){ if(!iso) return '—'; const d=new Date(iso); return `${MONTHS[d.getMonth()]} ${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }

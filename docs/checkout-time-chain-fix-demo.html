@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — same-hotel checkout time fix</title>
+<style>
+  :root{
+    --cream:#F5F1E8;--paper:#FFFDF8;--ink:#1B1F1C;--ink-2:#4A524C;--ink-3:#8B908A;
+    --green:#5E7B6E;--green-d:#3E5448;--amber:#D4913D;--red:#C0552F;
+    --rule:rgba(27,31,28,0.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,'Segoe UI',sans-serif;background:var(--cream);color:var(--ink);line-height:1.55;padding:28px;}
+  h1{font-size:21px;margin-bottom:4px;}
+  .sub{color:var(--ink-3);font-size:13px;margin-bottom:20px;max-width:880px;}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:22px;background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;}
+  .controls label{font-size:13px;color:var(--ink-2);font-weight:600;}
+  select{font:inherit;padding:6px 10px;border:1px solid var(--rule);border-radius:8px;background:#fff;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--paper);border:1px solid var(--rule);border-radius:14px;padding:16px 16px 18px;}
+  .panel h2{font-size:14px;letter-spacing:.02em;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.05em;}
+  .tag.bad{background:rgba(192,85,47,.12);color:var(--red);}
+  .tag.good{background:rgba(94,123,110,.16);color:var(--green-d);}
+  .row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;margin-bottom:7px;border:1px solid var(--rule);background:#fff;}
+  .row.locked{background:#F1EEE6;border-style:dashed;}
+  .row.transport{background:#F6F3EC;font-size:12.5px;color:var(--ink-2);}
+  .row.checkout{border-color:var(--amber);}
+  .t{font-variant-numeric:tabular-nums;font-weight:700;min-width:96px;}
+  .t.wrong{color:var(--red);}
+  .t.right{color:var(--green-d);}
+  .label{flex:1;font-size:13px;}
+  .meta{font-size:11px;color:var(--ink-3);}
+  .verdict{margin-top:12px;font-size:12.5px;padding:9px 11px;border-radius:9px;}
+  .verdict.bad{background:rgba(192,85,47,.08);color:var(--red);}
+  .verdict.good{background:rgba(94,123,110,.10);color:var(--green-d);}
+  .note{margin-top:24px;font-size:12.5px;color:var(--ink-2);background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;max-width:880px;}
+  .note code{background:#EFEADF;padding:1px 5px;border-radius:5px;font-size:12px;}
+  .note b{color:var(--ink);}
+</style>
+</head>
+<body>
+  <h1>Same-hotel checkout — time-chain bug &amp; proposed fix</h1>
+  <div class="sub">Ports the real timing functions from <code>dashboard.html</code> (<code>_enforceTimeChain</code>, the no-transport snap pass in <code>refreshDayDistances</code>, plus <code>parseSlotTime</code> / <code>_snapUp30</code> / <code>getSlotLatLng</code> / <code>_venueEffectiveDur</code>) and runs them on your Plan&nbsp;2 / Day&nbsp;2 scenario. Nothing here touches the app. The activity's shown time is its display label; the chain reads the hidden start field — which is exactly where it breaks.</div>
+
+  <div class="controls">
+    <label>Scenario:</label>
+    <select id="scenario">
+      <option value="same">First activity AT the hotel (no taxi) — the broken case</option>
+      <option value="diff">First activity at a different place (taxi inserted) — the working case</option>
+    </select>
+    <label>Activity «how long to stay»:</label>
+    <select id="dur">
+      <option value="15">15 min</option>
+      <option value="45">45 min</option>
+      <option value="120" selected>2 hours</option>
+    </select>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Current logic <span class="tag bad">today</span></h2>
+      <div id="cur"></div>
+      <div id="curV" class="verdict"></div>
+    </div>
+    <div class="panel">
+      <h2>With the proposed fix <span class="tag good">additive</span></h2>
+      <div id="fix"></div>
+      <div id="fixV" class="verdict"></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>What the fix changes (and nothing else):</b> the first real stop of a day only ever has its hidden start time set by an <i>upstream</i> step — normally a transport leg from the morning anchor. At the same hotel there is no transport leg, so that hidden start is never seeded; the next stop (the checkout) reads it, gets <code>null</code>, and the chain silently stops — leaving the checkout's stale ~8:45.
+    The fix seeds <b>only the first non-locked stop</b> from the morning wake time, and <b>only when its hidden start is still <code>null</code></b>. Every stop that already has a start — i.e. every working path today, including the taxi-leg case on the right — is left byte-for-byte unchanged, so existing behaviour can't shift.
+  </div>
+
+<script>
+/* ───────────── Ported from dashboard.html (faithful) ───────────── */
+function parseSlotTime(s){ const m=String(s||'').match(/^(\d{1,2}):(\d{2})$/); if(!m) return null; return parseInt(m[1],10)*60+parseInt(m[2],10); }
+function minsToHHMM(mins){ const h=Math.floor(mins/60),m=mins%60; return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
+function _snapUp30(hhmm){ const [h,m]=String(hhmm||'09:00').split(':').map(Number); let total=Math.ceil(((h||0)*60+(m||0))/5)*5; if(total>23*60+45) total=23*60+45; return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`; }
+function haversineKm(la1,lo1,la2,lo2){ const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180; const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
+function getSlotLatLng(slot){ const d=slot._placeData; if(d){ const lat=parseFloat(d.latitude),lng=parseFloat(d.longitude); if(isFinite(lat)&&isFinite(lng)) return {lat,lng}; } return null; }
+function _venueEffectiveDur(slot){ const type=slot.type; let stay=parseInt(slot.duration||'0',10)||0;
+  if(type==='accommodation') stay=Math.max(stay,30); else if(type==='meal') stay=Math.max(stay,30);
+  else if(type==='hotel_checkin') stay=Math.max(stay,15); else if(type==='hotel_checkout') stay=Math.max(stay,15);
+  if(stay<=0) stay=15; return stay; }
+function _transportArrivalMin(slot){ const dep=parseSlotTime(slot.hidden); if(dep==null) return null; if(slot.routeMins==null) return null; return dep+slot.routeMins; }
+
+// _enforceTimeChain — faithful port (dashboard.html:19956). Reads/writes .hidden.
+function enforceTimeChain(slots){
+  for(let i=0;i<slots.length-1;i++){
+    const a=slots[i],b=slots[i+1];
+    if(a.locked||b.locked) continue;
+    let aReleaseMin;
+    if(a.type==='transport'){ aReleaseMin=_transportArrivalMin(a); }
+    else{ const aStart=parseSlotTime(a.hidden); if(aStart==null) continue; aReleaseMin=aStart+_venueEffectiveDur(a); }
+    if(aReleaseMin==null) continue;
+    const expectedB=_snapUp30(minsToHHMM(Math.min(aReleaseMin,23*60+45)));
+    if(b.hidden!==expectedB) b.hidden=expectedB;
+  }
+}
+// no-transport venue→venue "snap pass" — faithful port (dashboard.html:21300).
+function snapPass(slots){
+  for(let i=0;i<slots.length-1;i++){
+    const a=slots[i],b=slots[i+1];
+    if(a.type==='transport'||b.type==='transport') continue;
+    const aLL=getSlotLatLng(a),bLL=getSlotLatLng(b);
+    if(!aLL||!bLL) continue;
+    const km=haversineKm(aLL.lat,aLL.lng,bLL.lat,bLL.lng);
+    if(!Number.isFinite(km)) continue;
+    let prevStay=parseInt(a.duration||'0',10)||0;
+    if(a.type==='hotel_checkout') prevStay=Math.max(prevStay,15);
+    if(prevStay<=0) prevStay=15;
+    const travelMin=Math.max(5,Math.round(km*3));
+    const baseMin=parseSlotTime(a.hidden);
+    if(baseMin==null) continue;                       // ← predecessor has no hidden start → stall
+    const expectedMin=Math.min(baseMin+prevStay+travelMin,23*60+45);
+    const snapped=_snapUp30(minsToHHMM(expectedMin));
+    if(b.hidden!==snapped) b.hidden=snapped;
+  }
+}
+
+// ── THE PROPOSED FIX (additive, dashboard.html change would mirror this) ──
+// Seed ONLY the first non-locked stop, and ONLY when its hidden start is still
+// null. Use its own shown label if it has one (08:35), else the morning wake
+// time. Anything already timed is untouched.
+function seedFirstStop(timed,wake){
+  const first=timed.find(s=>s.type!=='transport');
+  if(first && parseSlotTime(first.hidden)==null)
+    first.hidden = parseSlotTime(first.shown)!=null ? first.shown : _snapUp30(wake);
+}
+
+/* ───────────── Scenario builder ───────────── */
+const HOTEL={latitude:43.33,longitude:142.38};   // Hotel Munin Furano
+const SEVEN={latitude:43.41,longitude:142.47};    // 7-Eleven Nakafuranocho (~9.6 km)
+const WAKE='08:30';
+
+function buildSlots(scenario,durMin,applyFix){
+  const anchor={locked:true,shown:WAKE,label:'Morning at Hotel Munin Furano',meta:'Day 2 starts here · Breakfast at hotel'};
+
+  if(scenario==='same'){
+    // First stop AT the hotel → no transport precedes it, so its hidden start
+    // is never seeded (shown label is 08:35, but hidden = null). Bug trigger.
+    const act={type:'freetime',duration:String(durMin),hidden:null,shown:'08:35',
+      label:'Free time · Hotel Munin Furano',_placeData:HOTEL};
+    const checkout={type:'hotel_checkout',duration:'30',hidden:'08:45',shown:'08:45',
+      label:'Hotel check-out · Hotel Munin Furano',_placeData:HOTEL};
+    const timed=[act,checkout];
+    if(applyFix) seedFirstStop(timed,WAKE);
+    snapPass(timed); enforceTimeChain(timed);
+    syncShown(timed);
+    return {anchor,rows:timed,scenario};
+  } else {
+    // First stop elsewhere → taxis inserted. Incoming taxi sets the activity's
+    // hidden start (08:50), so the chain has a valid base regardless.
+    const taxiIn={type:'transport',hidden:'08:30',routeMins:16,label:'GO taxi · Hotel → 7-Eleven'};
+    const act={type:'freetime',duration:String(durMin),hidden:'08:50',shown:'08:50',
+      label:'Free time · 7-Eleven Nakafuranocho',_placeData:SEVEN};
+    const taxiOut={type:'transport',hidden:null,routeMins:15,label:'GO taxi · 7-Eleven → Hotel'};
+    const checkout={type:'hotel_checkout',duration:'30',hidden:'08:45',shown:'08:45',
+      label:'Hotel check-out · Hotel Munin Furano',_placeData:HOTEL};
+    const timed=[taxiIn,act,taxiOut,checkout];
+    if(applyFix) seedFirstStop(timed,WAKE);
+    // outgoing taxi departs at the activity's release (mirrors refreshTransportSlot)
+    const aRel=parseSlotTime(act.hidden)+_venueEffectiveDur(act);
+    taxiOut.hidden=_snapUp30(minsToHHMM(aRel));
+    snapPass(timed); enforceTimeChain(timed);
+    syncShown(timed);
+    return {anchor,rows:timed,scenario};
+  }
+}
+// After the chain, the visible label follows the hidden field (real app does
+// this via _applySlotTime). The buggy activity keeps shown=08:35 since hidden
+// stayed null and never got applied.
+function syncShown(rows){ for(const r of rows){ if(r.type!=='transport' && parseSlotTime(r.hidden)!=null) r.shown=r.hidden; } }
+
+/* ───────────── Render ───────────── */
+// Correctness invariant: the checkout must start AT OR AFTER the activity ends.
+function activityEndMin(group){
+  const a=group.rows.find(r=>r.type==='freetime');
+  const s=parseSlotTime(a.shown); if(s==null) return null;
+  return s+parseInt(a.duration,10);
+}
+function render(){
+  const scenario=document.getElementById('scenario').value;
+  const durMin=parseInt(document.getElementById('dur').value,10);
+  const cur=buildSlots(scenario,durMin,false);
+  const fix=buildSlots(scenario,durMin,true);
+  paint('cur',cur); paint('fix',fix);
+  judge('curV',cur); judge('fixV',fix);
+}
+function judge(id,group){
+  const coMin=parseSlotTime(group.rows.find(r=>r.type==='hotel_checkout')?.hidden);
+  const endMin=activityEndMin(group);
+  const co=group.rows.find(r=>r.type==='hotel_checkout')?.hidden;
+  const ok = coMin!=null && endMin!=null && coMin>=endMin;
+  const txt = ok
+    ? `Checkout ${disp(co)} — after the activity ends (${disp(minsToHHMM(endMin))})`
+    : `Checkout ${disp(co)} — BEFORE the activity ends (${disp(minsToHHMM(endMin))})`;
+  setV(id,ok,txt);
+}
+function setV(id,ok,txt){ const el=document.getElementById(id); el.className='verdict '+(ok?'good':'bad'); el.textContent=(ok?'✓ correct — ':'✗ wrong — ')+txt; }
+function paint(id,group){
+  const host=document.getElementById(id); host.innerHTML='';
+  const endMin=activityEndMin(group);
+  const all=[{__anchor:true,...group.anchor},...group.rows];
+  for(const r of all){
+    const div=document.createElement('div');
+    let cls='row';
+    if(r.locked) cls+=' locked';
+    if(r.type==='transport') cls+=' transport';
+    if(r.type==='hotel_checkout') cls+=' checkout';
+    div.className=cls;
+    let timeTxt, tcls='t';
+    if(r.type==='transport'){
+      timeTxt=`${disp(r.hidden)} → ${disp(minsToHHMM((parseSlotTime(r.hidden)||0)+(r.routeMins||0)))}`;
+    }else{
+      timeTxt=disp(r.shown);
+      if(r.type==='hotel_checkout'){ const co=parseSlotTime(r.hidden); tcls='t '+(co!=null&&endMin!=null&&co>=endMin?'right':'wrong'); }
+    }
+    const dur=(r.duration&&r.type!=='transport'&&!r.locked)?` <span class="meta">· stay ${r.duration} min</span>`:'';
+    const meta=r.meta?` <span class="meta">· ${r.meta}</span>`:'';
+    div.innerHTML=`<span class="${tcls}">${timeTxt}</span><span class="label">${r.label}${dur}${meta}</span>`;
+    host.appendChild(div);
+  }
+}
+function disp(hhmm){ if(!hhmm||hhmm==='—') return '—'; const [h,m]=hhmm.split(':').map(Number); const ap=h<12?'am':'pm'; const h12=((h+11)%12)+1; return `${h12}:${String(m).padStart(2,'0')} ${ap}`; }
+
+document.getElementById('scenario').addEventListener('change',render);
+document.getElementById('dur').addEventListener('change',render);
+render();
+</script>
+</body>
+</html>

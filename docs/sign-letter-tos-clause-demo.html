@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>利用規約 clause — where to add it (demo)</title>
+<style>
+  :root{ --ink:#1f2937; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --paper:#fffdf8;
+         --add:#137a4f; --addbg:#e9f7ef; --addbd:#9ccdaf; --note:#b87333; --notebg:#fdf3e3; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#efeae0;font:14px/1.7 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .card h3{font-family:Georgia,serif;font-size:15px;margin:0 0 10px}
+  .loc{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;font-weight:700}
+  ul{margin:0;padding-left:20px} li{margin:6px 0;font-size:13.5px}
+  li.add{background:var(--addbg);border:1px solid var(--addbd);border-radius:8px;padding:8px 10px;list-style:none;margin-left:-20px;color:#0f5132}
+  .add-tag{display:inline-block;background:var(--add);color:#fff;font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px;margin-right:6px}
+  .ba{display:grid;grid-template-columns:1fr;gap:8px}
+  .row{padding:9px 11px;border-radius:8px;font-size:13.5px}
+  .row.cur{background:#f6f1e7;border:1px solid var(--line)}
+  .row.cur .lbl{color:var(--ink3)} .row.new .lbl{color:var(--add)}
+  .row.new{background:var(--addbg);border:1px solid var(--addbd)}
+  .lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;display:block}
+  ins{background:#c8ecd8;text-decoration:none;border-radius:3px;padding:0 2px;font-weight:600}
+  .chk{display:flex;align-items:center;gap:9px;font-size:13.5px}
+  .chk input{width:16px;height:16px}
+  a{color:#1a3fa0}
+  .note{font-size:12.5px;color:#7a4a14;background:var(--notebg);border:1px solid #e3c98f;border-radius:10px;padding:12px 14px;margin-top:14px;line-height:1.6}
+  .note b{color:#5a3a14}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>利用規約への同意 — どこに追加するか（デモ）</h1>
+  <p class="lead">Three places the "agree to the Terms of Service (利用規約)" clause can go. Green = the proposed additions. Nothing in the real letter has been changed.</p>
+
+  <!-- SPOT 1 -->
+  <div class="card">
+    <div class="loc">① 契約条件のリスト内（現在 line 141 の機密保持条項の下）</div>
+    <h3>契約条件</h3>
+    <ul>
+      <li>本契約は業務委託契約であり、雇用契約ではありません。…</li>
+      <li>案件またはセットを引き受けるか否かは、ご自身の裁量で自由に決定いただけます。</li>
+      <li>旅行者に関する情報は機密として取り扱い、旅程作成以外の目的に使用しないことに同意していただきます。</li>
+      <li class="add"><span class="add-tag">＋ 追加</span>プランナーは、本契約に加えて、当社の<a href="#">利用規約</a>を確認し、その内容に同意するものとします。利用規約は本契約と一体のものとして適用されます。</li>
+    </ul>
+  </div>
+
+  <!-- SPOT 2 -->
+  <div class="card">
+    <div class="loc">② 署名前の確認文（現在 line 144）</div>
+    <div class="ba">
+      <div class="row cur"><span class="lbl">現在</span>以下に両当事者が署名することにより、上記の内容を確認・理解し、本契約の条件に同意したものとみなされます。</div>
+      <div class="row new"><span class="lbl">提案</span>以下に両当事者が署名することにより、上記の内容を確認・理解し、本契約の条件<ins>および当社の利用規約</ins>に同意したものとみなされます。</div>
+    </div>
+  </div>
+
+  <!-- SPOT 3 -->
+  <div class="card">
+    <div class="loc">③ 署名チェックボックス（現在 line 171）</div>
+    <div class="ba">
+      <div class="row cur"><span class="lbl">現在</span>
+        <div class="chk"><input type="checkbox" disabled><span>上記の契約内容を確認し、同意します。</span></div>
+      </div>
+      <div class="row new"><span class="lbl">提案</span>
+        <div class="chk"><input type="checkbox" disabled><span>上記の契約内容<ins>および利用規約</ins>を確認し、同意します。</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>2 things to decide before this can go in:</b><br>
+    1. <b>The 利用規約 has to actually exist</b> as a real, readable document (a page/PDF the planner can open) — the clause links to it. Right now there's no 利用規約 URL in the letter. <b>Do you have one to link to?</b><br>
+    2. <b>What it does:</b> this clause makes the planner agree to <i>whatever the 利用規約 contains</i>. If the bond / forfeiture rules live in the 利用規約, signing this is what binds them to those rules — so the 利用規約's wording matters as much as this clause.
+  </div>
+</div>
+</body>
+</html>

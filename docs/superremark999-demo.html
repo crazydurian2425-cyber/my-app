@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>/superremark999 — mentor remark board (demo)</title>
+<style>
+  :root{
+    --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3;
+    --card:#fffdf8; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+    --amber:#b87333; --amberbg:#fdf3e3; --red:#b3261e; --redbg:#fdecea;
+    --blue:#2b5f7a; --bluebg:#e8f1f6; --purple:#6b4d9e; --purplebg:#f0eafa;
+    --gold:#C9A227;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:14px/1.5 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:1280px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .lead b{color:var(--ink)}
+
+  /* KPI row */
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .kpi .n{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+  .kpi .l{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+  .kpi.risk .n{color:var(--red)} .kpi.act .n{color:var(--green)}
+  .kpi.letter .n{color:var(--blue)} .kpi.prob .n{color:var(--amber)}
+
+  /* mentor tabs */
+  .mtabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .mtab{font:inherit;font-size:13px;font-weight:700;padding:8px 16px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .mtab .c{font-weight:800;font-variant-numeric:tabular-nums;margin-left:6px;font-size:12px;color:var(--ink3)}
+  .mtab.on{background:var(--green);border-color:var(--green);color:#fff}
+  .mtab.on .c{color:#cfe6cf}
+
+  /* toolbar */
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .bar input,.bar select{font:inherit;font-size:13px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  .bar input{flex:1;min-width:200px}
+  .hint{font-size:11.5px;color:var(--ink3);margin-left:auto}
+
+  /* table */
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:#f7f3ea}
+  tbody td{padding:11px 12px;border-bottom:1px solid #f1ecdf;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr{cursor:pointer}
+  tbody tr:hover td{background:#faf7f0}
+  tbody tr.sel td{background:var(--greenbg)}
+  .pname{font-weight:700}
+  .pmail{font-size:11.5px;color:var(--ink3)}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+  .ch-line{background:#e6f9e8;color:#1a7a3c;border-color:#a8dcb2}
+  .ch-discord{background:#eceefe;color:#4a54c7;border-color:#c3c9f5}
+  .ch-acct{font-size:11px;color:var(--ink2);margin-top:3px}
+
+  .mentorpill{display:inline-block;font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:8px;background:#f0ead8;color:#6b5d2e;border:1px solid #ddd0ac}
+
+  /* letter cell */
+  .lt{font-size:12px;font-weight:700;border-radius:99px;padding:3px 10px;display:inline-block;white-space:nowrap}
+  .lt-none{background:#efeae0;color:#7c736a}
+  .lt-sent{background:var(--bluebg);color:var(--blue)}
+  .lt-signed{background:var(--greenbg);color:var(--green)}
+  .ltsub{font-size:10.5px;color:var(--ink3);margin-top:3px}
+
+  .st{border-radius:99px;padding:3px 10px;font-size:11.5px;font-weight:700;display:inline-block}
+  .st-onboarding{background:var(--bluebg);color:var(--blue)}
+  .st-training{background:var(--amberbg);color:var(--amber)}
+  .st-active{background:var(--greenbg);color:var(--green)}
+  .st-slow{background:#f5f1e4;color:#8a7a34}
+  .st-at_risk{background:var(--redbg);color:var(--red)}
+  .st-ghosted{background:#efeae0;color:#7c736a;text-decoration:line-through}
+  .st-done{background:#e4efe9;color:#2f5d4c}
+
+  .setcell b{font-variant-numeric:tabular-nums}
+  .dots{display:flex;gap:4px;margin-top:5px}
+  .dot{width:16px;height:8px;border-radius:4px;background:#ddd6c6}
+  .dot.ip{background:var(--amber)} .dot.sub{background:var(--blue)} .dot.rev{background:var(--red)}
+  .dot.ap{background:var(--green)} .dot.bp{background:var(--purple)} .dot.done{background:#1f4d38}
+  .setsub{font-size:11px;color:var(--ink3);margin-top:4px}
+
+  /* problems cell */
+  .pb{font-size:11.5px;font-weight:800;border-radius:99px;padding:3px 10px;display:inline-block}
+  .pb-open{background:var(--redbg);color:var(--red)}
+  .pb-watch{background:var(--amberbg);color:var(--amber)}
+  .pb-clear{background:#eef3ee;color:#6d7d70}
+  .pbsub{font-size:10.5px;color:var(--ink3);margin-top:3px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* drawer */
+  .drawer{position:fixed;top:0;right:-500px;width:480px;height:100vh;background:#fffdf8;border-left:1px solid var(--line);box-shadow:-18px 0 40px rgba(26,46,37,.12);transition:right .22s ease;z-index:50;display:flex;flex-direction:column}
+  .drawer.open{right:0}
+  .dhead{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .dhead h2{margin:0;font-size:17px}
+  .dhead .pmail{margin-top:2px}
+  .dclose{background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink3);padding:2px 6px}
+  .dbody{padding:16px 18px;overflow-y:auto;flex:1}
+  .sec{margin-bottom:18px}
+  .sec .sl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:7px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .fact{background:#f7f3ea;border-radius:9px;padding:9px 11px}
+  .fact .fl{font-size:10.5px;color:var(--ink3)}
+  .fact .fv{font-weight:700;font-size:13px;margin-top:2px}
+  .fact .fv.blue{color:var(--blue)} .fact .fv.green{color:var(--green)}
+  .drawer select,.drawer input,.drawer textarea{font:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;width:100%;color:var(--ink)}
+  .drawer textarea{resize:vertical;min-height:56px}
+  .chrow{display:flex;gap:8px}
+  .chrow select{width:110px;flex:0 0 auto}
+
+  /* problem card in drawer */
+  .prob{border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:10px;overflow:hidden}
+  .prob .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;background:#faf7f0}
+  .prob .pt{font-weight:700;font-size:13px}
+  .prob .ph select{width:auto;font-size:11.5px;font-weight:700;padding:4px 8px}
+  .prob .steps{padding:8px 12px}
+  .step{display:flex;gap:8px;font-size:12px;padding:4px 0;border-bottom:1px dashed #f0ebdd}
+  .step:last-child{border-bottom:none}
+  .step .sw{color:var(--ink3);font-size:10.5px;white-space:nowrap;padding-top:1px;min-width:78px}
+  .prob .addstep{display:flex;gap:6px;padding:8px 12px;border-top:1px solid #f1ecdf}
+  .prob .addstep input{flex:1}
+  .prob .addstep button{flex:0 0 auto;background:#fff;border:1px solid var(--greenbd);color:var(--green);border-radius:8px;padding:0 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .pstate{font-size:10.5px;font-weight:800;border-radius:99px;padding:2px 8px}
+  .pstate.open{background:var(--redbg);color:var(--red)}
+  .pstate.progress{background:var(--amberbg);color:var(--amber)}
+  .pstate.resolved{background:var(--greenbg);color:var(--green)}
+
+  .remark{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}
+  .remark .rmeta{font-size:10.5px;color:var(--ink3);margin-bottom:4px;display:flex;justify-content:space-between}
+  .remark .rbody{font-size:13px;white-space:pre-wrap}
+  .addbtn{margin-top:8px;background:var(--green);color:#fff;border:none;border-radius:9px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer}
+  .addbtn:hover{filter:brightness(1.08)}
+  .addbtn.ghost{background:#fff;color:var(--green);border:1px solid var(--greenbd)}
+  .savefeedback{font-size:11.5px;color:var(--green);margin-left:10px;opacity:0;transition:opacity .2s}
+  .savefeedback.show{opacity:1}
+
+  .note{font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.7}
+  .note b{color:var(--ink)}
+  .note code{background:#f0ead8;border-radius:4px;padding:1px 5px;font-size:11.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>journeyjunctionplanner.com<b style="color:var(--gold)">/superremark999</b> <span style="font-size:12px;color:var(--gold);font-weight:700">DEMO — nothing is saved</span></h1>
+  <p class="lead">The mentor's remark board. One row per planner showing <b>which mentor they're under</b> (FCKING / TT / KIT), <b>which LINE / Discord account handles them</b>, <b>letter sent → signed</b>, <b>set &amp; plan progress</b>, and their <b>open problems</b>. Click a row → full panel: track each problem's progression step by step, change status, and write remarks.</p>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="mtabs" id="mtabs"></div>
+
+  <div class="bar">
+    <input id="q" placeholder="Search name, email, LINE/Discord handle…" oninput="render()">
+    <select id="fCh" onchange="render()"><option value="">All channel accounts</option></select>
+    <select id="fLt" onchange="render()">
+      <option value="">Letter: all</option>
+      <option value="none">Not sent yet</option>
+      <option value="sent">Sent — waiting signature</option>
+      <option value="signed">Signed ✓</option>
+    </select>
+    <select id="fSt" onchange="render()">
+      <option value="">All statuses</option>
+      <option value="onboarding">Onboarding</option>
+      <option value="training">Training (Day-1)</option>
+      <option value="active">Active</option>
+      <option value="slow">Slow</option>
+      <option value="at_risk">At risk</option>
+      <option value="ghosted">Ghosted</option>
+      <option value="done">Completed / paid out</option>
+    </select>
+    <label style="font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="fPb" onchange="render()" style="width:auto">Open problems only</label>
+    <span class="hint" id="count"></span>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:17%">Planner</th>
+      <th style="width:8%">Mentor</th>
+      <th style="width:14%">Channel · account</th>
+      <th style="width:12%">Letter</th>
+      <th style="width:11%">Status</th>
+      <th style="width:19%">Set · plans</th>
+      <th style="width:19%">Problems / last remark</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <div class="note">
+    <b>How the real page would work:</b> same protection style as <code>superadmin999</code> / <code>supercs999</code> (secret URL + admin login + server proxy — planners can never open it).
+    <b>Already live in the DB, shown automatically:</b> mentor per planner (<code>planners.onboarding_mentor</code> — FCKING/TT/KIT, set from superadmin), letter sent/signed + dates (<code>employment_letters</code>), current set &amp; plan progress, last login.
+    <b>New tables/columns needed:</b> ① <code>contact_channel</code> + <code>contact_account</code> on planners (which LINE/Discord account they're under), ② <code>mentor_status</code>, ③ <code>planner_problems</code> (title + status) with <code>problem_updates</code> for the progression steps, ④ <code>planner_remarks</code>. Every edit records who wrote it and when.
+  </div>
+</div>
+
+<!-- Drawer -->
+<div class="drawer" id="drawer">
+  <div class="dhead">
+    <div>
+      <h2 id="dName"></h2>
+      <div class="pmail" id="dMail"></div>
+    </div>
+    <button class="dclose" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="dbody">
+    <div class="sec">
+      <div class="sl">Live from DB — read-only</div>
+      <div class="grid2">
+        <div class="fact"><div class="fl">Mentor</div><div class="fv" id="dMentor"></div></div>
+        <div class="fact"><div class="fl">Letter</div><div class="fv blue" id="dLetter"></div></div>
+        <div class="fact"><div class="fl">Current set · plan</div><div class="fv" id="dSet"></div></div>
+        <div class="fact"><div class="fl">Last login</div><div class="fv" id="dLogin"></div></div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sl">Channel account &amp; status (mentor edits)</div>
+      <div class="chrow">
+        <select id="dChType"><option value="LINE">LINE</option><option value="Discord">Discord</option></select>
+        <input id="dChAcct" placeholder="@account / server-handle">
+      </div>
+      <select id="dStatus" style="margin-top:8px">
+        <option value="onboarding">Onboarding — just recruited</option>
+        <option value="training">Training — doing Day-1 sample</option>
+        <option value="active">Active — working sets normally</option>
+        <option value="slow">Slow — needs nudging</option>
+        <option value="at_risk">At risk — deadline / quality issues</option>
+        <option value="ghosted">Ghosted — stopped replying</option>
+        <option value="done">Completed / paid out</option>
+      </select>
+      <div style="margin-top:8px">
+        <button class="addbtn" onclick="saveMeta()">Save</button>
+        <span class="savefeedback" id="saveFb">✓ saved (demo)</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sl">Problems &amp; progression</div>
+      <div id="dProbs"></div>
+      <div class="chrow" style="margin-top:8px">
+        <input id="dNewProb" placeholder="New problem, e.g. Missed Plan 3 deadline twice" style="flex:1">
+        <button class="addbtn ghost" style="margin-top:0;flex:0 0 auto" onclick="addProblem()">+ Problem</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sl">General remarks</div>
+      <div id="dRemarks"></div>
+      <textarea id="dRemark" placeholder="e.g. Chased on LINE about Plan 3 — promised to submit tonight."></textarea>
+      <div style="margin-top:8px"><button class="addbtn" onclick="addRemark()">Add remark</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Demo data — shapes mirror the real tables ────────────────────────────
+const MENTORS = ['FCKING','TT','KIT']   // = ONBOARDING_MENTORS in superadmin999
+const STATUS_LABEL = { onboarding:'Onboarding', training:'Training', active:'Active', slow:'Slow', at_risk:'At risk', ghosted:'Ghosted', done:'Done / paid' }
+const DOTCLS = { pending:'', in_progress:'ip', submitted:'sub', revision:'rev', approved:'ap', bond_pending:'bp', completed:'done' }
+const PSTATE_LABEL = { open:'Open', progress:'In progress', resolved:'Resolved' }
+
+function r(when, body){ return { when, body, author:'Mentor' } }
+function prob(title, state, steps){ return { title, state, steps } }
+function step(when, body){ return { when, body } }
+
+const planners = [
+  { id:1, name:'Aiko Matsuda', email:'aiko.m@example.com', mentor:'TT', ch:'LINE', acct:'@jj_line_01', status:'active',
+    letter:{state:'signed', sent:'Jun 30', signed:'Jul 1'},
+    set:'#002', plans:['completed','completed','in_progress','pending','pending'], login:'2h ago',
+    problems:[],
+    remarks:[ r('Jul 3 14:20','Plan 2 on time, quality good — no chasing needed.') ] },
+
+  { id:2, name:'Kenji Watanabe', email:'kenji.w@example.com', mentor:'TT', ch:'LINE', acct:'@jj_line_01', status:'at_risk',
+    letter:{state:'signed', sent:'Jun 25', signed:'Jun 26'},
+    set:'#005', plans:['completed','revision','pending','pending','pending'], login:'3d ago',
+    problems:[
+      prob('Plan 2 revision overdue, not replying', 'open', [
+        step('Jul 3 15:00','Revision requested — deadline set Jul 5.'),
+        step('Jul 4 09:12','Chased on LINE twice. Read, no reply.'),
+        step('Jul 4 21:30','Final reminder sent. If silent by Jul 6 → reassign set.'),
+      ]),
+    ],
+    remarks:[ r('Jun 26 10:00','Signed same day. Seems keen but flaky schedule.') ] },
+
+  { id:3, name:'Sara Lim', email:'sara.lim@example.com', mentor:'KIT', ch:'Discord', acct:'JJ-Mentor#02', status:'training',
+    letter:{state:'sent', sent:'Jul 3', signed:null},
+    set:'#—', plans:[], login:'1h ago',
+    problems:[
+      prob('Letter sent 2 days ago, still unsigned', 'progress', [
+        step('Jul 3 12:00','Letter sent by email.'),
+        step('Jul 4 16:40','Says she wants to finish Day-1 sample first, will sign after.'),
+      ]),
+    ],
+    remarks:[ r('Jul 4 16:40','Good questions about hotel bookends during Day-1.') ] },
+
+  { id:4, name:'Haruto Sato', email:'haruto.s@example.com', mentor:'FCKING', ch:'LINE', acct:'@jj_line_02', status:'active',
+    letter:{state:'signed', sent:'Jun 20', signed:'Jun 20'},
+    set:'#003', plans:['completed','completed','completed','bond_pending','pending'], login:'25m ago',
+    problems:[
+      prob('Hesitating on Plan 4 bond payment', 'progress', [
+        step('Jul 4 18:02','Plan 4 approved → bond stage. Sent PayPay instructions.'),
+        step('Jul 5 10:15','Asked why bond is needed — sent the bond explainer. Thinking about it.'),
+      ]),
+    ],
+    remarks:[ r('Jul 1 11:30','Fast worker. Consider for luxury sets.') ] },
+
+  { id:5, name:'Mei Tanaka', email:'mei.t@example.com', mentor:'KIT', ch:'Discord', acct:'JJ-Mentor#01', status:'slow',
+    letter:{state:'signed', sent:'Jun 22', signed:'Jun 24'},
+    set:'#004', plans:['completed','in_progress','pending','pending','pending'], login:'2d ago',
+    problems:[
+      prob('Pace too slow — day job conflict', 'resolved', [
+        step('Jul 1 19:00','Only 1 plan done in 5 days.'),
+        step('Jul 2 20:15','Talked on Discord — agreed new pace: 1 plan / 2 days.'),
+        step('Jul 4 08:00','Keeping the new pace so far. Resolved, keep watching.'),
+      ]),
+    ],
+    remarks:[] },
+
+  { id:6, name:'Daichi Kobayashi', email:'daichi.k@example.com', mentor:'FCKING', ch:'LINE', acct:'@jj_line_02', status:'ghosted',
+    letter:{state:'sent', sent:'Jun 18', signed:null},
+    set:'#001', plans:['completed','pending','pending','pending','pending'], login:'9d ago',
+    problems:[
+      prob('Ghosted — never signed the letter', 'open', [
+        step('Jun 18 09:00','Letter sent.'),
+        step('Jun 24 10:00','Reminder 1 — read, no reply.'),
+        step('Jul 3 08:00','Final warning. Reassign set if silent by Jul 7.'),
+      ]),
+    ],
+    remarks:[] },
+
+  { id:7, name:'Yuna Park', email:'yuna.p@example.com', mentor:'TT', ch:'Discord', acct:'JJ-Mentor#02', status:'done',
+    letter:{state:'signed', sent:'Jun 10', signed:'Jun 10'},
+    set:'#006', plans:['completed','completed','completed','completed','completed'], login:'1d ago',
+    problems:[],
+    remarks:[ r('Jul 4 12:00','Set #006 fully approved. Payout ¥340,000 — flagged to admin.') ] },
+
+  { id:8, name:'Riku Yamamoto', email:'riku.y@example.com', mentor:null, ch:'LINE', acct:'@jj_line_03', status:'onboarding',
+    letter:{state:'none', sent:null, signed:null},
+    set:'#—', plans:[], login:'just now',
+    problems:[],
+    remarks:[] },
+]
+
+let selId = null
+let mentorTab = ''   // '' = all
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function renderKpis(){
+  const active  = planners.filter(p=>p.status==='active').length
+  const risk    = planners.filter(p=>['at_risk','ghosted'].includes(p.status)).length
+  const unsigned= planners.filter(p=>p.letter.state!=='signed').length
+  const signed  = planners.filter(p=>p.letter.state==='signed').length
+  const probs   = planners.reduce((n,p)=>n+p.problems.filter(x=>x.state!=='resolved').length,0)
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="n">${planners.length}</div><div class="l">Planners</div></div>
+    <div class="kpi act"><div class="n">${active}</div><div class="l">Active</div></div>
+    <div class="kpi letter"><div class="n">${signed}</div><div class="l">Letter signed</div></div>
+    <div class="kpi"><div class="n">${unsigned}</div><div class="l">Not signed yet</div></div>
+    <div class="kpi prob"><div class="n">${probs}</div><div class="l">Open problems</div></div>
+    <div class="kpi risk"><div class="n">${risk}</div><div class="l">At risk / ghosted</div></div>`
+}
+
+// ── mentor tabs ───────────────────────────────────────────────────────────
+function renderMentorTabs(){
+  const counts = m => planners.filter(p=>p.mentor===m).length
+  const un = planners.filter(p=>!p.mentor).length
+  document.getElementById('mtabs').innerHTML =
+    `<button class="mtab ${mentorTab===''?'on':''}" onclick="setMentorTab('')">All mentors<span class="c">${planners.length}</span></button>`
+    + MENTORS.map(m=>`<button class="mtab ${mentorTab===m?'on':''}" onclick="setMentorTab('${m}')">${m}<span class="c">${counts(m)}</span></button>`).join('')
+    + `<button class="mtab ${mentorTab==='__none__'?'on':''}" onclick="setMentorTab('__none__')">No mentor<span class="c">${un}</span></button>`
+}
+function setMentorTab(m){ mentorTab = m; render() }
+
+function fillChannelFilter(){
+  const sel = document.getElementById('fCh')
+  ;[...new Set(planners.map(p=>`${p.ch} · ${p.acct}`))].sort().forEach(a=>{
+    const o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o)
+  })
+}
+
+// ── cells ─────────────────────────────────────────────────────────────────
+function letterHtml(p){
+  const l = p.letter
+  if (l.state==='signed') return `<span class="lt lt-signed">✓ Signed</span><div class="ltsub">sent ${l.sent} · signed ${l.signed}</div>`
+  if (l.state==='sent')   return `<span class="lt lt-sent">✉ Sent — waiting</span><div class="ltsub">sent ${l.sent}</div>`
+  return `<span class="lt lt-none">Not sent</span>`
+}
+function probHtml(p){
+  const open = p.problems.filter(x=>x.state==='open')
+  const prog = p.problems.filter(x=>x.state==='progress')
+  const lastR = p.remarks[0] ? `${p.remarks[0].when} · ${p.remarks[0].body}` : ''
+  let badge
+  if (open.length)      badge = `<span class="pb pb-open">⚠ ${open.length} open</span>`
+  else if (prog.length) badge = `<span class="pb pb-watch">◐ ${prog.length} in progress</span>`
+  else                  badge = `<span class="pb pb-clear">No problems</span>`
+  const top = (open[0]||prog[0])
+  const sub = top ? top.title : lastR
+  return badge + (sub?`<div class="pbsub" title="${sub.replace(/"/g,'&quot;')}">${sub}</div>`:'')
+}
+
+// ── table ─────────────────────────────────────────────────────────────────
+function render(){
+  renderKpis(); renderMentorTabs()
+  const q  = (document.getElementById('q').value||'').toLowerCase()
+  const fCh = document.getElementById('fCh').value
+  const fLt = document.getElementById('fLt').value
+  const fSt = document.getElementById('fSt').value
+  const fPb = document.getElementById('fPb').checked
+  const tbody = document.getElementById('rows')
+  tbody.innerHTML = ''
+  let shown = 0
+  planners.forEach(p=>{
+    if (mentorTab==='__none__' ? p.mentor : (mentorTab && p.mentor!==mentorTab)) return
+    if (q && !`${p.name} ${p.email} ${p.acct}`.toLowerCase().includes(q)) return
+    if (fCh && `${p.ch} · ${p.acct}` !== fCh) return
+    if (fLt && p.letter.state !== fLt) return
+    if (fSt && p.status !== fSt) return
+    if (fPb && !p.problems.some(x=>x.state!=='resolved')) return
+    shown++
+    const curIdx = p.plans.findIndex(s=>s!=='completed')
+    const planNow = p.plans.length ? (curIdx===-1 ? 'All 5 done' : `Plan ${curIdx+1} · ${p.plans[curIdx].replace('_',' ')}`) : 'No set yet'
+    const dots = p.plans.length
+      ? `<div class="dots">${p.plans.map(s=>`<span class="dot ${DOTCLS[s]||''}" title="${s}"></span>`).join('')}</div><div class="setsub">${planNow}</div>`
+      : `<div class="setsub">— not assigned</div>`
+    const tr = document.createElement('tr')
+    if (p.id===selId) tr.className='sel'
+    tr.innerHTML = `
+      <td><div class="pname">${p.name}</div><div class="pmail">${p.email} · login ${p.login}</div></td>
+      <td>${p.mentor?`<span class="mentorpill">${p.mentor}</span>`:'<span class="pmail">—</span>'}</td>
+      <td><span class="chip ${p.ch==='LINE'?'ch-line':'ch-discord'}">${p.ch==='LINE'?'💬 LINE':'🎮 Discord'}</span><div class="ch-acct">${p.acct}</div></td>
+      <td>${letterHtml(p)}</td>
+      <td><span class="st st-${p.status}">${STATUS_LABEL[p.status]}</span></td>
+      <td class="setcell"><b>Set ${p.set}</b>${dots}</td>
+      <td>${probHtml(p)}</td>`
+    tr.onclick = ()=>openDrawer(p.id)
+    tbody.appendChild(tr)
+  })
+  document.getElementById('count').textContent = `${shown} / ${planners.length} planners`
+}
+
+// ── drawer ────────────────────────────────────────────────────────────────
+function openDrawer(id){
+  selId = id
+  const p = planners.find(x=>x.id===id)
+  document.getElementById('dName').textContent = p.name
+  document.getElementById('dMail').textContent = `${p.email} · last login ${p.login}`
+  document.getElementById('dMentor').textContent = p.mentor || '— unassigned'
+  const l = p.letter
+  document.getElementById('dLetter').textContent =
+    l.state==='signed' ? `✓ Signed ${l.signed}` : l.state==='sent' ? `✉ Sent ${l.sent} — waiting` : 'Not sent yet'
+  const curIdx = p.plans.findIndex(s=>s!=='completed')
+  document.getElementById('dSet').textContent = p.plans.length
+    ? `Set ${p.set} — ${curIdx===-1?'all 5 done':`Plan ${curIdx+1} ${p.plans[curIdx].replace('_',' ')}`}` : 'Not assigned'
+  document.getElementById('dLogin').textContent = p.login
+  document.getElementById('dChType').value = p.ch
+  document.getElementById('dChAcct').value = p.acct
+  document.getElementById('dStatus').value = p.status
+  renderProblems(p); renderRemarks(p)
+  document.getElementById('drawer').classList.add('open')
+  render()
+}
+function closeDrawer(){ selId=null; document.getElementById('drawer').classList.remove('open'); render() }
+
+function renderProblems(p){
+  const wrap = document.getElementById('dProbs')
+  if (!p.problems.length){ wrap.innerHTML = '<div class="pmail">No problems recorded. 🎉</div>'; return }
+  wrap.innerHTML = p.problems.map((pr,i)=>`
+    <div class="prob">
+      <div class="ph">
+        <span class="pt">${pr.title}</span>
+        <select onchange="setProbState(${i}, this.value)" onclick="event.stopPropagation()">
+          ${Object.keys(PSTATE_LABEL).map(s=>`<option value="${s}" ${pr.state===s?'selected':''}>${PSTATE_LABEL[s]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="steps">
+        ${pr.steps.map(s=>`<div class="step"><span class="sw">${s.when}</span><span>${s.body}</span></div>`).join('') || '<div class="pmail">No progress steps yet.</div>'}
+      </div>
+      <div class="addstep">
+        <input id="stepInput${i}" placeholder="Add progress, e.g. Replied — will submit tonight">
+        <button onclick="addStep(${i})">Add</button>
+      </div>
+    </div>`).join('')
+}
+function nowLabel(){
+  const n = new Date()
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][n.getMonth()]} ${n.getDate()} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`
+}
+function setProbState(i, v){
+  const p = planners.find(x=>x.id===selId); if (!p) return
+  p.problems[i].state = v
+  p.problems[i].steps.push(step(nowLabel(), `Status → ${PSTATE_LABEL[v]}`))
+  renderProblems(p); render()
+}
+function addStep(i){
+  const p = planners.find(x=>x.id===selId); if (!p) return
+  const inp = document.getElementById('stepInput'+i)
+  const t = inp.value.trim(); if (!t) return
+  p.problems[i].steps.push(step(nowLabel(), t))
+  if (p.problems[i].state==='open') p.problems[i].state='progress'
+  renderProblems(p); render()
+}
+function addProblem(){
+  const p = planners.find(x=>x.id===selId); if (!p) return
+  const inp = document.getElementById('dNewProb')
+  const t = inp.value.trim(); if (!t) return
+  p.problems.unshift(prob(t, 'open', [step(nowLabel(), 'Problem opened.')]))
+  inp.value = ''
+  renderProblems(p); render()
+}
+
+function renderRemarks(p){
+  document.getElementById('dRemarks').innerHTML = p.remarks.length
+    ? p.remarks.map(x=>`<div class="remark"><div class="rmeta"><span>${x.author}</span><span>${x.when}</span></div><div class="rbody">${x.body}</div></div>`).join('')
+    : '<div class="pmail" style="margin-bottom:8px">No remarks yet.</div>'
+}
+function saveMeta(){
+  const p = planners.find(x=>x.id===selId); if (!p) return
+  p.ch = document.getElementById('dChType').value
+  p.acct = document.getElementById('dChAcct').value || p.acct
+  p.status = document.getElementById('dStatus').value
+  const fb = document.getElementById('saveFb'); fb.classList.add('show'); setTimeout(()=>fb.classList.remove('show'), 1400)
+  render()
+}
+function addRemark(){
+  const p = planners.find(x=>x.id===selId); if (!p) return
+  const t = document.getElementById('dRemark').value.trim(); if (!t) return
+  p.remarks.unshift({ when: nowLabel(), body:t, author:'Mentor' })
+  document.getElementById('dRemark').value = ''
+  renderRemarks(p); render()
+}
+
+fillChannelFilter()
+render()
+</script>
+</body>
+</html>

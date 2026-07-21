@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Google API requests work in this platform (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; --purple:#6b4d9e; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.65 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px 18px}
+  .wrap{max-width:980px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  h2{font-size:16px;margin:24px 0 8px}
+  .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+  @media(max-width:800px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .btns{display:flex;flex-direction:column;gap:8px}
+  .btns button{font:inherit;font-size:13.5px;font-weight:600;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;text-align:left}
+  .btns button:hover{background:#faf8f3}
+  .btns button b{display:block;font-size:12px;color:var(--ink3);font-weight:500;margin-top:2px}
+  .btns .reset{background:transparent;color:var(--ink3);border-style:dashed}
+  .tally{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .tally h3{margin:0 0 10px;font-size:14px}
+  .trow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1ecdf;font-size:13px}
+  .trow:last-of-type{border-bottom:none}
+  .trow .k{display:flex;align-items:center;gap:8px}
+  .trow .sw{width:10px;height:10px;border-radius:3px}
+  .trow .n{font-variant-numeric:tabular-nums;font-weight:800}
+  .trow.bill .n{color:var(--amber)}
+  .grand{margin-top:10px;padding-top:10px;border-top:2px solid var(--line);display:flex;justify-content:space-between;font-weight:800}
+  .grand .n{color:var(--green);font-variant-numeric:tabular-nums}
+  .log{background:#fff;border:1px solid var(--line);border-radius:10px;margin-top:12px;max-height:260px;overflow-y:auto;font-size:12.5px}
+  .logrow{padding:8px 11px;border-bottom:1px solid #f4efe6}
+  .logrow:last-child{border-bottom:none}
+  .logrow .a{font-weight:700}
+  .logrow .d{color:var(--ink2);font-size:11.5px;margin-top:2px}
+  .logrow .tag{font-size:9.5px;font-weight:800;padding:1px 7px;border-radius:99px;margin-left:6px}
+  .tag.bill{background:var(--amberbg);color:var(--amber);border:1px solid #e5c184}
+  .tag.free{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .tag.cache{background:var(--bluebg);color:var(--blue);border:1px solid #bcd4e2}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:#f7f3ea}
+  code{background:#f1ece0;border-radius:4px;padding:1px 5px;font-size:12px}
+  .note{font-size:12.5px;color:var(--ink2);background:var(--bluebg);border:1px solid #bcd4e2;border-radius:10px;padding:12px 15px;margin-top:14px;line-height:1.7}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>How Google API requests work in this platform</h1>
+  <p class="lead">Click the actions a planner takes and watch the real API calls each one fires. "Search a place" is not 1 call — it's a small cascade. Reopening a saved plan is 0.</p>
+
+  <div class="cols">
+    <div class="panel">
+      <h2 style="margin-top:0">A planner's actions</h2>
+      <div class="btns">
+        <button onclick="act('type')">⌨️ Type "Senso-ji" in a stop<b>several keystrokes → autocomplete</b></button>
+        <button onclick="act('pick')">✅ Pick it from the dropdown<b>place details + photo</b></button>
+        <button onclick="act('addStop')">➕ Add a 2nd stop between two others<b>triggers transport legs</b></button>
+        <button onclick="act('mode')">🚇 Change a leg Taxi → Public transport<b>re-route that leg</b></button>
+        <button onclick="act('map')">🗺️ Tap "Show route map"<b>Maps JS</b></button>
+        <button onclick="act('reopen')">🔄 Close &amp; reopen the whole plan<b>the big one</b></button>
+        <button class="reset" onclick="reset()">↺ Reset</button>
+      </div>
+    </div>
+
+    <div class="tally">
+      <h3>API calls this session</h3>
+      <div class="trow"><div class="k"><span class="sw" style="background:#9b7ad6"></span>Places · Autocomplete</div><div class="n" id="t-ac">0</div></div>
+      <div class="trow bill"><div class="k"><span class="sw" style="background:#9b7ad6"></span>Places · Details</div><div class="n" id="t-det">0</div></div>
+      <div class="trow bill"><div class="k"><span class="sw" style="background:#9b7ad6"></span>Places · Photo</div><div class="n" id="t-photo">0</div></div>
+      <div class="trow bill"><div class="k"><span class="sw" style="background:#5aa6c9"></span>Routes</div><div class="n" id="t-routes">0</div></div>
+      <div class="trow bill"><div class="k"><span class="sw" style="background:#c9a24a"></span>Maps JS</div><div class="n" id="t-maps">0</div></div>
+      <div class="grand"><div>Billed calls</div><div class="n" id="t-total">0</div></div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <h2>The two Places flows — exact counts</h2>
+  <table>
+    <tr><th>Planner does…</th><th>What fires</th><th>Billed?</th></tr>
+    <tr><td>Types a name (each pause)</td><td><code>places:autocomplete</code> — one per debounced pause, all under ONE session token</td><td>Bundled — see next row</td></tr>
+    <tr><td>Picks from the dropdown</td><td><code>places/{id}</code> Place Details (carries the session token)</td><td><b>1 billed Details</b>. The whole typing session is bundled into it — you do NOT pay per keystroke.</td></tr>
+    <tr><td>The picked place shows a photo</td><td><code>/media</code> Place Photo</td><td><b>1 billed — first time on that device only</b>, then served from the device forever.</td></tr>
+    <tr><td>Types a name but never picks (leaves it typed)</td><td>autocomplete only; later a <code>places:searchText</code> resolves the typed name for routing</td><td>1 billed searchText (cached after)</td></tr>
+  </table>
+
+  <h2>How a Route (transport leg) is calculated</h2>
+  <table>
+    <tr><th>Step</th><th>Detail</th></tr>
+    <tr><td>1. Two linked stops</td><td>A leg needs both stops to have a Google <code>place_id</code> (from picking them). Origin = stop A's id, destination = stop B's id.</td></tr>
+    <tr><td>2. Mode → travel type</td><td>Taxi/Car → <code>DRIVE</code> · Walk → <code>WALK</code> · Public transport/Shinkansen → <code>TRANSIT</code>.</td></tr>
+    <tr><td>3. One <code>computeRoutes</code> call</td><td>Returns real km + duration (+ fare/steps for transit). <b>Drive/walk = 1 call.</b></td></tr>
+    <tr><td>4. Japan transit twist</td><td>Google returns no transit routes for JP local transit, so a TRANSIT leg also fires a <b>drive-anchor</b> call to estimate from real road distance → up to <b>2 calls</b>. Once a pair is known-empty, the probe is skipped next time.</td></tr>
+    <tr><td>5. Cached + saved</td><td>The result is cached (30 days) AND saved inside the plan (<code>route_snapshot</code>). So the leg fetches <b>once</b>; unchanged, it never fetches again — even on another device.</td></tr>
+  </table>
+
+  <div class="note">
+    <b>The big idea:</b> the first time a planner builds something, it costs a handful of calls (details + photo + a route or two). After that — reopening, refreshing, switching language, another device — it's <b>0 billed calls</b>, because everything is cached and saved with the plan. That's why your Jul-9-onward chart is near-zero. The counter behind <code>/superapi999</code> counts exactly the calls in the tally above, per planner.
+  </div>
+</div>
+
+<script>
+const C = { ac:0, det:0, photo:0, routes:0, maps:0 }
+const $ = id => document.getElementById(id)
+function paint(){
+  $('t-ac').textContent=C.ac; $('t-det').textContent=C.det; $('t-photo').textContent=C.photo
+  $('t-routes').textContent=C.routes; $('t-maps').textContent=C.maps
+  // billed total = details + photo + routes + maps (autocomplete bundled/free)
+  $('t-total').textContent = C.det + C.photo + C.routes + C.maps
+}
+function logRow(a, d, tag){
+  const el=document.createElement('div'); el.className='logrow'
+  const t = tag==='bill'?'<span class="tag bill">billed</span>':tag==='free'?'<span class="tag free">bundled</span>':'<span class="tag cache">0 · cached</span>'
+  el.innerHTML=`<div class="a">${a}${t}</div><div class="d">${d}</div>`
+  const log=$('log'); log.insertBefore(el, log.firstChild)
+}
+// state to make the demo realistic
+let picked=false, photoCached=false, routeCached=false
+function act(k){
+  if(k==='type'){
+    C.ac += 3
+    logRow('Typed "Senso-ji" — 3 autocomplete requests','All under one session token — bundled into the pick below, not billed separately.','free')
+  } else if(k==='pick'){
+    if(!C.ac){ C.ac+=2; logRow('(auto-typed first)','','free') }
+    C.det += 1; picked=true
+    logRow('Picked from dropdown — 1 Place Details','The session ends here → you pay 1 Details. The typing was free.','bill')
+    if(!photoCached){ C.photo += 1; photoCached=true; logRow('Loaded its photo — 1 Place Photo','First time on this device. Stored now → never billed again here.','bill') }
+    else logRow('Photo already on this device','Served from cache.','cache')
+  } else if(k==='addStop'){
+    if(!routeCached){ C.routes += 2; routeCached=true
+      logRow('Added a stop → 2 transport legs','A leg before + a leg after the new stop → 2 Routes calls (real km/time). Now cached + saved in the plan.','bill')
+    } else logRow('Legs already computed','Reused from the plan snapshot — 0 calls.','cache')
+  } else if(k==='mode'){
+    C.routes += 2
+    logRow('Changed a leg to Public transport','New mode = a new question → 1 TRANSIT probe + 1 drive-anchor (JP transit) = 2 calls. Cached after.','bill')
+  } else if(k==='map'){
+    C.maps += 1
+    logRow('Tapped "Show route map" — 1 Maps JS','The interactive map is billed once when shown.','bill')
+  } else if(k==='reopen'){
+    logRow('Closed &amp; reopened the WHOLE plan','Every stop, photo, and route is already saved → 0 billed calls. This is what used to cost hundreds before the fixes.','cache')
+  }
+  paint()
+}
+function reset(){ C.ac=C.det=C.photo=C.routes=C.maps=0; picked=photoCached=routeCached=false; $('log').innerHTML=''; paint() }
+paint()
+</script>
+</body>
+</html>

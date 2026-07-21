@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opening-hours demo — auto-bump in place, no time button</title>
+<style>
+  :root{ --paper:#fbf7ef; --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --greenbg:rgba(63,186,115,0.10); --greenbd:rgba(63,186,115,0.45);
+         --amber:#854f0b; --amberbg:#fdf3e2; --amberbd:#e9d6ab; --line:#ece5d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 'DM Sans',system-ui,Arial,sans-serif;padding:24px}
+  .wrap{max-width:640px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--ink2);margin:0 0 16px;font-size:13.5px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .controls button{padding:9px 12px;border:1px solid #cdbf9f;border-radius:9px;background:#fff;color:var(--amber);font-weight:600;cursor:pointer;font-size:13px}
+  .controls button:hover{background:#fcf6ea}
+  .day{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+  .anchor{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:10px;background:#f4efe5;border:1px dashed #d9cfbc;font-size:13.5px;color:var(--ink2)}
+  .anchor b{color:var(--ink)}
+  .leg{display:flex;align-items:center;gap:8px;padding:7px 13px;margin:6px 0 6px 18px;border-left:2px solid #e7ddca;font-size:12.5px;color:var(--ink2)}
+  .lt{font-variant-numeric:tabular-nums}
+  .stop{border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin:6px 0;background:#fff}
+  .stop.hotel{background:#f3f8f4;border-color:var(--greenbd)}
+  .stop.bumped{border-color:var(--amberbd)}
+  .top{display:flex;align-items:center;gap:10px}
+  .time{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;color:var(--ink);background:#f1ede3;border:1px solid #e3dccb;border-radius:8px;padding:4px 9px;cursor:default}
+  .lk{font-size:11px;opacity:.6}
+  .pin{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--green);background:var(--greenbg);border:1px solid var(--greenbd);border-radius:5px;padding:2px 6px;font-weight:700}
+  .auto{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);background:#f6ead1;border:1px solid #e7d2a6;border-radius:5px;padding:2px 6px;font-weight:700}
+  .name{flex:1;font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .open{font-size:11.5px;color:var(--ink3);margin-top:5px}
+  .row2{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:12.5px;color:var(--ink2)}
+  select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid #d8d0c0;border-radius:8px;background:#fff;color:var(--ink)}
+  .x{margin-left:auto;border:none;background:none;color:#bbb;cursor:pointer;font-size:16px;line-height:1}
+  .x:hover{color:#e05}
+  .note{margin-top:9px;background:var(--amberbg);border:1px solid var(--amberbd);border-radius:9px;padding:9px 11px;font-size:12.5px;color:#6b4a13;line-height:1.45}
+  .note b{color:#4a330d}
+  .ok{margin-top:9px;background:#eef7ef;border:1px solid var(--greenbd);border-radius:9px;padding:8px 11px;font-size:12.5px;color:#1f5a3a}
+  .addbefore{display:block;width:100%;margin:6px 0;padding:8px;border:1px dashed #d7c9a8;border-radius:9px;background:#fff;color:var(--amber);font-weight:600;cursor:pointer;font-size:12px}
+  .addbefore:hover{background:#fcf6ea}
+  .legend{font-size:12px;color:var(--ink2);margin-top:16px;line-height:1.7}
+  .legend code{background:#f1ede3;padding:1px 5px;border-radius:4px}
+  .strike{text-decoration:line-through;color:#b9b1a2}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Opening hours · auto‑handled, in place</h1>
+  <p class="sub">The proposed behavior. A stop never starts before the place opens — the time auto‑bumps up to the opening time <b>without moving the stop</b>. No "change time" button, no reorder. The only nudge is a soft note about the waiting gap, which you fix by adding a stop or lengthening a stay.</p>
+
+  <div class="controls">
+    <button onclick="lengthen()">⏱ Lengthen Senso‑ji stay (+30m)</button>
+    <button onclick="reset()">↺ Reset</button>
+  </div>
+
+  <div class="day" id="day"></div>
+
+  <div class="legend" id="legend"></div>
+</div>
+
+<script>
+const ARRIVAL_MIN = 14*60;     // 2:00pm flight
+const DISEMBARK = 10;
+// openMin = minutes-since-midnight the place opens (null = always open)
+let base = [
+  { id:1, kind:'hotel', name:'Hotel check‑in · Hotel Tavinos Asakusa', travel:34, stay:30, open:null, pinned:true },
+  { id:2, kind:'act',   name:'Senso‑ji Temple',                          travel:12, stay:60, open:null },
+  { id:3, kind:'meal',  name:'Game Bar A‑Button (Meal)',                 travel:15, stay:90, open:18*60+30 },  // opens 6:30pm
+];
+let stops, nextId, EXTRA = ['Nakamise Shopping Street','Akihabara browsing','Kanda Myojin Shrine','Coffee break'];
+function reset(){ stops = base.map(s=>({...s})); nextId = 10; render(); }
+
+const roundUp5 = m => Math.ceil(m/5)*5;
+function fmt(m){ m=((m%1440)+1440)%1440; let h=Math.floor(m/60), mm=m%60; const ap=h<12?'am':'pm'; let hh=h%12; if(hh===0)hh=12; return hh+':'+String(mm).padStart(2,'0')+' '+ap; }
+function gapTxt(m){ const h=Math.floor(m/60), mm=m%60; return (h?h+'h ':'')+(mm?mm+'m':(h?'':'0m')); }
+
+function lengthen(){ const s=stops.find(x=>x.name.startsWith('Senso')); if(s){s.stay+=30; render();} }
+function addBefore(idx){ stops.splice(idx,0,{ id:nextId++, kind:'act', name:EXTRA[(nextId-10)%EXTRA.length], travel:10, stay:45, open:null }); render(); }
+function del(id){ stops=stops.filter(x=>x.id!==id); render(); }
+
+function render(){
+  const day=document.getElementById('day');
+  let html = `<div class="anchor">✈️ <span><b>Flight arrives · Haneda Airport</b> · ${fmt(ARRIVAL_MIN)}</span></div>`;
+  let cursor = ARRIVAL_MIN + DISEMBARK;
+  stops.forEach((s,idx)=>{
+    if(idx>0) html += `<div class="addbefore" onclick="addBefore(${idx})">+ add a stop here (before ${s.name.split(' ')[0]} ${s.name.split(' ')[1]||''})</div>`;
+    const departs = cursor;
+    const arriveRaw = cursor + s.travel;
+    const computed = roundUp5(arriveRaw);
+    const start = (s.open!=null) ? Math.max(computed, s.open) : computed;   // ← auto-bump to opening
+    const gap = start - computed;                                          // waiting time created
+    const finish = start + s.stay;
+    const modeIcon = s.kind==='hotel' ? '🚕 GO Taxi' : (s.travel<10?'🚶 Walk':'🚇 Metro');
+    html += `<div class="leg">${modeIcon} · <span class="lt">${fmt(departs)} → ${fmt(arriveRaw)}</span> · ${s.travel} min</div>`;
+    const badge = s.pinned ? `<span class="pin">1st · luggage</span>` : `<span class="auto">auto</span>`;
+    const stayOpts = [15,30,45,60,90,120].map(v=>`<option value="${v}" ${v===s.stay?'selected':''}>${v<60?v+' min':(v/60)+(v%60?'.5':'')+' h'}</option>`).join('');
+    const del_ = s.pinned ? '' : `<button class="x" onclick="del(${s.id})" title="remove">✕</button>`;
+    let body = `
+      <div class="top">
+        <span class="time" title="auto-computed, read-only">🔒<span>${fmt(start)}</span></span>
+        ${badge}
+        <span class="name">${s.kind==='hotel'?'🏨 ':s.kind==='meal'?'🍴 ':'📍 '}${s.name}</span>
+        ${del_}
+      </div>`;
+    if(s.open!=null) body += `<div class="open">🟢 Opens ${fmt(s.open)}</div>`;
+    body += `<div class="row2">How long to stay <select onchange="(stops.find(x=>x.id===${s.id})).stay=parseInt(this.value,10);render()">${stayOpts}</select><span style="margin-left:auto;color:#9aa39d">finishes ${fmt(finish)}</span></div>`;
+    if(gap>0){
+      body += `<div class="note">⏰ <b>${s.name.split('(')[0].trim()}</b> opens <b>${fmt(s.open)}</b> — we set the start to <b>${fmt(start)}</b> (it can't begin before it opens). Computed arrival was ${fmt(computed)}, so there's a <b>${gapTxt(gap)} gap</b> before it. Add a stop in front, or lengthen an earlier stay, to fill it. <span class="strike">→ Change time to ${fmt(s.open)}</span> <i>(no button — it's automatic)</i></div>`;
+    } else if(s.open!=null){
+      body += `<div class="ok">✓ Opens ${fmt(s.open)} — arrives ${fmt(start)}, right on time. No gap.</div>`;
+    }
+    html += `<div class="stop ${s.kind==='hotel'?'hotel':''} ${gap>0?'bumped':''}">${body}</div>`;
+    cursor = finish;
+  });
+  html += `<div class="addbefore" onclick="addBefore(${stops.length})">+ add a stop at the bottom</div>`;
+  const back = roundUp5(cursor + 16);
+  html += `<div class="leg">🚕 GO Taxi · <span class="lt">${fmt(cursor)} → ${fmt(cursor+16)}</span> · 16 min</div>`;
+  html += `<div class="anchor">🌙 <span><b>Back at Hotel Tavinos Asakusa</b> · ${fmt(back)} · day ends</span></div>`;
+  day.innerHTML = html;
+
+  document.getElementById('legend').innerHTML =
+    `<b>Try it:</b> Game Bar opens 6:30pm but the day reaches it at ~4:45pm, so its start auto‑bumps to <b>6:30</b> — it stays exactly where it is, nothing reorders. The amber note shows the ~1h45m waiting gap.<br>
+     Now click <b>“+ add a stop here”</b> in front of Game Bar a couple of times, or <b>lengthen Senso‑ji</b> — watch the gap shrink and the note turn green once the day naturally reaches 6:30.<br><br>
+     <code>start = max( roundUp5(prevFinish + travel) , openingTime )</code>`;
+}
+reset();
+</script>
+</body>
+</html>

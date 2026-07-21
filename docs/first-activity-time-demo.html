@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First activity start time — 9:00 vs 8:45 (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --amber:#b87333; --amberbg:#fdf3e3; --line:#e6e0d4; --hotel:#eef3ee; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:720px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:600px){.two{grid-template-columns:1fr}}
+  .col{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .col h2{margin:0;padding:11px 14px;font-size:13px;letter-spacing:.03em}
+  .col.cur h2{background:var(--amberbg);color:var(--amber)} .col.alt h2{background:var(--greenbg);color:var(--green)}
+  .body{padding:12px 14px}
+  .row{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;margin:5px 0;font-size:12.5px;background:#faf8f3}
+  .row.hotel{background:var(--hotel);border-color:var(--greenbd)}
+  .row .clk{font-weight:800;font-variant-numeric:tabular-nums;min-width:48px}
+  .row .t{flex:1}
+  .gap{font-size:11px;color:var(--ink3);text-align:center;padding:2px 0}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>First activity of a Day 2+ morning — start time</h1>
+  <p class="lead">Standard wake time = 8:30. The question is what the first <b>activity</b> defaults to.</p>
+
+  <div class="two">
+    <div class="col cur">
+      <h2>Now — 9:00</h2>
+      <div class="body">
+        <div class="row hotel"><span class="clk">8:30</span><span class="t">🏨 Morning · breakfast at hotel</span></div>
+        <div class="gap">↓ ~30 min breakfast buffer</div>
+        <div class="row"><span class="clk">9:00</span><span class="t">📸 First activity</span></div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:6px">Flat 9:00 — but the check‑out (if first) would be 8:45. Inconsistent.</div>
+      </div>
+    </div>
+    <div class="col alt">
+      <h2>Proposed — 8:45</h2>
+      <div class="body">
+        <div class="row hotel"><span class="clk">8:30</span><span class="t">🏨 Morning · breakfast at hotel</span></div>
+        <div class="gap">↓ 15 min</div>
+        <div class="row"><span class="clk">8:45</span><span class="t">📸 First activity</span></div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:6px">wake (8:30) + 15 — same rule as the hotel check‑out. Consistent.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>The change (if you want it):</b> make the Day 2+ first‑stop default <b>wake + 15</b> (8:45 for standard, 7:15 for early risers, 9:45 for late) instead of the flat 9:00 — so the first <b>activity</b> starts at the same time the <b>check‑out</b> would, right after the morning anchor.<br><br>
+    <b>Trade‑off:</b> 9:00 leaves a ~30 min breakfast window; 8:45 is tighter but consistent. <b>Your call.</b><br><br>
+    <b>Risk: low</b> — it only changes the default start of the first stop on Day 2+. Subsequent stops still chain from it; arrival‑day (Day 1) and the check‑out are untouched.
+  </div>
+</div>
+</body>
+</html>

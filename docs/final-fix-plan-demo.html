@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — the full fix plan, confidence & impact</title>
+<style>
+  :root{
+    --bg:#F4F2EC; --ink:#1d211f; --ink-2:#5a5f5b; --ink-3:#8a8f8a; --border:rgba(0,0,0,.12);
+    --green:#1a7a5e; --green-bg:#e8f5f0; --red:#B3452F; --red-bg:#FBEAE5; --amber:#BA7517; --amber-bg:#FBF1DE; --blue:#28457a; --blue-bg:#eef4ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);padding:24px 20px 70px;line-height:1.5;}
+  h1{font-size:22px;margin-bottom:4px;}
+  h2{font-size:16px;margin:26px 0 10px;}
+  .sub{font-size:14px;color:var(--ink-2);max-width:1000px;margin-bottom:8px;}
+  .sub b{color:var(--ink);}
+  .wrap{max-width:1000px;}
+
+  .assure{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0 8px;}
+  .gauge{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px 20px;flex:1 1 260px;}
+  .gauge .big{font-size:34px;font-weight:800;color:var(--green);line-height:1;}
+  .gauge .lab{font-size:12px;color:var(--ink-3);margin-top:4px;font-weight:600;}
+  .gauge .why{font-size:12.5px;color:var(--ink-2);margin-top:8px;}
+
+  /* trigger selector */
+  .picker{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px;}
+  .picker button{border:1px solid var(--border);background:#fff;padding:9px 14px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2);}
+  .picker button.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .runbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;}
+  .play{border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;padding:9px 20px;border-radius:99px;cursor:pointer;}
+  .play:active{transform:scale(.97);}
+  .tdesc{font-size:13px;color:var(--ink-2);}
+
+  .cols{display:flex;gap:18px;flex-wrap:wrap;}
+  .col{flex:1 1 380px;max-width:480px;background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+  .col.old{border-top:4px solid var(--red);}
+  .col.new{border-top:4px solid var(--green);}
+  .col-h{padding:11px 16px;font-size:14px;font-weight:700;border-bottom:1px solid var(--border);}
+  .col.old .col-h{color:var(--red);background:var(--red-bg);}
+  .col.new .col-h{color:var(--green);background:var(--green-bg);}
+  .col-b{padding:14px;min-height:250px;}
+  .narr{font-size:13px;font-weight:600;min-height:40px;margin-bottom:10px;color:var(--ink-2);}
+  .db{display:flex;flex-direction:column;gap:10px;}
+  .day{border:1px solid var(--border);border-radius:9px;overflow:hidden;transition:all .4s;}
+  .day-h{font-size:11px;font-weight:700;padding:5px 10px;background:#faf8f2;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;}
+  .day-b{padding:6px 10px;display:flex;flex-direction:column;gap:3px;}
+  .st{font-size:10.5px;padding:3px 7px;border-radius:4px;background:#f2f4f2;border:1px solid var(--border);transition:all .35s;}
+  .day.del{border-color:var(--red);background:var(--red-bg);animation:shk .4s;}
+  .day.del .day-h{background:var(--red-bg);color:var(--red);}
+  .day.gone{max-height:0;opacity:0;margin:0;border-width:0;padding:0;}
+  .day.safe{border-color:var(--green);}
+  .day.safe .day-h{background:var(--green-bg);color:var(--green);}
+  @keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  .verdict{margin-top:10px;font-size:13px;font-weight:700;padding:8px 12px;border-radius:8px;display:none;}
+  .verdict.show{display:block;}
+  .col.old .verdict.show{background:var(--red-bg);color:var(--red);}
+  .col.new .verdict.show{background:var(--green-bg);color:var(--green);}
+
+  table{border-collapse:collapse;width:100%;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;font-size:13px;}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--border);}
+  th{background:#faf8f2;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);}
+  td.ok{color:var(--green);font-weight:600;} td.chg{color:var(--amber);font-weight:600;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px 20px;font-size:13.5px;color:var(--ink-2);}
+  .card b{color:var(--ink);}
+  ol{margin-left:20px;} ol li{margin-bottom:7px;font-size:13.5px;}
+  ol li b{color:var(--ink);}
+  .phase{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:2px 8px;margin-right:6px;}
+  .p1{background:var(--blue-bg);color:var(--blue);} .p2{background:#efe7f7;color:#6b3fa0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🛡️ The full fix plan — what, how sure, and what it touches</h1>
+<p class="sub">One architectural fix that closes <b>all 9 confirmed ways</b> data could be lost. Pick a trigger below and press ▶ to see today's behavior (left, loses data) vs after the fix (right, safe).</p>
+
+<div class="assure">
+  <div class="gauge">
+    <div class="big">~99%</div>
+    <div class="lab">confidence this exact class won't recur</div>
+    <div class="why">Because the fix <b>removes</b> the delete-what-I-didn't-see mechanism — it doesn't just add another guard. The last patches failed because they guarded one trigger; this changes the primitive so a partial scan <b>physically cannot</b> delete a row.</div>
+  </div>
+  <div class="gauge">
+    <div class="big" style="color:var(--amber)">~1%</div>
+    <div class="lab">honest residual risk</div>
+    <div class="why">New code can have its own bugs. I de-risk it: deletes are <b>explicit-only</b>, a "shrunk unexpectedly" tripwire blocks any surprise, and I test the real triggers (Japanese typing, reopen, submit with network off) before calling it done. No one can honestly promise 100%.</div>
+  </div>
+</div>
+
+<h2>See it on each real trigger</h2>
+<div class="picker" id="picker"></div>
+<div class="runbar"><button class="play" onclick="play()">▶ Run</button><span class="tdesc" id="tdesc"></span></div>
+
+<div class="cols">
+  <div class="col old"><div class="col-h">✗ Today</div><div class="col-b"><div class="narr" id="o-narr"></div><div class="db" id="o-db"></div><div class="verdict" id="o-v"></div></div></div>
+  <div class="col new"><div class="col-h">✓ After the fix</div><div class="col-b"><div class="narr" id="n-narr"></div><div class="db" id="n-db"></div><div class="verdict" id="n-v"></div></div></div>
+</div>
+
+<h2>Exactly what gets fixed</h2>
+<div class="card">
+  <ol>
+    <li><span class="phase p1">core</span><b>Deletes become explicit-only.</b> A stop is removed from the database ONLY when the planner clicks × on it — never because a save "didn't see it." Every stop carries its own permanent ID.</li>
+    <li><span class="phase p1">core</span><b>Save = diff, not replace.</b> Update the stops on screen, add new ones, delete only the ones explicitly removed. A blank / half-loaded / mid-typing stop is simply left untouched.</li>
+    <li><span class="phase p1">core</span><b>"Shrunk unexpectedly" tripwire.</b> If a save would leave fewer days/stops than the database already has (without an explicit removal), it refuses and keeps the saved data.</li>
+    <li><span class="phase p1">core</span><b>Japanese-input guard.</b> No save runs while kana→kanji conversion is mid-flight.</li>
+    <li><span class="phase p2">atomic</span><b>One all-or-nothing save step.</b> Submit no longer deletes-then-inserts; it's one transaction, so a network drop can never leave a plan empty.</li>
+    <li><span class="phase p2">atomic</span><b>Two-device guard.</b> A version check stops a stale tab from overwriting newer work.</li>
+    <li><span class="phase p1">urgent</span><b>Do NOT add a <code>plans.updated_at</code> column</b> without me first — dormant code would start auto-wiping plans the moment it exists.</li>
+  </ol>
+</div>
+
+<h2>Does it affect the platform, the API, or autosave? — clearly</h2>
+<table>
+  <tr><th>Area</th><th>Effect</th></tr>
+  <tr><td>Google API calls (routes, places, photos)</td><td class="ok">✓ Not touched at all</td></tr>
+  <tr><td>Per-planner API usage tracking (/superapi999)</td><td class="ok">✓ Not touched</td></tr>
+  <tr><td>Route cache / 300-a-day cap</td><td class="ok">✓ Not touched</td></tr>
+  <tr><td>When autosave fires (the triggers/timing)</td><td class="ok">✓ Unchanged</td></tr>
+  <tr><td>Saving your edits (titles, stops, tips, hotel)</td><td class="ok">✓ Unchanged — still saved</td></tr>
+  <tr><td>Normal case (form fully loaded)</td><td class="ok">✓ Identical result in the database</td></tr>
+  <tr><td>Reset button (clear a plan on purpose)</td><td class="ok">✓ Still works</td></tr>
+  <tr><td>How rows are written to the database</td><td class="chg">✎ Changes: diff instead of delete-all (this is the fix)</td></tr>
+  <tr><td>Removing a stop / a day</td><td class="chg">✎ Now explicit &amp; tracked (safer, same for the planner)</td></tr>
+  <tr><td>Worst case if the new code has a bug</td><td class="ok">✓ A leftover stop (1 tap to remove) — never lost data</td></tr>
+</table>
+
+<h2>How I'd roll it out to keep risk low</h2>
+<div class="card">
+  <b>Phase 1 (core — small, stops the bleeding):</b> the tripwire + explicit-delete + Japanese-input guard. This alone makes the partial-snapshot loss impossible, with a small, low-risk change.<br><br>
+  <b>Phase 2 (atomic — definitive):</b> the one-transaction save via a database function, which also fixes the "submit leaves plan empty" and two-device cases. Slightly bigger (needs a DB migration), shipped after Phase 1 is verified.<br><br>
+  <b>Verification before "done":</b> on a throwaway plan I reproduce the real triggers — load stops, type Japanese titles, switch/reopen plans, submit with the network switched off — and confirm every stop survives.
+</div>
+</div>
+
+<script>
+  const $=id=>document.getElementById(id)
+  const wait=ms=>new Promise(r=>setTimeout(r,ms))
+  function dayHtml(id,label,n){ let s=''; for(let i=0;i<n;i++) s+='<div class="st">Stop '+(i+1)+'</div>'; return '<div class="day" id="'+id+'"><div class="day-h"><span>'+label+'</span><span>'+n+' stops</span></div><div class="day-b">'+s+'</div></div>' }
+
+  const SC = {
+    reopen:{ desc:'The planner reopens the plan; for a moment Day 1 hasn\'t painted yet.',
+      old:['Reopen → Day 1 not painted → autosave scans only Day 2…','Deletes Day 1 as "not in the scan".','✗ Day 1 gone.'],
+      neu:['Reopen → Day 1 not painted → autosave scans only Day 2…','Tripwire: "this would drop a whole day I never removed" → refuses.','✓ Day 1 kept. Saves normally once painted.'] },
+    ime:{ desc:'The planner types a Day-1 title in Japanese (kana→kanji conversion).',
+      old:['Mid-conversion the title reads blank → that stop drops out of the scan…','Deletes the blank-looking stop.','✗ Stop lost mid-typing.'],
+      neu:['Mid-conversion the title reads blank…','Japanese-input guard: no save runs during conversion.','✓ Nothing dropped. Saves after you commit the word.'] },
+    remove:{ desc:'The planner removes ONE stop on purpose (clicks ×).',
+      old:['Planner deletes "Lunch" → full re-scan + replace…','Works — but the same machinery is what wipes days elsewhere.','~ Works, but fragile.'],
+      neu:['Planner clicks × on "Lunch" → tracked as an explicit removal…','Deletes ONLY that stop by its ID.','✓ Exactly one stop removed. Nothing else touched.'] },
+    submit:{ desc:'The planner submits, and the network drops between delete and insert.',
+      old:['Submit deletes ALL rows first…','…then the insert fails (network). Rollback restores status only, not rows.','✗ Whole plan emptied.'],
+      neu:['Submit sends one atomic save…','Network fails → the whole thing rolls back as one unit.','✓ Every stop still there. Just retry.'] },
+    twodev:{ desc:'The planner has the plan open on phone and desktop at once.',
+      old:['Desktop saves 13 stops; a stale phone tab autosaves its older 6…','Phone\'s save replaces desktop\'s → newer work clobbered.','✗ Newer edits lost.'],
+      neu:['Stale phone tab tries to save older data…','Version check: "you\'re behind" → refuses, offers reload.','✓ Newer work protected.'] },
+  }
+  const ORDER=[['reopen','Reopen plan'],['ime','Type Japanese'],['remove','Remove a stop'],['submit','Submit + network drop'],['twodev','Two devices']]
+  let cur='reopen'
+
+  function buildPicker(){
+    $('picker').innerHTML=''
+    ORDER.forEach(([k,lab])=>{ const b=document.createElement('button'); b.textContent=lab; b.className=(k===cur?'on':''); b.onclick=()=>{cur=k;buildPicker();reset()}; $('picker').appendChild(b) })
+    $('tdesc').textContent=SC[cur].desc
+  }
+  function baseDb(id){
+    // reopen/ime/remove/submit use Day1+Day2; twodev shows a single "stops" box
+    if(cur==='twodev'){ $(id).innerHTML=dayHtml(id+'-a','Plan (desktop = 13 stops)',13) }
+    else { $(id).innerHTML=dayHtml(id+'-1','Day 1',13)+dayHtml(id+'-2','Day 2',8) }
+  }
+  function reset(){ baseDb('o-db'); baseDb('n-db'); $('o-narr').textContent=''; $('n-narr').textContent=''; $('o-v').className='verdict'; $('n-v').className='verdict'; $('tdesc').textContent=SC[cur].desc }
+
+  async function play(){
+    reset(); await wait(300)
+    const s=SC[cur]
+    // OLD
+    $('o-narr').textContent=s.old[0]; await wait(1300)
+    $('o-narr').textContent=s.old[1]
+    if(cur==='remove'){ /* remove: just a note */ }
+    else if(cur==='twodev'){ const d=$('o-db-a'); d.classList.add('del'); await wait(900); d.querySelector('.day-h').innerHTML='<span>Plan (now 6 stops — clobbered)</span><span>6</span>'; d.querySelector('.day-b').innerHTML='<div class="st">Stop 1</div><div class="st">Stop 2</div><div class="st">…6</div>' }
+    else if(cur==='submit'){ const a=$('o-db-1'),b=$('o-db-2'); a.classList.add('del'); b.classList.add('del'); await wait(900); a.classList.add('gone'); b.classList.add('gone') }
+    else { const a=$('o-db-1'); a.classList.add('del'); await wait(900); a.classList.add('gone') }
+    await wait(700); $('o-narr').textContent=s.old[2]; $('o-v').className='verdict show'; $('o-v').textContent=s.old[2]
+
+    // NEW
+    $('n-narr').textContent=s.neu[0]; await wait(1300)
+    $('n-narr').textContent=s.neu[1]; await wait(1100)
+    if(cur==='remove'){ const b=$('n-db-1').querySelector('.day-b'); /* remove one stop visibly */ const sts=b.querySelectorAll('.st'); if(sts[2]){sts[2].style.background='var(--red-bg)';sts[2].style.borderColor='var(--red)';sts[2].textContent='Lunch — removed';} }
+    ;(cur==='twodev'?[$('n-db-a')]:[$('n-db-1'),$('n-db-2')]).forEach(d=>d&&d.classList.add('safe'))
+    await wait(700); $('n-narr').textContent=s.neu[2]; $('n-v').className='verdict show'; $('n-v').textContent=s.neu[2]
+  }
+
+  buildPicker(); reset()
+</script>
+</body>
+</html>

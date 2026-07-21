@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotel check-out — follow the day's flow, not a forced 10:45</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --amber:#b87333; --line:#e6e0d4; --hotel:#eef3ee; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:620px){.two{grid-template-columns:1fr}}
+  .col{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .col h2{margin:0;padding:11px 14px;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+  .col.cur h2{background:var(--redbg);color:var(--red)} .col.fix h2{background:var(--greenbg);color:var(--green)}
+  .body{padding:12px 14px}
+  .row{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;margin:5px 0;font-size:12.5px;background:#faf8f3}
+  .row.hotel{background:var(--hotel);border-color:var(--greenbd)}
+  .row.co{background:#fbf3e2;border-color:#e3c98f}
+  .row .clk{font-weight:800;font-variant-numeric:tabular-nums;min-width:46px}
+  .row .t{flex:1}
+  .row .tag{font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px}
+  .row .tag.bad{background:var(--redbg);color:var(--red)} .row .tag.good{background:var(--greenbg);color:var(--green)}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>出発日 · ホテルチェックアウトの時刻</h1>
+  <p class="lead">Departure day starts 8:30. Planner adds the hotel check‑out as the first stop.</p>
+
+  <div class="two">
+    <div class="col cur">
+      <h2>✕ Now</h2>
+      <div class="body">
+        <div class="row hotel"><span class="clk">08:30</span><span class="t">🏨 朝食・Hotel ASH（出発日はここから）</span></div>
+        <div class="row co"><span class="clk">10:45</span><span class="t">🚪 ホテルチェックアウト</span><span class="tag bad">forced</span></div>
+        <div class="row"><span class="clk">11:00</span><span class="t">📸 観光（残り時間わずか）</span></div>
+        <div class="row"><span class="clk">13:20</span><span class="t">🚄 新幹線で出発</span></div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:8px">Check‑out jumps to the hotel's 10:45 — only ~1.5 h of sightseeing left.</div>
+      </div>
+    </div>
+
+    <div class="col fix">
+      <h2>✓ Proposed</h2>
+      <div class="body">
+        <div class="row hotel"><span class="clk">08:30</span><span class="t">🏨 朝食・Hotel ASH（出発日はここから）</span></div>
+        <div class="row co"><span class="clk">08:40</span><span class="t">🚪 ホテルチェックアウト（荷物を預ける）</span><span class="tag good">follows flow</span></div>
+        <div class="row"><span class="clk">09:00</span><span class="t">📸 観光①</span></div>
+        <div class="row"><span class="clk">10:45</span><span class="t">🍜 昼食</span></div>
+        <div class="row"><span class="clk">12:15</span><span class="t">📸 観光②</span></div>
+        <div class="row"><span class="clk">13:20</span><span class="t">🚄 新幹線で出発</span></div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:8px">Early check‑out → bags stored → a full morning of sightseeing before departure.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>The change:</b> when a hotel check‑out is added, time it by its <b>position in the day</b> (the same time‑chain every other stop uses) instead of hard‑copying the hotel's <b>10:45</b>. So a check‑out placed first lands at <b>8:30 / 8:40</b>, and the planner can schedule an early checkout + later departure.<br><br>
+    <b>The hotel's 10:45 stays useful</b> as the <b>latest allowed</b> checkout (a cap/hint) — you just won't be <i>forced</i> to it. And a non‑hotel first activity already behaves this way; this makes the check‑out consistent with it.
+  </div>
+</div>
+</body>
+</html>

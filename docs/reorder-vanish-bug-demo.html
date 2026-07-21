@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The order-flip + vanishing-stop bug (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px 18px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  h2{font-size:16px;margin:24px 0 8px;display:flex;gap:9px;align-items:center}
+  h2 .n{flex-shrink:0;width:25px;height:25px;border-radius:50%;background:var(--red);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  h2.b2 .n{background:var(--amber)}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  button{font:inherit;font-size:13px;font-weight:700;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  button:hover{background:#faf8f3}
+  button.add{background:var(--blue);color:#fff;border-color:var(--blue)}
+  button.refresh{background:var(--amber);color:#fff;border-color:var(--amber)}
+  button.ghost{border-style:dashed;color:var(--ink3)}
+  .day{border:1px solid var(--line);border-radius:11px;background:#faf7f0;padding:10px;max-width:460px}
+  .slot{background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;transition:all .3s}
+  .slot:last-child{margin-bottom:0}
+  .slot .t{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink2);font-size:12.5px;flex-shrink:0;width:52px}
+  .slot .nm{flex:1;font-size:13px}
+  .slot.locked{background:#eef4ef;border-style:dashed;color:var(--ink2)}
+  .slot.newstop{border-color:var(--blue);box-shadow:0 0 0 3px var(--bluebg)}
+  .slot.flipped{border-color:var(--red);box-shadow:0 0 0 3px var(--redbg);animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .tag{font-size:9px;font-weight:800;padding:1px 7px;border-radius:99px;margin-left:6px}
+  .tag.new{background:var(--bluebg);color:var(--blue)}
+  .tag.flip{background:var(--redbg);color:var(--red)}
+  .status{font-size:12.5px;font-weight:600;margin-top:8px;min-height:18px}
+  .status.bad{color:var(--red)} .status.good{color:var(--green)} .status.warn{color:var(--amber)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.cols{grid-template-columns:1fr}}
+  .cols h3{font-size:12.5px;margin:0 0 6px}
+  .db{border:1px solid var(--line);border-radius:9px;background:#f4f0e8;padding:9px;font-size:12px;min-height:60px}
+  code{background:#f1ece0;border-radius:4px;padding:1px 5px;font-size:12px}
+  .callout{border-radius:11px;padding:12px 15px;font-size:13px;margin-top:10px;line-height:1.7}
+  .callout.blue{background:var(--bluebg);border:1px solid #bcd4e2}
+  .callout.green{background:var(--greenbg);border:1px solid var(--greenbd)}
+  .callout.green b{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>寺口さんのバグ — the order-flip + vanishing stop</h1>
+  <p class="lead">Reproducing exactly what he saw: add an evening spot before the hotel → it flips the order and then disappears on refresh. Two separate bugs, shown one at a time.</p>
+
+  <!-- BUG 1 -->
+  <h2><span class="n">1</span>Order flips upside-down (「上下逆になった」)</h2>
+  <div class="panel">
+    <p style="margin:0 0 4px;font-size:13.5px">Day 1 is a nearly-full evening. He adds 台屋の鼻 as the last sightseeing spot before the hotel. Watch what <code>resortSlots</code> (sorts by clock time) does to the order.</p>
+    <div class="btns">
+      <button class="add" onclick="addStop()">➕ Add 台屋の鼻 before the hotel</button>
+      <button class="ghost" onclick="resetB1()">reset</button>
+    </div>
+    <div class="day" id="day1"></div>
+    <div class="status" id="s1"></div>
+    <div class="callout blue"><b>Why:</b> he wants it as the <b>last stop</b>, but its auto-time (20:50) is earlier than the dinner already at 20:30→… and the hotel leg. <code>resortSlots</code> re-sorts the whole day by the clock number, so the new stop jumps <b>above</b> stops he put after it — the itinerary flips. The rest of the engine is supposed to keep his order; this old function overrides it.</div>
+  </div>
+
+  <!-- BUG 2 -->
+  <h2 class="b2"><span class="n">2</span>The stop vanishes on refresh (「更新したら消えました」)</h2>
+  <div class="panel">
+    <p style="margin:0 0 4px;font-size:13.5px">Now the persistence side. Add the stop (appears on screen), then hit refresh <b>before it saved</b> — the reorder thrash keeps firing autosave against a shuffling list, so the insert doesn't land. Refresh pulls the old database state.</p>
+    <div class="btns">
+      <button class="add" onclick="addStop2()">➕ Add 台屋の鼻</button>
+      <button class="refresh" onclick="refresh2()">🔄 Refresh the page</button>
+      <button class="ghost" onclick="resetB2()">reset</button>
+    </div>
+    <div class="cols">
+      <div><h3>On screen</h3><div class="day" id="day2"></div></div>
+      <div><h3>Saved in database</h3><div class="db" id="db2">—</div><div class="status" id="s2"></div></div>
+    </div>
+    <div class="callout blue"><b>Why:</b> his tell — 「ページを更新したら更に消えました」 — proves the database never got the new stop. The constant reorder (Bug 1) fires autosave over and over against a list that keeps rearranging, so the insert gets dropped; refresh then loads the old saved state and his work is gone. He tried 4× because each time it looked added, then reverted.</p></div>
+  </div>
+
+  <!-- FIX -->
+  <h2 style="color:var(--green)"><span class="n" style="background:var(--green)">✓</span>What the fix does</h2>
+  <div class="panel">
+    <div class="callout green">
+      <b>Fix 1 (root):</b> stop <code>resortSlots</code> from sorting by clock time — keep the planner's order, only re-pin the hotel bookends (like the rest of the engine already does). The stop stays where he put it; no flip; no reorder thrash.<br><br>
+      <b>Fix 2:</b> with the thrash gone, the new stop's insert lands cleanly; plus a save-on-refresh/close so nothing is lost in the 1.5s window. His addition sticks, and he can submit.
+    </div>
+    <div class="btns">
+      <button class="add" style="background:var(--green);border-color:var(--green)" onclick="fixedDemo()">▶ Show the fixed behaviour</button>
+      <button class="ghost" onclick="resetFix()">reset</button>
+    </div>
+    <div class="day" id="dayfix"></div>
+    <div class="status" id="sfix"></div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+// base day: 4 stops + hotel bookend, nearly-full evening
+function baseDay(){ return [
+  {t:'16:30', nm:'原爆ドーム'},
+  {t:'18:00', nm:'夕食 · お好み村'},
+  {t:'20:30', nm:'日本酒バル KATOYA'},
+  {t:'21:10', nm:'🌙 シェラトン広島に戻る', locked:true},
+]}
+function draw(el, slots, opts={}){
+  el.innerHTML = slots.map(s=>{
+    let cls='slot'+(s.locked?' locked':'')+(s._new?' newstop':'')+(s._flip?' flipped':'')
+    let tag=s._new?'<span class="tag new">追加</span>':s._flip?'<span class="tag flip">flipped</span>':''
+    return `<div class="${cls}"><span class="t">${s.t}</span><span class="nm">${s.nm}${tag}</span></div>`
+  }).join('')
+}
+// ── BUG 1 ──
+let d1
+function resetB1(){ d1=baseDay(); draw($('day1'),d1); $('s1').textContent='' }
+function addStop(){
+  d1=baseDay()
+  // he adds it intending it LAST (before hotel), auto-time 20:50
+  d1.splice(3,0,{t:'20:50', nm:'台屋の鼻', _new:true})
+  draw($('day1'),d1)
+  $('s1').className='status warn'; $('s1').textContent='Added as the last spot (20:50). Now resortSlots runs…'
+  setTimeout(()=>{
+    // resortSlots sorts by time → 20:50 goes ABOVE 21:10 hotel but BELOW 20:30 KATOYA... flip
+    d1.sort((a,b)=>a.t.localeCompare(b.t))
+    d1.forEach(s=>{ if(s._new){s._flip=true;s._new=false} })
+    draw($('day1'),d1)
+    $('s1').className='status bad'; $('s1').textContent='✕ resortSlots re-sorted by clock time — the new stop jumped position. Order flipped ≠ what he arranged.'
+  }, 900)
+}
+// ── BUG 2 ──
+let d2, db2
+function resetB2(){ d2=baseDay(); db2=baseDay(); draw($('day2'),d2); renderDb(); $('s2').textContent='' }
+function renderDb(){ $('db2').innerHTML = db2.map(s=>`<div>${s.t} ${s.nm}</div>`).join('') }
+function addStop2(){
+  d2.splice(3,0,{t:'20:50', nm:'台屋の鼻', _new:true}); draw($('day2'),d2)
+  $('s2').className='status warn'; $('s2').textContent='On screen now. Autosave racing the reorder thrash… (not saved yet)'
+  // NOTE: db2 is intentionally NOT updated — simulating the dropped insert
+}
+function refresh2(){
+  d2 = db2.map(s=>({...s})); draw($('day2'),d2)  // reload from DB (old state)
+  $('s2').className='status bad'; $('s2').textContent='✕ Refreshed → loaded from DB → 台屋の鼻 is gone. The insert never landed. (「更新したら消えました」)'
+}
+// ── FIX ──
+let dfix
+function resetFix(){ dfix=baseDay(); draw($('dayfix'),dfix); $('sfix').textContent='' }
+function fixedDemo(){
+  dfix=baseDay()
+  dfix.splice(3,0,{t:'20:50', nm:'台屋の鼻', _new:true})
+  draw($('dayfix'),dfix)
+  $('sfix').className='status warn'; $('sfix').textContent='Added before the hotel…'
+  setTimeout(()=>{
+    // fixed: NO time-sort. stays where placed; bookend stays last. insert persists.
+    dfix.forEach(s=>{ if(s._new){s._new=false} })
+    draw($('dayfix'),dfix)
+    $('sfix').className='status good'; $('sfix').textContent='✓ Stays exactly where he put it (before the hotel). No flip. Saved. He can submit.'
+  }, 900)
+}
+resetB1(); resetB2(); resetFix()
+</script>
+</body>
+</html>

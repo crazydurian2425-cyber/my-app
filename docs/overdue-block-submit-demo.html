@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overdue set → submit blocked → support decides</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --amber:#b87333; --amberbg:#fbeede; --line:#e6e0d4; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:560px;margin:0 auto}
+  h1{font-size:18px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .card{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+  .head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);background:#fafaf7}
+  .head .t{font-weight:700}
+  .badge{margin-left:auto;font-size:11px;font-weight:700;border-radius:20px;padding:3px 11px}
+  .badge.ok{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .badge.over{background:var(--red);color:#fff}
+  .body{padding:16px}
+  .count{font-size:13px;font-weight:600;border-radius:9px;padding:9px 12px;margin-bottom:14px;text-align:center}
+  .count.warn{background:var(--amberbg);color:#7a4a14;border:1px solid #e3b878}
+  .count.dead{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .submit{width:100%;padding:13px;border-radius:10px;border:none;font-size:15px;font-weight:700;cursor:pointer}
+  .submit.on{background:var(--green);color:#fff}
+  .submit.off{background:#e7e3da;color:var(--ink3);cursor:not-allowed}
+  .msg{margin-top:12px;font-size:13px;line-height:1.55;border-radius:10px;padding:11px 13px;display:none}
+  .msg.show{display:block}
+  .msg.support{background:var(--amberbg);border:1px solid #e3b878;color:#7a4a14}
+  .cs{margin-top:14px;border:1px dashed var(--border-med,#cbbfa6);border-radius:12px;padding:13px;background:#fbfaf7;display:none}
+  .cs.show{display:block}
+  .cs h3{margin:0 0 4px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2)}
+  .cs p{margin:0 0 10px;font-size:12.5px;color:var(--ink2)}
+  .cs .row{display:flex;gap:8px}
+  .cs button{flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer}
+  .cs .ext{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .cs .new{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .outcome{margin-top:12px;font-size:13px;font-weight:600;padding:10px 12px;border-radius:9px;display:none}
+  .outcome.show{display:block}
+  .outcome.green{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .outcome.red{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .controls{margin:14px 0}
+  .controls button{padding:10px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;font-weight:600;cursor:pointer;font-size:13px}
+  .controls button.go{background:var(--ink);color:#fff;border:none}
+  .steps{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--ink2);line-height:1.7}
+  .steps b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Overdue set → submit blocked → support decides</h1>
+  <p class="lead">My suggestion, step by step. Press the buttons.</p>
+
+  <div class="controls">
+    <button class="go" id="passBtn" onclick="pass()">⏩ Deadline passes</button>
+    <button onclick="reset()">↺ reset</button>
+  </div>
+
+  <div class="card" id="card">
+    <div class="head"><span style="font-size:17px">📋</span><span class="t">Set 3 · Premium · Tokyo</span><span class="badge ok" id="badge">ACTIVE</span></div>
+    <div class="body">
+      <div class="count warn" id="count">⏳ Deadline: <b>6 hours left</b> — plenty of warning before it locks</div>
+      <button class="submit on" id="submit">Submit plan</button>
+      <div class="msg support" id="msg">🔒 <b>This set is overdue.</b> Submitting is locked and earnings stop here. Please contact support to continue or request a new set.</div>
+
+      <div class="cs" id="cs">
+        <h3>Support decides (a human, per case)</h3>
+        <p>Was the delay the planner's, or were they waiting on us?</p>
+        <div class="row">
+          <button class="ext" onclick="extend()">✅ Extend deadline (re‑open)</button>
+          <button class="new" onclick="newset()">🔄 New set (forfeit)</button>
+        </div>
+      </div>
+      <div class="outcome" id="outcome"></div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <b>The rule in 3 lines:</b><br>
+    1. <b>Before the deadline</b> → a countdown warns them; they submit normally.<br>
+    2. <b>Deadline passes</b> → <b>submit locks</b>, earnings stop, message says "contact support."<br>
+    3. <b>Support chooses</b> → <b>extend</b> (their fault was waiting on us) or <b>new set</b> (forfeit earnings + bond). No silent forfeit, no surprise.
+  </div>
+</div>
+
+<script>
+function pass(){
+  document.getElementById('badge').className='badge over'; document.getElementById('badge').textContent='OVERTIME'
+  const c=document.getElementById('count'); c.className='count dead'; c.innerHTML='⛔ Deadline <b>passed</b> — set is OVERTIME'
+  const s=document.getElementById('submit'); s.className='submit off'; s.textContent='🔒 Submit locked (overdue)'; s.disabled=true
+  document.getElementById('msg').classList.add('show')
+  document.getElementById('cs').classList.add('show')
+  document.getElementById('outcome').classList.remove('show')
+  document.getElementById('passBtn').disabled=true
+}
+function extend(){
+  const o=document.getElementById('outcome'); o.className='outcome green show'
+  o.textContent='✅ Extended. Set re‑opens, submit unlocks, earnings + bond kept. (Fair when the planner was waiting on us.)'
+  reactivate()
+}
+function newset(){
+  const o=document.getElementById('outcome'); o.className='outcome red show'
+  o.textContent='🔄 New set requested. The overdue set stays OVERTIME, its earnings + bond are forfeited, and a fresh set is assigned by support.'
+}
+function reactivate(){
+  document.getElementById('badge').className='badge ok'; document.getElementById('badge').textContent='ACTIVE'
+  const c=document.getElementById('count'); c.className='count warn'; c.innerHTML='⏳ Deadline extended — back in progress'
+  const s=document.getElementById('submit'); s.className='submit on'; s.textContent='Submit plan'; s.disabled=false
+  document.getElementById('msg').classList.remove('show')
+  document.getElementById('cs').classList.remove('show')
+}
+function reset(){
+  document.getElementById('badge').className='badge ok'; document.getElementById('badge').textContent='ACTIVE'
+  const c=document.getElementById('count'); c.className='count warn'; c.innerHTML='⏳ Deadline: <b>6 hours left</b> — plenty of warning before it locks'
+  const s=document.getElementById('submit'); s.className='submit on'; s.textContent='Submit plan'; s.disabled=false
+  document.getElementById('msg').classList.remove('show')
+  document.getElementById('cs').classList.remove('show')
+  document.getElementById('outcome').classList.remove('show')
+  document.getElementById('passBtn').disabled=false
+}
+</script>
+</body>
+</html>

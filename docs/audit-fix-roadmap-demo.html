@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audit fix roadmap — risk, before/after, bug impact (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.7 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:26px 18px}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:23px;margin:0 0 5px}
+  .lede{color:var(--ink2);font-size:13.5px;margin:0 0 18px}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;font-size:11px;margin-bottom:18px}
+  .rk{font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;white-space:nowrap}
+  .rk.vlow{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .rk.low{background:#eef4e2;color:#5d7a2c;border:1px solid #c3d69a}
+  .rk.med{background:var(--amberbg);color:var(--amber);border:1px solid #e5c184}
+  .rk.hi{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0;margin-bottom:18px;overflow:hidden}
+  .card > .head{padding:15px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);cursor:pointer;background:#fbf8f1}
+  .card > .head:hover{background:#f7f2e8}
+  .card .no{flex-shrink:0;width:28px;height:28px;border-radius:8px;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+  .card .ttl{font-size:16px;font-weight:800;flex:1;min-width:180px}
+  .card .concern{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--bluebg);color:var(--blue);border:1px solid #bcd4e2}
+  .card .chev{font-size:13px;color:var(--ink3);transition:transform .2s}
+  .card.open .chev{transform:rotate(90deg)}
+  .body{display:none;padding:16px 20px}
+  .card.open .body{display:block}
+
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+  @media(max-width:640px){.ba{grid-template-columns:1fr}}
+  .b,.a{border-radius:11px;padding:11px 13px;font-size:13px}
+  .b{background:var(--redbg);border:1px solid var(--redbd)}
+  .a{background:var(--greenbg);border:1px solid var(--greenbd)}
+  .b .h,.a .h{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+  .b .h{color:var(--red)} .a .h{color:var(--green)}
+
+  .qa{display:grid;grid-template-columns:150px 1fr;gap:5px 14px;font-size:13.5px;margin-top:10px}
+  .qa .q{color:var(--ink3);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:800;padding-top:2px}
+  .qa .a2 b{color:var(--ink)}
+  code{background:#f1ece0;border-radius:4px;padding:1px 5px;font-size:11.5px}
+  .safe{background:var(--greenbg);border:1px solid var(--greenbd);border-radius:9px;padding:9px 12px;font-size:12.5px;margin-top:10px}
+  .safe b{color:var(--green)}
+  .hint{font-size:12px;color:var(--ink3);margin:2px 0 16px}
+  .foot{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;font-size:13px;line-height:1.7;margin-top:8px}
+  .foot b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Audit fix roadmap — what each fix is, the risk, before/after</h1>
+  <p class="lede">One card per recommended fix. Each answers: why it exists, before → after, <b>can it cause a bug (worst case)</b>, does it touch platform logic. Nothing here is applied — this is for your sign-off.</p>
+  <p class="hint">▸ Click any card to expand.</p>
+  <div class="legend">
+    <span class="rk vlow">VERY LOW risk</span><span class="rk low">LOW</span><span class="rk med">MEDIUM-LOW</span><span class="rk hi">HIGH severity bug (fix is low-risk)</span>
+  </div>
+
+  <!-- 1 POLLER DIET -->
+  <div class="card" onclick="tog(this)">
+    <div class="head"><span class="no">1</span><span class="ttl">Poller diet — biggest smoothness + DB win</span><span class="concern">SMOOTHER · API↓</span><span class="rk low">LOW</span><span class="chev">▶</span></div>
+    <div class="body" onclick="event.stopPropagation()">
+      <div class="ba">
+        <div class="b"><div class="h">Before</div>Every 60s (10s while a bond waits) the dashboard re-asks the server <b>~16 questions</b> and considers rebuilding — even when nothing changed.</div>
+        <div class="a"><div class="h">After</div>Every 60s it asks <b>ONE</b> question: "has anything changed since last time?" Only on YES does the full 16-query refresh run.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Why it exists</div><div class="a2">Simplest way to stay live: just re-fetch everything on a timer. Fine when small; wasteful at scale.</div>
+        <div class="q">Can it bug?</div><div class="a2">Worst case: the "changed?" probe misses a change type it doesn't check → that update waits for the next real trigger (realtime usually beats the timer anyway). No wrong data, no loss.</div>
+        <div class="q">Touches / never</div><div class="a2">Touches: how often the full refresh runs. Never: what's fetched, saved, or shown.</div>
+      </div>
+      <div class="safe"><b>Impact:</b> ~16 idle queries/min → ~1. Large Supabase-traffic cut across all planners. Live updates unchanged (realtime still fires within 0.4s).</div>
+    </div>
+  </div>
+
+  <!-- 2 DATA SAFETY -->
+  <div class="card" onclick="tog(this)">
+    <div class="head"><span class="no">2</span><span class="ttl">Data-safety bundle — the highest-severity finding</span><span class="concern">CORRECTNESS</span><span class="rk hi">HIGH bug · LOW-risk fix</span><span class="chev">▶</span></div>
+    <div class="body" onclick="event.stopPropagation()">
+      <p style="font-size:13px;color:var(--ink2);margin:0 0 8px">Three ways a planner can silently lose work (likely what erased 寺口さん's Day 1). This is not a smoothness item — it's the most important one.</p>
+      <div class="ba">
+        <div class="b"><div class="h">Before</div>① A stale open tab/device can overwrite newer work (conflict guard is <code>disabled</code>). ② Submit deletes all rows then re-inserts — a failed insert loses them. ③ A stop with a blank title at save time is dropped.</div>
+        <div class="a"><div class="h">After</div>① Re-enable a <b>silent</b> guard: if the DB changed under us, merge/skip instead of overwrite. ② Insert-first, delete-old-after (already the autosave pattern — apply to submit too). ③ Keep blank-title rows, mark them incomplete, never delete.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Why it exists</div><div class="a2">The guard was disabled because an <i>old</i> version wrongly nagged single-device planners and discarded work on "OK". The new form is silent + safe.</div>
+        <div class="q">Can it bug?</div><div class="a2">The risk is a too-aggressive guard blocking a legit save. Mitigation: fail-OPEN (never block on the guard's own error) + heavy testing of the multi-tab case before ship.</div>
+        <div class="q">Touches / never</div><div class="a2">Touches: the save/submit write path (carefully). This is the one bundle that DOES touch saving — so it ships alone, most-tested, with a DB backup checked first.</div>
+      </div>
+      <div class="safe"><b>Note:</b> higher care than the others because it touches writes — but it PREVENTS loss, and every path is fail-safe (on doubt, keep data).</div>
+    </div>
+  </div>
+
+  <!-- 3 C first load -->
+  <div class="card" onclick="tog(this)">
+    <div class="head"><span class="no">3</span><span class="ttl">C — dashboard opens fast</span><span class="concern">FREEZE↓</span><span class="rk med">MEDIUM-LOW</span><span class="chev">▶</span></div>
+    <div class="body" onclick="event.stopPropagation()">
+      <div class="ba">
+        <div class="b"><div class="h">Before</div>Opening the dashboard asks ~10 questions <b>one at a time</b> before anything appears → the 2–6s frozen "loading" (worst on phones/5G).</div>
+        <div class="a"><div class="h">After</div>Independent questions asked <b>together</b>; the dependent chain (assignment→set→plans) keeps its order. First paint under ~1s.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Why it exists</div><div class="a2">Queries were added one-by-one over months; each copied "wait for the previous". The waterfall just accumulated.</div>
+        <div class="q">Can it bug?</div><div class="a2">The project's one real risk: if I misjudge a hidden dependency, one section could show empty/wrong until the next refresh. Ships LAST, alone, instantly revertible.</div>
+        <div class="q">Touches / never</div><div class="a2">Touches: the ORDER of independent reads. Never: their content, results, or any write.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 Stage 2 -->
+  <div class="card" onclick="tog(this)">
+    <div class="head"><span class="no">4</span><span class="ttl">Stage 2 — editor opens without freezing</span><span class="concern">FREEZE↓</span><span class="rk med">MEDIUM</span><span class="chev">▶</span></div>
+    <div class="body" onclick="event.stopPropagation()">
+      <div class="ba">
+        <div class="b"><div class="h">Before</div>Opening a heavy plan builds every day in one blocking burst → the editor freezes for seconds on phones.</div>
+        <div class="a"><div class="h">After</div>Render the day the planner is looking at first, build the rest between frames so the screen stays alive.</div>
+      </div>
+      <div class="qa">
+        <div class="q">Why it exists</div><div class="a2">Simplest render: do it all at once. Fine for a 2-day plan, heavy for a rich 5-day one.</div>
+        <div class="q">Can it bug?</div><div class="a2">The real danger: autosave firing while only part is built → could save a half plan. Mitigation (already designed): autosave stays SUPPRESSED until all days finish, plus the existing "never save an empty form" guards.</div>
+        <div class="q">Touches / never</div><div class="a2">Touches: plan-open render ordering + autosave suppression timing. Never: the computed schedule, stop order, or saved data (proven identical output in the perf demo).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 route map + quota -->
+  <div class="card" onclick="tog(this)">
+    <div class="head"><span class="no">5</span><span class="ttl">Route-map lazy render + quota caps</span><span class="concern">API↓</span><span class="rk vlow">VERY LOW</span><span class="chev">▶</span></div>
+    <div class="body" onclick="event.stopPropagation()">
+      <div class="ba">
+        <div class="b"><div class="h">Before</div>The interactive route map (Google "Dynamic Maps", billed per map shown) can render without the planner asking. No hard ceiling on the Google bill.</div>
+        <div class="a"><div class="h">After</div>Build the map only when the planner taps "ルート地図を表示". Plus: set daily quota caps in Google Cloud Console (your click).</div>
+      </div>
+      <div class="qa">
+        <div class="q">Can it bug?</div><div class="a2">Worst case: planner taps and the map takes an extra moment to appear (it now loads on demand). No data impact.</div>
+        <div class="q">Touches / never</div><div class="a2">Touches: WHEN the map is built. Never: the route data, distances, or anything saved.</div>
+      </div>
+      <div class="safe"><b>Quota caps</b> are the guarantee no future bug can ever spike the bill again — 5 minutes in your console, no code.</div>
+    </div>
+  </div>
+
+  <!-- 6 estimates + seed + polish -->
+  <div class="card" onclick="tog(this)">
+    <div class="head"><span class="no">6</span><span class="ttl">Hygiene — estimate formulas, 6 seed rows, A+B polish</span><span class="concern">CORRECTNESS</span><span class="rk low">LOW</span><span class="chev">▶</span></div>
+    <div class="body" onclick="event.stopPropagation()">
+      <div class="qa">
+        <div class="q">Shinkansen time</div><div class="a2"><b>Before:</b> ~1.8× too slow (Tokyo→Kyoto shows ~4h vs real 2h15). <b>After:</b> use real shinkansen speed. Planner override still wins. Formula-only, no API.</div>
+        <div class="q">Transit fare cap</div><div class="a2"><b>Before:</b> capped at ¥520 (a 100km leg shows ¥520 vs real ~¥3,600). <b>After:</b> distance-tiered fare. Default only; editable.</div>
+        <div class="q">6 seed rows</div><div class="a2">4 "ferry from Hiroshima Station" + 2 "shinkansen from Kawaguchiko" → corrected to real boarding points. One SQL, 6 rows.</div>
+        <div class="q">A+B polish</div><div class="a2">3 minors from yesterday's audit (one mixed writer, pending-payments memo, watchdog token). ~15 lines, VERY LOW risk.</div>
+        <div class="q">Can any bug?</div><div class="a2">All display/estimate/data-text only. Worst case: an estimate reads slightly different (still overridable). None touch saving or money math.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>What NONE of these touch:</b> wallet/payout math · bond logic · Google API result correctness · the time-chain computation. <b>The only bundle that touches saving is #2 (data-safety)</b> — and it exists specifically to PREVENT loss, ships alone, most-tested, DB backup checked first.<br><br>
+    <b>Suggested order:</b> #1 poller diet (big win, low risk) → #2 data-safety (highest severity) → #3 C (first-open freeze) → #4 Stage 2 (editor freeze) → #5 route map + quota → #6 hygiene. Each is a separate commit, adversarially reviewed, deploy-verified, and revertible with one phrase.
+  </div>
+</div>
+<script>
+function tog(c){ c.classList.toggle('open') }
+</script>
+</body>
+</html>

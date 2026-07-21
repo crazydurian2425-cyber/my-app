@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal-note submit gate — demo (Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; --red:#c0392b; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI','Noto Sans JP',sans-serif;line-height:1.6;padding:0 0 60px}
+  .wrap{max-width:760px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,#2c8079,#1f6f66);color:#fff;padding:24px 0;margin-bottom:22px}
+  header.top h1{margin:0 0 4px;font-size:21px}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  h2{font-size:13.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gold);margin:28px 0 10px}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:10px 13px;margin:10px 0}
+  .toggle{display:inline-flex;border:1px solid var(--bd);border-radius:99px;overflow:hidden;margin:6px 0 14px}
+  .toggle button{border:0;background:#fff;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
+  .toggle button.on{background:var(--green);color:#fff}
+  .case{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:10px}
+  .case .h{font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+  .warnbox{background:#fdf3ee;border:1px solid rgba(192,57,43,.28);border-left:4px solid var(--red);border-radius:10px;padding:10px 14px;font-size:13.5px;color:#a3321f;margin-top:6px}
+  .okbox{background:#eef6f0;border:1px solid rgba(44,128,121,.32);border-left:4px solid var(--green);border-radius:10px;padding:10px 14px;font-size:13.5px;color:#1f6f66;margin-top:6px}
+  .qbox{background:#fff7e8;border:1px solid #e7cf9a;border-radius:12px;padding:14px 16px;margin-top:8px}
+  .qbox b{color:#8a5a14}
+  .opt{font-size:13.5px;padding:4px 0}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">DEMO ONLY · not deployed</span>
+  <h1>Make the traveler message required</h1>
+  <p>A plan can't be submitted until the planner writes a real note to the traveler. Below: how it behaves + one choice for you.</p>
+</div></header>
+
+<div class="wrap">
+
+  <h2>1 · The rule</h2>
+  <p class="note">On Submit, the <b>「{旅行者}さんへのメッセージ」 / "Personal note to traveler"</b> box must contain real text. The grey placeholder suggestion does <b>not</b> count — only what the planner actually types. Checked once at submit (it's a Review-step field), alongside the itinerary rules.</p>
+
+  <h2>2 · What the planner sees (proposed: minimum ~10 characters)</h2>
+  <div class="toggle">
+    <button id="b-en" class="on" onclick="setLang('en')">English</button>
+    <button id="b-ja" onclick="setLang('ja')">日本語</button>
+  </div>
+  <div class="case">
+    <div class="h">Box is empty</div>
+    <div class="warnbox" id="c1"></div>
+  </div>
+  <div class="case">
+    <div class="h">Too short (e.g. "hi")</div>
+    <div class="warnbox" id="c2"></div>
+  </div>
+  <div class="case">
+    <div class="h">A real note → passes ✓</div>
+    <div class="okbox" id="c3"></div>
+  </div>
+
+  <h2>3 · One choice for you</h2>
+  <div class="qbox">
+    <p><b>How strict?</b></p>
+    <div class="opt"><b>(A) Minimum ~10 characters</b> — blocks blanks and one-word stubs like "hi"/"ok", but still very light. <i>(my recommendation)</i></div>
+    <div class="opt"><b>(B) Any non-empty text</b> — even a single character passes (just can't be blank).</div>
+    <div class="opt"><b>(C) A different minimum</b> — tell me the number.</div>
+  </div>
+
+  <p class="note">Either way the message is the same idea — just the threshold differs. Tell me <b>A / B / C</b> and "go", and I'll implement it.</p>
+</div>
+
+<script>
+const D = {
+  en: {
+    c1: '⚠ Add a personal note to Álvaro before submitting.',
+    c2: '⚠ Your note to Álvaro is a little short — write at least a sentence (10+ characters) before submitting.',
+    c3: '✓ "Álvaro, for your last day in Miyajima — have a safe trip home and thank you…" → submits fine.'
+  },
+  ja: {
+    c1: '⚠ 提出前に Álvaro さんへのメッセージを入力してください。',
+    c2: '⚠ Álvaro さんへのメッセージが少し短いです — 提出前にひとこと（10文字以上）書いてください。',
+    c3: '✓ 「Álvaroさん、Miyajimaでの最後の滞在に向けて — お気をつけてお帰りください…」→ 問題なく提出できます。'
+  }
+};
+function setLang(x){
+  document.getElementById('b-en').classList.toggle('on', x==='en');
+  document.getElementById('b-ja').classList.toggle('on', x==='ja');
+  const s = D[x];
+  document.getElementById('c1').textContent = s.c1;
+  document.getElementById('c2').textContent = s.c2;
+  document.getElementById('c3').textContent = s.c3;
+}
+setLang('en');
+</script>
+</body>
+</html>

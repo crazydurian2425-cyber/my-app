@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Itinerary editor freezes — diagnosis, fix &amp; risk (Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; --green-d:#1f6f66; --red:#c0392b; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI','Noto Sans JP',sans-serif;line-height:1.6;padding:0 0 70px}
+  .wrap{max-width:860px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:26px 0;margin-bottom:24px}
+  header.top .wrap{display:block}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  header.top h1{margin:0 0 6px;font-size:22px;line-height:1.3}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  h2{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:34px 0 12px}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff;font-size:11px;margin-right:8px;vertical-align:middle}
+  p.lead{font-size:14px;color:var(--ink2);margin:0 0 12px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin:12px 0}
+  .quote{background:#fbf6ea;border-left:4px solid var(--gold);border-radius:0 10px 10px 0;padding:12px 15px;font-size:13.5px;color:var(--ink2);margin:10px 0}
+  .quote b{color:var(--ink)}
+  code{background:#f2ece0;border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:12.5px;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin:10px 0}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:top}
+  th{background:#f6efe0;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:0}
+  .yes{color:var(--red);font-weight:700}
+  .no{color:var(--green-d);font-weight:700}
+  .pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+  .pill.none{background:#eef6f0;color:var(--green-d);border:1px solid rgba(44,128,121,.3)}
+  .pill.low{background:#eef6f0;color:var(--green-d);border:1px solid rgba(44,128,121,.3)}
+  .pill.med{background:#fdf6e9;color:#9e7e3c;border:1px solid rgba(158,126,60,.35)}
+  .pill.high{background:#fbecea;color:var(--red);border:1px solid rgba(192,57,43,.3)}
+  ul.check{list-style:none;padding:0;margin:8px 0}
+  ul.check li{padding:6px 0 6px 26px;position:relative;font-size:13.5px}
+  ul.check li::before{content:"✓";position:absolute;left:0;top:6px;color:var(--green-d);font-weight:800}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:11px 14px;margin:12px 0}
+  /* ── interactive sim ── */
+  .sim{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  @media(max-width:680px){.sim{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;position:relative}
+  .panel.bad{border-color:rgba(192,57,43,.35)}
+  .panel.good{border-color:rgba(44,128,121,.4)}
+  .panel h4{margin:0 0 2px;font-size:13.5px;display:flex;align-items:center;gap:7px}
+  .dot{width:9px;height:9px;border-radius:50%}
+  .dot.r{background:var(--red)} .dot.g{background:var(--green)}
+  .panel .cap{font-size:11px;color:var(--ink3);margin:0 0 12px}
+  .spin{width:26px;height:26px;border-radius:50%;border:3px solid #e7dfce;border-top-color:var(--green);animation:sp .8s linear infinite;display:inline-block;vertical-align:middle}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .meter{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+  .meter .lbl{font-size:11.5px;color:var(--ink3)}
+  .liveinput{width:100%;border:1px solid var(--bd);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;margin:0 0 10px;background:#fff}
+  .liveinput:focus{outline:none;border-color:var(--green)}
+  .runbtn{width:100%;border:0;border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;color:#fff}
+  .runbtn.bad{background:var(--red)} .runbtn.good{background:var(--green-d)}
+  .runbtn:disabled{opacity:.5;cursor:default}
+  .stats{margin-top:11px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{background:#faf7f0;border:1px solid var(--bd);border-radius:9px;padding:8px 10px}
+  .stat .k{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)}
+  .stat .v{font-size:15px;font-weight:700;margin-top:2px}
+  .stat .v.warn{color:var(--red)} .stat .v.ok{color:var(--green-d)}
+  .result{margin-top:11px;font-size:12.5px;background:#eef6f0;border:1px solid rgba(44,128,121,.25);border-radius:9px;padding:9px 11px;color:var(--green-d);font-weight:600;min-height:20px}
+  .result.pending{background:#faf7f0;border-color:var(--bd);color:var(--ink3);font-weight:500}
+  .verdict{margin-top:14px;text-align:center;font-size:13.5px;font-weight:600;color:var(--ink2);min-height:20px}
+  .disclaim{font-size:11.5px;color:var(--ink3);font-style:italic;margin-top:10px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">Performance · Diagnosis + Fix + Risk · nothing shipped yet</span>
+  <h1>“Slow to react, and the screen freezes right away”</h1>
+  <p>Why the itinerary editor stalls on phones — and exactly what each proposed fix touches.</p>
+</div></header>
+
+<div class="wrap">
+
+  <div class="quote">
+    <b>Planner feedback:</b> 「とにもかくにもタスクに対する反応が遅く、すぐ画面が固まります。」<br>
+    <span style="font-size:12.5px">“Whatever I do, it's slow to react to my actions and the screen freezes almost immediately.”</span>
+  </div>
+
+  <h2><span class="n">1</span>What's actually happening</h2>
+  <p class="lead">Every time a stop is edited — change a time, a duration, pick a venue, add or remove a slot — the editor re-runs one big <b>synchronous</b> routine, <code>refreshDayDistances()</code>, that re-sorts, re-times, and re-renders the whole day. On plan open, <code>refreshAllDistances()</code> does that for <b>every day at once</b>. On a phone with a multi-day plan, that work runs on the main thread with nothing else able to paint — so the tab visibly freezes.</p>
+  <div class="note">The heavy part is <b>synchronous DOM + time-chain work</b>, not the network. Google route lookups are already cached and fire in the background — they aren't the freeze.</div>
+
+  <h2><span class="n">2</span>Feel the difference</h2>
+  <p class="lead">Same amount of work, two ways of running it. <b>Type in the box</b> and watch the spinner while each one loads. Left = how it behaves today. Right = the proposed “chunk the work + let the screen breathe” approach. Both print the <b>identical</b> computed schedule at the end — that's the point: the fix changes <i>timing</i>, not <i>results</i>.</p>
+
+  <div class="sim">
+    <!-- NOW -->
+    <div class="panel bad">
+      <h4><span class="dot r"></span>Now — one synchronous burst</h4>
+      <p class="cap">Runs the whole refresh in one go, blocking the thread.</p>
+      <div class="meter"><span class="spin" id="spin-now"></span><span class="lbl" id="lbl-now">spinner should stay smooth…</span></div>
+      <input class="liveinput" id="in-now" placeholder="Try typing here while it loads →">
+      <button class="runbtn bad" id="btn-now" onclick="runNow()">▶ Open plan (current behaviour)</button>
+      <div class="stats">
+        <div class="stat"><div class="k">UI frames drawn</div><div class="v warn" id="fr-now">—</div></div>
+        <div class="stat"><div class="k">Frozen for</div><div class="v warn" id="ms-now">—</div></div>
+      </div>
+      <div class="result pending" id="res-now">Computed schedule will show here.</div>
+    </div>
+    <!-- FIX -->
+    <div class="panel good">
+      <h4><span class="dot g"></span>Proposed — chunked, yields to the screen</h4>
+      <p class="cap">Same work, sliced across frames so the page stays alive.</p>
+      <div class="meter"><span class="spin" id="spin-fix"></span><span class="lbl" id="lbl-fix">spinner should stay smooth…</span></div>
+      <input class="liveinput" id="in-fix" placeholder="Try typing here while it loads →">
+      <button class="runbtn good" id="btn-fix" onclick="runFix()">▶ Open plan (proposed behaviour)</button>
+      <div class="stats">
+        <div class="stat"><div class="k">UI frames drawn</div><div class="v ok" id="fr-fix">—</div></div>
+        <div class="stat"><div class="k">Total load</div><div class="v ok" id="ms-fix">—</div></div>
+      </div>
+      <div class="result pending" id="res-fix">Computed schedule will show here.</div>
+    </div>
+  </div>
+  <div class="verdict" id="verdict"></div>
+  <p class="disclaim">Simulation only — it reproduces the freeze mechanic (blocking vs. yielding) in the browser. Real numbers depend on the plan size and device.</p>
+
+  <h2><span class="n">3</span>Each proposed fix — what it touches &amp; the risk</h2>
+  <table>
+    <tr><th>Change</th><th>What it does</th><th>Touches platform logic?</th><th>Risk</th><th>How it's kept safe</th></tr>
+    <tr>
+      <td><b>A.</b> Gate debug logs</td>
+      <td>Put the per-keystroke <code>console.log</code>s behind a debug flag.</td>
+      <td class="no">No</td>
+      <td><span class="pill none">None</span></td>
+      <td>Logs have zero functional effect; flag lets you switch them back on.</td>
+    </tr>
+    <tr>
+      <td><b>B.</b> De-dupe autosave wiring</td>
+      <td>Remove inline <code>oninput="autoSaveDraft()"</code> that the modal-wide listener already covers.</td>
+      <td class="no">Barely</td>
+      <td><span class="pill low">Low · low payoff</span></td>
+      <td>Only safe if every such field sits inside <code>#modal-submit</code>. Verify first; skip if unsure — the win is tiny.</td>
+    </tr>
+    <tr>
+      <td><b>C.</b> Chunk plan-load refresh</td>
+      <td>Render the visible day first, process the rest day-by-day across frames.</td>
+      <td class="yes">Yes — load order</td>
+      <td><span class="pill med">Medium</span></td>
+      <td>Biggest win. Autosave stays suppressed until all days finish, so it never saves a half-built plan.</td>
+    </tr>
+    <tr>
+      <td><b>D.</b> Coalesce per-edit refresh</td>
+      <td>Stop one action from running the full refresh several times over.</td>
+      <td class="yes">Yes — timing engine</td>
+      <td><span class="pill high">Med–High</span></td>
+      <td>Kept <b>synchronous</b> per action (never async) so times/order are settled before autosave reads them. Collapse duplicate calls only.</td>
+    </tr>
+    <tr>
+      <td><b>E.</b> Drop the 2nd transport pass</td>
+      <td>Avoid re-running <code>refreshTransportSlot</code> twice per refresh.</td>
+      <td class="yes">Yes — hotel labels</td>
+      <td><span class="pill med">Medium · low payoff</span></td>
+      <td>The 2nd pass re-labels back-to-hotel legs after anchors re-attach. <b>Not recommended</b> without deeper work.</td>
+    </tr>
+  </table>
+
+  <h2><span class="n">4</span>What will NOT change (the guarantees)</h2>
+  <ul class="check">
+    <li>The <b>computed schedule is identical</b> — same stop order, same times, same transports. The fixes change <i>when</i> work runs, not <i>what</i> it produces (the demo above proves this).</li>
+    <li>Stops <b>keep the planner's manual order</b> — no re-sorting by clock time is introduced.</li>
+    <li><b>Autosave still fires on every mutation</b>, and never persists a partially-processed plan (that's the core safety rule of change C).</li>
+    <li>No database, schema, API, or payout logic is touched — this is purely front-end scheduling of existing work.</li>
+  </ul>
+
+  <div class="note"><b>Suggested rollout:</b> ship <b>A</b> now (zero risk), then <b>C</b> with careful testing (the real fix for the freeze), and treat <b>D</b> as a follow-up. <b>B</b> and <b>E</b> are optional / not worth the risk. Nothing here is applied yet — this is for your sign-off first.</div>
+
+</div>
+
+<script>
+  // Deterministic "schedule" — computed identically on both sides. Proves the
+  // fix changes timing, not output.
+  var DAYS = 5, STOPS = 6;
+  function computeSchedule(){
+    var mins = 9*60;                       // day starts 09:00
+    for(var d=1; d<=DAYS; d++){
+      for(var s=0; s<STOPS; s++){ mins += 45 + 15*((d+s)%3); }
+    }
+    return mins;                           // final end-of-day minute
+  }
+  function fmt(mins){
+    var days = Math.floor(mins/(24*60)), rem = mins%(24*60);
+    var h = Math.floor(rem/60), m = rem%60;
+    return DAYS+' days · '+STOPS+' stops each · last stop ends '
+      + String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')
+      + (days? ' (+'+days+'d)':'');
+  }
+
+  // Simulated cost of the refresh work.
+  var TOTAL_WORK_MS = 1200;                // ~how long the sync burst blocks
+  function busyWait(ms){
+    var end = performance.now() + ms;
+    while(performance.now() < end){ /* block the main thread */ }
+  }
+
+  // Frame ticker — counts how many frames the browser manages to paint while
+  // each side is "loading". Blocking work → ~0 frames. Chunked work → many.
+  var counting = {now:false, fix:false}, frames = {now:0, fix:0};
+  (function tick(){
+    if(counting.now) frames.now++;
+    if(counting.fix) frames.fix++;
+    requestAnimationFrame(tick);
+  })();
+
+  function setBusyLabels(side, on){
+    document.getElementById('lbl-'+side).textContent =
+      on ? '⏳ loading…' : 'done — spinner was ' + (side==='now' ? 'frozen' : 'smooth');
+  }
+
+  function runNow(){
+    var btn = document.getElementById('btn-now'); btn.disabled = true;
+    document.getElementById('res-now').className = 'result pending';
+    document.getElementById('res-now').textContent = 'Loading…';
+    setBusyLabels('now', true);
+    frames.now = 0; counting.now = true;
+    // Let one paint happen so "Loading…" shows, THEN block hard.
+    requestAnimationFrame(function(){
+      var t0 = performance.now();
+      // The whole refresh in one synchronous shot — nothing else can run.
+      busyWait(TOTAL_WORK_MS);
+      var result = computeSchedule();
+      var elapsed = Math.round(performance.now() - t0);
+      counting.now = false;
+      document.getElementById('fr-now').textContent = frames.now;
+      document.getElementById('ms-now').textContent = elapsed + ' ms';
+      document.getElementById('res-now').className = 'result';
+      document.getElementById('res-now').textContent = '✔ ' + fmt(result);
+      setBusyLabels('now', false);
+      btn.disabled = false;
+      updateVerdict();
+    });
+  }
+
+  function runFix(){
+    var btn = document.getElementById('btn-fix'); btn.disabled = true;
+    document.getElementById('res-fix').className = 'result pending';
+    document.getElementById('res-fix').textContent = 'Loading…';
+    setBusyLabels('fix', true);
+    frames.fix = 0; counting.fix = true;
+    var SLICE = 25, SLICES = Math.ceil(TOTAL_WORK_MS / SLICE);
+    var t0 = performance.now(), i = 0;
+    function step(){
+      busyWait(SLICE);                     // one small slice of the same work
+      i++;
+      if(i < SLICES){
+        setTimeout(step, 0);               // yield → browser paints, input works
+      } else {
+        var result = computeSchedule();    // identical result
+        var elapsed = Math.round(performance.now() - t0);
+        counting.fix = false;
+        document.getElementById('fr-fix').textContent = frames.fix;
+        document.getElementById('ms-fix').textContent = elapsed + ' ms';
+        document.getElementById('res-fix').className = 'result';
+        document.getElementById('res-fix').textContent = '✔ ' + fmt(result);
+        setBusyLabels('fix', false);
+        btn.disabled = false;
+        updateVerdict();
+      }
+    }
+    setTimeout(step, 0);
+  }
+
+  function updateVerdict(){
+    var rn = document.getElementById('res-now').textContent.replace('✔ ','');
+    var rf = document.getElementById('res-fix').textContent.replace('✔ ','');
+    var v = document.getElementById('verdict');
+    if(rn.indexOf('days')>-1 && rf.indexOf('days')>-1){
+      v.textContent = (rn === rf)
+        ? '✅ Same schedule both ways — the fix keeps output identical, only the freeze is gone.'
+        : '⚠ Outputs differ (they should not — check the sim).';
+    }
+  }
+</script>
+</body>
+</html>

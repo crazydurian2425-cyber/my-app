@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>銀行情報フィールド追加 — demo</title>
+<style>
+  :root{ --cream:#fbf6ec; --ink:#1f1c16; --ink2:#5a5247; --ink3:#9a9588; --green:#0f5240;
+         --line:#e7dcc8; --field:#fffdf8; --add:#fff4e0; --addbd:#e0a857; --addtxt:#b87320; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9e2d2;font:14px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:680px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 14px}
+  .banner{background:#fff;border:1px solid var(--line);border-left:4px solid var(--addbd);border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:18px}
+  .banner b{color:var(--addtxt)}
+  .card{background:var(--cream);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px}
+  .sec-h{font-size:11px;font-weight:700;color:var(--green);letter-spacing:.10em;text-transform:uppercase;margin-bottom:14px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  @media(max-width:560px){.row{grid-template-columns:1fr}}
+  .fg{position:relative}
+  .lbl{font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:5px;display:block}
+  .inp{width:100%;background:var(--field);border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-size:14px;color:var(--ink)}
+  .fg.new .inp{background:var(--add);border-color:var(--addbd)}
+  .fg.new .lbl{color:var(--addtxt);font-weight:700}
+  .pill{position:absolute;top:-8px;right:8px;background:var(--addbd);color:#fff;font-size:9.5px;font-weight:700;border-radius:20px;padding:1px 8px;letter-spacing:.04em}
+  .backend{background:#14110d;border:1px solid #2a241c;border-radius:10px;padding:14px 16px;color:#e8e2d6;font-size:13.5px;font-variant-numeric:tabular-nums}
+  .backend .hi{color:#ffce7a;font-weight:600}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;line-height:1.65}
+  .note b{color:var(--ink)}
+  code{background:#efe7d6;border-radius:4px;padding:1px 5px;font-size:12px}
+  .ok{color:var(--green);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>銀行振込フィールド追加 — 現行 → 追加後</h1>
+  <p class="lead">Two new fields, marked <b style="color:var(--addtxt)">NEW</b>. Everything else stays as today.</p>
+
+  <div class="banner">
+    <b>DEMO — nothing changed yet.</b> Adds <b>支店名</b> and <b>口座名義（漢字）</b> to the planner form + 2 new <b>nullable</b> DB columns. Existing planners are safe — their rows just stay blank for the new fields until they next save.
+  </div>
+
+  <!-- planner form -->
+  <div class="card">
+    <div class="sec-h">プランナー側：銀行振込 ・日本国内・¥</div>
+    <div class="row">
+      <div class="fg"><label class="lbl">金融機関名</label><input class="inp" value="三菱UFJ銀行" readonly></div>
+      <div class="fg new"><span class="pill">＋ NEW</span><label class="lbl">支店名</label><input class="inp" value="渋谷支店" readonly></div>
+    </div>
+    <div class="row">
+      <div class="fg"><label class="lbl">支店番号（支店コード）</label><input class="inp" value="469" readonly></div>
+      <div class="fg"><label class="lbl">預金種目</label><input class="inp" value="普通" readonly></div>
+    </div>
+    <div class="row">
+      <div class="fg"><label class="lbl">口座番号</label><input class="inp" value="6132104" readonly></div>
+      <div class="fg"><label class="lbl">口座名義（カナ）</label><input class="inp" value="カトウ サキコ" readonly></div>
+    </div>
+    <div class="row" style="grid-template-columns:1fr;margin-bottom:0">
+      <div class="fg new"><span class="pill">＋ NEW</span><label class="lbl">口座名義（漢字）</label><input class="inp" value="加藤 咲子" readonly></div>
+    </div>
+  </div>
+
+  <!-- backend -->
+  <div class="card">
+    <div class="sec-h">バックエンド側：出金リクエストカード（全文表示）</div>
+    <div class="backend">🏦 三菱UFJ銀行 · <span class="hi">渋谷支店</span>(469) · 普通 · 口座6132104 · カトウ サキコ<span class="hi">（加藤 咲子）</span></div>
+    <p style="font-size:12px;color:var(--ink3);margin:10px 0 0">The new 支店名 and 漢字 holder slot into the existing furikomi line — admins see the complete transfer details in one glance.</p>
+  </div>
+
+  <!-- what changes -->
+  <div class="card" style="background:#fff">
+    <div class="sec-h" style="color:var(--ink)">変更内容</div>
+    <div class="note" style="border:none;padding:0">
+      <p style="margin:0 0 8px"><b>1. Database (you run the SQL):</b> 2 new <b>nullable</b> columns on <code>planners</code> — <code>bank_branch_name</code> (支店名) and <code>bank_holder_kanji</code> (口座名義漢字).</p>
+      <p style="margin:0 0 8px"><b>2. Planner form (dashboard.html):</b> 2 new inputs + save/load wiring, plus relabels (銀行名→金融機関名, 支店コード→支店番号).</p>
+      <p style="margin:0 0 8px"><b>3. Backend (superadmin999.html):</b> the furikomi line + the payout snapshot include the new fields.</p>
+      <p style="margin:0"><span class="ok">✓ Safe for all current planners:</span> nullable columns → existing rows = NULL, every form &amp; payout line keeps working; the new fields just show blank until a planner saves them. No data touched, nothing breaks.</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Selective postpone — opened plans keep date, fresh plans shift (demo)</title>
+<style>
+  :root{ --ink:#1f2a37; --ink2:#5a6b62; --ink3:#8a97a6; --line:#e6e0d4; --paper:#fffdf8;
+         --move:#137a4f; --movebg:#e9f7ef; --keep:#2b5f7a; --keepbg:#e8f1f6; --warn:#b87333; --warnbg:#fdf3e3; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#efeae0;font:14px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12.5px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid #f0ebe0}
+  th{background:#f6f1e7;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink3)}
+  tr:last-child td{border-bottom:none}
+  .keeprow{background:var(--keepbg)} .moverow{background:var(--movebg)}
+  .move{color:var(--move);font-weight:700} .keep{color:var(--keep);font-weight:700}
+  .arrow{color:var(--ink3)}
+  .pill{font-size:10px;font-weight:700;border-radius:20px;padding:1px 7px}
+  .pill.keep{background:#dbe9f1;color:var(--keep)} .pill.move{background:#d6efe0;color:var(--move)}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:14px;line-height:1.65}
+  .note b{color:var(--ink)}
+  .warn{background:var(--warnbg);border:1px solid #e3c98f;color:#7a4a14}
+  code{background:#f0ebe0;border-radius:4px;padding:1px 5px;font-size:11.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Selective postpone — opened plans stay, fresh plans move +4.5 months</h1>
+  <p class="lead">Rule: a plan is "opened" if it has an itinerary title or was submitted. Demo only — nothing changed.</p>
+
+  <table>
+    <thead><tr><th>Planner</th><th>Plan</th><th>Has itin_title?</th><th>Submitted?</th><th>arrival_date</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr class="keeprow">
+        <td>三木 未希</td><td>Plan 1</td><td>✅ "Kyoto 3 days"</td><td>—</td>
+        <td>2026‑07‑15 <span class="arrow">→ unchanged</span></td>
+        <td><span class="pill keep">KEEP — opened</span></td>
+      </tr>
+      <tr class="keeprow">
+        <td>三木 未希</td><td>Plan 2</td><td>✅ "Osaka food"</td><td>✅ submitted</td>
+        <td>2026‑07‑18 <span class="arrow">→ unchanged</span></td>
+        <td><span class="pill keep">KEEP — opened</span></td>
+      </tr>
+      <tr class="moverow">
+        <td>三木 未希</td><td>Plan 3</td><td>❌ (null)</td><td>—</td>
+        <td><span class="arrow">2026‑07‑20</span> → <span class="move">2026‑12‑04</span></td>
+        <td><span class="pill move">SHIFT — not opened</span></td>
+      </tr>
+      <tr class="moverow">
+        <td>小池 彩花</td><td>Plan 1</td><td>❌ (null)</td><td>—</td>
+        <td><span class="arrow">2026‑08‑01</span> → <span class="move">2026‑12‑16</span></td>
+        <td><span class="pill move">SHIFT — not opened</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>The rule:</b> shift <code>arrival_date</code> (+ the <code>meta</code> dates) only for plans where <code>itin_title IS NULL AND submitted_at IS NULL</code> (fresh / never opened). Plans with an itinerary title or a submission stay exactly as they are.
+  </div>
+
+  <div class="note">
+    <b>Does it affect transport / itinerary logic? — Essentially no (low risk):</b><br>
+    • <b>Opened plans</b> (date kept) → <b>zero change</b>. Their transport, times, route data — all untouched.<br>
+    • <b>Fresh plans</b> (date shifted) → they have <b>no itinerary or transport built yet</b> (that's what "not opened" means). So there's nothing to break. When the planner later opens one, the transport/times simply compute for the <b>new date</b> — exactly as they would have for the old one. The engine already handles any trip date.
+  </div>
+
+  <div class="note warn">
+    <b>Where the real care is</b> (not logic — data targeting): the update must (1) correctly pick only the fresh plans via <code>itin_title/submitted_at</code>, and (2) shift the date in <b>all its places</b> — the <code>arrival_date</code> column <b>and</b> the <code>meta</code> JSON dates — for those travelers. It's a careful, filtered bulk update, so: preview with a SELECT first, back up, use a fixed day‑count (e.g. 137 days).
+  </div>
+</div>
+</body>
+</html>

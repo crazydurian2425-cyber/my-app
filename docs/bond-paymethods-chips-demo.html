@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>保証金 支払い方法チップ — before / after</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef;
+         --line:#e6e0d4; --add:#d9f2dd; --addbd:#86c79a; --paper:#fff; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:var(--ink2);margin:0 0 14px;font-size:13px}
+  .banner{background:#fff;border:1px solid var(--line);border-left:4px solid #b87333;border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--ink2);margin-bottom:18px}
+  .banner b{color:#b87333}
+  .chip{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+  .chip-label{font-weight:700;font-size:14px;margin-bottom:4px}
+  .badge{font-size:10.5px;font-weight:700;border-radius:20px;padding:2px 9px;margin-left:8px;vertical-align:middle}
+  .badge.upd{background:#fbeede;color:#b87333}
+  .badge.new{background:var(--green);color:#fff}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+  @media(max-width:620px){.pair{grid-template-columns:1fr}}
+  .col h4{font-size:11px;letter-spacing:.05em;text-transform:uppercase;margin:0 0 5px}
+  .col.before h4{color:var(--ink3)} .col.after h4{color:var(--green)}
+  .box{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12.5px;white-space:pre-wrap;background:#fbfaf7}
+  .col.before .box{color:var(--ink3)}
+  .col.after .box{background:#fff}
+  mark{background:var(--add);border:1px solid var(--addbd);border-radius:3px;padding:0 2px}
+  .en{margin-top:10px;font-size:11.5px;color:var(--ink2)}
+  .en .box{font-size:11.5px}
+  .en summary{cursor:pointer;color:var(--green);font-weight:600;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>保証金の支払い方法チップ — 現行 vs 修正案</h1>
+  <p class="lead">3つの方法に対応：<b>①銀行振込 ②PayPay（QRコード）③PayPay（電話番号・ID）</b>。<mark>緑のハイライト</mark>が追加・変更部分です。</p>
+
+  <div class="banner">
+    <b>DEMO — nothing changed yet.</b> <b>Labels = English</b> (so CS agents can tell chips apart) · <b>body = Japanese</b> (what the planner actually receives). Chips are DB‑backed (cs_quick_replies), so the real change = <b>SQL update + HTML defaults</b>. Phone/ID use <b>[電話番号]</b> / <b>[PayPay ID]</b> fill‑in placeholders (like [金額]) — tell me if you'd rather hardcode them.
+  </div>
+
+  <!-- 1 -->
+  <div class="chip">
+    <div class="chip-label">💬 Bond overview <span class="badge upd">label→EN · body JA · UPDATE</span></div>
+    <div class="pair">
+      <div class="col before"><h4>現行</h4><div class="box">■ お手続き方法：銀行振込またはPayPayのQRコードがご利用いただけます。ご準備が整いましたらお知らせください。ご希望の方法に応じて、振込先またはPayPayのQRコードと、照合用の参照コードをお送りします。…</div></div>
+      <div class="col after"><h4>修正案</h4><div class="box">■ お手続き方法：銀行振込、または<mark>PayPay（QRコード・電話番号・PayPay ID）</mark>がご利用いただけます。ご準備が整いましたらお知らせください。ご希望の方法に応じて、<mark>振込先・PayPayのQRコード・PayPayの送金先（電話番号/ID）</mark>と、照合用の参照コードをお送りします。…</div></div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="chip">
+    <div class="chip-label">🏦 Send details when ready <span class="badge upd">label→EN · body JA · UPDATE</span></div>
+    <div class="pair">
+      <div class="col before"><h4>現行</h4><div class="box">{first_name}さん、返金対象保証金のお手続きのご準備が整いましたら、お知らせください。銀行振込またはPayPayのQRコードがご利用いただけます。ご希望の方法に応じて、振込先またはPayPayのQRコードと、照合用の参照コードをすぐにお送りいたします。</div></div>
+      <div class="col after"><h4>修正案</h4><div class="box">{first_name}さん、返金対象保証金のお手続きのご準備が整いましたら、お知らせください。銀行振込、または<mark>PayPay（QRコード・電話番号・PayPay ID）</mark>がご利用いただけます。ご希望の方法に応じて、<mark>振込先・PayPayのQRコード・PayPayの送金先（電話番号/ID）</mark>と、照合用の参照コードをすぐにお送りいたします。</div></div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="chip">
+    <div class="chip-label">💳 How to pay (transfer / PayPay) <span class="badge upd">label→EN · body JA · UPDATE</span></div>
+    <div class="pair">
+      <div class="col before"><h4>現行</h4><div class="box">保証金のお手続き方法は2通りございます。
+
+①銀行振込：お送りする銀行口座へお振込みください。
+②PayPay：お送りするQRコードを読み取ってお手続きください。
+
+いずれの場合も、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。</div></div>
+      <div class="col after"><h4>修正案</h4><div class="box">保証金のお手続き方法は<mark>次の3通り</mark>ございます。
+
+①銀行振込：お送りする銀行口座へお振込みください。
+②PayPay（QRコード）：お送りするQRコードを読み取ってお手続きください。
+<mark>③PayPay（電話番号・ID）：お知らせするPayPay電話番号またはPayPay IDへご送金ください。</mark>
+
+いずれの場合も、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。</div></div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="chip">
+    <div class="chip-label">📱 PayPay QR <span class="badge upd">label→EN · body JA · kept</span></div>
+    <div class="pair">
+      <div class="col before"><h4>現行</h4><div class="box">{first_name}さん、PayPayでのお手続きですね。こちらのQRコードを読み取り、金額[金額]でお手続きください。
+参照コード：BOND-{set_num}-{planner_short}
+お手続き後、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。</div></div>
+      <div class="col after"><h4>修正案（そのまま）</h4><div class="box">{first_name}さん、PayPayでのお手続きですね。こちらのQRコードを読み取り、金額[金額]でお手続きください。
+参照コード：BOND-{set_num}-{planner_short}
+お手続き後、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。</div></div>
+    </div>
+  </div>
+
+  <!-- 5 NEW -->
+  <div class="chip" style="border-color:var(--addbd)">
+    <div class="chip-label">📱 PayPay phone / ID <span class="badge new">label→EN · body JA · NEW</span></div>
+    <div class="col after"><h4>追加する新チップ</h4><div class="box">{first_name}さん、PayPayでのお手続きですね。以下のPayPay送金先へ、金額[金額]でお手続きください。
+PayPay電話番号：[電話番号]
+（またはPayPay ID：[PayPay ID]）
+参照コード：BOND-{set_num}-{planner_short}
+
+【送金手順】
+1. PayPayアプリを開きます
+2. ホーム画面の「送る」をタップします
+3. 「PayPay ID・電話番号・表示名で検索」を選択します
+4. 上記の電話番号またはIDを入力して検索します
+5. 表示された相手を選択します
+6. 「送る」をタップします
+7. 送金金額を入力します
+8. 内容を確認して「送る」をもう一度タップして完了です
+
+※送金前に相手が正しいか必ずご確認ください。
+お手続き後、完了画面のスクリーンショットをこのチャットへお送りください。確認後、プランのロックを解除いたします。</div></div>
+  </div>
+
+  <details class="en">
+    <summary>▶ English chips (same changes)</summary>
+    <div class="box" style="margin-top:8px"><b>💬 Bond overview / 🏦 Send details:</b> "…you can use a bank transfer, or <mark>PayPay (QR code, phone number, or PayPay ID)</mark>. We'll send the bank details, the PayPay QR, <mark>or the PayPay phone number / ID</mark>, plus a reference code."
+
+<b>💳 How to pay:</b> "<mark>Three</mark> ways to complete the bond:
+1) Bank transfer — to the bank details we provide.
+2) PayPay (QR) — scan the QR code we send.
+<mark>3) PayPay (phone / ID) — send to the PayPay phone number or ID we give you.</mark>
+Either way, post a screenshot here…"
+
+<b>📱 PayPay (phone / ID) — NEW:</b> "Hi {first_name}, to pay by PayPay, send [amount] to:
+PayPay phone: [phone]  (or PayPay ID: [PayPay ID])
+Reference: BOND-{set_num}-{planner_short}
+1. Open PayPay → 2. Tap Send → 3. Search by ID/phone → 4. Enter the number/ID → 5. Pick the recipient → 6. Send → 7. Enter amount → 8. Confirm & Send.
+Double-check the recipient first, then post a screenshot here."</div>
+  </details>
+
+</div>
+</body>
+</html>

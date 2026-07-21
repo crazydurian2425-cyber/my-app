@@ -249,7 +249,7 @@ const $ = id => document.getElementById(id)
 // reskinned to another brand. Default + every pre-brand letter = Journey
 // Junction (the page's static content, untouched). Only a 'vbd' letter is
 // transformed to Vacations by Design.
-const LETTER_BRAND_NAME = { jj: 'Journey Junction', vbd: 'Vacations by Design' }
+const LETTER_BRAND_NAME = { jj: 'Journey Junction', vbd: 'Vacations by Design', tc: 'Trip Companion' }
 
 // ── VBD's OWN employment-contract body ──────────────────────────────
 // Vacations by Design letters use this 7-article contract text, NOT the
@@ -319,38 +319,72 @@ const VBD_EMPLOYMENT_BODY_HTML = `
 // to the admin-typed guarantee / final-confirmation body, which boot() injects
 // AFTER applyLetterBrand() has already walked the DOM (see brandCustomBody).
 const NB = String.fromCharCode(160)
-const VBD_REPS = [
-    ['JOURNEY JUNCTION LTD', 'VACATIONS BY DESIGN LTD'],
-    ['Journey Junction', 'Vacations by Design'],
-    ['15791277', '03039047'],
-    ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
-    ['Midhun' + NB + 'Peter', 'Charalambos A. Kyrillou'],
-    ['Midhun Peter', 'Charalambos Andrew Kyrillou'],
-  ['2024年6月20日', '1995年3月29日'],
-  // VBD's job title differs from JJ's (訪日旅行プランナー → 旅程デザイナー).
-  ['訪日旅行プランナー', '旅程デザイナー'],
-  ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk']
-]
 
-// Apply the VBD substitutions to a plain string (used for the admin-typed
+// ── Per-brand letter registry ───────────────────────────────────────
+// Journey Junction is the page's authored content, so it has NO entry and is
+// rendered untouched. Every other brand supplies the substitutions applied to
+// the JJ text, and OPTIONALLY its own contract body. Adding a brand = one entry.
+const LETTER_BRANDS = {
+  vbd: {
+    name: 'Vacations by Design',
+    logo: '/vbd-app-icon.svg',
+    wordmark: 'Vacations <em>by Design</em>',
+    mailDomain: 'thevacationsbydesign.co.uk',
+    bodyHtml: VBD_EMPLOYMENT_BODY_HTML,   // VBD has its OWN 7-article contract
+    reps: [
+      ['JOURNEY JUNCTION LTD', 'VACATIONS BY DESIGN LTD'],
+      ['Journey Junction', 'Vacations by Design'],
+      ['15791277', '03039047'],
+      ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR'],
+      ['Midhun' + NB + 'Peter', 'Charalambos A. Kyrillou'],
+      ['Midhun Peter', 'Charalambos Andrew Kyrillou'],
+      ['2024年6月20日', '1995年3月29日'],
+      ['訪日旅行プランナー', '旅程デザイナー'],
+      ['hello@thejourneyjunction.co.uk', 'hello@thevacationsbydesign.co.uk']
+    ]
+  },
+  tc: {
+    name: 'Trip Companion',
+    logo: '/tc-app-icon.svg',
+    wordmark: 'Trip <em>Companion</em>',
+    mailDomain: 'tripcompanion.co.uk',
+    // No bodyHtml → Trip Companion letters use the Journey Junction contract
+    // text with the substitutions below applied.
+    reps: [
+      ['JOURNEY JUNCTION LTD', 'TRIP COMPANION LTD'],
+      ['Journey Junction', 'Trip Companion'],
+      ['15791277', '16308288'],
+      ['Flat 2, 64 Heathmere Drive, Birmingham, West Midlands, B37 5EU, United Kingdom', '43 Peronne Road, Hilsea, Portsmouth, England, PO3 5LD'],
+      ['Midhun' + NB + 'Peter', 'Bivin Francis'],
+      ['Midhun Peter', 'Bivin Francis'],
+      ['2024年6月20日', '2025年3月11日'],
+      ['訪日旅行プランナー', '旅行デザイナー'],
+      ['hello@thejourneyjunction.co.uk', 'hello@tripcompanion.co.uk']
+    ]
+  }
+}
+
+// Apply a brand's substitutions to a plain string (used for the admin-typed
 // guarantee / final-confirmation body, which is set as textContent after the
 // DOM walk below has already run — without this it would keep JJ's name/title).
 function brandCustomBody(s, bk) {
   let v = String(s == null ? '' : s)
-  if (bk !== 'vbd') return v
-  for (let i = 0; i < VBD_REPS.length; i++) {
-    if (v.indexOf(VBD_REPS[i][0]) > -1) v = v.split(VBD_REPS[i][0]).join(VBD_REPS[i][1])
+  const B = LETTER_BRANDS[bk]
+  if (!B) return v
+  for (let i = 0; i < B.reps.length; i++) {
+    if (v.indexOf(B.reps[i][0]) > -1) v = v.split(B.reps[i][0]).join(B.reps[i][1])
   }
   return v
 }
 
 function applyLetterBrand(bk) {
-  if (bk !== 'vbd') return
+  const B = LETTER_BRANDS[bk]
+  if (!B) return                     // Journey Junction / unknown → page as authored
   const img = document.querySelector('.brand img')
-  if (img) { img.src = '/vbd-app-icon.svg'; img.alt = 'Vacations by Design' }
+  if (img) { img.src = B.logo; img.alt = B.name }
   const wm = document.querySelector('.brand-name')
-  if (wm) { wm.innerHTML = 'Vacations <em>by Design</em>' }
-  const reps = VBD_REPS
+  if (wm) { wm.innerHTML = B.wordmark }
+  const reps = B.reps
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null)
   const list = []; let n
   while ((n = w.nextNode())) list.push(n)
@@ -361,13 +395,13 @@ function applyLetterBrand(bk) {
   }
   // mailto: hrefs on the signed/thank-you card
   const mails = document.querySelectorAll('a[href*="thejourneyjunction.co.uk"]')
-  for (let i = 0; i < mails.length; i++) mails[i].href = mails[i].href.split('thejourneyjunction.co.uk').join('thevacationsbydesign.co.uk')
+  for (let i = 0; i < mails.length; i++) mails[i].href = mails[i].href.split('thejourneyjunction.co.uk').join(B.mailDomain)
 
-  // VBD uses its OWN employment-contract text (7 articles) — replace the JJ
-  // body wholesale. Runs before boot()'s guarantee/final_confirmation handling,
-  // so those letter types still overwrite this with their admin-typed body.
+  // A brand with its OWN contract text replaces the JJ body wholesale. Runs
+  // before boot()'s guarantee/final_confirmation handling, so those letter types
+  // still overwrite this with their admin-typed body.
   const _blk = document.getElementById('letter-block')
-  if (_blk) _blk.innerHTML = VBD_EMPLOYMENT_BODY_HTML
+  if (_blk && B.bodyHtml) _blk.innerHTML = B.bodyHtml
 
   // Signature in a WEB font (Great Vibes) so the cursive renders identically on
   // every device — the local 'Brush Script MT' fallback shows as plain text on

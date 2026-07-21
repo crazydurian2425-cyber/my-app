@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>End-trip button won't tap on iPhone — diagnosis, fix &amp; risk (Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; --green-d:#1f6f66; --red:#c0392b; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI','Noto Sans JP',sans-serif;line-height:1.6;padding:0 0 70px}
+  .wrap{max-width:820px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;padding:26px 0;margin-bottom:24px}
+  header.top .wrap{display:block}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  header.top h1{margin:0 0 6px;font-size:22px;line-height:1.3}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  h2{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin:32px 0 12px}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--gold);color:#fff;font-size:11px;margin-right:8px;vertical-align:middle}
+  p.lead{font-size:14px;color:var(--ink2);margin:0 0 12px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin:12px 0}
+  .quote{background:#fbf6ea;border-left:4px solid var(--gold);border-radius:0 10px 10px 0;padding:12px 15px;font-size:13.5px;color:var(--ink2);margin:10px 0}
+  .quote b{color:var(--ink)}
+  code{background:#f2ece0;border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:12.5px;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace}
+  pre{background:#1e2422;color:#e8efe9;border-radius:10px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.55;font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin:10px 0}
+  pre .del{color:#ff9c8f}
+  pre .add{color:#8ee6a8}
+  pre .dim{color:#8b968f}
+  ol.flow{counter-reset:s;list-style:none;padding:0;margin:6px 0}
+  ol.flow li{position:relative;padding:8px 0 8px 34px;font-size:13.5px;border-bottom:1px dashed var(--bd)}
+  ol.flow li:last-child{border-bottom:0}
+  ol.flow li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:8px;width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .ingredients{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+  .ing{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:13px}
+  .ing .tag{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--red);margin-bottom:6px}
+  .ing h4{margin:0 0 5px;font-size:13.5px}
+  .ing p{margin:0;font-size:12px;color:var(--ink2)}
+  .plus{display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--ink3);font-weight:700}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin:10px 0}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:top}
+  th{background:#f6efe0;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  tr:last-child td{border-bottom:0}
+  .yes{color:var(--red);font-weight:700}
+  .no{color:var(--green-d);font-weight:700}
+  .pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700}
+  .pill.low{background:#eef6f0;color:var(--green-d);border:1px solid rgba(44,128,121,.3)}
+  .pill.none{background:#eef6f0;color:var(--green-d);border:1px solid rgba(44,128,121,.3)}
+  .pill.med{background:#fdf6e9;color:#9e7e3c;border:1px solid rgba(158,126,60,.35)}
+  ul.check{list-style:none;padding:0;margin:8px 0}
+  ul.check li{padding:6px 0 6px 26px;position:relative;font-size:13.5px}
+  ul.check li::before{content:"✓";position:absolute;left:0;top:6px;color:var(--green-d);font-weight:800}
+  ul.cross li::before{content:"✕";color:var(--red)}
+  /* ── interactive conceptual sim ── */
+  .sim{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0}
+  @media(max-width:640px){.sim{grid-template-columns:1fr}.ingredients{grid-template-columns:1fr}}
+  .phone{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;position:relative}
+  .phone h4{margin:0 0 4px;font-size:13px}
+  .phone .cap{font-size:11px;color:var(--ink3);margin:0 0 10px}
+  .screen{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:12px;min-height:150px;position:relative;overflow:hidden}
+  .endbtn{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--green-d);background:rgba(26,122,94,.06);color:var(--green-d);font-weight:700;font-size:13px;border-radius:22px;padding:11px 18px;cursor:pointer;transition:transform .12s,background .12s;user-select:none}
+  .endbtn:active{transform:translateY(1px)}
+  .anchor{margin-top:10px;border:1px solid var(--bd);border-radius:10px;padding:9px 11px;font-size:12px;color:var(--ink2);background:#faf7f0}
+  .anchor .lock{float:right;font-size:11px;color:var(--ink3)}
+  .rebuild{position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(192,57,43,.06),rgba(192,57,43,.06) 8px,transparent 8px,transparent 16px);opacity:0;pointer-events:none;transition:opacity .15s;display:flex;align-items:flex-start;justify-content:center}
+  .rebuild span{margin-top:6px;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 9px}
+  .out{margin-top:10px;font-size:12.5px;font-weight:600;min-height:20px}
+  .out.ok{color:var(--green-d)}
+  .out.bad{color:var(--red)}
+  .simbtn{margin-top:10px;border:0;background:var(--ink);color:#fff;border-radius:8px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
+  .disclaim{font-size:11.5px;color:var(--ink3);font-style:italic;margin-top:8px}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:11px 14px;margin:12px 0}
+  .warnbox{background:#fdf3ee;border:1px solid rgba(192,57,43,.28);border-left:4px solid var(--red);border-radius:12px;padding:13px 16px;margin:12px 0}
+  .warnbox h3{margin:0 0 6px;font-size:14px;color:#a3321f}
+  .okbox{background:#eef6f0;border:1px solid rgba(44,128,121,.32);border-left:4px solid var(--green);border-radius:12px;padding:13px 16px;margin:12px 0}
+  .okbox h3{margin:0 0 6px;font-size:14px;color:var(--green-d)}
+  .foot{font-size:11.5px;color:var(--ink3);margin-top:30px;border-top:1px solid var(--bd);padding-top:14px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">Bug diagnosis · iOS Chrome · not shipped</span>
+  <h1>The 「旅行を終える・送迎場所へ移動」 button won't respond to taps on iPhone</h1>
+  <p>What's going on, what the bug is, the one-line fix, and exactly what it does &amp; doesn't touch.</p>
+</div></header>
+
+<div class="wrap">
+
+  <h2><span class="n">1</span>What the customer reported</h2>
+  <div class="quote">
+    「<b>🚗 旅行を終える・送迎場所へ移動</b>」をタップしてください … これがタップできないから、何度も問い合わせをしています。<br>
+    <span style="color:var(--ink3)">iPhone / ブラウザ Chrome。ページ更新・再ログイン・並べ替えを試しても、ボタンが反応しない。</span>
+  </div>
+  <p class="lead">Key fact: the button is <b>fully visible and not covered</b> — the planner is tapping the right thing. It simply does not react. So this is <b>not</b> user confusion and <b>not</b> the submit rule being strict — it's a real front-end bug.</p>
+
+  <h2><span class="n">2</span>What the button is supposed to do (works fine on desktop)</h2>
+  <div class="card">
+    <ol class="flow">
+      <li>Planner finishes Day 2 (departure day). The bottom shows a locked <b>auto anchor</b> 「12:15・車でニセコへ／🔒自動」 — a <i>placeholder</i>, not a real step.</li>
+      <li>They tap <b>旅行を終える・送迎場所へ移動</b> → <code>endTripToAirport()</code> inserts a real taxi/transport leg from the last stop to the pickup point.</li>
+      <li>The submit gate now sees a real transport as the day's last step → the red error clears → <b>次へ</b> works.</li>
+    </ol>
+    <p class="disclaim">Verified in code: the handler finds its anchor and the venues correctly — if the tap <i>fires</i>, it works. The problem is purely that the tap never registers on iOS.</p>
+  </div>
+
+  <h2><span class="n">3</span>The bug — a three-ingredient "perfect storm" on iOS</h2>
+  <div class="ingredients">
+    <div class="ing">
+      <div class="tag">Ingredient A</div>
+      <h4>Momentum-scroll layer</h4>
+      <p>The modal scrolls with <code>-webkit-overflow-scrolling:touch</code> — a legacy iOS flag that puts the content on a separate GPU scroll layer.</p>
+    </div>
+    <div class="plus">+</div>
+    <div class="ing">
+      <div class="tag">Ingredient B</div>
+      <h4>The button is rebuilt constantly</h4>
+      <p>Every re-time / autosave / edit <b>deletes and re-creates</b> the end-trip button element (it's re-rendered on every refresh, by design).</p>
+    </div>
+  </div>
+  <div class="ingredients" style="grid-template-columns:1fr">
+    <div class="ing">
+      <div class="tag">Ingredient C — the result</div>
+      <h4>iOS keeps a <u>stale touch hit-region</u> for the freshly re-inserted button</h4>
+      <p>On the accelerated scroll layer, when a node is removed and re-added, iOS WebKit often doesn't refresh that node's tappable area until the layer re-composites (i.e. until you scroll). So the button is <b>painted correctly but invisibly "dead" to taps.</b> This is a well-known iOS Safari/WebKit issue with <code>-webkit-overflow-scrolling:touch</code> (and it's made worse by a <code>position:sticky</code> error banner living in the same container).</p>
+    </div>
+  </div>
+  <div class="note">
+    <b>Why it's iPhone-only:</b> desktop Chrome/Firefox and Android don't use this legacy accelerated-scroll layer, so their hit-regions stay correct. <b>Why refresh / re-login / reorder don't help:</b> reordering triggers <i>more</i> rebuilds, re-arming the dead-zone every time.
+  </div>
+
+  <h2><span class="n">4</span>Conceptual illustration</h2>
+  <p class="lead">A simplified mock of the behavior — <i>not</i> the real iOS engine, just to picture what the customer experiences.</p>
+  <div class="sim">
+    <div class="phone">
+      <h4>Before fix — iPhone</h4>
+      <p class="cap">Button was just rebuilt on the momentum layer → tap lands on a stale region.</p>
+      <div class="screen" id="scr-before">
+        <div class="endbtn" id="btn-before">🚗 旅行を終える・送迎場所へ移動</div>
+        <div class="anchor">🚊 12:15・車でニセコへ <span class="lock">🔒 自動</span></div>
+        <div class="rebuild" id="rb-before"><span>↻ rebuilt — hit-region stale</span></div>
+      </div>
+      <div class="out bad" id="out-before"></div>
+      <button class="simbtn" onclick="simTap('before')">▶ Simulate tap</button>
+    </div>
+    <div class="phone">
+      <h4>After fix — iPhone</h4>
+      <p class="cap">Standard scrolling → the rebuilt button keeps a correct tap area.</p>
+      <div class="screen" id="scr-after">
+        <div class="endbtn" id="btn-after">🚗 旅行を終える・送迎場所へ移動</div>
+        <div class="anchor">🚊 12:15・車でニセコへ <span class="lock">🔒 自動</span></div>
+        <div class="rebuild" id="rb-after"><span>↻ rebuilt</span></div>
+      </div>
+      <div class="out ok" id="out-after"></div>
+      <button class="simbtn" onclick="simTap('after')">▶ Simulate tap</button>
+    </div>
+  </div>
+  <p class="disclaim">Illustrative only. The actual bug can't be reproduced on a desktop browser because desktops don't use the iOS accelerated-scroll layer — confirming it for real needs an iPhone / touch-emulated device.</p>
+
+  <h2><span class="n">5</span>The fix — one CSS line</h2>
+  <p class="lead">Remove the legacy scroll flag from the modal body. Modern iOS (13+) already scrolls smoothly without it; the flag is deprecated and only survives here from older code.</p>
+  <pre><span class="dim">/* dashboard.html — .modal-body */</span>
+<span class="del">- .modal-body{padding:24px;overflow-y:auto;flex:1 1 auto;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}</span>
+<span class="add">+ .modal-body{padding:24px;overflow-y:auto;flex:1 1 auto;min-height:0;overscroll-behavior:contain;}</span></pre>
+  <p class="lead">That's the entire change. It removes the buggy accelerated-scroll layer, so every dynamically-rebuilt control in a modal (this button, and any other) stays reliably tappable.</p>
+
+  <h2><span class="n">6</span>Risk &amp; blast radius — does it touch transport / other logic?</h2>
+  <table>
+    <tr><th>Area</th><th>Changed?</th><th>Effect</th><th>Risk</th></tr>
+    <tr><td>Transport leg creation<br><code>endTripToAirport()</code>, <code>addSlot()</code></td><td class="no">No</td><td>Not one line of JS is touched</td><td><span class="pill none">None</span></td></tr>
+    <tr><td>Submit gate<br>(the "close each day" rule)</td><td class="no">No</td><td>Untouched — still requires the real final leg</td><td><span class="pill none">None</span></td></tr>
+    <tr><td>Timing / check-out chain<br>(your recent Day-2 work)</td><td class="no">No</td><td>Untouched</td><td><span class="pill none">None</span></td></tr>
+    <tr><td>Autosave / draft persistence</td><td class="no">No</td><td>Untouched</td><td><span class="pill none">None</span></td></tr>
+    <tr><td>Modal scrolling on <b>iOS</b><br>(all modals using <code>.modal-body</code>)</td><td class="yes">Yes (CSS only)</td><td>Uses standard momentum scroll instead of the legacy accelerated layer. Side effect: rebuilt buttons become tappable.</td><td><span class="pill low">Very low</span></td></tr>
+    <tr><td>Modal scrolling on desktop / Android</td><td class="no">No</td><td>The flag is already ignored there</td><td><span class="pill none">None</span></td></tr>
+  </table>
+  <div class="okbox">
+    <h3>Why this is safe</h3>
+    <p style="margin:0;font-size:13.5px">The transport logic, the gate, the timing chain and autosave are all <b>JavaScript</b>. This fix is a single <b>CSS scroll hint</b> on the modal's scroll container — it changes <i>how the panel scrolls on iPhone</i>, nothing about <i>what the buttons do or how a trip is built</i>. The only observable behavior change is the intended one: the button now responds to taps.</p>
+  </div>
+  <div class="warnbox">
+    <h3>The one thing to eyeball after shipping</h3>
+    <p style="margin:0;font-size:13.5px">On very old iPhones (iOS &lt; 13) momentum scrolling could feel slightly less "heavy." On every current device there is no perceptible difference. Rollback is trivial — re-add the single word to revert.</p>
+  </div>
+
+  <h2><span class="n">7</span>If the button <i>still</i> won't work after this</h2>
+  <p class="lead">Then it's the second, separate symptom the customer also mentioned — 「時間を反映されず」(edits not sticking after refresh). That would be an <b>autosave / persistence</b> issue (the added leg not round-tripping), which we'd investigate on its own and is unrelated to this CSS change. Quick way to tell the two apart: add a temporary log at the top of <code>endTripToAirport()</code> and have the customer tap once — if it logs, the tap now works and we chase persistence; if not, we dig further into touch delivery.</p>
+
+  <div class="foot">
+    Journey Junction · internal diagnosis demo · nothing in <code>dashboard.html</code> has been changed. This page only explains the proposed fix.
+  </div>
+</div>
+
+<script>
+  function flashRebuild(which){
+    var rb = document.getElementById('rb-'+which)
+    rb.style.opacity = '1'
+    setTimeout(function(){ rb.style.opacity='0' }, 700)
+  }
+  function simTap(which){
+    var out = document.getElementById('out-'+which)
+    var btn = document.getElementById('btn-'+which)
+    // Both start by "rebuilding" the button, like a real re-render does.
+    flashRebuild(which)
+    btn.style.transform = 'translateY(1px)'
+    setTimeout(function(){ btn.style.transform='' }, 130)
+    if (which === 'before'){
+      out.textContent = '👆 tap … ✕ nothing happened (stale hit-region ate the tap)'
+    } else {
+      out.textContent = '👆 tap … ✓ endTripToAirport() fired → final leg added, error cleared'
+    }
+  }
+</script>
+</body>
+</html>

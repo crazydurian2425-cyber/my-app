@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day-end wording — demo (Journey Junction)</title>
+<style>
+  :root{ --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a; --gold:#9E7E3C; --green:#2c8079; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',-apple-system,'Segoe UI','Noto Sans JP',sans-serif;line-height:1.6;padding:0 0 60px}
+  .wrap{max-width:780px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,#2c8079,#1f6f66);color:#fff;padding:24px 0;margin-bottom:22px}
+  header.top h1{margin:0 0 4px;font-size:21px}
+  header.top p{margin:0;opacity:.92;font-size:13.5px}
+  .flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  h2{font-size:13.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--gold);margin:28px 0 6px}
+  .sub{font-size:12.5px;color:var(--ink3);margin:0 0 10px}
+  .toggle{display:inline-flex;border:1px solid var(--bd);border-radius:99px;overflow:hidden;margin:6px 0 18px}
+  .toggle button{border:0;background:#fff;padding:6px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink2)}
+  .toggle button.on{background:var(--green);color:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .row > div{border-radius:10px;padding:11px 13px;font-size:13.5px}
+  .before{background:#f6f1e6;border:1px solid var(--bd)}
+  .after{background:#eef6f0;border:1px solid rgba(44,128,121,.32)}
+  .lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+  .before .lbl{color:var(--ink3)} .after .lbl{color:#1f6f66}
+  /* mock summary card so the "redundant time" point is visible */
+  .mock{background:#f4eedf;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin:6px 0 16px;font-size:13px}
+  .mock .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)}
+  .mock .end{display:flex;gap:24px;margin:4px 0 8px}
+  .mock .foot{color:#8a6b1a;border-top:1px dashed rgba(0,0,0,.1);padding-top:8px}
+  .note{font-size:12.5px;color:var(--ink2);background:#fbf6ea;border:1px solid var(--bd);border-radius:10px;padding:10px 13px;margin-top:14px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <span class="flag">DEMO ONLY · nothing in the live app changed</span>
+  <h1>Day-end message wording</h1>
+  <p>Your proposed wording vs the current one. Toggle EN / 日本語. Numbers (18 min, 21:30) are just examples.</p>
+</div></header>
+
+<div class="wrap">
+  <div class="toggle">
+    <button id="b-en" onclick="setLang('en')">English</button>
+    <button id="b-ja" class="on" onclick="setLang('ja')">日本語</button>
+  </div>
+
+  <h2>Why drop “(suggested 9:30 pm)”</h2>
+  <p class="sub">The summary card already shows the suggested time on its own line — so repeating it in the sentence is redundant:</p>
+  <div class="mock">
+    <div class="end"><span><span class="k">Suggested end</span><br><b>9:30 pm</b></span><span><span class="k">Actual</span><br><b>9:12 pm</b></span></div>
+    <div class="foot" id="mock-foot"></div>
+  </div>
+
+  <h2>1 · Day ends too early (normal day)</h2>
+  <div class="row">
+    <div class="before"><div class="lbl">Current</div><span id="e1-b"></span></div>
+    <div class="after"><div class="lbl">Proposed (yours)</div><span id="e1-a"></span></div>
+  </div>
+
+  <h2>2 · Day ends too late (normal day)</h2>
+  <p class="sub">Same tidy-up applied for consistency.</p>
+  <div class="row">
+    <div class="before"><div class="lbl">Current</div><span id="e2-b"></span></div>
+    <div class="after"><div class="lbl">Proposed</div><span id="e2-a"></span></div>
+  </div>
+
+  <h2>3 · Departure day runs late (flight/train risk)</h2>
+  <p class="sub">Left detailed on purpose — here the exact cut-off + the flight/train matter (risk of missing it). Only lightly tidied.</p>
+  <div class="row">
+    <div class="before"><div class="lbl">Current</div><span id="e3-b"></span></div>
+    <div class="after"><div class="lbl">Proposed</div><span id="e3-a"></span></div>
+  </div>
+
+  <p class="note" id="note"></p>
+</div>
+
+<script>
+const D = {
+  en: {
+    foot: '· Day 1 ends 18 min early. You can add one more stop.',
+    e1b: '· Day 1 ends 18 min early (suggested 9:30 pm) — room for another stop.',
+    e1a: '· Day 1 ends 18 min early. You can add one more stop.',
+    e2b: '⚠ Day 1 runs 20 min past the suggested end (9:30 pm) — trim or move the last stop.',
+    e2a: '⚠ Day 1 runs 20 min past the suggested end. Trim or move the last stop.',
+    e3b: '⚠ Last stop ends 4:10 pm — 40 min past the 3:30 pm departure cut-off. Move or trim it, or they may miss the 6:00 pm flight to London.',
+    e3a: '⚠ Last stop ends 4:10 pm — 40 min past the 3:30 pm departure cut-off. Trim or move it, or they may miss the 6:00 pm flight to London.',
+    note: 'Recommendation: adopt your wording for #1, apply the same tidy to #2, and keep #3 detailed (only swapped “Move or trim” → “Trim or move” to match #2). Want me to also align the separate “Back at hotel” end-of-day note on the builder timeline? It has a similar line.'
+  },
+  ja: {
+    foot: '· 1日目は推奨より18分早く終了します。もう1か所追加できます。',
+    e1b: '· 1日目は推奨より18分早く終わります（推奨21:30）— もう1か所追加する余裕があります。',
+    e1a: '· 1日目は推奨より18分早く終了します。もう1か所追加できます。',
+    e2b: '⚠ 1日目は推奨終了時刻（21:30）を20分超過しています — 最後の立ち寄り先を短くするか移動してください。',
+    e2a: '⚠ 1日目は推奨終了時刻を20分超過しています。最後の立ち寄り先を短くするか移動してください。',
+    e3b: '⚠ 最後の立ち寄り先が16:10に終わります — 15:30の出発締切を40分超過しています。移動するか短くしないと、18:00のロンドン行きの飛行機に乗り遅れる恐れがあります。',
+    e3a: '⚠ 最後の立ち寄り先が16:10に終わり、15:30の出発締切を40分超過しています。短くするか移動しないと、18:00のロンドン行きの飛行機に乗り遅れる恐れがあります。',
+    note: 'おすすめ：#1 はご提案の文に変更、#2 も同様に整え、#3 は詳細を保持（時刻・便名はリスク表示のため残す）。ビルダーのタイムライン上にある「ホテルに戻る」終了メモにも同様の文があります — そちらも揃えますか？'
+  }
+};
+function setLang(x){
+  document.getElementById('b-en').classList.toggle('on', x==='en');
+  document.getElementById('b-ja').classList.toggle('on', x==='ja');
+  const s = D[x];
+  document.getElementById('mock-foot').textContent = s.foot;
+  document.getElementById('e1-b').textContent = s.e1b;
+  document.getElementById('e1-a').textContent = s.e1a;
+  document.getElementById('e2-b').textContent = s.e2b;
+  document.getElementById('e2-a').textContent = s.e2a;
+  document.getElementById('e3-b').textContent = s.e3b;
+  document.getElementById('e3-a').textContent = s.e3a;
+  document.getElementById('note').textContent = s.note;
+}
+setLang('ja');
+</script>
+</body>
+</html>

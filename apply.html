@@ -1028,9 +1028,13 @@ async function submitApplication(){
       name, email, city, japan_depth, languages, heard_from,
       status: 'pending',
       ...(geo || {}),
-      // Stamp the brand of the domain this application came from (jj / vbd). On
-      // approval this carries onto the planner, tying them to that brand for good.
-      brand: (location.hostname || '').toLowerCase().replace(/^www\./, '') === 'itinerarydesignhub.com' ? 'vbd' : 'jj'
+      // Stamp the brand of the domain this application came from. On approval this
+      // carries onto the planner, tying them to that brand for good. Add a line to
+      // the map per brand domain; anything unlisted falls back to Journey Junction.
+      brand: ({
+        'itinerarydesignhub.com': 'vbd',
+        'tripcompanionplanner.com': 'tc'
+      })[(location.hostname || '').toLowerCase().replace(/^www\./, '')] || 'jj'
     }
     let { error: insErr } = await sb.from('planner_applications').insert(_appRow)
     if (insErr && /brand/i.test(insErr.message || '')) {

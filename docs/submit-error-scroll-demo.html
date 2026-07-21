@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Submit-error scroll — current vs proposed</title>
+<style>
+  :root{ --paper:#fbf7ef; --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --line:#ece5d8; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#d8d2c4;font:15px/1.5 'DM Sans',system-ui,Arial,sans-serif;color:var(--ink)}
+  .stage{max-width:560px;margin:14px auto;padding:0 10px}
+  .ctl{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+  .ctl button{padding:9px 13px;border-radius:9px;border:1px solid var(--line);font-weight:700;cursor:pointer;font-size:13px}
+  .b-cur{background:#fff;color:var(--red);border-color:var(--redbd)}
+  .b-pro{background:var(--green);color:#fff;border-color:var(--green)}
+  .b-reset{background:#fff;color:var(--ink2)}
+  .modal{background:var(--paper);border-radius:16px;box-shadow:0 16px 44px rgba(0,0,0,.25);overflow:hidden;display:flex;flex-direction:column;height:74vh}
+  .mhead{padding:14px 16px;border-bottom:1px solid var(--line);flex-shrink:0}
+  .mhead h1{font-size:17px;margin:0}
+  .mhead .sub{color:var(--ink2);font-size:12px;margin-top:2px}
+  .body{position:relative;overflow-y:auto;padding:0 16px 16px;flex:1}
+  /* the error banner. position toggled by JS: 'static' (current) vs 'sticky' (proposed) */
+  #banner{display:none;background:var(--redbg);border:1px solid var(--redbd);color:var(--red);
+          border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;margin:12px 0;align-items:center;gap:8px;top:0;z-index:5}
+  #banner.show{display:flex}
+  .tabs{display:flex;gap:6px;margin:12px 0}
+  .tab{font-size:11px;padding:4px 10px;border:1px solid var(--line);border-radius:20px;background:#fff;color:var(--ink2)}
+  .tab.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .fld{font-size:12px;color:var(--ink2);margin:10px 0 4px}
+  .ti{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;font:inherit}
+  .brief{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0;font-size:13px;color:var(--ink2)}
+  .day{border:2px solid var(--line);border-radius:12px;padding:12px;margin:12px 0}
+  .day h2{font-size:14px;margin:0 0 8px}
+  .anchor{background:#f4efe5;border:1px dashed #d9cfbc;border-radius:9px;padding:9px 11px;font-size:12.5px;color:var(--ink2);margin-bottom:8px}
+  .stop{border:1px solid var(--line);border-radius:10px;padding:11px;margin:8px 0;background:#fff;font-size:13.5px}
+  .day.flash{animation:fl 1.4s ease}
+  @keyframes fl{0%,100%{box-shadow:0 0 0 0 rgba(179,38,30,0)}40%{box-shadow:0 0 0 4px rgba(179,38,30,.3);border-color:var(--redbd)}}
+  .foot{padding:11px 16px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;background:var(--paper);font-size:12px;color:var(--ink3)}
+  .hint{max-width:560px;margin:10px auto 0;padding:0 14px;font-size:12.5px;color:var(--ink2)}
+  .verdict{font-weight:700;margin-left:auto}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="ctl">
+    <button class="b-cur" onclick="run('current')">✕ Submit — current</button>
+    <button class="b-pro" onclick="run('proposed')">✓ Submit — proposed</button>
+    <button class="b-reset" onclick="reset()">↺ reset</button>
+    <span class="verdict" id="verdict"></span>
+  </div>
+  <div class="modal">
+    <div class="mhead"><h1>Plan 1 — itinerary form <span style="font-size:11px;color:var(--ink3)">(demo)</span></h1><div class="sub">Day 1 fails "needs 2 attractions" — where does the view land?</div></div>
+    <div class="body" id="body">
+      <div id="banner"><span>⚠</span><span id="bmsg"></span></div>
+      <div class="tabs"><span class="tab on">Day 1</span><span class="tab">Day 2</span><span class="tab">Review</span></div>
+      <div class="fld">ITINERARY TITLE</div>
+      <input class="ti" value="sadasd">
+      <div class="brief">📋 Traveler brief · arrival 2:00pm · Otaru · "take it easy near the hotel" — relaxed reset trip…</div>
+      <div class="day" id="day1">
+        <h2>🌸 Day 1 · Thu 6 Aug</h2>
+        <div class="anchor">🚆 2:00pm · Train arrives at Otaru Station · day begins on arrival</div>
+        <div class="stop">🚕 2:10pm · Taxi → Hotel Torifito</div>
+        <div class="stop">🏨 2:45pm · Hotel Torifito (check-in)</div>
+        <div class="stop">🍴 4:00pm · Seafood Otamoi (meal)</div>
+        <div class="stop">📍 5:30pm · Otaru Canal walk (attraction 1 of 2)</div>
+        <div class="stop">🌙 8:30pm · Back at Hotel Torifito · day ends</div>
+        <div class="stop" style="opacity:.4">— (needs 1 more attraction here) —</div>
+      </div>
+    </div>
+    <div class="foot" id="foot">scroll position after submit shown live ↑</div>
+  </div>
+</div>
+<p class="hint" id="hint"></p>
+
+<script>
+const MSG = 'Day 1 (arrival day) needs: at least 2 attractions (have 1)';
+function reset(){
+  const b=document.getElementById('banner'); b.classList.remove('show'); b.style.position='static';
+  document.getElementById('body').scrollTop=0;
+  document.getElementById('day1').classList.remove('flash');
+  document.getElementById('verdict').textContent='';
+  document.getElementById('hint').textContent='Click "Submit — current" then "Submit — proposed" and watch where the view lands + whether you can see the red message.';
+}
+function run(mode){
+  const banner=document.getElementById('banner'), body=document.getElementById('body'), day=document.getElementById('day1');
+  document.getElementById('bmsg').textContent = MSG;
+  banner.classList.add('show');
+  day.classList.remove('flash'); void day.offsetWidth; day.classList.add('flash');
+  if (mode==='current'){
+    // CURRENT: banner scrolls with content; center the day section → banner pushed off the top
+    banner.style.position='static';
+    setTimeout(()=>day.scrollIntoView({behavior:'smooth', block:'center'}), 40);
+    document.getElementById('verdict').textContent='✕ message scrolled off-screen';
+    document.getElementById('verdict').style.color='var(--red)';
+    document.getElementById('hint').textContent='CURRENT: it centers Day 1, so the view lands in the MIDDLE of the itinerary and the red message is scrolled off the top — you must scroll up to read it. (You see the day flash, but not WHY.)';
+  } else {
+    // PROPOSED: banner is sticky → stays pinned at top while we scroll to the day
+    banner.style.position='sticky';
+    setTimeout(()=>day.scrollIntoView({behavior:'smooth', block:'center'}), 40);
+    document.getElementById('verdict').textContent='✓ message stays visible';
+    document.getElementById('verdict').style.color='var(--green)';
+    document.getElementById('hint').textContent='PROPOSED: the red message is PINNED to the top of the modal (sticky), so it stays visible even as it scrolls to + flashes the failing day. You see WHAT is wrong and WHERE, no scrolling up.';
+  }
+}
+reset();
+</script>
+</body>
+</html>

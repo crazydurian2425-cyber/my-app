@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hotel check-in — keep 1h default, add back 15/30/45</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --amber:#b87333; --amberbg:#fdf3e3; --line:#e6e0d4; --paper:#fffdf8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:680px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:560px){.two{grid-template-columns:1fr}}
+  .col h2{font-size:13px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em}
+  .col.cur h2{color:var(--ink3)} .col.fix h2{color:var(--green)}
+  .lbl{font-size:11px;color:var(--ink2);margin-bottom:5px}
+  .field{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+  .field .cv{color:var(--ink3);font-size:12px;font-weight:400}
+  .menu{margin-top:4px;border:1px solid var(--line);border-radius:9px;background:#fff;overflow:hidden;max-height:230px;overflow-y:auto}
+  .opt{padding:9px 13px;font-size:13.5px;border-bottom:1px solid #f3efe7;cursor:default}
+  .opt:last-child{border-bottom:none}
+  .opt.new{background:var(--amberbg);color:var(--amber);font-weight:600}
+  .opt.def{background:var(--greenbg);color:var(--green);font-weight:700}
+  .opt .tag{float:right;font-size:10px;font-weight:700}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Hotel check‑in · "How long to stay"</h1>
+  <p class="lead">Keep the <b>1‑hour default</b>, but bring back the <b>15 / 30 / 45 min</b> options for a quick luggage drop.</p>
+
+  <div class="two">
+    <div class="col cur">
+      <h2>✕ Now</h2>
+      <div class="lbl">HOW LONG TO STAY</div>
+      <div class="field"><span>1 hour</span><span class="cv">default ✓</span></div>
+      <div class="menu">
+        <div class="opt def">1 hour <span class="tag">default · first option</span></div>
+        <div class="opt">1 hr 15 min</div>
+        <div class="opt">1 hr 30 min</div>
+        <div class="opt">1 hr 45 min</div>
+        <div class="opt">2 hours</div>
+      </div>
+      <div style="font-size:11.5px;color:var(--ink3);margin-top:6px">Floor = 60 → list starts at 1 hour. No 15/30/45.</div>
+    </div>
+
+    <div class="col fix">
+      <h2>✓ Proposed</h2>
+      <div class="lbl">HOW LONG TO STAY</div>
+      <div class="field"><span>1 hour</span><span class="cv">default ✓ (unchanged)</span></div>
+      <div class="menu">
+        <div class="opt new">15 min <span class="tag">＋ back</span></div>
+        <div class="opt new">30 min <span class="tag">＋ back</span></div>
+        <div class="opt new">45 min <span class="tag">＋ back</span></div>
+        <div class="opt def">1 hour <span class="tag">default ✓</span></div>
+        <div class="opt">1 hr 15 min</div>
+        <div class="opt">1 hr 30 min</div>
+        <div class="opt">2 hours</div>
+      </div>
+      <div style="font-size:11.5px;color:var(--ink3);margin-top:6px">Floor = 15 → 15/30/45 selectable. Default still seeds at 1 hour.</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Exactly your ask:</b> a new hotel check‑in still <b>defaults to 1 hour</b> — but the planner can now pick <b>15 / 30 / 45 min</b> for a quick luggage drop, and it actually sticks (the load won't bump it back to 60).<br><br>
+    <b>What changes:</b> lower the hotel‑check‑in floor from <b>60 → 15</b> in the dropdown + the load clamp (and the scheduling floor so a short stay really applies), while the <b>1‑hour default stays as‑is</b>. Other types (meal 30, hotel‑checkout 15) untouched.
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Last stop at the hotel — clean close + early hotel evening</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --amber:#b87333; --amberbg:#fbeede; --line:#e6e0d4; --hotel:#eef3ee; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e1d3;font:14px/1.55 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:20px}
+  .wrap{max-width:780px;margin:0 auto}
+  h1{font-size:19px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.two{grid-template-columns:1fr}}
+  .col{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .col h2{margin:0;padding:11px 15px;font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+  .col.cur h2{background:var(--redbg);color:var(--red)} .col.fix h2{background:var(--greenbg);color:var(--green)}
+  .body{padding:14px 15px}
+  .row{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;margin:6px 0;font-size:12.5px;background:#faf8f3}
+  .row.hotel{background:var(--hotel);border-color:var(--greenbd)}
+  .row .ic{width:20px;text-align:center;flex-shrink:0}
+  .row .t{flex:1}
+  .row .tag{font-size:10.5px;font-weight:700;border-radius:20px;padding:1px 8px}
+  .row .tag.warn{background:var(--amberbg);color:var(--amber)}
+  .row .tag.ok{background:var(--greenbg);color:var(--green)}
+  .btn{display:block;text-align:center;margin:8px 0;padding:9px;border-radius:20px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:#f6f3ec;color:var(--ink2)}
+  .btn.fixbtn{background:var(--greenbg);border-color:var(--greenbd);color:var(--green)}
+  .toast{font-size:11.5px;color:#fff;background:#2b2b27;border-radius:8px;padding:6px 10px;margin:4px 0;display:inline-block}
+  .endline{display:flex;align-items:center;gap:9px;padding:10px 11px;border-radius:9px;margin-top:6px;font-size:12.5px;font-weight:600}
+  .endline.cur{background:#fff;border:1px solid var(--redbd)}
+  .endline.fix{background:var(--greenbg);border:1px solid var(--greenbd);color:var(--green)}
+  .verdict{margin-top:10px;font-size:12.5px;font-weight:700;padding:8px 10px;border-radius:8px}
+  .verdict.bad{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .verdict.good{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .note{font-size:12.5px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:16px;line-height:1.65}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Last stop = dinner at the hotel</h1>
+  <p class="lead">Planner sets the final meal at the hotel (great hotel food). Here's today vs the suggestion.</p>
+
+  <div class="two">
+    <!-- CURRENT -->
+    <div class="col cur">
+      <h2>✕ Today</h2>
+      <div class="body">
+        <div class="row"><span class="ic">⛩️</span><span class="t">3:30 pm · Otaru Canal (sightseeing)</span></div>
+        <div class="row hotel"><span class="ic">🍽️</span><span class="t">6:15 pm · Dinner at <b>Hotel Torifito</b> · 30 min</span></div>
+        <div class="btn">🌙 End day · back to hotel</div>
+        <div class="toast">⚠️ Already at the hotel — no transport needed</div>
+        <div class="endline cur"><span>🌙</span><span style="flex:1">6:45 pm · Back at Hotel — Day 1 ends here</span><span class="tag warn">too early</span></div>
+        <div class="verdict bad">❌ Can't submit — "ends too early, add another stop" — but they're at the hotel and don't want one.</div>
+      </div>
+    </div>
+
+    <!-- FIXED -->
+    <div class="col fix">
+      <h2>✓ Suggestion</h2>
+      <div class="body">
+        <div class="row"><span class="ic">⛩️</span><span class="t">3:30 pm · Otaru Canal (sightseeing)</span></div>
+        <div class="row hotel"><span class="ic">🍽️</span><span class="t">6:15 pm · Dinner at <b>Hotel Torifito</b> · 30 min</span></div>
+        <div class="btn fixbtn">🏨 End day here · at the hotel</div>
+        <div class="endline fix"><span>🏨</span><span style="flex:1">6:45 pm · Day ends at the hotel</span><span class="tag ok">OK</span></div>
+        <div class="verdict good">✅ Submittable — a relaxing in‑hotel evening (dinner, onsen, rest) can end earlier, so no "too early" block.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>Two small changes:</b><br>
+    1. <b>Clearer wording &amp; clean close.</b> When the last stop is the hotel, the button reads <b>"End day here · at the hotel"</b> (not "back to hotel") and the day closes cleanly — no confusing "already at the hotel, no transport" message. <i>(Submitting already works for hotel‑ending days; this just makes it obvious.)</i><br>
+    2. <b>Allow an early hotel evening.</b> If the day <b>ends at the hotel</b>, drop the <b>"too early"</b> block — exactly like the departure day already allows an early finish. A traveller winding down at the hotel with dinner shouldn't be forced to add a stop they don't want. <i>(Ending too LATE is still flagged — that's still a real problem.)</i>
+  </div>
+</div>
+</body>
+</html>

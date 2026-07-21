@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missing "how long to stay" — submit guard demo</title>
+<style>
+  :root{ --paper:#fbf7ef; --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf;
+         --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --line:#ece5d8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#d8d2c4;font:15px/1.5 'DM Sans',system-ui,Arial,sans-serif;color:var(--ink)}
+  .modal{max-width:560px;margin:18px auto;background:var(--paper);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.25);overflow:hidden;display:flex;flex-direction:column;height:88vh}
+  .mhead{padding:16px 18px;border-bottom:1px solid var(--line);flex-shrink:0}
+  .mhead h1{font-size:18px;margin:0}
+  .mhead .sub{color:var(--ink2);font-size:12.5px;margin-top:2px}
+  .body{position:relative;overflow-y:auto;padding:14px 16px;flex:1}
+  /* error banner pinned at top of the scroll body (like the real app) */
+  #banner{display:none;position:sticky;top:0;z-index:5;background:var(--redbg);border:1px solid var(--redbd);color:var(--red);
+          border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:12px;align-items:center;gap:8px}
+  #banner.show{display:flex}
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tab{font-size:12px;padding:5px 10px;border:1px solid var(--line);border-radius:20px;background:#fff;color:var(--ink2)}
+  .tab.on{background:var(--green);color:#fff;border-color:var(--green)}
+  .stop{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#fff;transition:box-shadow .2s,border-color .2s}
+  .stop .top{display:flex;align-items:center;gap:10px}
+  .time{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;color:var(--ink2);min-width:64px}
+  .name{flex:1;font-weight:600}
+  .ty{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+  .row{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:13px;color:var(--ink2)}
+  select{font:inherit;font-size:13px;padding:5px 8px;border:1px solid #d8d0c0;border-radius:8px;background:#fff;color:var(--ink)}
+  .stay-missing{color:var(--red);font-weight:600}
+  .stop.bad{border-color:var(--redbd);box-shadow:0 0 0 3px rgba(179,38,30,.15)}
+  .stop.bad .inline{display:flex}
+  .inline{display:none;margin-top:9px;background:var(--redbg);border:1px solid var(--redbd);color:var(--red);border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:600;align-items:center;gap:6px}
+  .flash{animation:flash 1.4s ease}
+  @keyframes flash{0%,100%{box-shadow:0 0 0 3px rgba(179,38,30,.15)}50%{box-shadow:0 0 0 6px rgba(179,38,30,.35)}}
+  .foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;background:var(--paper)}
+  button.act{padding:10px 16px;border-radius:10px;border:none;font-weight:700;cursor:pointer;font-size:14px}
+  .secondary{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .primary{background:var(--green);color:#fff}
+  .ok-msg{display:none;background:var(--greenbg);border:1px solid var(--greenbd);color:var(--green);border-radius:10px;padding:10px 12px;font-weight:600;margin-bottom:12px}
+  .ok-msg.show{display:block}
+  .hint{font-size:12px;color:var(--ink2);max-width:560px;margin:0 auto 0;padding:10px 18px}
+</style>
+</head>
+<body>
+<div class="modal">
+  <div class="mhead">
+    <h1>Plan 1 — itinerary form <span style="font-size:12px;color:var(--ink3)">(demo)</span></h1>
+    <div class="sub">Group · 2D1N · proposed: missing "how long to stay" blocks submit + jumps to that stop</div>
+  </div>
+  <div class="body" id="body">
+    <div id="banner"><span>⚠</span><span id="banner-msg"></span></div>
+    <div class="ok-msg" id="okmsg">✓ Plan submitted — every stop has a stay time.</div>
+    <div class="tabs"><span class="tab on">Day 1</span><span class="tab">Day 2</span><span class="tab">Review</span></div>
+    <div id="list"></div>
+  </div>
+  <div class="foot">
+    <button class="act secondary" onclick="fixAll()">↺ Set all (test success)</button>
+    <button class="act primary" onclick="submitPlan()">✓ Submit plan</button>
+  </div>
+</div>
+<p class="hint">Try: click <b>Submit plan</b> → it blocks, jumps straight to <b>Pokémon Center</b> (the only stop with no stay time), highlights it, and shows the message <b>right on the stop</b> + at the top. Set its time, or click "Set all", then submit → success. (The list is long on purpose so you can see it scroll to the exact stop.)</p>
+
+<script>
+const DUR_OPTS = [
+  { v:'',   t:'⚠ not set' },
+  { v:'30', t:'30 min' }, { v:'45', t:'45 min' }, { v:'60', t:'1 hour' },
+  { v:'90', t:'1 h 30' }, { v:'120', t:'2 hours' },
+];
+// activity / meal stops need a stay; hotel/transport excluded (own rules)
+let stops = [
+  { id:1, time:'2:10 pm', type:'transport', name:'Taxi · Otaru Station → Hotel', stay:'auto', needs:false },
+  { id:2, time:'2:45 pm', type:'hotel_checkin', name:'Hotel Torifito (check-in)', stay:'60', needs:false },
+  { id:3, time:'4:00 pm', type:'meal', name:'シーフードオタモイ Seafood Otamoi', stay:'60', needs:true },
+  { id:4, time:'5:30 pm', type:'activity', name:'Pokémon Center Sapporo', stay:'', needs:true },   // ← MISSING
+  { id:5, time:'7:00 pm', type:'activity', name:'Otaru Canal night walk', stay:'45', needs:true },
+  { id:6, time:'8:15 pm', type:'meal', name:'Dinner · Sushi Kozo', stay:'90', needs:true },
+];
+const TYPE_LBL = { transport:'Transport', hotel_checkin:'Hotel check-in', meal:'Meal', activity:'Activity' };
+
+function render(){
+  const list = document.getElementById('list');
+  list.innerHTML = stops.map(s => {
+    const opts = DUR_OPTS.map(o => `<option value="${o.v}" ${o.v===s.stay?'selected':''}>${o.t}</option>`).join('');
+    const stayCtl = !s.needs
+      ? `<span style="color:var(--ink3)">${s.stay==='auto'?'auto':'set'}</span>`
+      : `<select onchange="setStay(${s.id}, this.value)">${opts}</select>`;
+    const missing = s.needs && !s.stay;
+    return `<div class="stop" id="stop-${s.id}">
+      <div class="top">
+        <span class="time">${s.time}</span>
+        <span class="name">${s.name}</span>
+        <span class="ty">${TYPE_LBL[s.type]||s.type}</span>
+      </div>
+      ${s.needs ? `<div class="row">How long to stay ${stayCtl} ${missing?'<span class="stay-missing">⚠ not set</span>':''}</div>` : ''}
+      <div class="inline"><span>⚠</span> This ${s.type==='meal'?'meal':'activity'} needs a "how long to stay" before you can submit.</div>
+    </div>`;
+  }).join('');
+}
+function setStay(id,v){ const s=stops.find(x=>x.id===id); if(s){ s.stay=v; clearErr(); render(); } }
+function fixAll(){ stops.forEach(s=>{ if(s.needs && !s.stay) s.stay='60'; }); clearErr(); render(); }
+
+function clearErr(){
+  document.getElementById('banner').classList.remove('show');
+  document.getElementById('okmsg').classList.remove('show');
+  stops.forEach(s=>document.getElementById('stop-'+s.id)?.classList.remove('bad','flash'));
+}
+
+function submitPlan(){
+  clearErr();
+  // PROPOSED guard: first activity/meal missing a stay time blocks submit.
+  const bad = stops.find(s => s.needs && !s.stay);
+  if (bad){
+    const banner = document.getElementById('banner');
+    document.getElementById('banner-msg').textContent =
+      `"${bad.name}" needs a "how long to stay" — set it before submitting.`;
+    banner.classList.add('show');
+    const el = document.getElementById('stop-'+bad.id);
+    el.classList.add('bad');
+    // scroll the OFFENDING STOP into view (not mid-page), with room for the banner
+    setTimeout(()=>{ el.scrollIntoView({behavior:'smooth', block:'center'}); el.classList.add('flash'); }, 50);
+    return;
+  }
+  document.getElementById('okmsg').classList.add('show');
+  document.getElementById('body').scrollTo({top:0, behavior:'smooth'});
+}
+render();
+</script>
+</body>
+</html>

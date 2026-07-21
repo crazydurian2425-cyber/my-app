@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A · B · C — the same dashboard at each fix level (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px}
+  .wrap{max-width:860px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 16px}
+
+  /* STEP 1: mode picker */
+  .modes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
+  .mode{border:2px solid var(--line);border-radius:12px;background:#fff;padding:10px 8px;cursor:pointer;text-align:center;transition:all .15s}
+  .mode:hover{background:#faf8f3}
+  .mode.sel{border-color:var(--green);background:var(--greenbg);box-shadow:0 3px 10px rgba(44,95,45,.12)}
+  .mode .nm{font-weight:800;font-size:14px}
+  .mode .ds{font-size:10.5px;color:var(--ink2);margin-top:3px;line-height:1.4}
+  .mode .rk{display:inline-block;margin-top:5px;font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px}
+  .rk.r0{background:#f1ece0;color:var(--ink3)}
+  .rk.r1{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .rk.r2{background:var(--amberbg);color:var(--amber);border:1px solid #e5c184}
+  .steplbl{font-size:11px;font-weight:800;letter-spacing:.06em;color:var(--ink3);text-transform:uppercase;margin:14px 0 6px}
+
+  /* STEP 2: actions */
+  .acts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .acts button{font:inherit;font-size:13px;font-weight:700;padding:11px 15px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  .acts button:hover{background:#faf8f3}
+  .acts .b1{border-color:var(--blue);color:var(--blue)}
+  .acts .b2{border-color:var(--amber);color:var(--amber)}
+  .acts .b3{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .acts .stop{border-style:dashed;color:var(--ink3)}
+
+  /* dashboard mock */
+  .stage{display:grid;grid-template-columns:430px 1fr;gap:16px}
+  @media(max-width:760px){.stage{grid-template-columns:1fr}}
+  .mock{border:1px solid var(--line);border-radius:14px;background:#faf7f0;padding:12px}
+  .loadveil{border-radius:10px;background:#efe9db;color:var(--ink3);font-size:12.5px;font-weight:700;text-align:center;padding:30px 0;display:none}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;position:relative;transition:box-shadow .12s,border-color .12s}
+  .sec:last-child{margin-bottom:0}
+  .sec .t{font-size:10.5px;color:var(--ink3);letter-spacing:.04em}
+  .sec .v{font-weight:700;font-size:13.5px}
+  .sec.rp{border-color:var(--red);box-shadow:0 0 0 3px var(--redbg)}
+  .sec.rp::after{content:"↻ repainted (wasted)";position:absolute;top:8px;right:10px;font-size:9.5px;font-weight:800;color:var(--red)}
+  .sec.rp.real::after{content:"↻ updated (real change)";color:var(--green)}
+  .sec.rp.real{border-color:var(--green);box-shadow:0 0 0 3px var(--greenbg)}
+  .type{margin-top:9px}
+  .type input{width:100%;font:inherit;font-size:13px;padding:10px 11px;border:1px solid var(--line);border-radius:9px}
+
+  /* narration + meters */
+  .narr{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;min-height:64px;margin-bottom:10px}
+  .narr b{color:var(--ink)}
+  .meters{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .m{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 12px;text-align:center}
+  .m .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .m .l{font-size:9.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .m .v.bad{color:var(--red)} .m .v.ok{color:var(--green)}
+  .note{font-size:12.5px;color:var(--ink2);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>The same dashboard at 4 levels: TODAY → A → A+B → A+B+C</h1>
+  <p class="lead"><b>How to use:</b> ① pick a level → ② press the same action buttons → ③ compare the freeze meter and flashes. Repeat for each level, left to right.</p>
+
+  <div class="steplbl">① Pick the fix level</div>
+  <div class="modes">
+    <div class="mode sel" id="md0" onclick="setMode(0)"><div class="nm">TODAY</div><div class="ds">no fixes — current production behaviour</div><span class="rk r0">—</span></div>
+    <div class="mode" id="md1" onclick="setMode(1)"><div class="nm">A</div><div class="ds">one refresh at a time + wallet calm-down</div><span class="rk r1">RISK: VERY LOW</span></div>
+    <div class="mode" id="md2" onclick="setMode(2)"><div class="nm">A + B</div><div class="ds">+ don't repaint / re-translate unchanged sections</div><span class="rk r1">RISK: VERY LOW</span></div>
+    <div class="mode" id="md3" onclick="setMode(3)"><div class="nm">A + B + C</div><div class="ds">+ first-load queries run together</div><span class="rk r2">C: MEDIUM-LOW</span></div>
+  </div>
+
+  <div class="steplbl">② Do things a real planner does</div>
+  <div class="acts">
+    <button class="b1" onclick="openDash()">🖥 Open the dashboard</button>
+    <button class="b2" onclick="startIdle()">⏱ Sit on it (auto-refresh cycles)</button>
+    <button class="b3" onclick="assign()">👨‍💼 CS assigns a new set</button>
+    <button class="stop" onclick="stopIdle()">■ stop</button>
+  </div>
+
+  <div class="stage">
+    <div>
+      <div class="mock" id="mock">
+        <div class="loadveil" id="veil">loading… (queries running)</div>
+        <div id="secs">
+          <div class="sec" id="sec-set"><div class="t">ACTIVE SET</div><div class="v" id="v-set">Set #001 · 2/5 done</div></div>
+          <div class="sec" id="sec-plans"><div class="t">PLANS</div><div class="v" id="v-plans">Plan 3: in progress</div></div>
+          <div class="sec" id="sec-wallet"><div class="t">WALLET</div><div class="v">¥11,000 unpaid</div></div>
+          <div class="type"><input id="typer" placeholder="③ type here while cycles run — feel the freeze"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="narr" id="narr">Pick a level and press an action. This box explains what the code is doing at every moment.</div>
+      <div class="meters">
+        <div class="m"><div class="v" id="mQ">0</div><div class="l">server questions</div></div>
+        <div class="m"><div class="v bad" id="mF">0 ms</div><div class="l">screen frozen (total)</div></div>
+        <div class="m"><div class="v bad" id="mW">0</div><div class="l">wasted repaints</div></div>
+        <div class="m"><div class="v ok" id="mR">0</div><div class="l">real updates shown</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" id="modeNote"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+let MODE=0, idleT=null, q=0, fz=0, wr=0, ru=0
+const NOTES=[
+ '<b>TODAY:</b> every check = 13 questions one-by-one + repaint the whole page even when nothing changed. Checks can start on top of unfinished ones. Freeze = the red flashes.',
+ '<b>A:</b> checks now run ONE at a time (extra triggers queue a single follow-up), and wallet event bursts reload once. The page still repaints every cycle though — B fixes that. <b>Risk: very low</b> — the guard pattern already runs inside autosave today.',
+ '<b>A+B:</b> a check that finds nothing new <b>doesn\'t touch the screen at all</b> — no repaint, no re-translation. Real changes still repaint (only the changed section). This is the level that cures the planners\' freeze. <b>Risk: very low</b>.',
+ '<b>A+B+C:</b> same as A+B, plus first open asks its ~10 questions together instead of one-by-one → the dashboard appears in a fraction of the time. <b>C risk: medium-low</b> (order of dependent queries must be kept) — ships as its own commit, instantly revertible.'
+]
+function setMode(m){ MODE=m; stopIdle(); q=fz=wr=ru=0; paintMeters()
+  for(let i=0;i<4;i++) $('md'+i).classList.toggle('sel', i===m)
+  $('modeNote').innerHTML=NOTES[m]; $('narr').textContent='Level set. Now press the action buttons.' }
+function busy(ms){ const e=performance.now()+ms; while(performance.now()<e){} fz+=ms; paintMeters() }
+function paintMeters(){ $('mQ').textContent=q; $('mF').textContent=fz.toFixed(0)+' ms'; $('mW').textContent=wr; $('mR').textContent=ru }
+function flash(id, real){ const el=$(id); el.classList.add('rp'); if(real)el.classList.add('real'); setTimeout(()=>{el.classList.remove('rp');el.classList.remove('real')},850) }
+function narr(t){ $('narr').innerHTML=t }
+
+// ① Open the dashboard — serial vs parallel load
+let opening=false
+function openDash(){
+  if(opening) return
+  opening=true
+  $('veil').style.display='block'; $('secs').style.opacity=.25
+  const serial = (MODE<3)
+  const n=10, rtt=180
+  const total = serial ? n*rtt : 3*rtt
+  narr(serial
+    ? '🖥 Opening: asking <b>10 questions one at a time</b>… each waits for the previous. The page is blank/frozen the whole time.'
+    : '🖥 Opening: dependent questions stay in order (assignment→set→plans), the other 7 run <b>together</b>.')
+  let asked=0
+  const iv=setInterval(()=>{ q += serial?1:(asked===0?3:(asked===1?0:7)); asked++; paintMeters()
+    if((serial&&asked>=n)||(!serial&&asked>=2)) clearInterval(iv) }, serial?rtt:rtt)
+  setTimeout(()=>{ $('veil').style.display='none'; $('secs').style.opacity=1; opening=false
+    narr((serial? '🖥 First paint after <b>~'+(total/1000).toFixed(1)+'s</b> of serial waiting.' : '🖥 First paint after <b>~'+(total/1000).toFixed(1)+'s</b>.') + ' Now press ⏱ to sit on the page.')
+  }, total)
+}
+
+// ② Idle cycles
+function cycle(){
+  if(MODE===0){
+    narr('⏱ Timer tick → 13 serial questions → answer: <b>nothing changed</b> → repaint EVERYTHING anyway. (Sometimes a second check starts before the first ends — doubling this.)')
+    q+=13; busy(140)
+    ;['sec-set','sec-plans','sec-wallet'].forEach(x=>flash(x,false)); wr++
+  } else if(MODE===1){
+    narr('⏱ Timer tick → check runs (alone — no pile-up possible) → nothing changed → still repaints once. Less freeze than TODAY, flashes remain.')
+    q+=13; busy(60)
+    ;['sec-set','sec-plans','sec-wallet'].forEach(x=>flash(x,false)); wr++
+  } else {
+    narr('⏱ Timer tick → check runs (alone) → <b>nothing changed → screen untouched.</b> No repaint, no re-translation, no freeze. You can type freely.')
+    q+= (MODE>=3?10:13)
+  }
+  paintMeters()
+}
+function startIdle(){ if(idleT)return; cycle(); idleT=setInterval(cycle, 2600) }
+function stopIdle(){ clearInterval(idleT); idleT=null }
+
+// ③ Real change
+function assign(){
+  narr('👨‍💼 CS assigned a set → the database pushed a signal to this page (~0.4s)…')
+  setTimeout(()=>{
+    $('v-set').textContent='Set #002 NEW · 0/5'
+    ru++
+    if(MODE<2){ ['sec-set','sec-plans','sec-wallet'].forEach(x=>flash(x, x==='sec-set')); if(MODE===0)busy(140); wr++ }
+    else { flash('sec-set', true) }
+    paintMeters()
+    narr('⚡ <b>The new set appeared — NO F5, at every level.</b> ' + (MODE<2 ? 'TODAY also repainted the unrelated sections.' : 'A+B updated <b>only</b> the set card.'))
+  }, 700)
+}
+setMode(0)
+</script>
+</body>
+</html>

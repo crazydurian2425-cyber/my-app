@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emoji icons — demo (Journey Junction)</title>
+<style>
+  :root{
+    --bg:#FBF8F0; --card:#FFFDF8; --bd:#ece4d3; --bd2:#e3dccd;
+    --ink:#1B1F1C; --ink2:#4A524C; --ink3:#9aa09a;
+    --gold:#9E7E3C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;
+    line-height:1.5;padding:0 0 60px}
+  .wrap{max-width:840px;margin:0 auto;padding:0 18px}
+  header.top{background:linear-gradient(135deg,#2c8079,#1f6f66);color:#fff;padding:26px 0;margin-bottom:26px}
+  header.top h1{margin:0 0 4px;font-size:22px;font-weight:700}
+  header.top p{margin:0;opacity:.9;font-size:13.5px}
+  .demo-flag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+    border-radius:99px;padding:3px 11px;font-size:11.5px;font-weight:600;margin-bottom:10px}
+  h2{font-size:15px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--gold);margin:34px 0 12px}
+  .note{font-size:12.5px;color:var(--ink2);margin:-6px 0 14px}
+
+  /* ── icon chip (the coloured circle) ───────────────────────────── */
+  .chip{display:inline-flex;align-items:center;justify-content:center;
+    width:34px;height:34px;border-radius:50%;font-size:17px;line-height:1;flex-shrink:0;
+    box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .chip.sm{width:24px;height:24px;font-size:12.5px}
+  .c-activity{background:rgba(47,143,134,.16)}
+  .c-meal{background:rgba(212,145,61,.19)}
+  .c-shop{background:rgba(194,94,134,.17)}
+  .c-ent{background:rgba(122,94,168,.17)}
+  .c-free{background:rgba(154,123,62,.18)}
+  .c-hotel{background:#f0d9a8}
+  .c-arrive{background:#cfe1ec}
+  .c-night{background:#d2dae8}
+  .c-depart{background:#f3d7c2}
+  .c-transit{background:#FFFDF8;box-shadow:inset 0 0 0 1.5px var(--bd2)}
+  .c-brief{background:rgba(158,126,60,.16)}
+
+  /* ── mapping table ─────────────────────────────────────────────── */
+  .map{background:var(--card);border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+  .map .row{display:grid;grid-template-columns:48px 1fr 1fr;gap:10px;align-items:center;
+    padding:9px 14px;border-bottom:1px solid var(--bd)}
+  .map .row:last-child{border-bottom:0}
+  .map .row.head{background:#f6efe0;font-size:11px;font-weight:700;text-transform:uppercase;
+    color:var(--gold);letter-spacing:.03em}
+  .map .lbl{font-size:13.5px;font-weight:600}
+  .map .was{font-size:12.5px;color:var(--ink3)}
+  .map .alt{font-size:11.5px;color:var(--ink3)}
+
+  /* ── card / timeline mockups ───────────────────────────────────── */
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+  .daytitle{font-size:15px;font-weight:700}
+  .daysub{font-size:12.5px;color:#b3742c;margin-top:2px}
+  .tl{margin-top:14px;position:relative}
+  .tl::before{content:"";position:absolute;left:16px;top:14px;bottom:14px;width:2px;background:var(--bd2)}
+  .ev{display:grid;grid-template-columns:34px 56px 1fr;gap:12px;align-items:flex-start;padding:7px 0;position:relative}
+  .ev .chip{position:relative;z-index:1}
+  .ev .t{font-size:12.5px;font-weight:600;color:var(--ink2);padding-top:8px}
+  .ev .t.muted{color:var(--ink3);font-weight:500;font-size:11.5px}
+  .ev .body{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:9px 13px}
+  .ev .body.bare{background:#f4eedf;border-color:transparent}
+  .ev .nm{font-size:14px;font-weight:600}
+  .ev .mt{font-size:12px;color:#8B908A;margin-top:2px}
+  .leg{display:grid;grid-template-columns:34px 56px 1fr;gap:12px;align-items:center;padding:3px 0}
+  .leg .lt{}
+  .leg .txt{font-size:12.5px;color:var(--ink2)}
+  .leg .txt b{font-weight:600}
+  .star{color:#caa53c;font-weight:600}
+
+  /* brief */
+  .brief-sec{display:flex;align-items:center;gap:10px;margin:18px 0 10px}
+  .brief-sec .chip{width:30px;height:30px;font-size:15px}
+  .brief-sec h3{margin:0;font-size:14.5px;font-weight:700}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:12px 22px;padding-left:40px}
+  .kv .k{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink3);font-weight:600}
+  .kv .v{font-size:13.5px;color:var(--ink);margin-top:1px;margin-bottom:6px}
+  hr.sep{border:0;border-top:1px solid var(--bd);margin:6px 0 0}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <span class="demo-flag">DEMO ONLY · nothing in the live app has changed</span>
+    <h1>Colourful emoji icons — proposal</h1>
+    <p>Same coloured circles as today, but the monochrome line-icons are swapped for colourful emoji. Review below; tell me yes/tweaks and I'll apply it to the real dashboard.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ───────────────────────── MAPPING ───────────────────────── -->
+  <h2>1 · Icon mapping</h2>
+  <p class="note">“Was” = the current line-icon. Alt = other options you can pick instead.</p>
+  <div class="map">
+    <div class="row head"><div>New</div><div>Where it shows</div><div>Was → alternates</div></div>
+
+    <div class="row"><div><span class="chip c-arrive">🚄</span></div><div class="lbl">Arrival — Shinkansen</div><div class="was">line train · alts: 🚅 🚆</div></div>
+    <div class="row"><div><span class="chip c-arrive">✈️</span></div><div class="lbl">Arrival / Departure — flight</div><div class="was">line plane · alt: 🛬 🛫</div></div>
+    <div class="row"><div><span class="chip c-hotel">🏨</span></div><div class="lbl">Hotel · check-in · “Start at hotel”</div><div class="was">line bed · alt: 🛏️ 🛎️</div></div>
+    <div class="row"><div><span class="chip c-activity">📸</span></div><div class="lbl">Activity / sightseeing</div><div class="was">line camera · alt: 📍 🎡 🏯</div></div>
+    <div class="row"><div><span class="chip c-meal">🍽️</span></div><div class="lbl">Meal</div><div class="was">line fork/knife · alt: 🍜 🍱 🍣</div></div>
+    <div class="row"><div><span class="chip c-free">☕</span></div><div class="lbl">Free time / café</div><div class="was">line cup · alt: 🍵 🧋</div></div>
+    <div class="row"><div><span class="chip c-shop">🛍️</span></div><div class="lbl">Shopping</div><div class="was">line bag · alt: 🛒 🏬</div></div>
+    <div class="row"><div><span class="chip c-ent">🎮</span></div><div class="lbl">Entertainment (e.g. game centre)</div><div class="was">line ticket · alt: 🎭 🎟️ 🎶</div></div>
+    <div class="row"><div><span class="chip c-night">🌙</span></div><div class="lbl">Overnight</div><div class="was">line moon · alt: 🛌 🌃</div></div>
+    <div class="row"><div><span class="chip c-depart">🚄</span></div><div class="lbl">Departure (method-aware)</div><div class="was">line plane/train</div></div>
+
+    <div class="row head"><div>New</div><div>Transit legs (between stops)</div><div>Was</div></div>
+    <div class="row"><div><span class="chip c-transit sm">🚕</span></div><div class="lbl">Taxi / GO タクシー</div><div class="was">line car</div></div>
+    <div class="row"><div><span class="chip c-transit sm">🚶</span></div><div class="lbl">Walk · 徒歩</div><div class="was">line walker</div></div>
+    <div class="row"><div><span class="chip c-transit sm">🚇</span></div><div class="lbl">Metro / 公共交通機関</div><div class="was">line metro</div></div>
+    <div class="row"><div><span class="chip c-transit sm">🚆</span></div><div class="lbl">Train / 電車</div><div class="was">line train</div></div>
+    <div class="row"><div><span class="chip c-transit sm">🚄</span></div><div class="lbl">Shinkansen / 新幹線</div><div class="was">line train</div></div>
+    <div class="row"><div><span class="chip c-transit sm">🚌</span></div><div class="lbl">Bus / バス</div><div class="was">line bus</div></div>
+    <div class="row"><div><span class="chip c-transit sm">⛴️</span></div><div class="lbl">Ferry / 船</div><div class="was">line boat</div></div>
+
+    <div class="row head"><div>New</div><div>Traveler brief sections</div><div>Was</div></div>
+    <div class="row"><div><span class="chip c-brief">📋</span></div><div class="lbl">旅行者の依頼内容 (request)</div><div class="was">line pin</div></div>
+    <div class="row"><div><span class="chip c-brief">🗺️</span></div><div class="lbl">旅行の基本 (trip basics)</div><div class="was">line swap</div></div>
+    <div class="row"><div><span class="chip c-brief">👥</span></div><div class="lbl">旅行者 (travelers)</div><div class="was">line people</div></div>
+    <div class="row"><div><span class="chip c-brief">💴</span></div><div class="lbl">予算 (budget)</div><div class="was">line € (wrong currency!) → 💴/💰</div></div>
+    <div class="row"><div><span class="chip c-brief">🏨</span></div><div class="lbl">宿泊 (accommodation)</div><div class="was">line bed</div></div>
+    <div class="row"><div><span class="chip c-brief">🍽️</span></div><div class="lbl">食事 (dietary)</div><div class="was">line plate</div></div>
+    <div class="row"><div><span class="chip c-brief">📝</span></div><div class="lbl">メモ / 特記 (notes)</div><div class="was">line note</div></div>
+  </div>
+
+  <!-- ───────────────────────── PLAN SUMMARY ───────────────────────── -->
+  <h2>2 · Plan summary timeline</h2>
+  <p class="note">Your Osaka example, rendered with emoji.</p>
+  <div class="card">
+    <div class="daytitle">1日目 · 8月6日(木)</div>
+    <div class="daysub">到着日 · ゆったりと</div>
+    <div class="tl">
+      <div class="ev"><span class="chip c-arrive">🚄</span><div class="t">14:00</div>
+        <div class="body bare"><div class="nm">到着 · Shin-Osaka</div><div class="mt">電車 · Kyotoから</div></div></div>
+      <div class="leg"><span class="chip c-transit sm">🚕</span><div></div><div class="txt"><b>GOタクシー</b> · 12分</div></div>
+      <div class="ev"><span class="chip c-hotel">🏨</span><div class="t">14:30</div>
+        <div class="body"><div class="nm">Hotel Hankyu RESPIRE OSAKA</div><div class="mt">1-1 Ōfukachō, Kita Ward · <span class="star">★ 4.3</span> · 1時間</div></div></div>
+      <div class="leg"><span class="chip c-transit sm">🚕</span><div></div><div class="txt"><b>GOタクシー</b> · 16分</div></div>
+      <div class="ev"><span class="chip c-ent">🎮</span><div class="t">16:00</div>
+        <div class="body"><div class="nm">GAME by Alan Smithee 心斎橋</div><div class="mt">Nishishinsaibashi 1-chōme · <span class="star">★ 2.6</span> · 45分</div></div></div>
+      <div class="leg"><span class="chip c-transit sm">🚕</span><div></div><div class="txt"><b>GOタクシー</b> · 15分</div></div>
+      <div class="ev"><span class="chip c-night">🌙</span><div class="t muted">17:00</div>
+        <div class="body bare"><div class="nm">宿泊 · Hotel Hankyu RESPIRE OSAKA</div></div></div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────── BRIEF ───────────────────────── -->
+  <h2>3 · Traveler brief</h2>
+  <div class="card">
+    <div class="brief-sec"><span class="chip c-brief">📋</span><h3>旅行者の依頼内容</h3></div>
+    <div class="brief-sec"><span class="chip c-brief">🗺️</span><h3>旅行の基本</h3></div>
+    <div class="kv">
+      <div><div class="k">目的地</div><div class="v">大阪</div></div>
+      <div><div class="k">期間</div><div class="v">1泊2日</div></div>
+      <div><div class="k">ペース</div><div class="v">ほどほど</div></div>
+      <div><div class="k">シーン</div><div class="v">結婚15周年の記念旅行</div></div>
+    </div>
+    <hr class="sep">
+    <div class="brief-sec"><span class="chip c-brief">👥</span><h3>旅行者</h3></div>
+    <div class="kv">
+      <div><div class="k">グループの種類</div><div class="v">家族 · 4名</div></div>
+      <div><div class="k">年齢</div><div class="v">42, 39, 11, 8</div></div>
+      <div><div class="k">言語</div><div class="v">スペイン語 · 英語（中級）</div></div>
+      <div><div class="k">移動のしやすさ</div><div class="v">なし</div></div>
+    </div>
+    <hr class="sep">
+    <div class="brief-sec"><span class="chip c-brief">💴</span><h3>予算</h3></div>
+    <div class="kv">
+      <div><div class="k">予算 / 人 / 日</div><div class="v">¥31,000</div></div>
+      <div><div class="k">宿泊予算 / 泊</div><div class="v">¥104,000</div></div>
+    </div>
+  </div>
+
+  <!-- ───────────────────────── DAY BUILDER ───────────────────────── -->
+  <h2>4 · Day builder (editing view)</h2>
+  <div class="card">
+    <div class="tl">
+      <div class="ev"><span class="chip c-arrive">🚄</span><div class="t">14:00</div>
+        <div class="body bare"><div class="nm">新幹線 到着 · Shin-Osaka Station</div><div class="mt">Kyoto から · 1日目は到着とともに始まります</div></div></div>
+      <div class="leg"><span class="chip c-transit sm">🚕</span><div class="txt" style="padding-top:1px">14:10→14:22</div><div class="txt"><b>GOタクシー</b> · Shin-Osaka → Hotel Hankyu · 4.3km · 12min</div></div>
+      <div class="ev"><span class="chip c-hotel">🏨</span><div class="t">14:30</div>
+        <div class="body"><div class="nm">Hotel Hankyu RESPIRE OSAKA</div><div class="mt">チェックイン · 1時間</div></div></div>
+      <div class="ev"><span class="chip c-night">🌙</span><div class="t muted">17:00</div>
+        <div class="body bare"><div class="nm">宿泊 · Hotel Hankyu RESPIRE OSAKA</div><div class="mt">1日目はここで終わります</div></div></div>
+    </div>
+    <p class="note" style="margin-top:12px">💡 ヒント：旅行者は疲れて到着します — ホテル近くの落ち着いた予定を組みましょう。</p>
+  </div>
+
+  <p class="note" style="margin-top:24px;font-size:12px">
+    Scope if you approve: the timeline node chips, transit-leg icons, day-builder anchors, and brief section headers
+    (the surfaces above). Sidebar nav icons are UI chrome — left as-is unless you want those too.
+    Emoji render in full colour on every modern browser/OS; on a rare old device they fall back to a flat glyph (never broken).
+  </p>
+</div>
+</body>
+</html>

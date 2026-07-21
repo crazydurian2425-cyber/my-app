@@ -107,6 +107,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);h
 .conv-brand{font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;letter-spacing:0.05em;border:1px solid;}
 .conv-brand.jj {background:rgba(45,158,122,0.12);color:#4FB891;border-color:rgba(45,158,122,0.38);}
 .conv-brand.vbd{background:rgba(238,108,58,0.13);color:#EE8C5E;border-color:rgba(238,108,58,0.42);}
+.conv-brand.tc{background:rgba(44,95,124,0.12);border:1px solid rgba(44,95,124,0.40);color:#2C5F7C;}
 /* Mentor filter dropdown — sits in the tag-filter row, chip-sized */
 .mentor-filter-sel{padding:2px 6px;border-radius:99px;background:transparent;border:1px solid var(--border-med);font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink-3);cursor:pointer;font-family:'DM Sans',sans-serif;max-width:130px;flex-shrink:0;}
 .mentor-filter-sel.on{border-color:var(--green-mid);background:rgba(45,158,122,0.12);color:var(--green-dark,#0f5240);}
@@ -610,6 +611,19 @@ document.addEventListener('keydown', e => {
 </script>
 
 <script>
+// Brand registry for the CS console. One entry per brand; `cls` maps to the
+// .conv-brand CSS classes. Trip Companion shares VBD's palette, so it gets its
+// own blue chip to stay tellable apart at a glance.
+const CS_BRANDS = {
+  jj:  { label: 'JJ',  name: 'Journey Junction',     cls: 'jj'  },
+  vbd: { label: 'VBD', name: 'Vacations by Design',  cls: 'vbd' },
+  tc:  { label: 'TC',  name: 'Trip Companion',       cls: 'tc'  }
+}
+function csBrandChip(b) {
+  const B = CS_BRANDS[b] || CS_BRANDS.jj
+  return `<span class="conv-brand ${B.cls}" title="${B.name} planner">${B.label}</span>`
+}
+
 // ── AUTH (simple password, same pattern as admin) ────────────
 // Service-role key removed from client. All Supabase REST/auth/storage calls
 // route through `/api/sb/*` which is gated by Basic Auth in _worker.js — the
@@ -1245,9 +1259,7 @@ function renderInbox() {
       ? `<span class="conv-tag" style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.4);" title="Onboarding mentor">👤 ${escapeHtml(p.onboarding_mentor)}</span>` : ''
     // Brand chip — which company this planner belongs to (jj default for
     // pre-migration rows). Always shown so both brands are tellable at a glance.
-    const brandChip = p.brand === 'vbd'
-      ? '<span class="conv-brand vbd" title="Vacations by Design planner">VBD</span>'
-      : '<span class="conv-brand jj" title="Journey Junction planner">JJ</span>'
+    const brandChip = csBrandChip(p.brand)
     const chipsRow = `<div class="conv-chips">${brandChip}${mentorChip}${tagChipsHtml}${tagOverflow}${assigneeChip}</div>`
 
     return `
@@ -1330,9 +1342,8 @@ async function openConversation(id) {
   const elMentor = document.getElementById('info-mentor'); if (elMentor) elMentor.textContent = p.onboarding_mentor || '—'
   const rowMentor = document.getElementById('row-mentor'); if (rowMentor) rowMentor.classList.toggle('empty', !p.onboarding_mentor)
   const elBrand = document.getElementById('info-brand')
-  if (elBrand) elBrand.innerHTML = p.brand === 'vbd'
-    ? '<span class="conv-brand vbd">VBD</span> Vacations by Design'
-    : '<span class="conv-brand jj">JJ</span> Journey Junction'
+  if (elBrand) { const _cb = CS_BRANDS[p.brand] || CS_BRANDS.jj
+    elBrand.innerHTML = `<span class="conv-brand ${_cb.cls}">${_cb.label}</span> ${_cb.name}` }
   const badge = document.getElementById('info-status')
   badge.textContent = p.status || 'active'
   badge.className = 'info-badge ' + (p.status === 'active' ? 'ok' : 'amber')

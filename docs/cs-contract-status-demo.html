@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CS console — 業務委託契約書 status (demo)</title>
+<style>
+  :root{ --bg:#0f1512; --panel:#141b17; --panel2:#1a231e; --border:#243029; --ink:#e8f0ea; --ink2:#9fb3a6; --ink3:#6b8074;
+         --green:#3ecf8e; --amber:#e0a34a; --red:#e05c5c; --blue:#818cf8; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b100d;font:14px/1.6 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:22px 18px}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px;color:#fff}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  h2{font-size:15px;margin:22px 0 8px;color:#fff;display:flex;gap:8px;align-items:center}
+  h2 .n{width:23px;height:23px;border-radius:50%;background:var(--green);color:#06231a;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+  .cols{display:grid;grid-template-columns:1fr 320px;gap:16px}
+  @media(max-width:780px){.cols{grid-template-columns:1fr}}
+
+  /* CS panel mock */
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px}
+  .phead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .av{width:34px;height:34px;border-radius:50%;background:#20302a;color:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .pname{font-weight:700;font-size:14px}
+  .badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(62,207,142,.15);color:var(--green);border:1px solid rgba(62,207,142,.35)}
+  .row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .row:last-child{border-bottom:none}
+  .ci{width:18px;height:18px;color:var(--ink3);flex-shrink:0;margin-top:2px;font-size:13px;text-align:center}
+  .clabel{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}
+  .cval{font-size:13px;font-weight:600}
+  .sub{font-size:11px;color:var(--ink3);margin-top:2px}
+
+  /* the NEW contract row */
+  .row.contract{background:rgba(255,255,255,.02);border-radius:9px;padding:9px 10px;border:1px solid var(--border);margin:8px 0}
+  .lt{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px}
+  .lt-signed{background:rgba(62,207,142,.16);color:var(--green);border:1px solid rgba(62,207,142,.4)}
+  .lt-sent{background:rgba(224,163,74,.16);color:var(--amber);border:1px solid rgba(224,163,74,.4)}
+  .lt-none{background:rgba(224,92,92,.14);color:var(--red);border:1px solid rgba(224,92,92,.35)}
+  .lt-cancel{background:rgba(255,255,255,.07);color:var(--ink3);border:1px solid var(--border)}
+  .minibtn{font:inherit;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:7px;background:transparent;color:var(--blue);border:1px solid rgba(129,140,248,.4);cursor:pointer;margin-left:auto}
+  .minibtn:hover{background:rgba(129,140,248,.12)}
+
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  button.sw{font:inherit;font-size:12.5px;font-weight:700;padding:9px 13px;border-radius:9px;background:var(--panel2);color:var(--ink);border:1px solid var(--border);cursor:pointer}
+  button.sw:hover{border-color:var(--green)}
+  button.sw.on{background:var(--green);color:#06231a;border-color:var(--green)}
+
+  /* conversation list chip demo */
+  .conv{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+  .conv .nm{font-size:13px;font-weight:600;flex:1}
+  .tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px}
+  .tag.mentor{background:rgba(129,140,248,.15);color:var(--blue);border:1px solid rgba(129,140,248,.4)}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;color:var(--ink2)}
+  th{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+  td b{color:var(--ink)}
+  code{background:#0b100d;border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:11.5px;color:var(--green)}
+  .note{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:12px 15px;font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:14px}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CS console — see 業務委託契約書 sent &amp; signed status</h1>
+  <p class="lead">Demo of a new <b>Contract</b> row in the planner panel (right side of the CS chat), plus an at-a-glance chip in the conversation list. Uses your existing <code>employment_letters</code> data — no new tables.</p>
+
+  <h2><span class="n">1</span>Try each state</h2>
+  <div class="btns">
+    <button class="sw on" onclick="setState('signed',this)">✓ Signed</button>
+    <button class="sw" onclick="setState('sent',this)">✉ Sent · waiting</button>
+    <button class="sw" onclick="setState('none',this)">✕ Not sent</button>
+    <button class="sw" onclick="setState('cancelled',this)">⊘ Cancelled</button>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="panel">
+        <div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Conversation list — at-a-glance chip</div>
+        <div class="conv"><div class="av" style="width:26px;height:26px;font-size:10px">川</div><div class="nm">川神響</div><span class="tag mentor">👤 FCKING</span><span id="listChip"></span></div>
+        <div class="conv"><div class="av" style="width:26px;height:26px;font-size:10px">辻</div><div class="nm">辻本詩織</div><span class="tag mentor">👤 MIKE</span><span class="lt lt-sent">✉ 契約書 待ち</span></div>
+        <div class="conv"><div class="av" style="width:26px;height:26px;font-size:10px">姜</div><div class="nm">姜蓮</div><span class="tag mentor">👤 FCKING</span><span class="lt lt-none">✕ 契約書 未送信</span></div>
+      </div>
+      <div class="note" style="margin-top:12px">
+        <b>Why a chip in the list too:</b> CS can spot at a glance who hasn't signed without opening each chat. Optional — say if you'd rather keep the list clean and only show it in the panel.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="phead">
+        <div class="av">川</div>
+        <div style="flex:1"><div class="pname">川神響</div></div>
+        <span class="badge">active</span>
+      </div>
+      <div class="row"><div class="ci">✉</div><div><div class="clabel">Email</div><div class="cval">hibiki.miwa@gmail.com</div></div></div>
+      <div class="row"><div class="ci">📍</div><div><div class="clabel">City</div><div class="cval">Tokyo</div></div></div>
+      <div class="row"><div class="ci">👤</div><div><div class="clabel">Onboarding mentor</div><div class="cval">FCKING</div></div></div>
+
+      <!-- THE NEW ROW -->
+      <div class="row contract">
+        <div class="ci">📄</div>
+        <div style="flex:1">
+          <div class="clabel">業務委託契約書 (Contract)</div>
+          <div style="margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span id="ltBadge"></span>
+            <button class="minibtn" id="ltAction"></button>
+          </div>
+          <div class="sub" id="ltSub"></div>
+        </div>
+      </div>
+
+      <div class="row"><div class="ci">📅</div><div><div class="clabel">Joined</div><div class="cval">2026年7月</div></div></div>
+    </div>
+  </div>
+
+  <h2><span class="n">2</span>Where the data comes from (already exists)</h2>
+  <div class="panel">
+    <table>
+      <tr><th>Shown</th><th>From your existing <code>employment_letters</code> table</th></tr>
+      <tr><td><b>✓ Signed</b></td><td><code>status = 'signed'</code> → shows sent date → signed date, and a link to view the signed copy (<code>signature_image_url</code>)</td></tr>
+      <tr><td><b>✉ Sent · waiting</b></td><td><code>status = 'pending'</code> → shows when it was sent (<code>sent_at</code>) + a <b>Copy signing link</b> button so CS can re-send it in chat</td></tr>
+      <tr><td><b>✕ Not sent</b></td><td>no letter row for this planner → CS knows to ask admin to send it</td></tr>
+      <tr><td><b>⊘ Cancelled</b></td><td><code>status = 'cancelled'</code></td></tr>
+    </table>
+    <div class="note" style="margin-top:12px">
+      <b>Same rule the mentor console already uses:</b> signed wins → else latest non-cancelled = "sent" → else "not sent". So CS and the mentor page never disagree.<br>
+      <b>Letter types:</b> your table also has 保証書 (guarantee) and 最終確認書 (final confirmation). I can show <b>just the 業務委託契約書</b>, or all three stacked — your call.
+    </div>
+  </div>
+
+  <h2><span class="n">3</span>What it takes</h2>
+  <div class="panel">
+    <table>
+      <tr><th>Part</th><th>Detail</th></tr>
+      <tr><td><b>Data</b></td><td>None new — one extra read of <code>employment_letters</code> when a chat opens (or one batched read for the list chips).</td></tr>
+      <tr><td><b>Code</b></td><td>One new row in the CS panel + a small status helper (reusing the mentor console's logic). ~40 lines in <code>supercs999.html</code> only.</td></tr>
+      <tr><td><b>Risk</b></td><td><b>Very low</b> — read-only display in an admin page. Cannot touch planners, plans, autosave, or money.</td></tr>
+      <tr><td><b>Worker</b></td><td><code>employment_letters</code> may need adding to the admin proxy allow-list (1 line) if it isn't there.</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>Decisions I need from you:</b><br>
+    ① Only 業務委託契約書, or all three letter types (契約書 / 保証書 / 最終確認書)?<br>
+    ② Chip in the conversation list too, or panel only?<br>
+    ③ Should CS be able to <b>copy the signing link</b> (to re-send in chat), or view-only status?
+  </div>
+</div>
+
+<script>
+const S = {
+  signed:   { badge:'<span class="lt lt-signed">✓ 署名済み</span>', chip:'<span class="lt lt-signed">✓ 契約書</span>', sub:'sent 3 Jul 2026 → signed 4 Jul 2026', action:'View signed copy →' },
+  sent:     { badge:'<span class="lt lt-sent">✉ 送信済み · 署名待ち</span>', chip:'<span class="lt lt-sent">✉ 契約書 待ち</span>', sub:'sent 12 Jul 2026 · 3 days waiting', action:'Copy signing link' },
+  none:     { badge:'<span class="lt lt-none">✕ 未送信</span>', chip:'<span class="lt lt-none">✕ 契約書 未送信</span>', sub:'No contract has been sent to this planner', action:'' },
+  cancelled:{ badge:'<span class="lt lt-cancel">⊘ 取消済み</span>', chip:'<span class="lt lt-cancel">⊘ 契約書</span>', sub:'cancelled 8 Jul 2026', action:'' },
+}
+function setState(k, btn){
+  document.querySelectorAll('.sw').forEach(b=>b.classList.remove('on')); if(btn) btn.classList.add('on')
+  const s = S[k]
+  document.getElementById('ltBadge').innerHTML = s.badge
+  document.getElementById('ltSub').textContent = s.sub
+  document.getElementById('listChip').innerHTML = s.chip
+  const a = document.getElementById('ltAction')
+  a.textContent = s.action; a.style.display = s.action ? '' : 'none'
+}
+setState('signed')
+</script>
+</body>
+</html>

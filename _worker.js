@@ -88,6 +88,26 @@ const BRANDS = {
     wordmarkAccent: 'by Design',
     footer: 'Vacations by Design Ltd · 9 Sharmans Close, Digswell, Welwyn, Hertfordshire, AL6 0AR · Company No. 03039047',
   },
+  'tripcompanionplanner.com': {
+    key: 'tc',
+    name: 'Trip Companion',
+    roleName: '旅行デザイナー',       // TC's job title (VBD is 旅程デザイナー — one character apart)
+    legalName: 'Trip Companion Ltd',
+    slogan: 'Your whole trip, handled.',
+    emailFrom: 'Trip Companion <hello@tripcompanion.co.uk>',
+    supportEmail: 'hello@tripcompanion.co.uk',
+    siteUrl: 'https://tripcompanionplanner.com',
+    icon: '/tc-app-icon.svg',
+    // "Sister palette to Vacations by Design" per the brand pack — TC and VBD
+    // deliberately share one colour family; the logo/wordmark is the difference.
+    accent: '#3A5647',           // Sage Forest (primary)
+    pop: '#EE6C3A',              // Poppy
+    green: '#3A5647', greenDark: '#2E4639', greenMid: '#7FA187', greenLight: '#E9EFEA',
+    emailLogoImg: 'https://tripcompanionplanner.com/tc-app-icon.png',
+    wordmarkLead: 'Trip ',
+    wordmarkAccent: 'Companion',
+    footer: 'Trip Companion Ltd · 43 Peronne Road, Hilsea, Portsmouth, England, PO3 5LD · Company No. 16308288',
+  },
 }
 
 // Resolve the brand for a request host. Strips port + leading www., and

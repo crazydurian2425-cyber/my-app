@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>なぜダッシュボードは固まるのか — 仕組みと修正 (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae; --amber:#b87333; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.6 system-ui,'Noto Sans JP','DM Sans',sans-serif;color:var(--ink);padding:24px}
+  .wrap{max-width:880px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 6px}
+  .lead{color:var(--ink2);font-size:13.5px;margin:0 0 20px}
+  .scene{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:18px}
+  .scene h2{font-size:16px;margin:0 0 4px;display:flex;gap:10px;align-items:center}
+  .scene h2 .num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  .scene .sub{font-size:12.5px;color:var(--ink2);margin:0 0 14px}
+  .good{color:var(--green);font-weight:700}
+  .bad{color:var(--red);font-weight:700}
+
+  /* mock dashboard */
+  .mock{border:1px solid var(--line);border-radius:12px;background:#faf7f0;padding:12px;max-width:430px}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-bottom:8px;position:relative;transition:box-shadow .15s, border-color .15s}
+  .sec:last-child{margin-bottom:0}
+  .sec .t{font-size:11px;color:var(--ink3);letter-spacing:.03em}
+  .sec .v{font-weight:700;font-size:13.5px}
+  .sec.repaint{border-color:var(--red);box-shadow:0 0 0 3px var(--redbg)}
+  .sec.repaint::after{content:"↻ 再描画";position:absolute;top:7px;right:9px;font-size:10px;font-weight:800;color:var(--red)}
+  .sec.repaint.ok{border-color:var(--green);box-shadow:0 0 0 3px var(--greenbg)}
+  .sec.repaint.ok::after{content:"↻ ここだけ更新";color:var(--green)}
+  .askline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);margin:10px 0;min-height:20px}
+  .askline .dot{width:9px;height:9px;border-radius:50%;background:#cfc8b8}
+  .askline.busy .dot{background:var(--amber);animation:pulse .5s infinite alternate}
+  @keyframes pulse{to{opacity:.3}}
+
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:700px){.row2{grid-template-columns:1fr}}
+  .half h3{font-size:13px;margin:0 0 8px;display:flex;gap:7px;align-items:center}
+  .pill{font-size:10px;font-weight:800;padding:2px 9px;border-radius:99px}
+  .pill.now{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .pill.fix{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .stats{font-size:12px;color:var(--ink2);margin-top:8px;min-height:18px}
+  .stats b{font-variant-numeric:tabular-nums}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+  button{font:inherit;font-size:13px;font-weight:700;padding:10px 15px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  button:hover{background:#faf8f3}
+  button.play{background:var(--green);color:#fff;border-color:var(--green)}
+  button.admin{background:var(--blue);color:#fff;border-color:var(--blue)}
+  button.stop{background:transparent;color:var(--ink3);border-style:dashed}
+  .story{background:var(--bluebg);border:1px solid #bcd4e2;border-radius:10px;padding:11px 14px;font-size:13px;margin-bottom:12px}
+  .verdict{font-size:13.5px;font-weight:700;margin-top:10px;min-height:20px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>なぜダッシュボードは固まるのか — そして修正後どうなるか</h1>
+  <p class="lead">3つの場面で見る「この仕組みは何のためにあるのか・今なぜ問題なのか・直すと何が変わるのか」。</p>
+
+  <!-- SCENE 1: why it exists -->
+  <div class="scene">
+    <h2><span class="num">1</span>そもそも、なぜページが勝手に更新されるのか？</h2>
+    <p class="sub">→ <b>必要な機能だから。</b>管理者がプランを承認したとき、プランナーがF5を押さなくても画面に反映されるためです。試してください：</p>
+    <div class="row2">
+      <div class="half">
+        <div class="mock" id="mock1">
+          <div class="sec" data-k="plans"><div class="t">プラン</div><div class="v" id="m1-plans">プラン4：審査待ち ⏳</div></div>
+          <div class="sec" data-k="wallet"><div class="t">ウォレット</div><div class="v" id="m1-wallet">¥340,000</div></div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button class="admin" onclick="scene1()">👨‍💼 管理者がプラン4を承認する</button>
+        </div>
+        <div class="verdict" id="v1"></div>
+      </div>
+      <div class="half">
+        <div class="story">この「自動で最新にする仕組み」がなければ、プランナーは一日中F5を押すか、CSに「承認されましたか？」と聞き続けることになります。<br><b>→ 仕組み自体は削除しません。</b>問題は「更新のやり方」です。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCENE 2: how it does it today -->
+  <div class="scene">
+    <h2><span class="num">2</span>今のやり方：「何か変わった？」のたびに<b class="bad">全部作り直す</b></h2>
+    <p class="sub">今の実装は、確認のたびにサーバーへ質問を13回（1つずつ順番に）投げ、<b>何も変わっていなくても画面全体を描き直します</b>。それが60秒ごと・保証金待ち中は10秒ごと・データが動くたびに起こり、前の作業が終わる前に次が始まって重なります。</p>
+    <div class="btns">
+      <button class="play" onclick="startScene2()">▶︎ 保証金待ちの10秒ポーリングを再生</button>
+      <button class="stop" onclick="stopScene2()">■ 停止</button>
+    </div>
+    <div class="row2">
+      <div class="half">
+        <h3><span class="pill now">今</span> 全部再描画（変化ゼロでも）</h3>
+        <div class="askline" id="ask2a"><span class="dot"></span><span id="ask2at">待機中…</span></div>
+        <div class="mock">
+          <div class="sec" id="s2a-set"><div class="t">進行中のセット</div><div class="v">セット #002 · 4/5 完了</div></div>
+          <div class="sec" id="s2a-plans"><div class="t">プラン</div><div class="v">プラン5：作成中</div></div>
+          <div class="sec" id="s2a-wallet"><div class="t">ウォレット</div><div class="v">¥340,000</div></div>
+        </div>
+        <div class="stats">サーバーへの質問: <b id="q2a">0</b> · 画面の描き直し: <b id="r2a">0</b> · 実際に変わった情報: <b>0</b></div>
+      </div>
+      <div class="half">
+        <h3><span class="pill fix">修正後</span> 確認はする・変化がなければ触らない</h3>
+        <div class="askline" id="ask2b"><span class="dot"></span><span id="ask2bt">待機中…</span></div>
+        <div class="mock">
+          <div class="sec" id="s2b-set"><div class="t">進行中のセット</div><div class="v">セット #002 · 4/5 完了</div></div>
+          <div class="sec" id="s2b-plans"><div class="t">プラン</div><div class="v">プラン5：作成中</div></div>
+          <div class="sec" id="s2b-wallet"><div class="t">ウォレット</div><div class="v">¥340,000</div></div>
+        </div>
+        <div class="stats">サーバーへの質問: <b id="q2b">0</b> · 画面の描き直し: <b id="r2b">0</b> · 実際に変わった情報: <b>0</b></div>
+      </div>
+    </div>
+    <div class="verdict">左は<span class="bad">何も起きていないのに描き直し続け</span>（この瞬間にクリックやスクロールが効かない＝固まる）、右は確認だけして<span class="good">画面には一切触りません</span>。</div>
+  </div>
+
+  <!-- SCENE 3: the fix keeps the feature -->
+  <div class="scene">
+    <h2><span class="num">3</span>修正後も「本当の更新」はちゃんと届く</h2>
+    <p class="sub">場面2の再生中でもOK。管理者ボタンを押すと——</p>
+    <div class="btns">
+      <button class="admin" onclick="scene3()">👨‍💼 管理者がプラン5を承認する</button>
+    </div>
+    <div class="verdict" id="v3"></div>
+    <table>
+      <tr><th></th><th>今</th><th>修正後</th></tr>
+      <tr><td>承認・入金などの反映</td><td>反映される</td><td><b class="good">同じく反映される（変わらず）</b></td></tr>
+      <tr><td>変化ゼロのときの動き</td><td class="bad">全画面を描き直す（固まる原因）</td><td class="good">何もしない</td></tr>
+      <tr><td>確認が重なったとき</td><td class="bad">同時に何本も走る</td><td class="good">1本ずつ＋最後にもう1回</td></tr>
+      <tr><td>オートセーブ・提出・金額計算</td><td colspan="2" style="text-align:center"><b>どちらも一切触れない（このページの表示だけの話）</b></td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+function flash(id, ok){ const el=$(id); el.classList.add('repaint'); if(ok)el.classList.add('ok'); setTimeout(()=>{el.classList.remove('repaint');el.classList.remove('ok')}, 900) }
+
+// SCENE 1 — why the auto-refresh exists
+function scene1(){
+  $('v1').innerHTML='⚡ データが変わった → ダッシュボードが検知 → '
+  setTimeout(()=>{ $('m1-plans').textContent='プラン4：承認済み ✅'
+    document.querySelectorAll('#mock1 .sec')[0].classList.add('repaint','ok')
+    setTimeout(()=>document.querySelectorAll('#mock1 .sec')[0].classList.remove('repaint','ok'),1200)
+    $('v1').innerHTML='⚡ F5なしで画面が更新されました。<span class="good">これがこの仕組みの目的です。</span>'
+  }, 600)
+}
+
+// SCENE 2 — the wasteful loop vs polite check
+let t2=null,q2a=0,r2a=0,q2b=0,r2b=0
+function tick(){
+  // NOW: 13 serial questions then repaint EVERYTHING
+  $('ask2a').classList.add('busy'); $('ask2at').textContent='サーバーに質問中… (13回・1つずつ)'
+  let n=0
+  const iv=setInterval(()=>{ n++; q2a++; $('q2a').textContent=q2a
+    if(n>=13){ clearInterval(iv); $('ask2a').classList.remove('busy'); $('ask2at').textContent='→ 変化なし。でも全部描き直す'
+      ;['s2a-set','s2a-plans','s2a-wallet'].forEach(id=>flash(id,false)); r2a++; $('r2a').textContent=r2a }
+  }, 70)
+  // AFTER: batched questions, sees no change, touches nothing
+  $('ask2b').classList.add('busy'); $('ask2bt').textContent='サーバーに質問中… (まとめて一括)'
+  q2b+=10; $('q2b').textContent=q2b
+  setTimeout(()=>{ $('ask2b').classList.remove('busy'); $('ask2bt').textContent='→ 変化なし。画面には触らない ✓' }, 500)
+}
+function startScene2(){ if(t2)return; tick(); t2=setInterval(tick, 3000) }
+function stopScene2(){ clearInterval(t2); t2=null; $('ask2at').textContent='待機中…'; $('ask2bt').textContent='待機中…' }
+
+// SCENE 3 — real change still arrives after the fix
+function scene3(){
+  $('v3').innerHTML='⚡ 本当にデータが変わった —— 両方のダッシュボードに反映：'
+  setTimeout(()=>{
+    $('s2a-plans').querySelector('.v').textContent='プラン5：承認済み ✅'
+    $('s2b-plans').querySelector('.v').textContent='プラン5：承認済み ✅'
+    flash('s2a-set',false); flash('s2a-plans',false); flash('s2a-wallet',false)   // now: everything repaints anyway
+    flash('s2b-plans',true)                                                        // fix: only the changed section
+    $('v3').innerHTML='左（今）：<span class="bad">3セクション全部を描き直し</span> ／ 右（修正後）：<span class="good">変わった「プラン」だけ更新</span>。結果は同じ、無駄だけが消えます。'
+  }, 600)
+}
+</script>
+</body>
+</html>

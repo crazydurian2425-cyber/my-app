@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data-loss audit — current state, gaps &amp; fixes (demo)</title>
+<style>
+  :root{ --ink:#1A2E25; --ink2:#5a6b62; --ink3:#9aa39d; --line:#e6e0d4; --cream:#e7e1d3; --card:#fffdf8;
+         --green:#2C5F2D; --greenbg:#eef7ef; --greenbd:#9ccdaf; --red:#b3261e; --redbg:#fdecea; --redbd:#f0b4ae;
+         --amber:#b87333; --amberbg:#fdf3e3; --blue:#2b5f7a; --bluebg:#e8f1f6; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font:15px/1.65 system-ui,'DM Sans',Arial,sans-serif;color:var(--ink);padding:24px 18px}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  .lead{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  h2{font-size:16px;margin:26px 0 8px;display:flex;gap:9px;align-items:center}
+  h2 .n{flex-shrink:0;width:25px;height:25px;border-radius:50%;background:var(--ink);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  .safe{background:var(--greenbg);border:1px solid var(--greenbd);border-radius:11px;padding:12px 15px;margin-bottom:10px;font-size:13.5px;line-height:1.6}
+  .safe b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;background:#f7f3ea}
+  .sev{font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+  .sev.fixed{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .sev.hi{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .sev.med{background:var(--amberbg);color:var(--amber);border:1px solid #e5c184}
+  .sev.low{background:#eef4e2;color:#5d7a2c;border:1px solid #c3d69a}
+  .sev.cos{background:#eee;color:#666;border:1px solid #ccc}
+  code{background:#f1ece0;border-radius:4px;padding:1px 5px;font-size:12px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  button{font:inherit;font-size:13px;font-weight:700;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  button:hover{background:#faf8f3}
+  button.type{background:var(--blue);color:#fff;border-color:var(--blue)}
+  button.close{background:var(--red);color:#fff;border-color:var(--red)}
+  button.ghost{border-style:dashed;color:var(--ink3)}
+  .sim{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+  @media(max-width:680px){.sim{grid-template-columns:1fr}}
+  .half h3{font-size:12.5px;margin:0 0 6px}
+  .pill{font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px}
+  .pill.now{background:var(--redbg);color:var(--red);border:1px solid var(--redbd)}
+  .pill.fix{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbd)}
+  .box{border:1px solid var(--line);border-radius:9px;background:#faf7f0;padding:10px;font-size:12.5px;min-height:120px}
+  .box .row{padding:4px 0;border-bottom:1px solid #f1ecdf}
+  .box .row:last-child{border-bottom:none}
+  .status{font-size:11px;font-weight:700;margin-top:6px}
+  .status.ok{color:var(--green)} .status.bad{color:var(--red)} .status.warn{color:var(--amber)}
+  .callout{border-radius:11px;padding:12px 15px;font-size:13px;margin-top:10px;line-height:1.7}
+  .callout.blue{background:var(--bluebg);border:1px solid #bcd4e2}
+  .callout.amber{background:var(--amberbg);border:1px solid #e5c184}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Data-loss audit — where the platform stands today</h1>
+  <p class="lead">11-agent read-only audit of the current save code. Bottom line: the "whole plan vanishes" class is closed; a few narrow gaps remain. Nothing here is applied.</p>
+
+  <!-- FIXED -->
+  <h2><span class="n">✓</span>Already fixed &amp; verified (was dangerous a week ago)</h2>
+  <div class="panel">
+    <div class="safe"><b>Autosave = keyed diff.</b> A stop is only deleted if the planner clicks ×. A half-loaded, blank-title, or mid-edit save can no longer wipe rows for being "missing." <i>(This was the #1 killer — the 寺口さん Day-1 loss class.)</i></div>
+    <div class="safe"><b>Submit = insert-first.</b> New rows are saved, then old ones removed. A failed submit can never leave the plan empty.</div>
+    <div class="safe"><b>Reset/reassign now clears the traveler message</b> (the Hakone leftover fix, shipped today).</div>
+  </div>
+
+  <!-- THE BIG THEORETICAL ONE -->
+  <h2><span class="n">1</span>The scary-on-paper one — depends on an invisible DB trigger</h2>
+  <div class="panel">
+    <p style="margin:0 0 8px;font-size:13.5px">The reassignment auto-wipe fires when a plan looks freshly assigned: <code>claimed_at + 30s ≥ updated_at</code>. Its comment says "the wipe bumps <code>updated_at</code> so later opens skip it" — but the code <b>never sets <code>updated_at</code></b>, and no schema file adds an auto-trigger.</p>
+    <div class="sim">
+      <div class="half">
+        <h3><span class="pill now">IF no DB trigger exists</span></h3>
+        <div class="box">
+          <div class="row">Open plan → looks fresh → <b style="color:var(--red)">WIPE</b></div>
+          <div class="row">Planner builds 12 stops (autosave, no updated_at)</div>
+          <div class="row">Close &amp; reopen → still looks fresh → <b style="color:var(--red)">WIPE AGAIN</b></div>
+          <div class="status bad">✕ Catastrophic: whole plan destroyed every reopen</div>
+        </div>
+      </div>
+      <div class="half">
+        <h3><span class="pill fix">Reality (trigger present)</span></h3>
+        <div class="box">
+          <div class="row">Open plan → looks fresh → WIPE (intended, once)</div>
+          <div class="row">Planner edits → trigger bumps updated_at</div>
+          <div class="row">Reopen → updated_at now &gt; claimed+30s → <b style="color:var(--green)">skip</b></div>
+          <div class="status ok">✓ One-time wipe, as designed</div>
+        </div>
+      </div>
+    </div>
+    <div class="callout amber"><b>Why we know reality is the right column:</b> planners build multi-day plans across sessions and nobody reports "my whole itinerary vanishes on reopen" — so your live DB almost certainly HAS an <code>updated_at</code> trigger (added directly in Supabase). <b>But the code shouldn't depend on something invisible.</b> The fix is one line — make the wipe set <code>updated_at = now()</code> itself — so it's safe even if that trigger is ever dropped or the DB is rebuilt.</div>
+  </div>
+
+  <!-- INTERACTIVE: tab-close -->
+  <h2><span class="n">2</span>The most real-world gap — no save when you close the tab</h2>
+  <div class="panel">
+    <p style="margin:0 0 6px;font-size:13.5px">Autosave waits 1.5s after you stop typing. Nothing saves on tab-close. Type below, then hit "close tab" <b>fast</b> (within 1.5s) to see the last edit lost.</p>
+    <div class="btns">
+      <button class="type" onclick="typeEdit()">⌨️ Type a new stop</button>
+      <button class="close" onclick="closeTab(false)">✕ Close tab NOW — today's code</button>
+      <button class="close" onclick="closeTab(true)" style="background:var(--green);border-color:var(--green)">✕ Close tab NOW — WITH flush fix</button>
+      <button class="ghost" onclick="resetSim()">reset</button>
+    </div>
+    <div class="sim">
+      <div class="half"><h3>On screen (unsaved buffer)</h3><div class="box" id="screen">—</div></div>
+      <div class="half"><h3>Saved in database</h3><div class="box" id="db">—</div><div class="status" id="simStatus"></div></div>
+    </div>
+    <div class="callout blue"><b>The fix:</b> flush the pending save on <code>pagehide</code>/<code>visibilitychange</code> (the standard "save before unload"). Turns the ≤1.5s loss window into zero. Low risk — it just runs the same save one moment earlier.</div>
+  </div>
+
+  <!-- THE REST -->
+  <h2><span class="n">3</span>The remaining narrow gaps</h2>
+  <div class="panel">
+    <table>
+      <tr><th>Gap</th><th>What's lost</th><th>Severity</th><th>Fix</th></tr>
+      <tr><td>Remove last photo / delete last stop</td><td>the deletion is ignored — it reappears on reopen despite "Saved"</td><td><span class="sev med">medium-low</span></td><td>let the explicit-delete run even when no titled stops remain; allow emptying a photo set</td></tr>
+      <tr><td>Slow photo upload + quick plan-switch</td><td>1 uploaded photo orphaned / attached to wrong plan</td><td><span class="sev low">low</span></td><td>pin the plan-id at upload start</td></tr>
+      <tr><td>Edit right after an in-modal Submit</td><td>post-submit edit dropped or a stop duplicated</td><td><span class="sev med">medium</span></td><td>refresh slot row-ids after submit (submit reuse the autosave path)</td></tr>
+      <tr><td>Hotel bookend dedup</td><td>duplicate hotel row survives in DB, reappears on reopen</td><td><span class="sev cos">cosmetic</span></td><td>add the removed row's id to the delete set</td></tr>
+      <tr><td>Submit old-row cleanup fails</td><td>duplicated stops shown (never lost)</td><td><span class="sev cos">cosmetic</span></td><td>depends on the image-FK cascade SQL being applied</td></tr>
+    </table>
+  </div>
+
+  <div class="callout blue">
+    <b>So — will it cause data loss?</b> Not the "everything's gone" kind anymore (that's fixed &amp; verified). What remains: the ≤1.5s <b>tab-close</b> window (real, worth fixing), a couple of <b>deletion-ignored</b> cases, a narrow <b>photo</b> race, and the theoretical <b>reassignment wipe</b> that's empirically safe but should be made self-contained. My recommendation: one small <b>data-safety hardening</b> commit — tab-close flush + the <code>updated_at</code> one-liner first (highest value), then the deletion/photo guards.
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id)
+let buf='', saved=[]
+function render(){
+  $('screen').innerHTML = (buf ? `<div class="row"><b>${buf}</b> <span style="color:var(--red)">● unsaved</span></div>` : '—') + saved.map(s=>`<div class="row">${s} <span style="color:var(--ink3)">saved</span></div>`).join('')
+  $('db').innerHTML = saved.length ? saved.map(s=>`<div class="row">${s}</div>`).join('') : '—'
+}
+let n=0
+function typeEdit(){ n++; buf = 'Stop '+n+': 清水寺'; render(); $('simStatus').textContent=''; $('simStatus').className='status' }
+function closeTab(withFix){
+  if(!buf){ $('simStatus').className='status warn'; $('simStatus').textContent='Type a stop first.'; return }
+  if(withFix){
+    saved.push(buf); buf=''; render()
+    $('simStatus').className='status ok'; $('simStatus').textContent='✓ Flush-on-close saved it. Nothing lost.'
+  } else {
+    buf=''; render()
+    $('simStatus').className='status bad'; $('simStatus').textContent='✕ Tab closed inside the 1.5s window — that stop is gone. No error shown.'
+  }
+}
+function resetSim(){ buf=''; saved=[]; n=0; render(); $('simStatus').textContent='' }
+render()
+</script>
+</body>
+</html>
