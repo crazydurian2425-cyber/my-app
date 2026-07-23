@@ -183,6 +183,11 @@ export default {
       return handleCreateMentor(request)
     }
 
+    // ── Reset-mentor-password endpoint (admin only) ──
+    if (url.pathname === '/api/reset-mentor-password' && request.method === 'POST') {
+      return handleResetMentorPassword(request)
+    }
+
     // ── Employment-letter endpoints ──
     if (url.pathname === '/api/send-employment-letter' && request.method === 'POST') {
       return handleSendEmploymentLetter(request, url, brand)
@@ -554,6 +559,60 @@ async function handleCreateMentor(request) {
   }
 
   return jsonResp(200, { ok: true, mentor_id: userId, name, email })
+}
+
+// POST /api/reset-mentor-password — admin-only. Mentor passwords are shown once
+// at creation and never stored, so re-issuing a login means setting a fresh
+// password on the existing auth user. This keeps the mentor id, approved
+// laptop, and attendance history intact (delete + recreate would not).
+async function handleResetMentorPassword(request) {
+  const cred = checkAuth(request, null)
+  if (!cred || cred.user !== 'admin') return challenge()
+
+  if (!SUPABASE_SERVICE_KEY || SUPABASE_SERVICE_KEY.startsWith('PASTE_')) {
+    return jsonResp(500, { error: 'Supabase service-role key not configured in worker' })
+  }
+
+  let body
+  try { body = await request.json() } catch (_) {
+    return jsonResp(400, { error: 'Invalid JSON' })
+  }
+  const mentorId = String(body?.mentor_id || '').trim()
+  const password = String(body?.password || '')
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(mentorId)) {
+    return jsonResp(400, { error: 'Invalid mentor_id' })
+  }
+  if (password.length < 8) {
+    return jsonResp(400, { error: 'Password must be at least 8 characters' })
+  }
+
+  const sbHeaders = {
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json'
+  }
+
+  // Only mentor accounts can be reset here — refuse ids with no mentors row,
+  // so this endpoint can't be aimed at a planner's (or any other) auth user.
+  const mResp = await fetch(`${SUPABASE_URL}/rest/v1/mentors?id=eq.${mentorId}&select=id,name,email`, {
+    headers: sbHeaders
+  })
+  const mRows = await mResp.json().catch(() => [])
+  if (!mResp.ok || !Array.isArray(mRows) || !mRows.length) {
+    return jsonResp(404, { error: 'No mentor with that id' })
+  }
+
+  const authResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${mentorId}`, {
+    method: 'PUT',
+    headers: sbHeaders,
+    body: JSON.stringify({ password })
+  })
+  const authJson = await authResp.json().catch(() => ({}))
+  if (!authResp.ok) {
+    return jsonResp(authResp.status, { error: authJson?.msg || authJson?.error_description || authJson?.message || 'Password update failed' })
+  }
+
+  return jsonResp(200, { ok: true, mentor_id: mentorId, name: mRows[0].name, email: mRows[0].email })
 }
 
 // Authorize a Supabase proxy request. Allows:

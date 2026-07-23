@@ -2966,10 +2966,12 @@ function renderMentorAccounts(el, mentors){
   el.innerHTML = CLOCKIN_MENTOR_NAMES.map(n => {
     const m = have[n]
     if (m) {
-      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px dashed rgba(31,28,22,0.08);font-size:13px;">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px dashed rgba(31,28,22,0.08);font-size:13px;flex-wrap:wrap;">
         <strong style="width:74px;">${escapeHtml(n)}</strong>
-        <span style="color:var(--ink-3);flex:1;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(m.email)}</span>
+        <span style="color:var(--ink-3);flex:1;min-width:200px;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(m.email)}</span>
+        <span id="mtr-newpass-${n}" style="font-family:monospace;font-size:12.5px;font-weight:700;color:var(--ink);"></span>
         <span style="font-size:11px;font-weight:700;color:${m.active ? 'var(--green)' : '#b3261e'};">${m.active ? '● active' : '● disabled'}</span>
+        <button class="btn btn-ghost btn-sm" onclick="resetMentorPassword('${jsEsc(m.id)}','${n}', this)">Reset password</button>
       </div>`
     }
     const emailId = 'mtr-email-' + n, passId = 'mtr-pass-' + n
@@ -2981,7 +2983,7 @@ function renderMentorAccounts(el, mentors){
         style="width:130px;padding:7px 10px;border:1px solid var(--border-med,#cbbfa6);border-radius:8px;font-size:12.5px;font-family:monospace;background:var(--surface,#fff);color:var(--ink);">
       <button class="btn btn-primary btn-sm" onclick="createMentorLogin('${n}', this)">Create login</button>
     </div>`
-  }).join('') + `<div style="font-size:11.5px;color:var(--ink-3);margin-top:8px;">The email doesn't need a real inbox — it's just the sign-in name. Copy the password BEFORE clicking Create and hand both to the mentor.</div>`
+  }).join('') + `<div style="font-size:11.5px;color:var(--ink-3);margin-top:8px;">The email doesn't need a real inbox — it's just the sign-in name. Copy the password BEFORE clicking Create and hand both to the mentor. Lost a password? <strong>Reset password</strong> issues a new one (shown next to the row + copied to your clipboard) — the old one stops working immediately.</div>`
 }
 
 async function createMentorLogin(name, btn){
@@ -3005,6 +3007,33 @@ async function createMentorLogin(name, btn){
     showToast('Network error: ' + (e.message || 'unknown'))
     btn.disabled = false; btn.textContent = orig
   }
+}
+
+// Re-issue a mentor login: set a fresh password on the existing auth user.
+// The mentor keeps their id, approved laptop, and attendance history — only
+// the password changes. No loadMentorClockin() afterwards: a re-render would
+// wipe the freshly displayed password before the admin can hand it over.
+async function resetMentorPassword(id, name, btn){
+  if (!confirm(`Reset ${name}'s password? The old password stops working immediately.`)) return
+  const password = _mtrPassGen()
+  const orig = btn.textContent; btn.disabled = true; btn.textContent = '…'
+  try {
+    const resp = await fetch('/api/reset-mentor-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mentor_id: id, password })
+    })
+    const data = await resp.json().catch(() => ({}))
+    if (!resp.ok) { showToast('Reset failed: ' + (data?.error || resp.status)); btn.disabled = false; btn.textContent = orig; return }
+    const slot = document.getElementById('mtr-newpass-' + name)
+    if (slot) slot.textContent = 'new pw: ' + password
+    try { await navigator.clipboard.writeText(password) } catch (e) {}
+    showToast(`${name} · new password issued & copied — hand it to the mentor`)
+    try { auditLog('mentor.reset_password', 'mentors', id, { name }) } catch (e) {}
+  } catch (e) {
+    showToast('Network error: ' + (e.message || 'unknown'))
+  }
+  btn.disabled = false; btn.textContent = orig
 }
 
 function renderMentorDevices(el, devices){
