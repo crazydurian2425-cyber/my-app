@@ -9741,6 +9741,11 @@ if (TM_LANG !== 'en' && TM_LANG !== 'ja') TM_LANG = 'ja'
 function applyPlannerTheme(theme){
   if (theme !== 'dark') theme = 'light'
   document.body.classList.toggle('theme-dark', theme === 'dark')
+  // Keep the pre-paint marker (head snippet, line ~25) in sync: it was never
+  // removed on a Dark→Light switch, leaving color-scheme:dark (dark scrollbars
+  // and native controls — and a brand skin's dark canvas) until full reload.
+  // Scoped to branded (non-JJ) views so JJ behavior stays byte-identical.
+  if (theme !== 'dark' && window.__BRAND__) document.documentElement.classList.remove('jj-pre-dark')
   try { localStorage.setItem('jj_planner_theme', theme) } catch(e){}
   // Reflect active state on the Settings → Display & Language toggle
   document.querySelectorAll('.settings-theme-btn').forEach(b => {
@@ -19670,7 +19675,10 @@ async function fetchRouteData(fromSlot, toSlot, mode, departISO) {
             kind:        'transit',
             mins,
             lineName:    line.nameShort || line.name || vehicle.name?.text || 'Transit',
-            lineColor:   line.color || '#1a7a5e',
+            // No brand color here: this object is persisted (route_snapshot +
+            // the 30-day jj_route_ cache), so it must stay brand-neutral. The
+            // brand fallback is resolved at RENDER time in the segment pill.
+            lineColor:   line.color || '',
             textColor:   line.textColor || '#fff',
             vehicleType: vehicle.type || '',
             from:        td.stopDetails?.departureStop?.name || '',
@@ -19960,7 +19968,15 @@ function applyRouteDataToSlot(slot, data) {
       const stopWord = (s.numStops === 1) ? dt('stop','立ち寄り先') : dt('stops','立ち寄り先')
       const stopBit = s.numStops ? ` · ${s.numStops} ${stopWord}` : ''
       const head = s.headsign ? ` → ${escapeHtml(s.headsign)}` : ''
-      const linePill = `<span class="ts-line" style="background:${escapeHtml(s.lineColor)};color:${escapeHtml(s.textColor)};">${escapeHtml(s.lineName)}</span>`
+      // Brand accent resolved at RENDER time (never persisted) so snapshots
+      // and the route cache stay brand-neutral. The '#1a7a5e'/'#3A5647'
+      // sentinels re-tint legacy/preview-era snapshots for the viewer; real
+      // Google line colors pass through untouched. JJ (__BRAND__ undefined)
+      // renders exactly the old '#1a7a5e'.
+      const _lc = (!s.lineColor || s.lineColor === '#1a7a5e' || s.lineColor === '#3A5647')
+        ? ((window.__BRAND__ && window.__BRAND__.tokens && window.__BRAND__.tokens['--brand-accent']) || '#1a7a5e')
+        : s.lineColor
+      const linePill = `<span class="ts-line" style="background:${escapeHtml(_lc)};color:${escapeHtml(s.textColor)};">${escapeHtml(s.lineName)}</span>`
       return `
         <span class="ts-time"></span>
         <span class="ts-marker">${linePill}</span>
@@ -21003,7 +21019,9 @@ function _renderRouteMapInto(host, slot) {
     new google.maps.Polyline({
       path,
       map,
-      strokeColor: '#1a7a5e',
+      // Route color follows the viewing brand (Maps canvas — CSS can't reach
+      // it). __BRAND__ is undefined on JJ → identical to before.
+      strokeColor: (window.__BRAND__ && window.__BRAND__.tokens && window.__BRAND__.tokens['--brand-accent']) || '#1a7a5e',
       strokeOpacity: 0.9,
       strokeWeight: 5,
     })

@@ -1,0 +1,634 @@
+/* ═════════════════════════════════════════════════════════════════
+   TRIP COMPANION — “SAGE ATELIER” planner-dashboard skin.
+
+   Loaded by brand-boot.js ONLY when the resolved brand is `tc` and the
+   page is the planner dashboard. Everything is scoped under
+   html[data-brand="tc"], so JJ / VBD planners are byte-for-byte
+   untouched. Pure CSS — no logic, forms, or autosave can be affected.
+
+   THE LOOK (light, the default): where JJ is warm — ivory paper, gold
+   trim, brochure gold labels — TC is cool: sage-mist page (#EFF4EE),
+   crisp white cards, forest ink, sage replaces every gold accent, and
+   Poppy #EE6C3A owns "in progress / urgent". Space Grotesk numerals.
+
+   HOW: dashboard.html's light look is the editorial+premium theme
+   pair, and its whole identity is token-driven (--p-gold family,
+   --p-ivory page, --e-cream, …). This skin swaps those tokens, so the
+   dashboard restyles itself through its own theming system — minimal
+   rule-fighting, minimal breakage surface.
+
+   A separate section retints the OPTIONAL dark theme (Settings →
+   Display → Dark) into "Night Atlas" dark-forest. Nothing defaults to
+   dark — it only applies if the planner picks it.
+   ═════════════════════════════════════════════════════════════════ */
+
+/* ── A. TC identity in ALL themes ───────────────────────────────── */
+
+/* The Active-set display title hardcodes a JJ-green gradient
+   (#0f5240→#2d9e7a) that brand-boot's token swap can't reach —
+   repaint it Sage Forest for TC. */
+html[data-brand="tc"] #active-set-card .card-title{
+  background:linear-gradient(135deg,#2E4639 0%,#3A5647 55%,#7FA187 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  -webkit-text-fill-color:transparent!important;color:transparent!important;
+}
+
+/* Space Grotesk numerals — the TC signature for money / counts.
+   brand-boot already loads the font on every TC page.
+   Doubled [data-brand] lifts specificity to (0,3,2) so this ties/beats the
+   theme layers' font rules (e.g. body.theme-premium .tile-num), and the
+   [lang="ja"] companions out-rank html[lang="ja"] body.theme-premium
+   .metric-val (0,3,2) — the JA UI is the default, so without these the
+   signature font silently never rendered for Japanese planners. */
+html[data-brand="tc"][data-brand="tc"] body .metric-val,
+html[data-brand="tc"][data-brand="tc"] body .tile-num,
+html[data-brand="tc"][data-brand="tc"] body #pace-deadline-date{
+  font-family:'Space Grotesk','Noto Sans JP',sans-serif!important;
+  letter-spacing:-0.02em!important;
+}
+html[data-brand="tc"][lang="ja"] body.theme-premium .metric-val,
+html[data-brand="tc"][lang="ja"] .theme-editorial .metric-val,
+html[data-brand="tc"][lang="ja"] body.theme-premium .tile-num{
+  font-family:'Space Grotesk','Noto Sans JP',sans-serif!important;
+  letter-spacing:-0.02em!important;
+}
+
+/* Request-extension pill: dashboard has a premium :hover rule (1,2,1) that
+   repaints it JJ amber — this (1,2,2) hover keeps urgency in Poppy. */
+html[data-brand="tc"] body #pace-extension-btn:hover{
+  background:#EE6C3A!important;
+  color:#FFF6F0!important;
+  border-color:#C9502A!important;
+  box-shadow:0 4px 12px -4px rgba(238,108,58,0.45), 0 0 0 3px rgba(238,108,58,0.14)!important;
+}
+
+/* Wizard submit CTA: hardcoded JJ gold gradient in dashboard (no theme
+   override exists) — the most prominent button in the plan editor. */
+html[data-brand="tc"] .wiz-submit{
+  background:linear-gradient(135deg,#3A5647 0%,#2E4639 100%)!important;
+  box-shadow:0 8px 22px -6px rgba(46,70,57,0.50), inset 0 1px 0 rgba(255,255,255,0.20)!important;
+}
+html[data-brand="tc"] .wiz-submit:hover{
+  box-shadow:0 12px 28px -8px rgba(46,70,57,0.60), inset 0 1px 0 rgba(255,255,255,0.20)!important;
+}
+html[data-brand="tc"] body.theme-dark .wiz-submit{
+  /* Gradient must stay light enough end-to-end for the #0C120F ink:
+     #6FA383 keeps worst-case contrast ≥6.5:1 (deep #3A5647 fails AA). */
+  background:linear-gradient(135deg,#8FBF9F 0%,#6FA383 100%)!important;
+  color:#0C120F!important;
+  box-shadow:0 8px 22px -6px rgba(111,163,131,0.40), inset 0 1px 0 rgba(255,255,255,0.18)!important;
+}
+
+/* "Your commission" slab in the traveler brief: JS-built inline JJ emerald
+   gradient — attribute match beats the (non-!important) inline style. */
+html[data-brand="tc"] .ps-brief > div[style*="#1a7a5e"]{
+  background:linear-gradient(135deg,#3A5647,#2E4639)!important;
+  box-shadow:0 8px 22px rgba(46,70,57,0.22)!important;
+}
+
+/* Desktop sidebar-collapse toggle: gold ring/hover hardcoded in base CSS. */
+html[data-brand="tc"] .desktop-sidebar-toggle{border-color:rgba(127,161,135,0.5);color:#44544A;}
+html[data-brand="tc"] .desktop-sidebar-toggle:hover{background:#F6FAF5;border-color:#7FA187;color:#1E2B24;}
+html[data-brand="tc"] body.theme-dark .desktop-sidebar-toggle{background:#1B2621!important;border-color:rgba(168,196,176,0.18)!important;}
+html[data-brand="tc"] body.theme-dark .desktop-sidebar-toggle:hover{background:#16261D!important;border-color:rgba(143,191,159,0.45)!important;}
+
+/* Legacy JJ-emerald hardcodes (SVG strokes, chips, celebration icon) —
+   CSS wins over SVG presentation attributes, so one sweep covers the
+   wallet-history icons, empty-state art, and editor chips. */
+html[data-brand="tc"] .complete-icon{background:#3A5647;box-shadow:0 4px 12px -4px rgba(58,86,71,0.35);}
+/* svg[stroke=…] (root) is required too: the wallet-history icons carry the
+   stroke on the <svg> element and children inherit it. */
+html[data-brand="tc"] svg[stroke="#1a7a5e"],
+html[data-brand="tc"] svg [stroke="#1a7a5e"]{stroke:#3A5647;}
+html[data-brand="tc"] svg[stroke="#0f5240"],
+html[data-brand="tc"] svg [stroke="#0f5240"]{stroke:#2E4639;}
+html[data-brand="tc"] #eiGrad stop{stop-color:#3A5647;}
+html[data-brand="tc"] .places-linked-chip .pl-open,
+html[data-brand="tc"] .places-linked-chip .pl-planned-open{color:#3A5647;}
+html[data-brand="tc"] .day-summary-profile-on_profile .dsp-tag{color:#3A5647;border-color:rgba(58,86,71,0.35);background:rgba(58,86,71,0.10);}
+html[data-brand="tc"] .anchor-state-on_profile .anchor-footer,
+html[data-brand="tc"] .anchor-badge-on_profile,
+html[data-brand="tc"] .day-summary-ok,
+html[data-brand="tc"] .slot-distance-ok{color:#3A5647;}
+html[data-brand="tc"] .slot-dist-helper.is-info{border-color:rgba(58,86,71,0.40);}
+
+/* ── B. SAGE ATELIER — the light default ────────────────────────── */
+
+/* Base tokens (dashboard :root) — cool the canvas, green the borders */
+html[data-brand="tc"] body{
+  --bg:#EFF4EE!important;
+  --border:rgba(46,70,57,0.09)!important;
+  --border-med:rgba(46,70,57,0.17)!important;
+  /* Bond/escrow amber stays a GOLD family (muted): keeps the bond state
+     visually distinct from poppy "in progress", and matches the hardcoded
+     rgba(212,145,61,…) bond-tile chrome the token swap can't reach. */
+  --amber:#B7862F!important;
+  --amber-light:#F7EED9!important;
+  /* "In progress" is purple on JJ → Poppy on TC (AA text on tint) */
+  --purple:#C9502A!important;
+  --purple-light:#FCEEE6!important;
+}
+
+/* Editorial theme tokens — the flat-card layer */
+html[data-brand="tc"] body.theme-editorial{
+  --e-cream:#EFF4EE!important;
+  --e-paper-2:#F3F7F2!important;
+  --e-rule:rgba(46,70,57,0.09)!important;
+  --e-green:#3A5647!important;
+  --e-green-d:#2E4639!important;
+  --e-green-m:#7FA187!important;
+  --e-earth:#7FA187!important;      /* warm tan trim → sage */
+  --e-earth-d:#3A5647!important;
+  --e-amber:#B7862F!important;      /* escrow/warning tone → muted gold */
+}
+
+/* Premium theme tokens — THE identity swap. Every gold accent (labels,
+   hairlines, nav trim, tile borders, shimmer rules) becomes sage, the
+   ivory page becomes sage mist, cards become crisp white. */
+html[data-brand="tc"] body.theme-premium{
+  --p-gold:#7FA187!important;
+  --p-gold-d:#3A5647!important;
+  --p-gold-l:#A8C4B0!important;
+  --p-ivory:#EFF4EE!important;
+  --p-paper:#FFFFFF!important;
+  --p-paper-2:#F6FAF5!important;
+  --p-sakura:#F5CDB9!important;     /* blossom trim → soft poppy */
+  --p-ink:#1E2B24!important;
+  --p-ink-2:#44544A!important;
+  --p-rule:rgba(127,161,135,0.35)!important;
+}
+
+/* Page canvas: sage mist with a whisper of green light at the top.
+   The canvas the eye actually sees is the fixed body::before aurora overlay
+   (z-index:-1, opaque) that theme-editorial paints with hardcoded JJ
+   teal/sky/brown glows — retint the overlay itself; the body rule below is
+   just a fallback behind it. */
+html[data-brand="tc"] body.theme-editorial::before{
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(127,161,135,0.10), transparent 62%),
+    #EFF4EE!important;
+}
+html[data-brand="tc"] body.theme-premium{
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(127,161,135,0.10), transparent 62%),
+    #EFF4EE!important;
+}
+
+/* Cards float on the mist with a cool (not warm) shadow. !important is
+   required (the theme layers' shadows are !important); :not(.theme-dark)
+   keeps it out of Night Atlas. */
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .card{
+  box-shadow:0 1px 2px rgba(30,43,36,0.04), 0 10px 28px -18px rgba(30,43,36,0.18)!important;
+}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .card:hover{
+  box-shadow:0 2px 4px rgba(30,43,36,0.06), 0 16px 36px -18px rgba(30,43,36,0.24)!important;
+}
+
+/* Hardcoded warm-cream surfaces that escape the token swap: KPI tiles
+   (#F8F4EA nth-child rules), plan tiles (#FFFDF5), premium form fields
+   (#FFFDF5) and the gold select caret. */
+html[data-brand="tc"] body.theme-premium .metrics .metric-card{
+  background:#FFFFFF!important;
+  border-color:rgba(46,70,57,0.09)!important;
+  box-shadow:0 1px 0 rgba(127,161,135,0.10)!important;
+}
+html[data-brand="tc"] body:not(.theme-dark) .plan-tile{background:#FFFFFF!important;}
+html[data-brand="tc"] body:not(.theme-dark) .plan-tile.done{
+  background:linear-gradient(180deg,#FFFFFF 0%,rgba(127,161,135,0.10) 100%)!important;
+}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .form-input,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .form-textarea{
+  background:#FFFFFF!important;
+}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) select.form-input,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .form-select{
+  background:#FFFFFF url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%233A5647' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E") no-repeat right 14px center!important;
+  background-size:12px 8px!important;
+}
+
+/* Poppy owns urgency: request-extension pill (inline-styled red) */
+html[data-brand="tc"] body #pace-extension-btn{
+  background:#FBEDE3!important;
+  border-color:rgba(206,95,46,0.40)!important;
+  color:#C9502A!important;
+}
+
+/* Plan tile being worked on: poppy ring instead of gold/purple —
+   including its two pseudo-element decorations (JJ-purple corner glow at
+   base :418, warm-gold bullet halo at premium :5026). */
+html[data-brand="tc"] body .plan-tile.current{
+  background:#FEF6F0!important;
+  border-color:rgba(238,108,58,0.55)!important;
+  box-shadow:0 0 0 1px rgba(238,108,58,0.22), 0 8px 20px -10px rgba(30,43,36,0.25)!important;
+}
+html[data-brand="tc"] body .plan-tile.current::after{
+  background:radial-gradient(circle at 100% 0%, rgba(238,108,58,0.12) 0%, transparent 55%)!important;
+}
+html[data-brand="tc"] body.theme-premium .plan-tile.current::before{
+  background:#EE6C3A!important;
+  box-shadow:0 0 0 2px #FEF6F0, 0 0 0 4px rgba(238,108,58,0.28), 0 0 12px rgba(238,108,58,0.45)!important;
+}
+
+/* Plan-editor day tones: "full day" and "departure" are hardcoded JJ hues
+   (#5E7B6E / #D4913D) in #modal-submit — remap to TC forest / poppy. The
+   --tone custom props are non-!important at (1,1,0), so (1,2,0) wins.
+   Arrival terracotta stays — it's brand-neutral and keeps 3-way coding. */
+html[data-brand="tc"] #modal-submit .day-tone-full{ --tone:#3A5647; --tone-bg:rgba(58,86,71,0.06); --tone-bg-strong:rgba(58,86,71,0.10); }
+html[data-brand="tc"] #modal-submit .day-tone-departure{ --tone:#CE5F2E; --tone-bg:rgba(206,95,46,0.06); --tone-bg-strong:rgba(206,95,46,0.12); }
+/* Title colors are LIGHT values — must not bleed into Night Atlas
+   (dark counterparts live in the dark section). */
+html[data-brand="tc"] body:not(.theme-dark) #modal-submit .day-tone-full .day-section-title{color:#2E4639!important;}
+html[data-brand="tc"] body:not(.theme-dark) #modal-submit .day-tone-departure .day-section-title{color:#A8511F!important;}
+
+/* Premium chrome sweep: gold rgba(198,165,100,…) literals hardcoded on the
+   always-visible chrome (sidebar, nav, avatar, badges, progress) → sage. */
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .sidebar{border-right:1px solid rgba(127,161,135,0.35)!important;}
+html[data-brand="tc"] body.theme-premium .nav-item.active{background:linear-gradient(90deg, rgba(127,161,135,0.12), transparent)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .sidebar-footer{background:rgba(127,161,135,0.06)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) .avatar{box-shadow:0 0 0 2px #F6FAF5, 0 0 0 3px rgba(127,161,135,0.30)!important;}
+html[data-brand="tc"] body.theme-premium .header-badge{background:rgba(127,161,135,0.12)!important;}
+html[data-brand="tc"] body.theme-premium .progress-fill{box-shadow:0 0 12px rgba(127,161,135,0.35)!important;}
+
+/* Plan-editor de-gold: slots, chips, dividers, add-buttons, guide cards. */
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .activity-slot{background:#FFFFFF!important;border-color:rgba(127,161,135,0.30)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .slot-header{border-bottom-color:rgba(127,161,135,0.20)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .slot-title-input:focus,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .slot-notes-input:focus{background:#F6FAF5!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .time-dd-toggle,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .type-dd-toggle{border-color:rgba(127,161,135,0.30)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .type-dd-icon{background:rgba(127,161,135,0.14)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .quick-chip{background:#FFFFFF!important;border-color:rgba(127,161,135,0.35)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .quick-chip:hover{background:rgba(127,161,135,0.12)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .add-slot-btn,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .add-day-btn{border-color:rgba(127,161,135,0.55)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .add-slot-btn:hover,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .add-day-btn:hover{background:rgba(127,161,135,0.10)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .section-divider{border-top-color:rgba(127,161,135,0.30)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .guide-card{background:#F6FAF5!important;border-color:rgba(127,161,135,0.25)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .guide-badge{background:rgba(127,161,135,0.16)!important;border-color:rgba(127,161,135,0.40)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .guide-chip{border-color:rgba(127,161,135,0.30)!important;}
+html[data-brand="tc"] body:not(.theme-dark) .day-section-header:hover{background:rgba(127,161,135,0.08)!important;}
+/* Preserve the 3-way day-tone top bar: the .activity-slot border-color
+   shorthand above would otherwise flatten border-top (3px var(--tone)). */
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .day-section .activity-slot{
+  border-top-color:var(--tone,#7FA187)!important;
+}
+/* Low-alpha gold residue in the plan editor */
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .guide-chip-icon{background:rgba(127,161,135,0.14)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .guide-tip{border-top-color:rgba(127,161,135,0.30)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .slot-title-input,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .slot-notes-input{border-color:rgba(127,161,135,0.28)!important;}
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .time-dd.open .time-dd-toggle,
+html[data-brand="tc"] body.theme-premium:not(.theme-dark) #modal-submit .type-dd.open .type-dd-toggle{box-shadow:0 0 0 3px rgba(127,161,135,0.16)!important;}
+/* Progress % chip beside progress bars kept a 10%-alpha gold wash */
+html[data-brand="tc"] body.theme-premium .progress-row > span:last-child{background:rgba(127,161,135,0.12)!important;}
+
+/* Focus rings follow the brand */
+html[data-brand="tc"] body .input:focus,
+html[data-brand="tc"] body .form-input:focus,
+html[data-brand="tc"] body .form-textarea:focus,
+html[data-brand="tc"] body select:focus{
+  border-color:#7FA187!important;
+  box-shadow:0 0 0 3px rgba(127,161,135,0.25)!important;
+}
+
+/* Selection ties it to the brand */
+html[data-brand="tc"] ::selection{background:#EE6C3A;color:#fff;}
+
+/* ═════════════════════════════════════════════════════════════════
+   C. NIGHT ATLAS — OPTIONAL dark theme retint.
+   Applies ONLY when the planner themself picks Settings → Display →
+   Dark (body.theme-dark). Retints the built-in charcoal dark theme
+   (#17181A/#252A2E/#2D3236, !important rules) into TC deep-forest by
+   out-specifying the same selectors.
+   ═════════════════════════════════════════════════════════════════ */
+
+html[data-brand="tc"] body.theme-dark{
+  --bg:#0C120F!important;
+  --surface:#141D17!important;
+  --surface-2:#1B2621!important;
+  --border:rgba(168,196,176,0.09)!important;
+  --border-med:rgba(168,196,176,0.18)!important;
+  --text:#EDF2EC!important;
+  --text-2:#C9D4CB!important;
+  --text-3:#8FA396!important;
+  /* Bright sage for dark surfaces (deep sage #3A5647 would vanish) */
+  --green:#8FBF9F!important;
+  --green-mid:#6FA383!important;
+  --green-dark:#A8C4B0!important;
+  --green-light:#16261D!important;
+  /* Keep the three states separable in dark too:
+     current=poppy, bond/escrow=gold, error=soft red. */
+  --amber:#E4B75E!important;
+  --amber-light:#2A2012!important;
+  --blue-light:#14212C!important;
+  --red:#F28B82!important;
+  --red-light:#2A1710!important;
+  --purple:#EE6C3A!important;
+  --purple-light:#2A1710!important;
+  --e-cream:#0C120F!important;
+  --e-paper:#141D17!important;--e-paper-2:#141D17!important;
+  --e-ink:#EDF2EC!important;--e-ink-2:#C9D4CB!important;--e-ink-3:#8FA396!important;
+  --e-rule:rgba(168,196,176,0.10)!important;
+  --p-cream:#0C120F!important;--p-paper:#141D17!important;
+  --p-ivory:#0C120F!important;
+  --p-ink:#EDF2EC!important;--p-ink-2:#C9D4CB!important;--p-ink-3:#8FA396!important;
+  /* --p-gold-l stays LIGHT: it colors text/hairlines drawn over dark
+     backdrops (photo-hero eyebrow) — a deep value would be invisible. */
+  --p-gold:#7FA187!important;--p-gold-d:#A8C4B0!important;--p-gold-l:#A8C4B0!important;
+  --p-rule:rgba(168,196,176,0.18)!important;
+  --e-green:#8FBF9F!important;--e-green-m:#A8C4B0!important;--e-green-d:#C4DCCB!important;
+  --p-green:#8FBF9F!important;--p-green-d:#A8C4B0!important;
+  /* The light block sets these !important on the always-present
+     .theme-editorial — without dark re-declares here, the current plan
+     tile's status caption goes #3A5647-on-#241812 (unreadable). */
+  --e-earth:#8FBF9F!important;--e-earth-d:#F08A5E!important;
+}
+
+html[data-brand="tc"] body.theme-dark{
+  background:
+    radial-gradient(1100px 600px at 85% -12%, rgba(58,86,71,0.35), transparent 60%),
+    radial-gradient(900px 700px at -10% 112%, rgba(58,86,71,0.20), transparent 55%),
+    #0C120F!important;
+  color:#EDF2EC!important;
+}
+
+/* Core surfaces (mirror of dashboard's #252A2E group) */
+html[data-brand="tc"] body.theme-dark .card,
+html[data-brand="tc"] body.theme-dark .modal,
+html[data-brand="tc"] body.theme-dark .sidebar,
+html[data-brand="tc"] body.theme-dark .topbar,
+html[data-brand="tc"] body.theme-dark .sidebar-footer,
+html[data-brand="tc"] body.theme-dark .planner-chip,
+html[data-brand="tc"] body.theme-dark #modal-plan-summary .modal,
+html[data-brand="tc"] body.theme-dark .modal-body,
+html[data-brand="tc"] body.theme-dark .avail-option,
+html[data-brand="tc"] body.theme-dark .tb-lang,
+html[data-brand="tc"] body.theme-dark .tb-icon-btn,
+html[data-brand="tc"] body.theme-dark #cs-chat-panel form{
+  background:linear-gradient(168deg,#16211A 0%,#131C16 60%)!important;
+  border-color:rgba(168,196,176,0.11)!important;
+  box-shadow:none!important;
+}
+html[data-brand="tc"] body.theme-dark #cs-chat-messages{background:#0C120F!important;}
+
+/* Elevated wells (mirror of the #2D3236 group) */
+html[data-brand="tc"] body.theme-dark .between-sets,
+html[data-brand="tc"] body.theme-dark #modal-plan-summary .modal-header,
+html[data-brand="tc"] body.theme-dark #modal-plan-summary .modal-footer,
+html[data-brand="tc"] body.theme-dark .modal-header,
+html[data-brand="tc"] body.theme-dark .modal-footer,
+html[data-brand="tc"] body.theme-dark .is-stat-card,
+html[data-brand="tc"] body.theme-dark .day-card,
+html[data-brand="tc"] body.theme-dark .ws-card,
+html[data-brand="tc"] body.theme-dark .ws-available,
+html[data-brand="tc"] body.theme-dark #wallet-card .ws-available,
+html[data-brand="tc"] body.theme-dark .avail-option:hover,
+html[data-brand="tc"] body.theme-dark .tb-lang-btn.active,
+html[data-brand="tc"] body.theme-dark .sb-lang-btn.active,
+html[data-brand="tc"] body.theme-dark #cs-chat-input,
+html[data-brand="tc"] body.theme-dark #cs-chat-panel form > button[type="button"],
+html[data-brand="tc"] body.theme-dark #cs-chat-messages > div[style*="align-self:flex-start"] > div[style*="background:white"],
+html[data-brand="tc"] body.theme-dark .settings-btn,
+html[data-brand="tc"] body.theme-dark #itin-brief,
+html[data-brand="tc"] body.theme-dark #brief-card,
+html[data-brand="tc"] body.theme-dark .brief-grid .brief-item,
+html[data-brand="tc"] body.theme-dark .add-day-btn,
+html[data-brand="tc"] body.theme-dark .add-slot-btn,
+html[data-brand="tc"] body.theme-dark .quick-chip,
+html[data-brand="tc"] body.theme-dark .activity-slot{
+  background:#1B2621!important;
+  border-color:rgba(168,196,176,0.10)!important;
+}
+
+/* Metric tiles */
+html[data-brand="tc"] body.theme-dark .metrics .metric-card{
+  background:linear-gradient(180deg,#16211A 0%,#1B2621 100%)!important;
+  border-color:rgba(168,196,176,0.11)!important;
+}
+
+/* Form controls — native dark UI on forest */
+html[data-brand="tc"] body.theme-dark input,
+html[data-brand="tc"] body.theme-dark textarea,
+html[data-brand="tc"] body.theme-dark select,
+html[data-brand="tc"] body.theme-dark .input,
+html[data-brand="tc"] body.theme-dark .form-input,
+html[data-brand="tc"] body.theme-dark .form-select,
+html[data-brand="tc"] body.theme-dark .form-textarea{
+  background-color:#1B2621!important;
+  color:#EDF2EC!important;
+  border-color:rgba(168,196,176,0.16)!important;
+  color-scheme:dark;
+}
+html[data-brand="tc"] body.theme-dark select option{background-color:#1B2621;color:#EDF2EC;}
+html[data-brand="tc"] body.theme-dark .form-input:-webkit-autofill,
+html[data-brand="tc"] body.theme-dark .form-input:-webkit-autofill:focus{
+  -webkit-box-shadow:0 0 0 100px #1B2621 inset!important;
+  box-shadow:0 0 0 100px #1B2621 inset!important;
+  -webkit-text-fill-color:#EDF2EC!important;
+}
+html[data-brand="tc"] body.theme-dark .input:focus,
+html[data-brand="tc"] body.theme-dark .form-input:focus,
+html[data-brand="tc"] body.theme-dark .form-textarea:focus,
+html[data-brand="tc"] body.theme-dark select:focus{
+  border-color:#7FA187!important;
+  box-shadow:0 0 0 3px rgba(127,161,135,0.22)!important;
+}
+
+/* Plan tiles — Poppy marks the tile being worked on */
+html[data-brand="tc"] body.theme-dark .plan-tile{
+  background:#141D17!important;border-color:rgba(168,196,176,0.10)!important;
+}
+html[data-brand="tc"] body.theme-dark .plan-tile.pending{background:#1B2621!important;}
+html[data-brand="tc"] body.theme-dark .plan-tile.done{
+  background:#16261D!important;border-color:rgba(143,191,159,0.30)!important;
+}
+html[data-brand="tc"] body.theme-dark .plan-tile.current{
+  background:#241812!important;
+  border-color:rgba(238,108,58,0.55)!important;
+  box-shadow:0 0 0 1px rgba(238,108,58,0.25), 0 8px 22px rgba(0,0,0,0.35)!important;
+}
+html[data-brand="tc"] body.theme-dark .plan-tile.bond-locked{background:#1A1F1B!important;}
+
+/* Active-set title on dark: light-sage gradient (section A's deep
+   gradient would be invisible on forest) */
+html[data-brand="tc"] body.theme-dark #active-set-card .card-title{
+  background:linear-gradient(135deg,#C4DCCB 0%,#A8C4B0 45%,#7FA187 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+}
+
+/* Deadline / urgency — Poppy */
+html[data-brand="tc"] body.theme-dark #pace-extension-btn{
+  background:rgba(238,108,58,0.14)!important;
+  border-color:rgba(238,108,58,0.45)!important;
+  color:#F08A5E!important;
+}
+html[data-brand="tc"] body.theme-dark .badge-amber{
+  background:rgba(228,183,94,0.14)!important;color:#E4B75E!important;
+}
+
+/* Progress bars */
+html[data-brand="tc"] body.theme-dark .metric-bar{background:#0C120F!important;}
+html[data-brand="tc"] body.theme-dark .metric-bar-fill{
+  background:linear-gradient(90deg,#3A5647,#8FBF9F)!important;
+}
+
+/* ID-scoped boosters: <body> statically carries theme-editorial +
+   theme-premium, and the dark theme wins those fights with ID-scoped
+   rules (body.theme-dark.theme-premium #modal-submit …). Same IDs here
+   so the plan-editor modal and profile page join the forest. */
+html[data-brand="tc"] body.theme-dark #modal-submit .modal{
+  background:linear-gradient(168deg,#16211A 0%,#131C16 60%)!important;
+  border-color:rgba(168,196,176,0.11)!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-submit .modal-header,
+html[data-brand="tc"] body.theme-dark #modal-submit .modal-footer,
+html[data-brand="tc"] body.theme-dark #modal-submit #itin-brief,
+html[data-brand="tc"] body.theme-dark #modal-submit #itin-brief [style*="YOUR COMMISSION"],
+html[data-brand="tc"] body.theme-dark #modal-submit #itin-brief-grid + div,
+html[data-brand="tc"] body.theme-dark #modal-submit .quick-chip,
+html[data-brand="tc"] body.theme-dark #modal-submit .activity-slot{
+  background:#1B2621!important;
+  border-color:rgba(168,196,176,0.10)!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-submit select,
+html[data-brand="tc"] body.theme-dark #modal-submit .form-input,
+html[data-brand="tc"] body.theme-dark #modal-submit .form-textarea,
+html[data-brand="tc"] body.theme-dark #page-profile .form-input,
+html[data-brand="tc"] body.theme-dark #page-profile .form-textarea,
+html[data-brand="tc"] body.theme-dark #page-profile .form-select{
+  background-color:#1B2621!important;
+  color:#EDF2EC!important;
+  border-color:rgba(168,196,176,0.16)!important;
+}
+
+/* Charcoal-island mirrors: the built-in dark theme's ID/high-specificity
+   rules out-rank the class-chain retint above, leaving charcoal panels
+   inside the forest — hero cards, wallet page, payout modal, and the
+   plan editor's inputs/dropdowns. The html[data-brand] prefix adds
+   (0,1,1) to each mirrored selector, so every copy wins its original. */
+html[data-brand="tc"] body.theme-dark #active-set-card,
+html[data-brand="tc"] body.theme-dark #assignment-status-card,
+html[data-brand="tc"] body.theme-dark #wallet-card,
+html[data-brand="tc"] body.theme-dark.theme-premium .card.wallet-snap{
+  background:linear-gradient(168deg,#16211A 0%,#131C16 60%)!important;
+  border:1px solid rgba(168,196,176,0.11)!important;
+  box-shadow:none!important;
+}
+html[data-brand="tc"] body.theme-dark #page-wallet .card,
+html[data-brand="tc"] body.theme-dark #w-protection-card{
+  background:linear-gradient(168deg,#16211A 0%,#131C16 60%)!important;
+  border-color:rgba(168,196,176,0.11)!important;
+}
+html[data-brand="tc"] body.theme-dark #page-wallet .metric-card,
+html[data-brand="tc"] body.theme-dark #page-wallet .metrics .metric-card{
+  background:linear-gradient(180deg,#16211A 0%,#1B2621 100%)!important;
+  border-color:rgba(168,196,176,0.11)!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-payout-request .modal-body > div:first-child > div:first-child,
+html[data-brand="tc"] body.theme-dark #modal-payout-request #pr-bank-block{
+  background:#1B2621!important;border-color:rgba(168,196,176,0.10)!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-submit input,
+html[data-brand="tc"] body.theme-dark #modal-submit textarea{
+  background:#1B2621!important;color:#EDF2EC!important;
+  border-color:rgba(168,196,176,0.16)!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-submit .slot-title-input,
+html[data-brand="tc"] body.theme-dark #modal-submit .slot-notes-input{
+  background:#0C120F!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-submit .time-dd-toggle,
+html[data-brand="tc"] body.theme-dark #modal-submit .type-dd-toggle,
+html[data-brand="tc"] body.theme-dark #modal-submit .time-dd-menu,
+html[data-brand="tc"] body.theme-dark #modal-submit .type-dd-menu{
+  background:#1B2621!important;border-color:rgba(168,196,176,0.14)!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-bond [style*="background:#FFFFFF"],
+html[data-brand="tc"] body.theme-dark .spend-calc,
+html[data-brand="tc"] body.theme-dark #spend-total{
+  background:#1B2621!important;
+}
+
+/* Accent sweep: the dark theme hardcodes JJ's mint #4FB891/#3FA17D with
+   !important on primary buttons and active states — re-declare in TC
+   bright sage. Dark ink on sage (white would fail contrast). */
+html[data-brand="tc"] body.theme-dark .btn-main,
+html[data-brand="tc"] body.theme-dark #w-request-btn,
+html[data-brand="tc"] body.theme-dark .psb-btn,
+html[data-brand="tc"] body.theme-dark .bp-tick,
+html[data-brand="tc"] body.theme-dark .bp-btn-primary{
+  background:#8FBF9F!important;color:#0C120F!important;
+}
+html[data-brand="tc"] body.theme-dark .btn-main:hover,
+html[data-brand="tc"] body.theme-dark #w-request-btn:hover,
+html[data-brand="tc"] body.theme-dark .psb-btn:hover,
+html[data-brand="tc"] body.theme-dark .bp-btn-primary:hover{background:#A8C4B0!important;color:#0C120F!important;}
+html[data-brand="tc"] body.theme-dark .btn-main:active{background:#6FA383!important;}
+html[data-brand="tc"] body.theme-dark .nav-item.active{background:rgba(143,191,159,0.16)!important;color:#8FBF9F!important;}
+html[data-brand="tc"] body.theme-dark .chip-cloud .chip.is-on,
+html[data-brand="tc"] body.theme-dark .settings-lang-btn.active,
+html[data-brand="tc"] body.theme-dark .bp-title em,
+html[data-brand="tc"] body.theme-dark .bp-cell--green .bp-cell-value,
+html[data-brand="tc"] body.theme-dark .bp-amount-label{color:#8FBF9F!important;}
+html[data-brand="tc"] body.theme-dark #modal-plan-summary .modal-header::after{
+  background:linear-gradient(90deg,transparent,rgba(143,191,159,0.5) 50%,transparent)!important;
+}
+html[data-brand="tc"] body.theme-dark #modal-plan-summary .modal-sub{color:#A8C4B0!important;}
+
+/* Day tones brighten on forest (deep sage would vanish). */
+html[data-brand="tc"] body.theme-dark #modal-submit .day-tone-full{ --tone:#8FBF9F; }
+html[data-brand="tc"] body.theme-dark #modal-submit .day-tone-departure{ --tone:#F08A5E; }
+html[data-brand="tc"] body.theme-dark #modal-submit .day-tone-full .day-section-title{color:#8FBF9F!important;}
+html[data-brand="tc"] body.theme-dark #modal-submit .day-tone-departure .day-section-title{color:#F08A5E!important;}
+/* Preserve the tone top bar under the dark slot border-color override */
+html[data-brand="tc"] body.theme-dark #modal-submit .day-section .activity-slot{
+  border-top-color:var(--tone,#8FBF9F)!important;
+}
+
+/* Plan-editor scroll canvas: the dark theme paints it charcoal with
+   ID-scoped rules ((1,3,1)/(1,5,1)) the generic retint can't reach. */
+html[data-brand="tc"] body.theme-dark #modal-submit .modal-body,
+html[data-brand="tc"] body.theme-dark #modal-submit .modal > :not(.modal-header):not(.modal-footer){
+  background:#141D17!important;color:#EDF2EC!important;
+}
+
+/* Photo-preview remove "×": pastel --red as chip bg needs dark ink */
+html[data-brand="tc"] body.theme-dark .img-preview-remove{color:#2A1710!important;}
+
+/* Residual JJ-mint (#4FB891) accents hardcoded in the dark theme */
+html[data-brand="tc"] body.theme-dark .chip-cloud .chip:hover{color:#8FBF9F!important;border-color:rgba(143,191,159,0.40)!important;}
+html[data-brand="tc"] body.theme-dark.theme-premium #page-profile .chip-cloud .chip.is-on{
+  background:linear-gradient(180deg,rgba(143,191,159,0.20),rgba(143,191,159,0.08))!important;
+  border-color:rgba(143,191,159,0.50)!important;color:#8FBF9F!important;
+}
+html[data-brand="tc"] body.theme-dark .quick-chip:hover{
+  background:rgba(143,191,159,0.12)!important;border-color:rgba(143,191,159,0.45)!important;color:#8FBF9F!important;
+}
+html[data-brand="tc"] body.theme-dark .guide-chip-icon{background:rgba(143,191,159,0.18)!important;color:#8FBF9F!important;}
+html[data-brand="tc"] body.theme-dark.theme-premium #modal-submit #itin-brief > div:first-child > svg,
+html[data-brand="tc"] body.theme-dark.theme-premium #modal-submit #itin-brief > div:first-child > div:first-child{color:#8FBF9F!important;}
+html[data-brand="tc"] body.theme-dark .slot-title-input:focus,
+html[data-brand="tc"] body.theme-dark .slot-notes-input:focus{border-color:rgba(143,191,159,0.55)!important;}
+html[data-brand="tc"] body.theme-dark .bp-btn-ghost{color:#8FBF9F!important;}
+
+/* Disabled primaries: the stateless sage rules above out-rank the dark
+   theme's :disabled styles — restore a proper disabled look. */
+html[data-brand="tc"] body.theme-dark .btn-main:disabled,
+html[data-brand="tc"] body.theme-dark #w-request-btn:disabled,
+html[data-brand="tc"] body.theme-dark .psb-btn:disabled{
+  background:#1B2621!important;color:#8FA396!important;
+}
+
+/* First paint when a planner has chosen dark: dashboard's pre-dark rule
+   paints charcoal — repaint forest so TC never flashes charcoal.
+   The body half is deliberately NON-!important and :not(.theme-dark):
+   jj-pre-dark lingers on <html> for the whole session (dashboard never
+   removed it before applyPlannerTheme learned to), and an !important
+   body rule here would keep the canvas black after a Dark→Light switch. */
+html[data-brand="tc"].jj-pre-dark{background:#0C120F!important;}
+html[data-brand="tc"].jj-pre-dark body:not(.theme-dark){background:#0C120F;}
+
+/* Scrollbars + selection on dark */
+html[data-brand="tc"] body.theme-dark{scrollbar-color:#3A5647 #0C120F;}
+html[data-brand="tc"] body.theme-dark ::selection{background:#EE6C3A;color:#fff;}

@@ -6,11 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Journey Junction</title>
 <script>
-// If logged in go to dashboard, otherwise go to login
+// If logged in go to dashboard, otherwise go to login.
+// Query + hash are carried through so flags like ?brand=tc (brand preview)
+// survive the redirect — brand-boot on THIS page races the navigation and
+// can't be relied on to see them.
 if (localStorage.getItem('jj_token')) {
-  window.location.href = 'dashboard.html'
+  window.location.href = 'dashboard.html' + location.search + location.hash
 } else {
-  window.location.href = 'login.html'
+  window.location.href = 'login.html' + location.search + location.hash
 }
 </script>
 <script src="/brand-boot.js"></script></head>

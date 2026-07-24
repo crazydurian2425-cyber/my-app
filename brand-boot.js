@@ -71,6 +71,10 @@
       name: 'Trip Companion',
       icon: '/tc-app-icon.png',
       favicon: '/tc-icon.png',
+      // TC's planner dashboard wears the "Sage Atelier" light skin
+      // (sage-mist page, sage-for-gold token swap, poppy urgency) with an
+      // optional "Night Atlas" retint if the planner picks dark in Settings.
+      skin: '/tc-skin.css',
       wordmarkLead: 'Trip',
       wordmarkAccent: 'Companion',
       // Sister palette to VBD — the brand pack states the two share one family
@@ -127,6 +131,29 @@
   } catch (e) {}
   if (!key) key = hostBrandKey();
 
+  // PREVIEW override for pre-release testing: open any page with ?brand=tc
+  // (or vbd) to force that brand in THIS tab only (sticks via sessionStorage
+  // so in-app navigation keeps it). ?brand=jj CLEARS the stored preview and
+  // shows the base brand for that load only — storing 'jj' would pin raw JJ
+  // branding (incl. legal identity) onto the white-label domains' pages.
+  // The application page is exempt: apply.html stamps the applicant's brand
+  // from the HOST, so its display must never show a previewed other brand.
+  try {
+    var qb = /[?&]brand=(jj|vbd|tc)(&|$)/i.exec(location.search || '');
+    var qv = qb ? qb[1].toLowerCase() : null;
+    if (qv === 'jj') sessionStorage.removeItem('jj_brand_preview');
+    else if (qv) sessionStorage.setItem('jj_brand_preview', qv);
+    if (!/(^|\/)(apply|signup)/i.test(location.pathname)) {
+      if (qv === 'jj') key = 'jj';   // one-shot base-brand view
+      var pv = sessionStorage.getItem('jj_brand_preview');
+      if (pv) key = pv;
+    }
+  } catch (e) {}
+
+  // Stamp the resolved brand on <html> (all brands, JJ included) so
+  // per-brand skin CSS can scope itself: html[data-brand="tc"] … .
+  try { document.documentElement.setAttribute('data-brand', key); } catch (e) {}
+
   var B = BRANDS[key];
   if (!B) return;                 // Journey Junction (default) → untouched
   window.__BRAND__ = B;
@@ -175,6 +202,21 @@
       head().appendChild(ic);
     }
     if (B.icon) { var pl = new Image(); pl.src = B.icon; }   // preload in-page logo swap
+
+    // Browser-chrome tint (Android toolbar / installed-PWA status bar)
+    // follows the brand — the static meta ships JJ moss green.
+    var tmc = document.querySelector('meta[name="theme-color"]');
+    if (tmc && B.tokens && B.tokens['--green']) tmc.setAttribute('content', B.tokens['--green']);
+
+    // Per-brand dashboard skin (planner side only). Loaded pre-paint so the
+    // skin never flashes in late. The skin never changes the planner's
+    // light/dark preference — it only restyles whichever theme is active.
+    if (B.skin && /(^|\/)dashboard/i.test(location.pathname)) {
+      var sk = document.createElement('link');
+      sk.rel = 'stylesheet';
+      sk.href = B.skin;
+      head().appendChild(sk);
+    }
 
     // Anti-flash: hide ONLY the brand lockup (logo + wordmark) until Phase 2
     // rewrites it to VBD, so a refresh never shows a flash of the Journey
